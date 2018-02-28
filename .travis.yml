@@ -6,7 +6,7 @@ script:
 - mkdir -p build/install
 - cd build
 - $CMAKE_EXE --version
-- $CMAKE_EXE -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 $CMakeArgs ../
+- $CMAKE_EXE -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
 - $CMAKE_EXE --build . --config Release --target install
 matrix:
   include:
