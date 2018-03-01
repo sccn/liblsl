@@ -132,23 +132,51 @@ if (MINGW)
 	target_link_libraries (${target} PUBLIC ws2_32 wsock32 winmm)
 endif()
 
+if(LSL_UNIXFOLDERS)
+	set(LSLPATH_LIB "")
+else()
+	set(LSLPREFIX "LSL/")
+endif()
+
 install(TARGETS ${lsl_export_targets}
 	COMPONENT liblsl
-  EXPORT "${PROJECT_NAME}Config"
-  RUNTIME DESTINATION LSL/lib
-  LIBRARY DESTINATION LSL/lib
-  INCLUDES DESTINATION LSL/include
-  ARCHIVE DESTINATION LSL/lib
+	EXPORT "${PROJECT_NAME}Config"
+	RUNTIME DESTINATION ${LSLPREFIX}lib
+	LIBRARY DESTINATION ${LSLPREFIX}lib
+	INCLUDES DESTINATION ${LSLPREFIX}include
+	ARCHIVE DESTINATION ${LSLPREFIX}lib
 )
-# TODO: where to install this, see https://stackoverflow.com/a/10766438 
+
 install(EXPORT "${PROJECT_NAME}Config"
-	COMPONENT liblslheaders
-   NAMESPACE "LSL::"
-   DESTINATION LSL/cmake)
+	COMPONENT liblsl-dev
+	NAMESPACE "LSL::"
+	DESTINATION "${LSLPREFIX}share/LSL")
+
+# download up to date cmake helpers in an out-of-tree-build
+set(LSLGIT "https://github.com/labstreaminglayer/superrepo/blob/master")
+set(LSL_CMAKE_HELPERS "LSLCMake.cmake")
+foreach(helper IN LISTS LSL_CMAKE_HELPERS)
+	set(TARGETFILE "${CMAKE_CURRENT_BINARY_DIR}/${helper}")
+	if(NOT EXISTS ${TARGETFILE})
+		if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../../cmake/${helper}")
+			configure_file(
+				"${CMAKE_CURRENT_LIST_DIR}/../../cmake/${helper}"
+				${TARGETFILE}
+				COPYONLY)
+		else()
+			message(STATUS "Downloading CMake app helper ${helper}")
+			file(DOWNLOAD "${LSLGIT}/cmake/${helper}" ${TARGETFILE})
+		endif()
+	endif()
+	install(FILES ${TARGETFILE}
+		COMPONENT "liblsl-dev"
+		DESTINATION "${LSLPREFIX}share/LSL"
+		)
+endforeach(helper)
 
 # install headers
 install(FILES ${headers}
 	COMPONENT "liblsl-dev"
-  DESTINATION LSL/include/
+	DESTINATION "${LSLPREFIX}include"
 )
 set(CPACK_COMPONENT_liblsl-dev_DEPENDS liblsl GLOBAL_SCOPE)
