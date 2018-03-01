@@ -1,11 +1,27 @@
-Lab streaming layer API.
+# Lab streaming layer API.
 
-The lab streaming layer is a simple all-in-one approach to streaming experiment data between applications in a lab, e.g. instrument time series, event markers, audio, and so on.
+The lab streaming layer is a simple all-in-one approach to streaming experiment
+ata between applications in a lab, e.g. instrument time series, event markers,
+audio, and so on.
 
-To compile the library yourself from source please follow the instructions in the file INSTALL.
 
-For the most up-to-date documentation, please have a look at the official site:
-http://code.google.com/p/labstreaminglayer
+## 
+To compile the library yourself from source please follow the instructions in
+the file INSTALL.
+
+To build language bindings (e.g. for
+[Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
+[Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
+the [corresponding directory](https://github.com/labstreaminglayer/superrepo/tree/master/LSL)
+in the [superrepository](https://github.com/labstreaminglayer/superrepo).
+
+You might also be interested in
+[apps to connect recording equipment](https://github.com/labstreaminglayer/superrepo/tree/master/Apps)
+and the [LabRecorder](https://github.com/labstreaminglayer/Apps-LabRecorder).
+
+Please stay put while we figure out how to best offer precompiled packages.
+
+## Design goals
 
 The design goals of the library are:
 a) The interface shall be as simple as possible, allowing programs or drivers to send 
@@ -25,21 +41,16 @@ d) The library should be fully featured. It should cover the relevant streaming 
 e) Network and processor overhead should be reasonably low to not get in the way.
 
 Package overview:
-* The API headers for the supported languages are in the include/ directory.
-* The actual library binaries for all platforms are in the bin/ directory.
-* Example program source code for all languages are in the examples/ directory.
-* Pre-built example program binaries for experimenting are also in the bin/ directory.
-* Project files for the library (Visual Studio, Xcode, Code::Blocks on Linux) and 
-  solutions/workspaces for library & sample apps are in the project/ directory.
+* The API headers are in the include/ directory.
 * The library source code is in the src/ directory.
 * External dependencies needed to build the library are in the external/ directory.
-* The output/ directory contains intermediate compiler outputs when building the core library.
 
 To connect an application to the lab streaming layer:
-* Include the header for your language (lsl_c.h for C, lsl_cpp.h for C++, the directory 
-  lsl_matlab for Matlab, or the module lsl_python for Python)
-* Make sure that the library file (liblsl.dll / liblsl.so / liblsl.dylib) is found by your application. 
-  It should be enough to put it in the same folder as your executable.
+* Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h for C++`)
+  (automatically done when using CMake) or get
+  [bindings for your preferred language](https://github.com/labstreaminglayer/superrepo/tree/master/LSL)
+* Make sure that the library file (`liblsl32`/`64``.dll`/`.so`/`.dylib`) is found by your application. 
+  On Windows, it should be enough to put it in the same folder as your executable.
   When building a Windows app, also make sure that the liblsl64.lib (or liblsl32.lib) file is visible 
   to your build environment.
 * To provide data, create a new streaminfo to describe your stream and create a new outlet with that info. 
@@ -47,8 +58,8 @@ To connect an application to the lab streaming layer:
 * To receive data, resolve a stream that matches your citeria (e.g. name or type), which gives you a 
   streaminfo and create a new inlet with that streaminfo. Pull samples from the inlet. 
   Destroy the inlet when you're done.
-* Have a look at the example sources in the examples/ folder (SendData.cpp, SendDataC.c, SendData.m, 
-  ReceiveData.cpp, ReceiveDataC.c, ReceiveData.m).
+* Have a look at the example sources in the
+  [examples/ folder](https://github.com/labstreaminglayer/App-Examples)
 
 The library and example applications are licensed under the MIT license. 
 The library uses code that is licensed under the Boost software license.
