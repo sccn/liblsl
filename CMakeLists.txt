@@ -153,7 +153,7 @@ install(EXPORT "${PROJECT_NAME}Config"
 	DESTINATION "${LSLPREFIX}share/LSL")
 
 # download up to date cmake helpers in an out-of-tree-build
-set(LSLGIT "https://github.com/labstreaminglayer/superrepo/blob/master")
+set(LSLGIT "https://raw.githubusercontent.com/labstreaminglayer/superrepo/master")
 set(LSL_CMAKE_HELPERS "LSLCMake.cmake")
 foreach(helper IN LISTS LSL_CMAKE_HELPERS)
 	set(TARGETFILE "${CMAKE_CURRENT_BINARY_DIR}/${helper}")

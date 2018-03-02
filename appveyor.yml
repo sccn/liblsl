@@ -25,20 +25,19 @@ build_script:
 
     cd build
 
-    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DLSL_LSLBOOST_PATH=lslboost -DUNIXFOLDERS=1 %CMakeArgs% ../
+    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DLSL_LSLBOOST_PATH=lslboost %CMakeArgs% ../
 
     cmake --build . --config Release --target install
 artifacts:
 - path: build/install
-  name: lsl_%ARCH%_${APPVEYOR_REPO_COMMIT}
+  name: liblsl_%ARCH%_1.12
 deploy:
 - provider: BinTray
   username: tstenner
   api_key:
     secure: zcgGai0IfIlkwU5IXEvoJ/Kr+w2DbKIBJr/677Q52BPwUT0aFWSvJuZp2obpY3u5
   subject: tstenner
+  version: 1.12
   repo: labstreaminglayer
   package: LSL
-  publish: false
-  explode: false
-  override: false
+  override: true
