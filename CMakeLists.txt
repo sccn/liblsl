@@ -20,6 +20,11 @@ set(LSL_LSLBOOST_PATH "external" CACHE STRING "Subdirectory with lslboost")
 # Build static library
 option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
 
+if(WIN32)
+	set(LSL_WINVER "0x0501" CACHE STRING
+		"Windows version to target (defaults to 0x0501 for Windows XP)")
+endif()
+
 set (sources
 	src/api_config.cpp
 	src/api_config.h
@@ -105,6 +110,9 @@ function(lsllib_properties libname)
 		PUBLIC
 		LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 	)
+	if(WIN32)
+		target_compile_definitions(${libname} PRIVATE _WIN32_WINDOWS=${LSL_WINVER})
+	endif()
 	if(NOT MSVC)
 		target_compile_features(${libname} PRIVATE cxx_auto_type)
 	endif()
