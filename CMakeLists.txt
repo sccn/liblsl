@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.5)
 project (LSL
-	VERSION 1.4.0
+	VERSION 1.1.2
 	LANGUAGES CXX)
 
 cmake_policy(SET CMP0042 NEW) # ENABLE CMP0042: MACOSX_RPATH is enabled by default.
@@ -165,7 +165,7 @@ install(EXPORT "${PROJECT_NAME}Config"
 
 # download up to date cmake helpers in an out-of-tree-build
 set(LSLGIT "https://raw.githubusercontent.com/labstreaminglayer/superrepo/master")
-set(LSL_CMAKE_HELPERS "LSLCMake.cmake")
+set(LSL_CMAKE_HELPERS LSLCMake.cmake LSLCPackCommon.cmake LSLCPackDeb.cmake)
 foreach(helper IN LISTS LSL_CMAKE_HELPERS)
 	set(TARGETFILE "${CMAKE_CURRENT_BINARY_DIR}/${helper}")
 	if(NOT EXISTS ${TARGETFILE})
@@ -191,3 +191,10 @@ install(FILES ${headers}
 	DESTINATION "${LSLPREFIX}include"
 )
 set(CPACK_COMPONENT_liblsl-dev_DEPENDS liblsl GLOBAL_SCOPE)
+
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
+include(LSLCPackCommon)
+if(UNIX AND NOT APPLE)
+	include(LSLCPackDeb)
+	include(CPack)
+endif()

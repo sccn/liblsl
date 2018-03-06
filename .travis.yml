@@ -1,26 +1,28 @@
 language: cpp
 compiler: clang # 3.5 instead of GCC 4.8
 env:
-  - CMakeArgs=""
+  CMakeArgs=""
+  CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.3-Linux-x86_64.tar.gz"
 script:
 - mkdir -p build/install
 - cd build
 - $CMAKE_EXE --version
 - $CMAKE_EXE -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
 - $CMAKE_EXE --build . --config Release --target install
+- if [ "$TRAVIS_OS_NAME" == "linux" ]; then cpack; fi
+- cd ..
 matrix:
   include:
     - os: linux
       before_script:
-        - CMAKE_URL="https://cmake.org/files/v3.5/cmake-3.5.2-Linux-x86_64.tar.gz"
         - mkdir cmakebin && travis_retry wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmakebin
         - export CMAKE_EXE=$PWD/cmakebin/bin/cmake
     - os: osx
       before_install:
         - export CMAKE_EXE=`which cmake`
-#deploy:
-#  provider: bintray
-#  user: tstenner
-#  key:
-#    secure: 8Gou8FcKj7o3nYOO4a7gSaUoUqyCrE4NjmV8yFIaDAS5l79kFWuM8SACYY/mBlN2uFBaUGXnD6VUZGuQ0GkbYnWPUhs024vXR5B+XhLpW5pRoHS3hZxwPNcWTR+8X46IawuWn360kb6zRXGU/ftK5Ppf3n2lXvRdvhz8O3NyTmXJeR8gr0QgRoNKVYENNEpUtzZbwN2htWqUzm5gw32u2HBa35O9aR026iwtW2ktICCtuAyyNaHR9CHy2vh3dasZu/SMRFfde95Bf+FcxrwcdNMlw1ot09Hc+bmx/ec/VMn8LYJ9XFdVz+7Jqm+0UH19NokUpt3FCg+DRNOj6d0HaVR4vXCe3S8wwaoNlFWWArt/2gSRFN266TDpKtP3AdpCoDOOIxtlPJq6mC9KR4U1GwnhvjvtAh9NdU+FRzsJJT7npMYsyAwvvfGulhz4Vz4RJWZSb0Kf7Tdp2C4dagb9tDQPuQ/mhwGigLT8T4GPkGSkUnVR7mNSDL7TUeQhP2wxYMMAYoaigGcT6GcqCIK6x6dxX01VffsfCZozvGpaXbdXPmVc1U1KupRZDpuk+kkvySWjMlrkYYiTVzyWVEH7hsAJkq6i6qOgC/hsNQ7oJ8mgokgvb7VWgNEdRN0G2uaYXqKeXBwtsYtWB14kx/fiZyUhbjLFX0lIS23qS52pxzQ=
-#  file: .bintray.json
+deploy:
+  provider: bintray
+  user: tstenner
+  key:
+    secure: "Mm0dMP4/b0zCEu+vlGGOS9WxLpQk7NedyQSLUaNpQSG6y5q6piAVhT3de2KLcprmY6C3la51Ibuq0/6IWS1uMhofzt2xTkeNbCP61K3r+4zcEPpfszWrhelb9wbuQLN6gdnI2AnitzMoIIeyL9Br/di7Nm2Rrh6AI8viHGvLQ6gpVp16D4kM9FI78sB2BlYUu/HXYlPmakvYdixavX8I2oovOBeSOac3Ictjk5z3DIBWVQzxMHykmkwzTW3skoBxP8M98JPEc0E6H1yY3g5XM6egmw8GGvJMOWyycom1dFgF99bsb0yWkL3/GeJXpXUW4rToeb6AP/X2DRqubvuZrNeSf1k3wX9a8chU63bbEQJxRC/mQwEQ39vUYzQrgmI7kRuM3srZVmXLH9rozpOL4VIhsKSC2shf0ofh7Wd5geetSwHT5tWap9jpeEOcVGOqBSXO7Z9ZMWFKwFvomwJCgPk8niM7rWloW9FWGKOeKCfCVPQdHug99HtckYxQBb6XXJTrZJ/8jiK61eoOhMnq4TRK1fMMYhMICuSe5Qk5k3W0DJwUbiRQMh0Y6CMTJL+Mxrs+Tyk5j66IDtsJxXSsF45c9e8+Er05RKuaGhy/d9+jhDil4xs9UnRMqiR6/0/lWHYjiJXBq2jIjxUNt51HVBYoO7fu0pvXGjchHfoZRdw="
+  file: .bintray.json
