@@ -18,8 +18,6 @@ matrix:
     - os: osx
       before_install:
         - export CMAKE_EXE=`which cmake`
-notifications:
-    slack: labstreaminglayer:nVh8xmzDKzA3i3YJAmdPAgbr
 #deploy:
 #  provider: bintray
 #  user: tstenner
