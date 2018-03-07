@@ -36,7 +36,7 @@ deploy:
   username: tstenner
   api_key:
     secure: Fo9tIQnGjVnCXB3euItvYrt85A5O9FPqq7LEpsdOuwW+eOg1rwA5Q1HLp4yWDXAl
-  subject: tstenner
+  subject: labstreaminglayer
   version: 1.12
   repo: labstreaminglayer
   package: LSL
