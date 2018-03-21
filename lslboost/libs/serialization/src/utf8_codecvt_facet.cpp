@@ -9,18 +9,14 @@
 #error "wide char i/o not supported on this platform"
 #endif
 
-// std::codecvt_utf8 doesn't seem to work for any versions of msvc
-#if defined(_MSC_VER) \
-||  defined( BOOST_NO_CXX11_HDR_CODECVT )
-    // include boost implementation of utf8 codecvt facet
-    # define BOOST_ARCHIVE_SOURCE
-    #include <boost/archive/detail/decl.hpp>
-    #define BOOST_UTF8_BEGIN_NAMESPACE \
-         namespace lslboost { namespace archive { namespace detail {
-    #define BOOST_UTF8_DECL BOOST_ARCHIVE_DECL
-    #define BOOST_UTF8_END_NAMESPACE }}}
-    #include <boost/detail/utf8_codecvt_facet.ipp>
-    #undef BOOST_UTF8_END_NAMESPACE
-    #undef BOOST_UTF8_DECL
-    #undef BOOST_UTF8_BEGIN_NAMESPACE
-#endif
+// include boost implementation of utf8 codecvt facet
+# define BOOST_ARCHIVE_SOURCE
+#include <boost/archive/detail/decl.hpp>
+#define BOOST_UTF8_BEGIN_NAMESPACE \
+     namespace lslboost { namespace archive { namespace detail {
+#define BOOST_UTF8_DECL BOOST_ARCHIVE_DECL
+#define BOOST_UTF8_END_NAMESPACE }}}
+#include <boost/detail/utf8_codecvt_facet.ipp>
+#undef BOOST_UTF8_END_NAMESPACE
+#undef BOOST_UTF8_DECL
+#undef BOOST_UTF8_BEGIN_NAMESPACE

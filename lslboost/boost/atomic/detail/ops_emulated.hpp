@@ -149,6 +149,9 @@ struct operations :
     public emulated_operations< typename make_storage_type< Size, Signed >::type >
 {
     typedef typename make_storage_type< Size, Signed >::aligned aligned_storage_type;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = Size;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 
 } // namespace detail

@@ -28,18 +28,32 @@ namespace asio {
 
 #if defined(BOOST_ASIO_HAS_CSTDINT)
 using std::int16_t;
+using std::int_least16_t;
 using std::uint16_t;
+using std::uint_least16_t;
 using std::int32_t;
+using std::int_least32_t;
 using std::uint32_t;
+using std::uint_least32_t;
 using std::int64_t;
+using std::int_least64_t;
 using std::uint64_t;
+using std::uint_least64_t;
+using std::uintmax_t;
 #else // defined(BOOST_ASIO_HAS_CSTDINT)
 using lslboost::int16_t;
+using lslboost::int_least16_t;
 using lslboost::uint16_t;
+using lslboost::uint_least16_t;
 using lslboost::int32_t;
+using lslboost::int_least32_t;
 using lslboost::uint32_t;
+using lslboost::uint_least32_t;
 using lslboost::int64_t;
+using lslboost::int_least64_t;
 using lslboost::uint64_t;
+using lslboost::uint_least64_t;
+using lslboost::uintmax_t;
 #endif // defined(BOOST_ASIO_HAS_CSTDINT)
 
 } // namespace asio

@@ -77,10 +77,12 @@ BOOST_ARCHIVE_SIGNATURE(){
 // 13- simplified visibility, removed Borland, removed pfto
 // 14- improved visibility, refactor map/set
 // 15- corrections to optional and collection loading
+// 16- eliminated dependency on <codecvt> which is buggy in some libraries
+//     and now officially deprecated in the standard
 
 BOOST_SYMBOL_VISIBLE library_version_type
 BOOST_ARCHIVE_VERSION(){
-    return library_version_type(15);
+    return library_version_type(16);
 }
 
 } // namespace archive

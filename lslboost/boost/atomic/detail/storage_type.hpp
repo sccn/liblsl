@@ -224,7 +224,9 @@ struct make_storage_type< 16u, true >
 
 struct BOOST_ATOMIC_DETAIL_MAY_ALIAS storage128_t
 {
-    lslboost::uint64_t data[2];
+    typedef lslboost::uint64_t BOOST_ATOMIC_DETAIL_MAY_ALIAS element_type;
+
+    element_type data[2];
 
     BOOST_FORCEINLINE bool operator! () const BOOST_NOEXCEPT
     {

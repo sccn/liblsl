@@ -73,11 +73,7 @@ namespace container {
 
 #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 
-//#define BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-
 namespace container_detail {
-
-#ifndef BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
 
 template <class Pointer, bool IsConst>
 class vec_iterator
@@ -260,45 +256,6 @@ BOOST_CONTAINER_FORCEINLINE Pointer &get_ptr(container_detail::vec_iterator<Poin
 
 namespace container_detail {
 
-#else //ifndef BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-
-template< class MaybeConstPointer
-        , bool ElementTypeIsConst
-            = is_const< typename lslboost::intrusive::pointer_traits<MaybeConstPointer>::element_type>::value >
-struct vector_get_ptr_pointer_to_non_const
-{
-   typedef MaybeConstPointer                                         const_pointer;
-   typedef lslboost::intrusive::pointer_traits<const_pointer>           pointer_traits_t;
-   typedef typename pointer_traits_t::element_type                   element_type;
-   typedef typename remove_const<element_type>::type                 non_const_element_type;
-   typedef typename pointer_traits_t
-      ::template rebind_pointer<non_const_element_type>::type        return_type;
-
-   BOOST_CONTAINER_FORCEINLINE static return_type get_ptr(const const_pointer &ptr) BOOST_NOEXCEPT_OR_NOTHROW
-   {  return lslboost::intrusive::pointer_traits<return_type>::const_cast_from(ptr);  }
-};
-
-template<class Pointer>
-struct vector_get_ptr_pointer_to_non_const<Pointer, false>
-{
-   typedef const Pointer & return_type;
-   BOOST_CONTAINER_FORCEINLINE static return_type get_ptr(const Pointer &ptr) BOOST_NOEXCEPT_OR_NOTHROW
-   {  return ptr;  }
-};
-
-}  //namespace container_detail {
-
-template<class MaybeConstPointer>
-BOOST_CONTAINER_FORCEINLINE typename container_detail::vector_get_ptr_pointer_to_non_const<MaybeConstPointer>::return_type
-   vector_iterator_get_ptr(const MaybeConstPointer &ptr) BOOST_NOEXCEPT_OR_NOTHROW
-{
-   return container_detail::vector_get_ptr_pointer_to_non_const<MaybeConstPointer>::get_ptr(ptr);
-}
-
-namespace container_detail {
-
-#endif   //#ifndef BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-
 struct uninitialized_size_t {};
 static const uninitialized_size_t uninitialized_size = uninitialized_size_t();
 
@@ -422,7 +379,7 @@ struct vector_alloc_holder
       allocator_type &x_alloc = holder.alloc();
       if(this->is_propagable_from(x_alloc, holder.start(), this_alloc, true)){
          if(this->m_capacity){
-            this->alloc().deallocate(this->m_start, this->m_capacity);
+            allocator_traits_type::deallocate(this->alloc(), this->m_start, this->m_capacity);
          }
          m_start = holder.m_start;
          m_capacity = holder.m_capacity;
@@ -458,7 +415,7 @@ struct vector_alloc_holder
    BOOST_CONTAINER_FORCEINLINE ~vector_alloc_holder() BOOST_NOEXCEPT_OR_NOTHROW
    {
       if(this->m_capacity){
-         this->alloc().deallocate(this->m_start, this->m_capacity);
+         allocator_traits_type::deallocate(this->alloc(), this->m_start, this->m_capacity);
       }
    }
 
@@ -751,13 +708,8 @@ class vector
    typedef typename ::lslboost::container::allocator_traits<Allocator>::difference_type   difference_type;
    typedef Allocator                                                                   allocator_type;
    typedef Allocator                                                                   stored_allocator_type;
-   #if defined BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-   typedef BOOST_CONTAINER_IMPDEF(pointer)                                             iterator;
-   typedef BOOST_CONTAINER_IMPDEF(const_pointer)                                       const_iterator;
-   #else
    typedef BOOST_CONTAINER_IMPDEF(iterator_impl)                                       iterator;
    typedef BOOST_CONTAINER_IMPDEF(const_iterator_impl)                                 const_iterator;
-   #endif
    typedef BOOST_CONTAINER_IMPDEF(lslboost::container::reverse_iterator<iterator>)        reverse_iterator;
    typedef BOOST_CONTAINER_IMPDEF(lslboost::container::reverse_iterator<const_iterator>)  const_reverse_iterator;
 
@@ -1242,7 +1194,7 @@ class vector
             pointer const old_p = this->m_holder.start();
             if(old_p){
                this->priv_destroy_all();
-               this->m_holder.alloc().deallocate(old_p, old_capacity);
+               allocator_traits_type::deallocate(this->m_holder.alloc(), old_p, old_capacity);
             }
             this->m_holder.start(ret);
             this->m_holder.capacity(real_cap);
@@ -2235,14 +2187,9 @@ class vector
       if(BOOST_LIKELY(s)){
          size_type const c = this->capacity();
          size_type const free_c = (c - s);
-         //Use a new buffer if current one is too small for new elements,
-         //or there is no room for position indexes
+         //Use a new buffer if current one is too small for new elements
          if(free_c < n){
-            size_type const new_size = s + n;
-            size_type new_cap = new_size;
-            pointer p = pointer();
-            p = this->m_holder.allocation_command(allocate_new, new_size, new_cap, p);
-            this->priv_merge_in_new_buffer(UniqueBool(), first, n, comp, p, new_cap);
+            this->priv_merge_in_new_buffer(UniqueBool(), first, n, comp, alloc_version());
          }
          else{
             T *raw_pos = lslboost::movelib::iterator_to_raw_pointer(this->insert(this->cend(), first, last));
@@ -2262,9 +2209,19 @@ class vector
    }
 
    template<class UniqueBool, class FwdIt, class Compare>
-   void priv_merge_in_new_buffer
-      (UniqueBool, FwdIt first, size_type n, Compare comp, pointer new_storage, size_type const new_cap)
+   void priv_merge_in_new_buffer(UniqueBool, FwdIt, size_type, Compare, version_0)
    {
+      throw_bad_alloc();
+   }
+
+   template<class UniqueBool, class FwdIt, class Compare, class Version>
+   void priv_merge_in_new_buffer(UniqueBool, FwdIt first, size_type n, Compare comp, Version)
+   {
+      size_type const new_size = this->size() + n;
+      size_type new_cap = new_size;
+      pointer p = pointer();
+      pointer const new_storage = this->m_holder.allocation_command(allocate_new, new_size, new_cap, p);
+
       BOOST_ASSERT((new_cap >= this->size() ) && (new_cap - this->size()) >= n);
       allocator_type &a = this->m_holder.alloc();
       typename value_traits::ArrayDeallocator new_buffer_deallocator(new_storage, a, new_cap);
@@ -2286,7 +2243,7 @@ class vector
          }
          //maintain stability moving external values only if they are strictly less
          else if(comp(*first, *pbeg)) {
-            allocator_traits_type::construct( this->m_holder.alloc(), d_first, ::lslboost::move(*first) );
+            allocator_traits_type::construct( this->m_holder.alloc(), d_first, *first );
             new_values_destroyer.increment_size(1u);
             ++first;
             --n;
@@ -2298,7 +2255,7 @@ class vector
             --added;
          }
          else{
-            allocator_traits_type::construct( this->m_holder.alloc(), d_first, ::lslboost::move(*pbeg) );
+            allocator_traits_type::construct( this->m_holder.alloc(), d_first, lslboost::move(*pbeg) );
             new_values_destroyer.increment_size(1u);
             ++pbeg;
             ++d_first;
@@ -2309,7 +2266,7 @@ class vector
       pointer const old_p     = this->m_holder.start();
       size_type const old_cap = this->m_holder.capacity();
       lslboost::container::destroy_alloc_n(a, lslboost::movelib::to_raw_pointer(old_p), old_size);
-      a.deallocate(old_p, old_cap);
+      allocator_traits_type::deallocate(a, old_p, old_cap);
       this->m_holder.m_size = old_size + added;
       this->m_holder.start(new_storage);
       this->m_holder.capacity(new_cap);
@@ -2374,7 +2331,7 @@ class vector
       }
       else if(is_propagable_from_x){
          this->clear();
-         this->m_holder.alloc().deallocate(this->m_holder.m_start, this->m_holder.m_capacity);
+         allocator_traits_type::deallocate(this->m_holder.alloc(), this->m_holder.m_start, this->m_holder.m_capacity);
          this->m_holder.steal_resources(x.m_holder);
       }
       //Else do a one by one move
@@ -2612,7 +2569,7 @@ class vector
       if(cp){
          const size_type sz = this->size();
          if(!sz){
-            this->m_holder.alloc().deallocate(this->m_holder.m_start, cp);
+            allocator_traits_type::deallocate(this->m_holder.alloc(), this->m_holder.m_start, cp);
             this->m_holder.m_start     = pointer();
             this->m_holder.m_capacity  = 0;
          }
@@ -2638,7 +2595,7 @@ class vector
       if(cp){
          const size_type sz = this->size();
          if(!sz){
-            this->m_holder.alloc().deallocate(this->m_holder.m_start, cp);
+            allocator_traits_type::deallocate(this->m_holder.alloc(), this->m_holder.m_start, cp);
             this->m_holder.m_start     = pointer();
             this->m_holder.m_capacity  = 0;
          }
@@ -2952,7 +2909,7 @@ class vector
          //If there is allocated memory, destroy and deallocate
          if(!value_traits::trivial_dctr_after_move)
             lslboost::container::destroy_alloc_n(this->get_stored_allocator(), old_buffer, this->m_holder.m_size);
-         this->m_holder.alloc().deallocate(this->m_holder.start(), this->m_holder.capacity());
+         allocator_traits_type::deallocate(this->m_holder.alloc(), this->m_holder.start(), this->m_holder.capacity());
       }
       this->m_holder.start(new_start);
       this->m_holder.m_size = new_finish - new_start;

@@ -12,7 +12,6 @@ set(lslboost_sources
 	libs/serialization/src/basic_serializer_map.cpp
 	libs/serialization/src/extended_type_info.cpp
 	libs/serialization/src/extended_type_info_typeid.cpp
-	libs/serialization/src/singleton.cpp
 	libs/serialization/src/void_cast.cpp
 	libs/system/src/error_code.cpp
 )

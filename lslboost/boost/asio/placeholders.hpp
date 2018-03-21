@@ -41,8 +41,18 @@ unspecified bytes_transferred;
 
 /// An argument placeholder, for use with lslboost::bind(), that corresponds to
 /// the iterator argument of a handler for asynchronous functions such as
-/// lslboost::asio::basic_resolver::async_resolve.
+/// lslboost::asio::async_connect.
 unspecified iterator;
+
+/// An argument placeholder, for use with lslboost::bind(), that corresponds to
+/// the results argument of a handler for asynchronous functions such as
+/// lslboost::asio::basic_resolver::async_resolve.
+unspecified results;
+
+/// An argument placeholder, for use with lslboost::bind(), that corresponds to
+/// the results argument of a handler for asynchronous functions such as
+/// lslboost::asio::async_connect.
+unspecified endpoint;
 
 /// An argument placeholder, for use with lslboost::bind(), that corresponds to
 /// the signal_number argument of a handler for asynchronous functions such as
@@ -63,6 +73,16 @@ inline lslboost::arg<2> bytes_transferred()
 }
 
 inline lslboost::arg<2> iterator()
+{
+  return lslboost::arg<2>();
+}
+
+inline lslboost::arg<2> results()
+{
+  return lslboost::arg<2>();
+}
+
+inline lslboost::arg<2> endpoint()
 {
   return lslboost::arg<2>();
 }
@@ -95,6 +115,10 @@ static lslboost::arg<2>& bytes_transferred
   = lslboost::asio::placeholders::detail::placeholder<2>::get();
 static lslboost::arg<2>& iterator
   = lslboost::asio::placeholders::detail::placeholder<2>::get();
+static lslboost::arg<2>& results
+  = lslboost::asio::placeholders::detail::placeholder<2>::get();
+static lslboost::arg<2>& endpoint
+  = lslboost::asio::placeholders::detail::placeholder<2>::get();
 static lslboost::arg<2>& signal_number
   = lslboost::asio::placeholders::detail::placeholder<2>::get();
 
@@ -107,6 +131,10 @@ namespace
   lslboost::arg<2>& bytes_transferred
     = lslboost::asio::placeholders::detail::placeholder<2>::get();
   lslboost::arg<2>& iterator
+    = lslboost::asio::placeholders::detail::placeholder<2>::get();
+  lslboost::arg<2>& results
+    = lslboost::asio::placeholders::detail::placeholder<2>::get();
+  lslboost::arg<2>& endpoint
     = lslboost::asio::placeholders::detail::placeholder<2>::get();
   lslboost::arg<2>& signal_number
     = lslboost::asio::placeholders::detail::placeholder<2>::get();

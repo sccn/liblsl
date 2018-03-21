@@ -32,7 +32,7 @@ namespace ip {
  * @par Examples
  * Setting the option:
  * @code
- * lslboost::asio::ip::tcp::socket socket(io_service); 
+ * lslboost::asio::ip::tcp::socket socket(io_context); 
  * ...
  * lslboost::asio::ip::v6_only option(true);
  * socket.set_option(option);
@@ -41,7 +41,7 @@ namespace ip {
  * @par
  * Getting the current option value:
  * @code
- * lslboost::asio::ip::tcp::socket socket(io_service); 
+ * lslboost::asio::ip::tcp::socket socket(io_context); 
  * ...
  * lslboost::asio::ip::v6_only option;
  * socket.get_option(option);

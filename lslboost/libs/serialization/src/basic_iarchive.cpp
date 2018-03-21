@@ -459,6 +459,12 @@ basic_iarchive_impl::load_pointer(
     cobject_id & co = cobject_id_vector[i];
     bpis_ptr = co.bpis_ptr;
 
+    if (bpis_ptr == NULL) {
+        lslboost::serialization::throw_exception(
+            archive_exception(archive_exception::unregistered_class)
+        );
+    }
+
     load_preamble(ar, co);
 
     // extra line to evade borland issue

@@ -61,6 +61,7 @@
 #endif
 
 #if ((defined(macintosh) || defined(__APPLE__) || defined(__APPLE_CC__)) && (defined(__GNUC__) && (__GNUC__ * 100 + __GNUC_MINOR__) < 403)) ||\
+    (defined(BOOST_GCC) && (BOOST_GCC+0) >= 70000) /* gcc 7 emits assembler warnings when zero displacement is implied */ ||\
     defined(__SUNPRO_CC)
 // This macro indicates we're using older binutils that don't support implied zero displacements for memory opereands,
 // making code like this invalid:
@@ -85,18 +86,27 @@
 // and does not require an explicit markup for types that may alias, we still don't
 // enable the optimization for this compiler because at least MSVC-8 and 9 are known
 // to generate broken code sometimes when casts are used.
-#if defined(__GNUC__) && (!defined(BOOST_INTEL_CXX_VERSION) || (BOOST_INTEL_CXX_VERSION+0) >= 1300)
-#define BOOST_ATOMIC_DETAIL_MAY_ALIAS __attribute__((__may_alias__))
+#define BOOST_ATOMIC_DETAIL_MAY_ALIAS BOOST_MAY_ALIAS
+#if !defined(BOOST_NO_MAY_ALIAS)
 #define BOOST_ATOMIC_DETAIL_STORAGE_TYPE_MAY_ALIAS
-#elif defined(__has_attribute)
-#if __has_attribute(__may_alias__)
-#define BOOST_ATOMIC_DETAIL_MAY_ALIAS __attribute__((__may_alias__))
-#define BOOST_ATOMIC_DETAIL_STORAGE_TYPE_MAY_ALIAS
-#endif
 #endif
 
-#if !defined(BOOST_ATOMIC_DETAIL_MAY_ALIAS)
-#define BOOST_ATOMIC_DETAIL_MAY_ALIAS
+#if defined(__GCC_ASM_FLAG_OUTPUTS__)
+// The compiler supports output values in flag registers.
+// See: https://gcc.gnu.org/onlinedocs/gcc/Extended-Asm.html, Section 6.44.3.
+#define BOOST_ATOMIC_DETAIL_ASM_HAS_FLAG_OUTPUTS
+#endif
+
+#if defined(__has_builtin)
+#if __has_builtin(__builtin_constant_p)
+#define BOOST_ATOMIC_DETAIL_IS_CONSTANT(x) __builtin_constant_p(x)
+#endif
+#elif defined(__GNUC__)
+#define BOOST_ATOMIC_DETAIL_IS_CONSTANT(x) __builtin_constant_p(x)
+#endif
+
+#if !defined(BOOST_ATOMIC_DETAIL_IS_CONSTANT)
+#define BOOST_ATOMIC_DETAIL_IS_CONSTANT(x) false
 #endif
 
 #endif // BOOST_ATOMIC_DETAIL_CONFIG_HPP_INCLUDED_

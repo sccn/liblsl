@@ -98,17 +98,15 @@ extended_type_info_typeid_0::type_unregister()
         BOOST_ASSERT(! singleton<tkmap>::is_destroyed());
         if(! singleton<tkmap>::is_destroyed()){
             tkmap & x = singleton<tkmap>::get_mutable_instance();
-            tkmap::iterator start = x.lower_bound(this);
-            tkmap::iterator end = x.upper_bound(this);
-            BOOST_ASSERT(start != end);
 
-            // remove entry in map which corresponds to this type
-            do{
-            if(this == *start)
-                x.erase(start++);
-            else
-                ++start;
-            }while(start != end);
+            // remove all entries in map which corresponds to this type
+            // make sure that we don't use any invalidated iterators
+            for(;;){
+                const tkmap::iterator & it = x.find(this);
+                if(it == x.end())
+                    break;
+                x.erase(it);
+            };
         }
     }
     m_ti = NULL;

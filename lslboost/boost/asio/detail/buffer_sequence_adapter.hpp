@@ -28,11 +28,12 @@ namespace detail {
 
 class buffer_sequence_adapter_base
 {
-protected:
 #if defined(BOOST_ASIO_WINDOWS_RUNTIME)
+public:
   // The maximum number of buffers to support in a single operation.
   enum { max_buffers = 1 };
 
+protected:
   typedef Windows::Storage::Streams::IBuffer^ native_buffer_type;
 
   BOOST_ASIO_DECL static void init_native_buffer(
@@ -43,28 +44,32 @@ protected:
       native_buffer_type& buf,
       const lslboost::asio::const_buffer& buffer);
 #elif defined(BOOST_ASIO_WINDOWS) || defined(__CYGWIN__)
+public:
   // The maximum number of buffers to support in a single operation.
   enum { max_buffers = 64 < max_iov_len ? 64 : max_iov_len };
 
+protected:
   typedef WSABUF native_buffer_type;
 
   static void init_native_buffer(WSABUF& buf,
       const lslboost::asio::mutable_buffer& buffer)
   {
-    buf.buf = lslboost::asio::buffer_cast<char*>(buffer);
-    buf.len = static_cast<ULONG>(lslboost::asio::buffer_size(buffer));
+    buf.buf = static_cast<char*>(buffer.data());
+    buf.len = static_cast<ULONG>(buffer.size());
   }
 
   static void init_native_buffer(WSABUF& buf,
       const lslboost::asio::const_buffer& buffer)
   {
-    buf.buf = const_cast<char*>(lslboost::asio::buffer_cast<const char*>(buffer));
-    buf.len = static_cast<ULONG>(lslboost::asio::buffer_size(buffer));
+    buf.buf = const_cast<char*>(static_cast<const char*>(buffer.data()));
+    buf.len = static_cast<ULONG>(buffer.size());
   }
 #else // defined(BOOST_ASIO_WINDOWS) || defined(__CYGWIN__)
+public:
   // The maximum number of buffers to support in a single operation.
   enum { max_buffers = 64 < max_iov_len ? 64 : max_iov_len };
 
+protected:
   typedef iovec native_buffer_type;
 
   static void init_iov_base(void*& base, void* addr)
@@ -81,16 +86,15 @@ protected:
   static void init_native_buffer(iovec& iov,
       const lslboost::asio::mutable_buffer& buffer)
   {
-    init_iov_base(iov.iov_base, lslboost::asio::buffer_cast<void*>(buffer));
-    iov.iov_len = lslboost::asio::buffer_size(buffer);
+    init_iov_base(iov.iov_base, buffer.data());
+    iov.iov_len = buffer.size();
   }
 
   static void init_native_buffer(iovec& iov,
       const lslboost::asio::const_buffer& buffer)
   {
-    init_iov_base(iov.iov_base, const_cast<void*>(
-          lslboost::asio::buffer_cast<const void*>(buffer)));
-    iov.iov_len = lslboost::asio::buffer_size(buffer);
+    init_iov_base(iov.iov_base, const_cast<void*>(buffer.data()));
+    iov.iov_len = buffer.size();
   }
 #endif // defined(BOOST_ASIO_WINDOWS) || defined(__CYGWIN__)
 };
@@ -104,14 +108,9 @@ public:
   explicit buffer_sequence_adapter(const Buffers& buffer_sequence)
     : count_(0), total_buffer_size_(0)
   {
-    typename Buffers::const_iterator iter = buffer_sequence.begin();
-    typename Buffers::const_iterator end = buffer_sequence.end();
-    for (; iter != end && count_ < max_buffers; ++iter, ++count_)
-    {
-      Buffer buffer(*iter);
-      init_native_buffer(buffers_[count_], buffer);
-      total_buffer_size_ += lslboost::asio::buffer_size(buffer);
-    }
+    buffer_sequence_adapter::init(
+        lslboost::asio::buffer_sequence_begin(buffer_sequence),
+        lslboost::asio::buffer_sequence_end(buffer_sequence));
   }
 
   native_buffer_type* buffers()
@@ -124,6 +123,11 @@ public:
     return count_;
   }
 
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
   bool all_empty() const
   {
     return total_buffer_size_ == 0;
@@ -131,55 +135,88 @@ public:
 
   static bool all_empty(const Buffers& buffer_sequence)
   {
-    typename Buffers::const_iterator iter = buffer_sequence.begin();
-    typename Buffers::const_iterator end = buffer_sequence.end();
-    std::size_t i = 0;
-    for (; iter != end && i < max_buffers; ++iter, ++i)
-      if (lslboost::asio::buffer_size(Buffer(*iter)) > 0)
-        return false;
-    return true;
+    return buffer_sequence_adapter::all_empty(
+        lslboost::asio::buffer_sequence_begin(buffer_sequence),
+        lslboost::asio::buffer_sequence_end(buffer_sequence));
   }
 
   static void validate(const Buffers& buffer_sequence)
   {
-    typename Buffers::const_iterator iter = buffer_sequence.begin();
-    typename Buffers::const_iterator end = buffer_sequence.end();
-    for (; iter != end; ++iter)
-    {
-      Buffer buffer(*iter);
-      lslboost::asio::buffer_cast<const void*>(buffer);
-    }
+    buffer_sequence_adapter::validate(
+        lslboost::asio::buffer_sequence_begin(buffer_sequence),
+        lslboost::asio::buffer_sequence_end(buffer_sequence));
   }
 
   static Buffer first(const Buffers& buffer_sequence)
   {
-    typename Buffers::const_iterator iter = buffer_sequence.begin();
-    typename Buffers::const_iterator end = buffer_sequence.end();
+    return buffer_sequence_adapter::first(
+        lslboost::asio::buffer_sequence_begin(buffer_sequence),
+        lslboost::asio::buffer_sequence_end(buffer_sequence));
+  }
+
+private:
+  template <typename Iterator>
+  void init(Iterator begin, Iterator end)
+  {
+    Iterator iter = begin;
+    for (; iter != end && count_ < max_buffers; ++iter, ++count_)
+    {
+      Buffer buffer(*iter);
+      init_native_buffer(buffers_[count_], buffer);
+      total_buffer_size_ += buffer.size();
+    }
+  }
+
+  template <typename Iterator>
+  static bool all_empty(Iterator begin, Iterator end)
+  {
+    Iterator iter = begin;
+    std::size_t i = 0;
+    for (; iter != end && i < max_buffers; ++iter, ++i)
+      if (Buffer(*iter).size() > 0)
+        return false;
+    return true;
+  }
+
+  template <typename Iterator>
+  static void validate(Iterator begin, Iterator end)
+  {
+    Iterator iter = begin;
     for (; iter != end; ++iter)
     {
       Buffer buffer(*iter);
-      if (lslboost::asio::buffer_size(buffer) != 0)
+      buffer.data();
+    }
+  }
+
+  template <typename Iterator>
+  static Buffer first(Iterator begin, Iterator end)
+  {
+    Iterator iter = begin;
+    for (; iter != end; ++iter)
+    {
+      Buffer buffer(*iter);
+      if (buffer.size() != 0)
         return buffer;
     }
     return Buffer();
   }
 
-private:
   native_buffer_type buffers_[max_buffers];
   std::size_t count_;
   std::size_t total_buffer_size_;
 };
 
 template <typename Buffer>
-class buffer_sequence_adapter<Buffer, lslboost::asio::mutable_buffers_1>
+class buffer_sequence_adapter<Buffer, lslboost::asio::mutable_buffer>
   : buffer_sequence_adapter_base
 {
 public:
   explicit buffer_sequence_adapter(
-      const lslboost::asio::mutable_buffers_1& buffer_sequence)
+      const lslboost::asio::mutable_buffer& buffer_sequence)
   {
     init_native_buffer(buffer_, Buffer(buffer_sequence));
-    total_buffer_size_ = lslboost::asio::buffer_size(buffer_sequence);
+    total_buffer_size_ = buffer_sequence.size();
   }
 
   native_buffer_type* buffers()
@@ -192,6 +229,117 @@ public:
     return 1;
   }
 
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
+  bool all_empty() const
+  {
+    return total_buffer_size_ == 0;
+  }
+
+  static bool all_empty(const lslboost::asio::mutable_buffer& buffer_sequence)
+  {
+    return buffer_sequence.size() == 0;
+  }
+
+  static void validate(const lslboost::asio::mutable_buffer& buffer_sequence)
+  {
+    buffer_sequence.data();
+  }
+
+  static Buffer first(const lslboost::asio::mutable_buffer& buffer_sequence)
+  {
+    return Buffer(buffer_sequence);
+  }
+
+private:
+  native_buffer_type buffer_;
+  std::size_t total_buffer_size_;
+};
+
+template <typename Buffer>
+class buffer_sequence_adapter<Buffer, lslboost::asio::const_buffer>
+  : buffer_sequence_adapter_base
+{
+public:
+  explicit buffer_sequence_adapter(
+      const lslboost::asio::const_buffer& buffer_sequence)
+  {
+    init_native_buffer(buffer_, Buffer(buffer_sequence));
+    total_buffer_size_ = buffer_sequence.size();
+  }
+
+  native_buffer_type* buffers()
+  {
+    return &buffer_;
+  }
+
+  std::size_t count() const
+  {
+    return 1;
+  }
+
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
+  bool all_empty() const
+  {
+    return total_buffer_size_ == 0;
+  }
+
+  static bool all_empty(const lslboost::asio::const_buffer& buffer_sequence)
+  {
+    return buffer_sequence.size() == 0;
+  }
+
+  static void validate(const lslboost::asio::const_buffer& buffer_sequence)
+  {
+    buffer_sequence.data();
+  }
+
+  static Buffer first(const lslboost::asio::const_buffer& buffer_sequence)
+  {
+    return Buffer(buffer_sequence);
+  }
+
+private:
+  native_buffer_type buffer_;
+  std::size_t total_buffer_size_;
+};
+
+#if !defined(BOOST_ASIO_NO_DEPRECATED)
+
+template <typename Buffer>
+class buffer_sequence_adapter<Buffer, lslboost::asio::mutable_buffers_1>
+  : buffer_sequence_adapter_base
+{
+public:
+  explicit buffer_sequence_adapter(
+      const lslboost::asio::mutable_buffers_1& buffer_sequence)
+  {
+    init_native_buffer(buffer_, Buffer(buffer_sequence));
+    total_buffer_size_ = buffer_sequence.size();
+  }
+
+  native_buffer_type* buffers()
+  {
+    return &buffer_;
+  }
+
+  std::size_t count() const
+  {
+    return 1;
+  }
+
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
   bool all_empty() const
   {
     return total_buffer_size_ == 0;
@@ -199,12 +347,12 @@ public:
 
   static bool all_empty(const lslboost::asio::mutable_buffers_1& buffer_sequence)
   {
-    return lslboost::asio::buffer_size(buffer_sequence) == 0;
+    return buffer_sequence.size() == 0;
   }
 
   static void validate(const lslboost::asio::mutable_buffers_1& buffer_sequence)
   {
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence);
+    buffer_sequence.data();
   }
 
   static Buffer first(const lslboost::asio::mutable_buffers_1& buffer_sequence)
@@ -226,7 +374,7 @@ public:
       const lslboost::asio::const_buffers_1& buffer_sequence)
   {
     init_native_buffer(buffer_, Buffer(buffer_sequence));
-    total_buffer_size_ = lslboost::asio::buffer_size(buffer_sequence);
+    total_buffer_size_ = buffer_sequence.size();
   }
 
   native_buffer_type* buffers()
@@ -239,6 +387,11 @@ public:
     return 1;
   }
 
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
   bool all_empty() const
   {
     return total_buffer_size_ == 0;
@@ -246,12 +399,12 @@ public:
 
   static bool all_empty(const lslboost::asio::const_buffers_1& buffer_sequence)
   {
-    return lslboost::asio::buffer_size(buffer_sequence) == 0;
+    return buffer_sequence.size() == 0;
   }
 
   static void validate(const lslboost::asio::const_buffers_1& buffer_sequence)
   {
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence);
+    buffer_sequence.data();
   }
 
   static Buffer first(const lslboost::asio::const_buffers_1& buffer_sequence)
@@ -264,6 +417,8 @@ private:
   std::size_t total_buffer_size_;
 };
 
+#endif // !defined(BOOST_ASIO_NO_DEPRECATED)
+
 template <typename Buffer, typename Elem>
 class buffer_sequence_adapter<Buffer, lslboost::array<Elem, 2> >
   : buffer_sequence_adapter_base
@@ -274,8 +429,7 @@ public:
   {
     init_native_buffer(buffers_[0], Buffer(buffer_sequence[0]));
     init_native_buffer(buffers_[1], Buffer(buffer_sequence[1]));
-    total_buffer_size_ = lslboost::asio::buffer_size(buffer_sequence[0])
-      + lslboost::asio::buffer_size(buffer_sequence[1]);
+    total_buffer_size_ = buffer_sequence[0].size() + buffer_sequence[1].size();
   }
 
   native_buffer_type* buffers()
@@ -288,6 +442,11 @@ public:
     return 2;
   }
 
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
   bool all_empty() const
   {
     return total_buffer_size_ == 0;
@@ -295,19 +454,18 @@ public:
 
   static bool all_empty(const lslboost::array<Elem, 2>& buffer_sequence)
   {
-    return lslboost::asio::buffer_size(buffer_sequence[0]) == 0
-      && lslboost::asio::buffer_size(buffer_sequence[1]) == 0;
+    return buffer_sequence[0].size() == 0 && buffer_sequence[1].size() == 0;
   }
 
   static void validate(const lslboost::array<Elem, 2>& buffer_sequence)
   {
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence[0]);
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence[1]);
+    buffer_sequence[0].data();
+    buffer_sequence[1].data();
   }
 
   static Buffer first(const lslboost::array<Elem, 2>& buffer_sequence)
   {
-    return Buffer(lslboost::asio::buffer_size(buffer_sequence[0]) != 0
+    return Buffer(buffer_sequence[0].size() != 0
         ? buffer_sequence[0] : buffer_sequence[1]);
   }
 
@@ -328,8 +486,7 @@ public:
   {
     init_native_buffer(buffers_[0], Buffer(buffer_sequence[0]));
     init_native_buffer(buffers_[1], Buffer(buffer_sequence[1]));
-    total_buffer_size_ = lslboost::asio::buffer_size(buffer_sequence[0])
-      + lslboost::asio::buffer_size(buffer_sequence[1]);
+    total_buffer_size_ = buffer_sequence[0].size() + buffer_sequence[1].size();
   }
 
   native_buffer_type* buffers()
@@ -342,6 +499,11 @@ public:
     return 2;
   }
 
+  std::size_t total_size() const
+  {
+    return total_buffer_size_;
+  }
+
   bool all_empty() const
   {
     return total_buffer_size_ == 0;
@@ -349,19 +511,18 @@ public:
 
   static bool all_empty(const std::array<Elem, 2>& buffer_sequence)
   {
-    return lslboost::asio::buffer_size(buffer_sequence[0]) == 0
-      && lslboost::asio::buffer_size(buffer_sequence[1]) == 0;
+    return buffer_sequence[0].size() == 0 && buffer_sequence[1].size() == 0;
   }
 
   static void validate(const std::array<Elem, 2>& buffer_sequence)
   {
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence[0]);
-    lslboost::asio::buffer_cast<const void*>(buffer_sequence[1]);
+    buffer_sequence[0].data();
+    buffer_sequence[1].data();
   }
 
   static Buffer first(const std::array<Elem, 2>& buffer_sequence)
   {
-    return Buffer(lslboost::asio::buffer_size(buffer_sequence[0]) != 0
+    return Buffer(buffer_sequence[0].size() != 0
         ? buffer_sequence[0] : buffer_sequence[1]);
   }
 

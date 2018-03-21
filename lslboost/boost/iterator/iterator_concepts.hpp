@@ -9,9 +9,6 @@
 #include <boost/concept_check.hpp>
 #include <boost/iterator/iterator_categories.hpp>
 
-// Use lslboost::detail::iterator_traits to work around some MSVC/Dinkumware problems.
-#include <boost/detail/iterator.hpp>
-
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_integral.hpp>
 
@@ -27,6 +24,7 @@
 #include <boost/config.hpp>
 
 #include <algorithm>
+#include <iterator>
 
 #include <boost/concept/detail/concept_def.hpp>
 
@@ -44,8 +42,8 @@ namespace lslboost_concepts
     , lslboost::CopyConstructible<Iterator>
 
   {
-      typedef BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::value_type value_type;
-      typedef BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::reference reference;
+      typedef BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::value_type value_type;
+      typedef BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::reference reference;
 
       BOOST_CONCEPT_USAGE(ReadableIterator)
       {
@@ -59,7 +57,7 @@ namespace lslboost_concepts
 
   template <
       typename Iterator
-    , typename ValueType = BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::value_type
+    , typename ValueType = BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::value_type
   >
   struct WritableIterator
     : lslboost::CopyConstructible<Iterator>
@@ -75,7 +73,7 @@ namespace lslboost_concepts
 
   template <
       typename Iterator
-    , typename ValueType = BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::value_type
+    , typename ValueType = BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::value_type
   >
   struct WritableIteratorConcept : WritableIterator<Iterator,ValueType> {};
 
@@ -92,7 +90,7 @@ namespace lslboost_concepts
 
   BOOST_concept(LvalueIterator,(Iterator))
   {
-      typedef typename lslboost::detail::iterator_traits<Iterator>::value_type value_type;
+      typedef typename std::iterator_traits<Iterator>::value_type value_type;
 
       BOOST_CONCEPT_USAGE(LvalueIterator)
       {
@@ -144,7 +142,7 @@ namespace lslboost_concepts
     : SinglePassIterator<Iterator>
     , lslboost::DefaultConstructible<Iterator>
   {
-      typedef typename lslboost::detail::iterator_traits<Iterator>::difference_type difference_type;
+      typedef typename std::iterator_traits<Iterator>::difference_type difference_type;
 
       BOOST_MPL_ASSERT((lslboost::is_integral<difference_type>));
       BOOST_MPL_ASSERT_RELATION(std::numeric_limits<difference_type>::is_signed, ==, true);
@@ -221,7 +219,7 @@ namespace lslboost_concepts
         lslboost::random_access_traversal_tag, lslboost::random_access_traversal_tag)
     {
         bool b;
-        typename lslboost::detail::iterator_traits<Iterator2>::difference_type n;
+        typename std::iterator_traits<Iterator2>::difference_type n;
         b = i1 <  i2;
         b = i1 <= i2;
         b = i1 >  i2;

@@ -163,7 +163,7 @@ struct insert_copy_proxy
    void copy_n_and_update(Allocator &, Iterator p, size_type n) const
    {
       BOOST_ASSERT(n == 1);  (void)n;
-      *p =v_;
+      *p = v_;
    }
 
    const value_type &v_;

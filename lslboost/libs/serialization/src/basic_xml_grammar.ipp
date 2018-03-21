@@ -21,6 +21,9 @@
 #  pragma warning(disable : 4244 4511 4512)
 #endif
 
+#include <cerrno>   // errno
+#include <cstring>  // strerror(errno)
+
 // spirit stuff
 #include <boost/spirit/include/classic_operators.hpp>
 #include <boost/spirit/include/classic_actions.hpp>
@@ -31,7 +34,6 @@
 #endif
 
 // for head_iterator test
-//#include <boost/bind.hpp> 
 #include <boost/function.hpp>
 
 #include <boost/io/ios_state.hpp>
@@ -188,8 +190,14 @@ bool basic_xml_grammar<CharType>::my_parse(
     for(;;){
         CharType result;
         is.get(result);
-        if(is.fail())
-            return false;
+        if(is.fail()){
+            lslboost::serialization::throw_exception(
+                lslboost::archive::archive_exception(
+                    archive_exception::input_stream_error,
+                    std::strerror(errno)
+                )
+            );
+        }
         if(is.eof())
             return false;
         arg += result;

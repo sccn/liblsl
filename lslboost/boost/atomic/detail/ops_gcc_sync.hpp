@@ -16,6 +16,7 @@
 #ifndef BOOST_ATOMIC_DETAIL_OPS_GCC_SYNC_HPP_INCLUDED_
 #define BOOST_ATOMIC_DETAIL_OPS_GCC_SYNC_HPP_INCLUDED_
 
+#include <cstddef>
 #include <boost/memory_order.hpp>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/storage_type.hpp>
@@ -164,15 +165,22 @@ struct operations< 1u, Signed > :
 {
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_1)
     typedef typename make_storage_type< 1u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 1u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2)
     typedef typename make_storage_type< 2u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 2u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
     typedef typename make_storage_type< 4u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 4u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
 #else
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
 #endif
+
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 #endif
 
@@ -191,13 +199,19 @@ struct operations< 2u, Signed > :
 {
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_2)
     typedef typename make_storage_type< 2u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 2u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
     typedef typename make_storage_type< 4u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 4u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
 #else
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
 #endif
+
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 #endif
 
@@ -214,11 +228,16 @@ struct operations< 4u, Signed > :
 {
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_4)
     typedef typename make_storage_type< 4u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 4u;
 #elif defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
 #else
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
 #endif
+
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 #endif
 
@@ -233,9 +252,13 @@ struct operations< 8u, Signed > :
 {
 #if defined(__GCC_HAVE_SYNC_COMPARE_AND_SWAP_8)
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
 #else
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
 #endif
+
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 #endif
 
@@ -245,6 +268,9 @@ struct operations< 16u, Signed > :
     public gcc_sync_operations< typename make_storage_type< 16u, Signed >::type >
 {
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 };
 #endif
 

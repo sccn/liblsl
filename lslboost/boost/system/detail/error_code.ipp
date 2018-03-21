@@ -21,9 +21,9 @@
 #include <cstring> // for strerror/strerror_r
 
 # if defined( BOOST_WINDOWS_API )
-#   include <boost/detail/winapi/error_codes.hpp>
-#   include <boost/detail/winapi/error_handling.hpp>
-#   include <boost/detail/winapi/character_code_conversion.hpp>
+#   include <boost/winapi/error_codes.hpp>
+#   include <boost/winapi/error_handling.hpp>
+#   include <boost/winapi/character_code_conversion.hpp>
 #   if !BOOST_PLAT_WINDOWS_RUNTIME
 #     include <boost/system/detail/local_free_on_destruction.hpp>
 #   endif
@@ -154,7 +154,6 @@ namespace
 #   endif
 
       if ( sz > sizeof(buf) ) std::free( bp );
-      sz = 0;
       return msg;
   #  endif   // else POSIX version of strerror_r
   # endif  // else use strerror_r
@@ -187,7 +186,7 @@ namespace
 
 # if defined(BOOST_WINDOWS_API)
 
-    using namespace lslboost::detail::winapi; // for error codes
+    using namespace lslboost::winapi; // for error codes
 
 # endif
 
@@ -383,15 +382,15 @@ namespace
     std::wstring buf(128, wchar_t());
     for (;;)
     {
-        lslboost::detail::winapi::DWORD_ retval = lslboost::detail::winapi::FormatMessageW(
-            lslboost::detail::winapi::FORMAT_MESSAGE_FROM_SYSTEM_ |
-            lslboost::detail::winapi::FORMAT_MESSAGE_IGNORE_INSERTS_,
+        lslboost::winapi::DWORD_ retval = lslboost::winapi::FormatMessageW(
+            lslboost::winapi::FORMAT_MESSAGE_FROM_SYSTEM_ |
+            lslboost::winapi::FORMAT_MESSAGE_IGNORE_INSERTS_,
             NULL,
             ev,
-            lslboost::detail::winapi::MAKELANGID_(lslboost::detail::winapi::LANG_NEUTRAL_,
-            lslboost::detail::winapi::SUBLANG_DEFAULT_), // Default language
+            lslboost::winapi::MAKELANGID_(lslboost::winapi::LANG_NEUTRAL_,
+            lslboost::winapi::SUBLANG_DEFAULT_), // Default language
             &buf[0],
-            buf.size(),
+            static_cast<lslboost::winapi::DWORD_>(buf.size()),
             NULL
         );
         
@@ -400,8 +399,8 @@ namespace
             buf.resize(retval);
             break;
         }
-        else if (lslboost::detail::winapi::GetLastError() !=
-          lslboost::detail::winapi::ERROR_INSUFFICIENT_BUFFER_)
+        else if (lslboost::winapi::GetLastError() !=
+          lslboost::winapi::ERROR_INSUFFICIENT_BUFFER_)
         {
             return std::string("Unknown error");
         }
@@ -412,9 +411,15 @@ namespace
     }
     
     int num_chars = (buf.size() + 1) * 2;
-    lslboost::detail::winapi::LPSTR_ narrow_buffer =
-      (lslboost::detail::winapi::LPSTR_)_alloca(num_chars);
-    if (lslboost::detail::winapi::WideCharToMultiByte(lslboost::detail::winapi::CP_ACP_, 0,
+
+    lslboost::winapi::LPSTR_ narrow_buffer =
+#if defined(__GNUC__)
+      (lslboost::winapi::LPSTR_)__builtin_alloca(num_chars);
+#else
+      (lslboost::winapi::LPSTR_)_alloca(num_chars);
+#endif
+
+    if (lslboost::winapi::WideCharToMultiByte(lslboost::winapi::CP_ACP_, 0,
       buf.c_str(), -1, narrow_buffer, num_chars, NULL, NULL) == 0)
     {
         return std::string("Unknown error");
@@ -422,16 +427,16 @@ namespace
 
     std::string str( narrow_buffer );
 #else
-    lslboost::detail::winapi::LPVOID_ lpMsgBuf = 0;
-    lslboost::detail::winapi::DWORD_ retval = lslboost::detail::winapi::FormatMessageA(
-        lslboost::detail::winapi::FORMAT_MESSAGE_ALLOCATE_BUFFER_ |
-        lslboost::detail::winapi::FORMAT_MESSAGE_FROM_SYSTEM_ |
-        lslboost::detail::winapi::FORMAT_MESSAGE_IGNORE_INSERTS_,
+    lslboost::winapi::LPVOID_ lpMsgBuf = 0;
+    lslboost::winapi::DWORD_ retval = lslboost::winapi::FormatMessageA(
+        lslboost::winapi::FORMAT_MESSAGE_ALLOCATE_BUFFER_ |
+        lslboost::winapi::FORMAT_MESSAGE_FROM_SYSTEM_ |
+        lslboost::winapi::FORMAT_MESSAGE_IGNORE_INSERTS_,
         NULL,
         ev,
-        lslboost::detail::winapi::MAKELANGID_(lslboost::detail::winapi::LANG_NEUTRAL_,
-        lslboost::detail::winapi::SUBLANG_DEFAULT_), // Default language
-        (lslboost::detail::winapi::LPSTR_) &lpMsgBuf,
+        lslboost::winapi::MAKELANGID_(lslboost::winapi::LANG_NEUTRAL_,
+        lslboost::winapi::SUBLANG_DEFAULT_), // Default language
+        (lslboost::winapi::LPSTR_) &lpMsgBuf,
         0,
         NULL
     );
@@ -439,7 +444,7 @@ namespace
     if (retval == 0)
         return std::string("Unknown error");
 
-    std::string str(static_cast<lslboost::detail::winapi::LPCSTR_>(lpMsgBuf));
+    std::string str(static_cast<lslboost::winapi::LPCSTR_>(lpMsgBuf));
 # endif
     while ( str.size()
       && (str[str.size()-1] == '\n' || str[str.size()-1] == '\r') )
@@ -453,7 +458,7 @@ namespace
 } // unnamed namespace
 
 
-# ifndef BOOST_SYSTEM_NO_DEPRECATED
+# ifdef BOOST_SYSTEM_ENABLE_DEPRECATED
     BOOST_SYSTEM_DECL error_code throws; // "throw on error" special error_code;
                                          //  note that it doesn't matter if this
                                          //  isn't initialized before use since

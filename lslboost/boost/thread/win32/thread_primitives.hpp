@@ -17,6 +17,21 @@
 #include <boost/thread/exceptions.hpp>
 #include <boost/detail/interlocked.hpp>
 #include <boost/detail/winapi/config.hpp>
+
+#include <boost/detail/winapi/semaphore.hpp>
+#include <boost/detail/winapi/dll.hpp>
+#include <boost/detail/winapi/system.hpp>
+#include <boost/detail/winapi/time.hpp>
+#include <boost/detail/winapi/event.hpp>
+#include <boost/detail/winapi/thread.hpp>
+#include <boost/detail/winapi/get_current_thread.hpp>
+#include <boost/detail/winapi/get_current_thread_id.hpp>
+#include <boost/detail/winapi/get_current_process.hpp>
+#include <boost/detail/winapi/get_current_process_id.hpp>
+#include <boost/detail/winapi/wait.hpp>
+#include <boost/detail/winapi/handles.hpp>
+#include <boost/detail/winapi/access_rights.hpp>
+
 //#include <boost/detail/winapi/synchronization.hpp>
 #include <boost/thread/win32/interlocked_read.hpp>
 #include <algorithm>
@@ -25,200 +40,29 @@
 #include <thread>
 #endif
 
-#if defined( BOOST_USE_WINDOWS_H )
-# include <windows.h>
-
 namespace lslboost
 {
     namespace detail
     {
         namespace win32
         {
-            typedef HANDLE handle;
-            typedef SYSTEM_INFO system_info;
+            typedef ::lslboost::detail::winapi::HANDLE_ handle;
+            typedef ::lslboost::detail::winapi::SYSTEM_INFO_ system_info;
             typedef unsigned __int64 ticks_type;
-            typedef FARPROC farproc_t;
-            unsigned const infinite=INFINITE;
-            unsigned const timeout=WAIT_TIMEOUT;
-            handle const invalid_handle_value=INVALID_HANDLE_VALUE;
-            unsigned const event_modify_state=EVENT_MODIFY_STATE;
-            unsigned const synchronize=SYNCHRONIZE;
-            unsigned const wait_abandoned=WAIT_ABANDONED;
+            typedef ::lslboost::detail::winapi::FARPROC_ farproc_t;
+            unsigned const infinite=::lslboost::detail::winapi::INFINITE_;
+            unsigned const timeout=::lslboost::detail::winapi::WAIT_TIMEOUT_;
+            handle const invalid_handle_value=::lslboost::detail::winapi::INVALID_HANDLE_VALUE_;
+            unsigned const event_modify_state=::lslboost::detail::winapi::EVENT_MODIFY_STATE_;
+            unsigned const synchronize=::lslboost::detail::winapi::SYNCHRONIZE_;
+            unsigned const wait_abandoned=::lslboost::detail::winapi::WAIT_ABANDONED_;
             unsigned const create_event_initial_set = 0x00000002;
             unsigned const create_event_manual_reset = 0x00000001;
-            unsigned const event_all_access = EVENT_ALL_ACCESS;
-            unsigned const semaphore_all_access = SEMAPHORE_ALL_ACCESS;
-
-
-# ifdef BOOST_NO_ANSI_APIS
-# if BOOST_USE_WINAPI_VERSION < BOOST_WINAPI_VERSION_VISTA
-            using ::CreateMutexW;
-            using ::CreateEventW;
-            using ::CreateSemaphoreW;
-# else
-            using ::CreateMutexExW;
-            using ::CreateEventExW;
-            using ::CreateSemaphoreExW;
-# endif
-            using ::OpenEventW;
-            using ::GetModuleHandleW;
-# else
-            using ::CreateMutexA;
-            using ::CreateEventA;
-            using ::OpenEventA;
-            using ::CreateSemaphoreA;
-            using ::GetModuleHandleA;
-# endif
-#if BOOST_PLAT_WINDOWS_RUNTIME
-            using ::GetNativeSystemInfo;
-            using ::GetTickCount64;
-#else
-            using ::GetSystemInfo;
-            using ::GetTickCount;
-#endif
-            using ::CloseHandle;
-            using ::ReleaseMutex;
-            using ::ReleaseSemaphore;
-            using ::SetEvent;
-            using ::ResetEvent;
-            using ::WaitForMultipleObjectsEx;
-            using ::WaitForSingleObjectEx;
-            using ::GetCurrentProcessId;
-            using ::GetCurrentThreadId;
-            using ::GetCurrentThread;
-            using ::GetCurrentProcess;
-            using ::DuplicateHandle;
-#if !BOOST_PLAT_WINDOWS_RUNTIME
-            using ::SleepEx;
-            using ::Sleep;
-            using ::QueueUserAPC;
-            using ::GetProcAddress;
-#endif
+            unsigned const event_all_access = ::lslboost::detail::winapi::EVENT_ALL_ACCESS_;
+            unsigned const semaphore_all_access = lslboost::detail::winapi::SEMAPHORE_ALL_ACCESS_;
         }
     }
 }
-#elif defined( WIN32 ) || defined( _WIN32 ) || defined( __WIN32__ )
-
-# ifdef UNDER_CE
-#  ifndef WINAPI
-#   ifndef _WIN32_WCE_EMULATION
-#    define WINAPI  __cdecl     // Note this doesn't match the desktop definition
-#   else
-#    define WINAPI  __stdcall
-#   endif
-#  endif
-
-#  ifdef __cplusplus
-extern "C" {
-#  endif
-typedef int BOOL;
-typedef unsigned long DWORD;
-typedef void* HANDLE;
-#  include <kfuncs.h>
-#  ifdef __cplusplus
-}
-#  endif
-# endif
-
-# ifdef __cplusplus
-extern "C" {
-# endif
-struct _SYSTEM_INFO;
-# ifdef __cplusplus
-}
-#endif
-
-namespace lslboost
-{
-    namespace detail
-    {
-        namespace win32
-        {
-# ifdef _WIN64
-            typedef unsigned __int64 ulong_ptr;
-# else
-            typedef unsigned long ulong_ptr;
-# endif
-            typedef void* handle;
-            typedef _SYSTEM_INFO system_info;
-            typedef unsigned __int64 ticks_type;
-            typedef int (__stdcall *farproc_t)();
-            unsigned const infinite=~0U;
-            unsigned const timeout=258U;
-            handle const invalid_handle_value=(handle)(-1);
-            unsigned const event_modify_state=2;
-            unsigned const synchronize=0x100000u;
-            unsigned const wait_abandoned=0x00000080u;
-            unsigned const create_event_initial_set = 0x00000002;
-            unsigned const create_event_manual_reset = 0x00000001;
-            unsigned const event_all_access = 0x1F0003;
-            unsigned const semaphore_all_access = 0x1F0003;
-
-            extern "C"
-            {
-                struct _SECURITY_ATTRIBUTES;
-# ifdef BOOST_NO_ANSI_APIS
-# if BOOST_USE_WINAPI_VERSION < BOOST_WINAPI_VERSION_VISTA
-                __declspec(dllimport) void* __stdcall CreateMutexW(_SECURITY_ATTRIBUTES*,int,wchar_t const*);
-                __declspec(dllimport) void* __stdcall CreateSemaphoreW(_SECURITY_ATTRIBUTES*,long,long,wchar_t const*);
-                __declspec(dllimport) void* __stdcall CreateEventW(_SECURITY_ATTRIBUTES*,int,int,wchar_t const*);
-# else
-                __declspec(dllimport) void* __stdcall CreateMutexExW(_SECURITY_ATTRIBUTES*,wchar_t const*,unsigned long,unsigned long);
-                __declspec(dllimport) void* __stdcall CreateEventExW(_SECURITY_ATTRIBUTES*,wchar_t const*,unsigned long,unsigned long);
-                __declspec(dllimport) void* __stdcall CreateSemaphoreExW(_SECURITY_ATTRIBUTES*,long,long,wchar_t const*,unsigned long,unsigned long);
-# endif
-                __declspec(dllimport) void* __stdcall OpenEventW(unsigned long,int,wchar_t const*);
-                __declspec(dllimport) void* __stdcall GetModuleHandleW(wchar_t const*);
-# else
-                __declspec(dllimport) void* __stdcall CreateMutexA(_SECURITY_ATTRIBUTES*,int,char const*);
-                __declspec(dllimport) void* __stdcall CreateSemaphoreA(_SECURITY_ATTRIBUTES*,long,long,char const*);
-                __declspec(dllimport) void* __stdcall CreateEventA(_SECURITY_ATTRIBUTES*,int,int,char const*);
-                __declspec(dllimport) void* __stdcall OpenEventA(unsigned long,int,char const*);
-                __declspec(dllimport) void* __stdcall GetModuleHandleA(char const*);
-# endif
-#if BOOST_PLAT_WINDOWS_RUNTIME
-                __declspec(dllimport) void __stdcall GetNativeSystemInfo(_SYSTEM_INFO*);
-                __declspec(dllimport) ticks_type __stdcall GetTickCount64();
-#else
-                __declspec(dllimport) void __stdcall GetSystemInfo(_SYSTEM_INFO*);
-                __declspec(dllimport) unsigned long __stdcall GetTickCount();
-#endif
-                __declspec(dllimport) int __stdcall CloseHandle(void*);
-                __declspec(dllimport) int __stdcall ReleaseMutex(void*);
-                __declspec(dllimport) unsigned long __stdcall WaitForSingleObjectEx(void*,unsigned long,int);
-                __declspec(dllimport) unsigned long __stdcall WaitForMultipleObjectsEx(unsigned long nCount,void* const * lpHandles,int bWaitAll,unsigned long dwMilliseconds,int bAlertable);
-                __declspec(dllimport) int __stdcall ReleaseSemaphore(void*,long,long*);
-                __declspec(dllimport) int __stdcall DuplicateHandle(void*,void*,void*,void**,unsigned long,int,unsigned long);
-#if !BOOST_PLAT_WINDOWS_RUNTIME
-                __declspec(dllimport) unsigned long __stdcall SleepEx(unsigned long,int);
-                __declspec(dllimport) void __stdcall Sleep(unsigned long);
-                typedef void (__stdcall *queue_user_apc_callback_function)(ulong_ptr);
-                __declspec(dllimport) unsigned long __stdcall QueueUserAPC(queue_user_apc_callback_function,void*,ulong_ptr);
-                __declspec(dllimport) farproc_t __stdcall GetProcAddress(void *, const char *);
-#endif
-
-# ifndef UNDER_CE
-                __declspec(dllimport) unsigned long __stdcall GetCurrentProcessId();
-                __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId();
-                __declspec(dllimport) void* __stdcall GetCurrentThread();
-                __declspec(dllimport) void* __stdcall GetCurrentProcess();
-                __declspec(dllimport) int __stdcall SetEvent(void*);
-                __declspec(dllimport) int __stdcall ResetEvent(void*);
-# else
-                using ::GetCurrentProcessId;
-                using ::GetCurrentThreadId;
-                using ::GetCurrentThread;
-                using ::GetCurrentProcess;
-                using ::SetEvent;
-                using ::ResetEvent;
-# endif
-            }
-        }
-    }
-}
-#else
-# error "Win32 functions not available"
-#endif
 
 #include <boost/config/abi_prefix.hpp>
 
@@ -250,7 +94,7 @@ namespace lslboost
                 ticks_type current_tick64;
 
                 previous_count = (unsigned long) lslboost::detail::interlocked_read_acquire(&count);
-                current_tick32 = GetTickCount();
+                current_tick32 = ::lslboost::detail::winapi::GetTickCount();
 
                 if(previous_count == (unsigned long)-1l)
                 {
@@ -302,13 +146,13 @@ namespace lslboost
                 // GetTickCount and GetModuleHandle are not allowed in the Windows Runtime,
                 // and kernel32 isn't used in Windows Phone.
 #if BOOST_PLAT_WINDOWS_RUNTIME
-                gettickcount64impl = &GetTickCount64;
+                gettickcount64impl = &::lslboost::detail::winapi::GetTickCount64;
 #else
                 farproc_t addr=GetProcAddress(
 #if !defined(BOOST_NO_ANSI_APIS)
-                    GetModuleHandleA("KERNEL32.DLL"),
+                    ::lslboost::detail::winapi::GetModuleHandleA("KERNEL32.DLL"),
 #else
-                    GetModuleHandleW(L"KERNEL32.DLL"),
+                    ::lslboost::detail::winapi::GetModuleHandleW(L"KERNEL32.DLL"),
 #endif
                     "GetTickCount64");
                 if(addr)
@@ -341,11 +185,11 @@ namespace lslboost
                 initial_event_state state)
             {
 #if !defined(BOOST_NO_ANSI_APIS)
-                handle const res = win32::CreateEventA(0, type, state, mutex_name);
+                handle const res = ::lslboost::detail::winapi::CreateEventA(0, type, state, mutex_name);
 #elif BOOST_USE_WINAPI_VERSION < BOOST_WINAPI_VERSION_VISTA
-                handle const res = win32::CreateEventW(0, type, state, mutex_name);
+                handle const res = ::lslboost::detail::winapi::CreateEventW(0, type, state, mutex_name);
 #else
-                handle const res = win32::CreateEventExW(
+                handle const res = ::lslboost::detail::winapi::CreateEventExW(
                     0,
                     mutex_name,
                     type ? create_event_manual_reset : 0 | state ? create_event_initial_set : 0,
@@ -367,12 +211,12 @@ namespace lslboost
             inline handle create_anonymous_semaphore_nothrow(long initial_count,long max_count)
             {
 #if !defined(BOOST_NO_ANSI_APIS)
-                handle const res=win32::CreateSemaphoreA(0,initial_count,max_count,0);
+                handle const res=::lslboost::detail::winapi::CreateSemaphoreA(0,initial_count,max_count,0);
 #else
 #if BOOST_USE_WINAPI_VERSION < BOOST_WINAPI_VERSION_VISTA
-                handle const res=win32::CreateSemaphoreEx(0,initial_count,max_count,0,0);
+                handle const res=::lslboost::detail::winapi::CreateSemaphoreEx(0,initial_count,max_count,0,0);
 #else
-                handle const res=win32::CreateSemaphoreExW(0,initial_count,max_count,0,0,semaphore_all_access);
+                handle const res=::lslboost::detail::winapi::CreateSemaphoreExW(0,initial_count,max_count,0,0,semaphore_all_access);
 #endif
 #endif
                 return res;
@@ -390,10 +234,10 @@ namespace lslboost
 
             inline handle duplicate_handle(handle source)
             {
-                handle const current_process=GetCurrentProcess();
+                handle const current_process=::lslboost::detail::winapi::GetCurrentProcess();
                 long const same_access_flag=2;
                 handle new_handle=0;
-                bool const success=DuplicateHandle(current_process,source,current_process,&new_handle,0,false,same_access_flag)!=0;
+                bool const success=::lslboost::detail::winapi::DuplicateHandle(current_process,source,current_process,&new_handle,0,false,same_access_flag)!=0;
                 if(!success)
                 {
                     lslboost::throw_exception(thread_resource_error());
@@ -403,15 +247,15 @@ namespace lslboost
 
             inline void release_semaphore(handle semaphore,long count)
             {
-                BOOST_VERIFY(ReleaseSemaphore(semaphore,count,0)!=0);
+                BOOST_VERIFY(::lslboost::detail::winapi::ReleaseSemaphore(semaphore,count,0)!=0);
             }
 
             inline void get_system_info(system_info *info)
             {
 #if BOOST_PLAT_WINDOWS_RUNTIME
-                win32::GetNativeSystemInfo(info);
+                ::lslboost::detail::winapi::GetNativeSystemInfo(info);
 #else
-                win32::GetSystemInfo(info);
+                ::lslboost::detail::winapi::GetSystemInfo(info);
 #endif
             }
 
@@ -422,15 +266,15 @@ namespace lslboost
 #if BOOST_PLAT_WINDOWS_RUNTIME
                     std::this_thread::yield();
 #else
-                    ::lslboost::detail::win32::Sleep(0);
+                    ::lslboost::detail::winapi::Sleep(0);
 #endif
                 }
                 else
                 {
 #if BOOST_PLAT_WINDOWS_RUNTIME
-                    ::lslboost::detail::win32::WaitForSingleObjectEx(::lslboost::detail::win32::GetCurrentThread(), milliseconds, 0);
+                    ::lslboost::detail::winapi::WaitForSingleObjectEx(::lslboost::detail::winapi::GetCurrentThread(), milliseconds, 0);
 #else
-                    ::lslboost::detail::win32::Sleep(milliseconds);
+                    ::lslboost::detail::winapi::Sleep(milliseconds);
 #endif
                 }
             }
@@ -446,7 +290,7 @@ namespace lslboost
                 {
                     if (m_completionHandle != ::lslboost::detail::win32::invalid_handle_value)
                     {
-                        CloseHandle(m_completionHandle);
+                        ::lslboost::detail::winapi::CloseHandle(m_completionHandle);
                     }
                 }
 
@@ -474,7 +318,7 @@ namespace lslboost
                 {
                     if(handle_to_manage && handle_to_manage!=invalid_handle_value)
                     {
-                        BOOST_VERIFY(CloseHandle(handle_to_manage));
+                        BOOST_VERIFY(::lslboost::detail::winapi::CloseHandle(handle_to_manage));
                     }
                 }
 

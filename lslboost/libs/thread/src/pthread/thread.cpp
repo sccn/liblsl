@@ -52,7 +52,7 @@ namespace lslboost
             for (async_states_t::iterator i = async_states_.begin(), e = async_states_.end();
                     i != e; ++i)
             {
-                (*i)->make_ready();
+                (*i)->notify_deferred();
             }
         }
 
@@ -457,7 +457,7 @@ namespace lslboost
                 }
           }
 
-          void BOOST_THREAD_DECL sleep_until(const timespec& ts)
+          void BOOST_THREAD_DECL sleep_until_realtime(const timespec& ts)
           {
                 timespec now = lslboost::detail::timespec_now_realtime();
                 if (lslboost::detail::timespec_gt(ts, now))
@@ -487,7 +487,6 @@ namespace lslboost
                   }
                 }
           }
-
         }
       }
       namespace hidden
@@ -507,7 +506,7 @@ namespace lslboost
             }
         }
 
-        void BOOST_THREAD_DECL sleep_until(const timespec& ts)
+        void BOOST_THREAD_DECL sleep_until_realtime(const timespec& ts)
         {
             lslboost::detail::thread_data_base* const thread_info=lslboost::detail::get_current_thread_data();
 
@@ -518,7 +517,7 @@ namespace lslboost
             }
             else
             {
-              lslboost::this_thread::no_interruption_point::hidden::sleep_until(ts);
+              lslboost::this_thread::no_interruption_point::hidden::sleep_until_realtime(ts);
             }
         }
       } // hidden

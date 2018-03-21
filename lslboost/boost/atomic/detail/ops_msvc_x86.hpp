@@ -16,6 +16,7 @@
 #ifndef BOOST_ATOMIC_DETAIL_OPS_MSVC_X86_HPP_INCLUDED_
 #define BOOST_ATOMIC_DETAIL_OPS_MSVC_X86_HPP_INCLUDED_
 
+#include <cstddef>
 #include <boost/memory_order.hpp>
 #include <boost/atomic/detail/config.hpp>
 #include <boost/atomic/detail/interlocked.hpp>
@@ -164,6 +165,9 @@ struct operations< 4u, Signed > :
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 4u, Signed >::aligned aligned_storage_type;
 
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 4u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
+
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order) BOOST_NOEXCEPT
     {
         return static_cast< storage_type >(BOOST_ATOMIC_INTERLOCKED_EXCHANGE_ADD(&storage, v));
@@ -236,6 +240,9 @@ struct operations< 1u, Signed > :
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 1u, Signed >::aligned aligned_storage_type;
 
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 1u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
+
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order) BOOST_NOEXCEPT
     {
         return static_cast< storage_type >(BOOST_ATOMIC_INTERLOCKED_EXCHANGE_ADD8(&storage, v));
@@ -280,6 +287,9 @@ struct operations< 1u, Signed > :
     typedef msvc_x86_operations< typename make_storage_type< 1u, Signed >::type, operations< 1u, Signed > > base_type;
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 1u, Signed >::aligned aligned_storage_type;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 1u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order order) BOOST_NOEXCEPT
     {
@@ -422,6 +432,9 @@ struct operations< 2u, Signed > :
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 2u, Signed >::aligned aligned_storage_type;
 
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 2u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
+
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order) BOOST_NOEXCEPT
     {
         return static_cast< storage_type >(BOOST_ATOMIC_INTERLOCKED_EXCHANGE_ADD16(&storage, v));
@@ -466,6 +479,9 @@ struct operations< 2u, Signed > :
     typedef msvc_x86_operations< typename make_storage_type< 2u, Signed >::type, operations< 2u, Signed > > base_type;
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 2u, Signed >::aligned aligned_storage_type;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 2u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order order) BOOST_NOEXCEPT
     {
@@ -608,6 +624,9 @@ struct msvc_dcas_x86
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
 
     static BOOST_CONSTEXPR_OR_CONST bool is_always_lock_free = true;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 
     // Intel 64 and IA-32 Architectures Software Developer's Manual, Volume 3A, 8.1.1. Guaranteed Atomic Operations:
     //
@@ -812,6 +831,9 @@ struct operations< 8u, Signed > :
     typedef typename base_type::storage_type storage_type;
     typedef typename make_storage_type< 8u, Signed >::aligned aligned_storage_type;
 
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 8u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
+
     static BOOST_FORCEINLINE storage_type fetch_add(storage_type volatile& storage, storage_type v, memory_order) BOOST_NOEXCEPT
     {
         return static_cast< storage_type >(BOOST_ATOMIC_INTERLOCKED_EXCHANGE_ADD64(&storage, v));
@@ -858,6 +880,9 @@ struct msvc_dcas_x86_64
     typedef typename make_storage_type< 16u, Signed >::aligned aligned_storage_type;
 
     static BOOST_CONSTEXPR_OR_CONST bool is_always_lock_free = true;
+
+    static BOOST_CONSTEXPR_OR_CONST std::size_t storage_size = 16u;
+    static BOOST_CONSTEXPR_OR_CONST bool is_signed = Signed;
 
     static BOOST_FORCEINLINE void store(storage_type volatile& storage, storage_type v, memory_order) BOOST_NOEXCEPT
     {

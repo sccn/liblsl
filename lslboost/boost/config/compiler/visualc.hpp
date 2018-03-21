@@ -294,7 +294,7 @@
 #      endif
 #   endif
 # else
-#   if _MSC_VER < 1310
+#   if _MSC_VER < 1200
       // Note: Versions up to 7.0 aren't supported.
 #     define BOOST_COMPILER_VERSION 5.0
 #   elif _MSC_VER < 1300
@@ -326,11 +326,11 @@
 #endif
 
 //
-// last known and checked version is 19.11.25506 (VC++ 2017.3):
+// last known and checked version is 19.11.25547 (VC++ 2017.4):
 #if (_MSC_VER > 1911)
 #  if defined(BOOST_ASSERT_CONFIG)
-#     error "Unknown compiler version - please run the configure tests and report the results"
-#  else
-#     pragma message("Unknown compiler version - please run the configure tests and report the results")
+#     error "Boost.Config is older than your current compiler version."
+#  elif !defined(BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE)
+#     pragma message("Info: Boost.Config is older than your compiler version - probably nothing bad will happen - but you may wish to look for an update Boost version.  Define BOOST_CONFIG_SUPPRESS_OUTDATED_MESSAGE to suppress this message.")
 #  endif
 #endif

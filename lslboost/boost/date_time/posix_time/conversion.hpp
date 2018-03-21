@@ -80,7 +80,7 @@ namespace posix_time {
    *
    * \note The function is templated on the FILETIME type, so that
    *       it can be used with both native FILETIME and the ad-hoc
-   *       lslboost::date_time::winapi::file_time type.
+   *       lslboost::detail::winapi::FILETIME_ type.
    */
   template< typename TimeT, typename FileTimeT >
   inline

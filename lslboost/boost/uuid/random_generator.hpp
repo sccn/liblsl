@@ -9,7 +9,7 @@
 #define BOOST_UUID_RANDOM_GENERATOR_HPP
 
 #include <boost/uuid/uuid.hpp>
-#include <boost/uuid/seed_rng.hpp>
+#include <boost/uuid/detail/seed_rng.hpp>
 #include <boost/random/uniform_int.hpp>
 #include <boost/random/variate_generator.hpp>
 #include <boost/random/mersenne_twister.hpp>

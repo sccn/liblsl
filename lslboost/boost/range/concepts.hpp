@@ -25,6 +25,8 @@
 #include <boost/range/detail/misc_concept.hpp>
 #include <boost/type_traits/remove_reference.hpp>
 
+#include <iterator>
+
 /*!
  * \file
  * \brief Concept checks for the Boost Range library.
@@ -164,10 +166,10 @@ namespace lslboost {
                 // work
                 (void)(i++);
 
-                BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::reference r1(*i);
+                BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::reference r1(*i);
                 lslboost::ignore_unused_variable_warning(r1);
 
-                BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::reference r2(*(++i));
+                BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::reference r2(*(++i));
                 lslboost::ignore_unused_variable_warning(r2);
             }
         private:
@@ -181,7 +183,7 @@ namespace lslboost {
             , DefaultConstructible<Iterator>
         {
 #if BOOST_RANGE_ENABLE_CONCEPT_ASSERT
-            typedef BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::difference_type difference_type;
+            typedef BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::difference_type difference_type;
 
             BOOST_MPL_ASSERT((is_integral<difference_type>));
             BOOST_MPL_ASSERT_RELATION(std::numeric_limits<difference_type>::is_signed, ==, true);
@@ -200,7 +202,7 @@ namespace lslboost {
                 // is convertible to reference.
                 Iterator i2(i++);
                 lslboost::ignore_unused_variable_warning(i2);
-                BOOST_DEDUCED_TYPENAME lslboost::detail::iterator_traits<Iterator>::reference r(*(i++));
+                BOOST_DEDUCED_TYPENAME std::iterator_traits<Iterator>::reference r(*(i++));
                 lslboost::ignore_unused_variable_warning(r);
             }
         private:

@@ -69,15 +69,11 @@ struct are_elements_contiguous< ::lslboost::move_iterator<It> >
 //    predeclarations
 /////////////////////////
 
-#ifndef BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-
 template<class Pointer>
 class vector_iterator;
 
 template<class Pointer>
 class vector_const_iterator;
-
-#endif   //BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
 
 }  //namespace container_detail {
 }  //namespace container {
@@ -97,8 +93,6 @@ namespace container_detail {
 //vector_[const_]iterator
 /////////////////////////
 
-#ifndef BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
-
 template<class Pointer>
 struct are_elements_contiguous<lslboost::container::container_detail::vector_iterator<Pointer> >
 {
@@ -110,8 +104,6 @@ struct are_elements_contiguous<lslboost::container::container_detail::vector_con
 {
    static const bool value = true;
 };
-
-#endif   //BOOST_CONTAINER_VECTOR_ITERATOR_IS_POINTER
 
 /////////////////////////
 //    offset_ptr
@@ -1073,21 +1065,21 @@ inline typename container_detail::enable_if_c
          std::memcpy(short_ptr, stora_ptr, sizeof_storage);
          large_ptr += sizeof_storage;
          short_ptr += sizeof_storage;
-         BOOST_CONTAINER_FALLTHOUGH
+         BOOST_FALLTHROUGH;
       case 3:
          std::memcpy(stora_ptr, large_ptr, sizeof_storage);
          std::memcpy(large_ptr, short_ptr, sizeof_storage);
          std::memcpy(short_ptr, stora_ptr, sizeof_storage);
          large_ptr += sizeof_storage;
          short_ptr += sizeof_storage;
-         BOOST_CONTAINER_FALLTHOUGH
+         BOOST_FALLTHROUGH;
       case 2:
          std::memcpy(stora_ptr, large_ptr, sizeof_storage);
          std::memcpy(large_ptr, short_ptr, sizeof_storage);
          std::memcpy(short_ptr, stora_ptr, sizeof_storage);
          large_ptr += sizeof_storage;
          short_ptr += sizeof_storage;
-         BOOST_CONTAINER_FALLTHOUGH
+         BOOST_FALLTHROUGH;
       case 1:
          std::memcpy(stora_ptr, large_ptr, sizeof_storage);
          std::memcpy(large_ptr, short_ptr, sizeof_storage);

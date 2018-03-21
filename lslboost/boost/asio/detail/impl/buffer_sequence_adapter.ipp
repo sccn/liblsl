@@ -40,16 +40,16 @@ class winrt_buffer_impl :
 public:
   explicit winrt_buffer_impl(const lslboost::asio::const_buffer& b)
   {
-    bytes_ = const_cast<byte*>(lslboost::asio::buffer_cast<const byte*>(b));
-    length_ = lslboost::asio::buffer_size(b);
-    capacity_ = lslboost::asio::buffer_size(b);
+    bytes_ = const_cast<byte*>(static_cast<const byte*>(b.data()));
+    length_ = b.size();
+    capacity_ = b.size();
   }
 
   explicit winrt_buffer_impl(const lslboost::asio::mutable_buffer& b)
   {
-    bytes_ = const_cast<byte*>(lslboost::asio::buffer_cast<const byte*>(b));
+    bytes_ = static_cast<byte*>(b.data());
     length_ = 0;
-    capacity_ = lslboost::asio::buffer_size(b);
+    capacity_ = b.size();
   }
 
   ~winrt_buffer_impl()

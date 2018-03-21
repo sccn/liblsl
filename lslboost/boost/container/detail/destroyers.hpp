@@ -270,12 +270,12 @@ class scoped_destructor
 };
 
 
-template<class Allocator>
+template<class Allocator, class Value = typename Allocator::value_type>
 class value_destructor
 {
    typedef lslboost::container::allocator_traits<Allocator> AllocTraits;
    public:
-   typedef typename Allocator::value_type value_type;
+   typedef Value value_type;
    value_destructor(Allocator &a, value_type &rv)
       : rv_(rv), a_(a)
    {}
