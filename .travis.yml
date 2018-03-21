@@ -9,6 +9,7 @@ script:
 - cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
 - cmake --build . --config Release --target install
 - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cpack; fi
+- cpack -G TBZ2
 - cd ..
 matrix:
   include:
