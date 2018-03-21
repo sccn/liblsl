@@ -2,24 +2,18 @@ language: cpp
 compiler: clang # 3.5 instead of GCC 4.8
 env:
   CMakeArgs=""
-  CMAKE_URL="https://cmake.org/files/v3.6/cmake-3.6.3-Linux-x86_64.tar.gz"
 script:
 - mkdir -p build/install
 - cd build
-- $CMAKE_EXE --version
-- $CMAKE_EXE -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
-- $CMAKE_EXE --build . --config Release --target install
+- cmake --version
+- cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
+- cmake --build . --config Release --target install
 - if [ "$TRAVIS_OS_NAME" == "linux" ]; then cpack; fi
 - cd ..
 matrix:
   include:
     - os: linux
-      before_script:
-        - mkdir cmakebin && travis_retry wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmakebin
-        - export CMAKE_EXE=$PWD/cmakebin/bin/cmake
     - os: osx
-      before_install:
-        - export CMAKE_EXE=`which cmake`
 deploy:
   provider: bintray
   user: tstenner
