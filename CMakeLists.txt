@@ -170,6 +170,7 @@ foreach(helper IN LISTS LSL_CMAKE_HELPERS)
 	set(TARGETFILE "${CMAKE_CURRENT_BINARY_DIR}/${helper}")
 	if(NOT EXISTS ${TARGETFILE})
 		if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/../../cmake/${helper}")
+			message(STATUS "Copying CMake app helper ${helper} from ../../cmake/")
 			configure_file(
 				"${CMAKE_CURRENT_LIST_DIR}/../../cmake/${helper}"
 				${TARGETFILE}
