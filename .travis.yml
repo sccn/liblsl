@@ -1,5 +1,6 @@
 language: cpp
-compiler: clang # 3.5 instead of GCC 4.8
+#compiler: clang # 3.5 instead of GCC 4.8
+dist: xenial
 env:
   CMakeArgs=""
 script:
@@ -8,8 +9,7 @@ script:
 - cmake --version
 - cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 -DCMAKE_INSTALL_PREFIX=install $CMakeArgs ../
 - cmake --build . --config Release --target install
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then cpack; fi
-- cpack -G TBZ2
+- cpack
 - cd ..
 matrix:
   include:
