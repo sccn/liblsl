@@ -110,9 +110,6 @@ function(lsllib_properties libname)
 		PUBLIC
 		LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 	)
-	if(WIN32)
-		target_compile_definitions(${libname} PRIVATE _WIN32_WINDOWS=${LSL_WINVER})
-	endif()
 	if(NOT MSVC)
 		target_compile_features(${libname} PRIVATE cxx_auto_type)
 	endif()

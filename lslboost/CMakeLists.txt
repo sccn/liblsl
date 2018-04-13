@@ -33,10 +33,7 @@ else ()  # WIN32
 endif ()
 
 add_library (lslboost STATIC ${lslboost_sources} ${lslboost_sources_platform} ${lslboost_headers})
-target_compile_definitions(lslboost PUBLIC BOOST_ALL_NO_LIB BOOST_THREAD_BUILD_LIB BOOST_ASIO_ENABLE_OLD_SERVICES)
-if(WIN32)
-	target_compile_definitions(lslboost PRIVATE _WIN32_WINDOWS=${LSL_WINVER})
-endif()
+target_compile_definitions(lslboost PUBLIC BOOST_ALL_NO_LIB BOOST_THREAD_BUILD_LIB BOOST_ASIO_ENABLE_OLD_SERVICES) # _WIN32_WINDOWS=${LSL_WINVER})
 target_include_directories(lslboost PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(lslboost PRIVATE ${Boost_LIBRARIES})
