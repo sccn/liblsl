@@ -20,9 +20,9 @@ set(LSL_LSLBOOST_PATH "external" CACHE STRING "Subdirectory with lslboost")
 # Build static library
 option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
 
-if(WIN32)
-	set(LSL_WINVER "0x0501" CACHE STRING
-		"Windows version to target (defaults to 0x0501 for Windows XP)")
+set(LSL_WINVER "0x0501" CACHE STRING
+	"Windows version (_WIN32_WINNT) to target (defaults to 0x0501 for Windows XP)")
+
 endif()
 
 set (sources
