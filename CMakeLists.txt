@@ -23,8 +23,6 @@ option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
 set(LSL_WINVER "0x0501" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0501 for Windows XP)")
 
-endif()
-
 set (sources
 	src/api_config.cpp
 	src/api_config.h
