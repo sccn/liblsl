@@ -69,6 +69,7 @@ namespace lsl {
 				// pre-construct an array of samples in the storage area and chain into a freelist
 				sample *s = NULL;
 				for (char *p=storage_.get(),*e=p+storage_size_;p<e;) {
+					#pragma warning(suppress: 4291)
 					s = new((sample*)p) sample(fmt,num_chans,this);
 					s->next_ = (sample*)(p += sample_size_);
 				}
@@ -90,6 +91,7 @@ namespace lsl {
 			sample_p new_sample(double timestamp, bool pushthrough) { 
 				sample *result = pop_freelist();
 				if (!result)
+					#pragma warning(suppress: 4291)
 					result = new(new char[sample_size_]) sample(fmt_,num_chans_,this);
 				result->timestamp = timestamp;
 				result->pushthrough = pushthrough;
@@ -105,6 +107,7 @@ namespace lsl {
 
 			/// Create a new sample whose memory is not managed by the factory.
 			static sample *new_sample_unmanaged(channel_format_t fmt, int num_chans, double timestamp, bool pushthrough) { 
+				#pragma warning(suppress: 4291)
 				sample *result = new(new char[ensure_multiple(sizeof(sample)-sizeof(char) + format_sizes[fmt]*num_chans,16)]) sample(fmt,num_chans,NULL);
 				result->timestamp = timestamp;
 				result->pushthrough = pushthrough;
