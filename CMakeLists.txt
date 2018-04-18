@@ -160,7 +160,7 @@ install(EXPORT "${PROJECT_NAME}Config"
 
 # download up to date cmake helpers in an out-of-tree-build
 set(LSLGIT "https://raw.githubusercontent.com/labstreaminglayer/labstreaminglayer/master")
-set(LSL_CMAKE_HELPERS LSLCMake.cmake LSLGenerateCPackConfig.cmake)
+set(LSL_CMAKE_HELPERS LSLCMake.cmake)
 foreach(helper IN LISTS LSL_CMAKE_HELPERS)
 	set(TARGETFILE "${CMAKE_CURRENT_BINARY_DIR}/${helper}")
 	if(NOT EXISTS ${TARGETFILE})
@@ -189,4 +189,5 @@ install(FILES ${headers}
 set(CPACK_COMPONENT_liblsl-dev_DEPENDS liblsl GLOBAL_SCOPE)
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_BINARY_DIR})
-include(LSLGenerateCPackConfig)
+include(LSLCMake)
+LSLGenerateCPackConfig()
