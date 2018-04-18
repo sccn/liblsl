@@ -340,14 +340,14 @@ namespace lsl {
 					// read string length as variable-length integer
 					std::size_t len = 0;
 					lslboost::uint8_t lenbytes; load_value(sb,lenbytes,use_byte_order);
+					if(sizeof(std::size_t) < 8 && lenbytes > sizeof(std::size_t))
+						throw std::runtime_error("This platform does not support strings of 64-bit length.");
 					switch (lenbytes) {
 						case sizeof(lslboost::uint8_t):  { lslboost::uint8_t tmp;  load_value(sb,tmp,use_byte_order); len = tmp; }; break; 
 						case sizeof(lslboost::uint16_t): { lslboost::uint16_t tmp; load_value(sb,tmp,use_byte_order); len = tmp; }; break; 
 						case sizeof(lslboost::uint32_t): { lslboost::uint32_t tmp; load_value(sb,tmp,use_byte_order); len = tmp; }; break; 
 #ifndef BOOST_NO_INT64_T
 						case sizeof(lslboost::uint64_t): { lslboost::uint64_t tmp; load_value(sb,tmp,use_byte_order); len = tmp; }; break;
-#else
-						case 8: throw std::runtime_error("This platform does not support strings of 64-bit length.");
 #endif
 						default: throw std::runtime_error("Stream contents corrupted (invalid varlen int).");
 					}
