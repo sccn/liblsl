@@ -1,4 +1,4 @@
-BOOSTPATH=/tmp/boost_1_66_0
+BOOSTPATH=/tmp/boost_1_67_0
 # to update this, use boost bcp as follows (on windows, you need to install a unix shell):
 rm -rf lslboost/{boost,libs}
 bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` lslboost/additional_headers.h lslboost/
