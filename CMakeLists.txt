@@ -7,6 +7,7 @@ cmake_policy(SET CMP0042 NEW) # ENABLE CMP0042: MACOSX_RPATH is enabled by defau
 if(NOT CMAKE_DEBUG_POSTFIX)
 	set(CMAKE_DEBUG_POSTFIX -debug)
 endif()
+option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
 
 # lsl uses boost, but several other projects (e.g. Matlab) also use boost.
 # To prevent clashes with different boost versions, lsl ships a subset of
