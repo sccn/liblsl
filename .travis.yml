@@ -16,6 +16,7 @@ matrix:
     - os: linux
     - os: osx
 deploy:
+  skip_cleanup: true
   provider: bintray
   user: tstenner
   key:
