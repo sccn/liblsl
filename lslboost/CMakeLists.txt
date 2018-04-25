@@ -15,7 +15,6 @@ set(lslboost_sources
 	libs/serialization/src/void_cast.cpp
 	libs/system/src/error_code.cpp
 )
-file(STRINGS lslboost_headers.txt lslboost_headers)
 if (UNIX)
 	set(lslboost_sources_platform
 		libs/thread/src/pthread/once.cpp
@@ -32,10 +31,9 @@ else ()  # WIN32
 	set(Boost_LIBRARIES "")
 endif ()
 
-add_library (lslboost STATIC ${lslboost_sources} ${lslboost_sources_platform} ${lslboost_headers})
+add_library (lslboost STATIC ${lslboost_sources} ${lslboost_sources_platform})
 target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
-	BOOST_THREAD_BUILD_LIB
 	BOOST_ASIO_ENABLE_OLD_SERVICES
 	BOOST_ASIO_USE_BOOST_DATE_TIME_FOR_SOCKET_IOSTREAM
 	_WIN32_WINNT=${LSL_WINVER}
