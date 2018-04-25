@@ -1,7 +1,7 @@
 // Boost name_generator.hpp header file  -----------------------------//
 
 // Copyright 2010 Andy Tompkins.
-// Copyright 2017 James E. King, III
+// Copyright 2017 James E. King III
 
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at

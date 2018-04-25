@@ -41,7 +41,7 @@
 #include <boost/assert.hpp>
 #include <boost/core/no_exceptions_support.hpp>
 
-namespace lslboost { namespace container { namespace container_detail {
+namespace lslboost { namespace container { namespace dtl {
 
 template<class Allocator, class FwdIt, class Iterator>
 struct move_insert_range_proxy
@@ -208,7 +208,7 @@ insert_copy_proxy<Allocator, It> get_insert_value_proxy(const typename lslboost:
    return insert_copy_proxy<Allocator, It>(v);
 }
 
-}}}   //namespace lslboost { namespace container { namespace container_detail {
+}}}   //namespace lslboost { namespace container { namespace dtl {
 
 #if !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
 
@@ -217,7 +217,7 @@ insert_copy_proxy<Allocator, It> get_insert_value_proxy(const typename lslboost:
 
 namespace lslboost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 template<class Allocator, class Iterator, class ...Args>
 struct insert_nonmovable_emplace_proxy
@@ -271,7 +271,7 @@ struct insert_emplace_proxy
    {
       BOOST_ASSERT(n ==1); (void)n;
       typename aligned_storage<sizeof(value_type), alignment_of<value_type>::value>::type v;
-      value_type *vp = static_cast<value_type *>(static_cast<void *>(&v));
+      value_type *vp = static_cast<value_type *>(static_cast<void *>(v.data));
       alloc_traits::construct(a, vp,
          ::lslboost::forward<Args>(get<IdxPack>(this->args_))...);
       BOOST_TRY{
@@ -301,7 +301,7 @@ struct insert_emplace_proxy<Allocator, Iterator, typename lslboost::container::a
 //Any problem is solvable with an extra layer of indirection? ;-)
 template<class Allocator, class Iterator>
 struct insert_emplace_proxy<Allocator, Iterator
-   , typename lslboost::container::container_detail::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type
+   , typename lslboost::container::dtl::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type
    >
    : public insert_copy_proxy<Allocator, Iterator>
 {
@@ -321,7 +321,7 @@ struct insert_emplace_proxy<Allocator, Iterator, typename lslboost::container::a
 
 template<class Allocator, class Iterator>
 struct insert_emplace_proxy<Allocator, Iterator
-   , typename lslboost::container::container_detail::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type &
+   , typename lslboost::container::dtl::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type &
    >
    : public insert_copy_proxy<Allocator, Iterator>
 {
@@ -330,7 +330,7 @@ struct insert_emplace_proxy<Allocator, Iterator
    {}
 };
 
-}}}   //namespace lslboost { namespace container { namespace container_detail {
+}}}   //namespace lslboost { namespace container { namespace dtl {
 
 #else // !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
 
@@ -338,7 +338,7 @@ struct insert_emplace_proxy<Allocator, Iterator
 
 namespace lslboost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 #define BOOST_CONTAINER_ADVANCED_INSERT_INT_CODE(N) \
 template< class Allocator, class Iterator BOOST_MOVE_I##N BOOST_MOVE_CLASS##N >\
@@ -382,7 +382,7 @@ struct insert_emplace_proxy_arg##N\
       BOOST_ASSERT(n == 1); (void)n;\
       typename aligned_storage<sizeof(value_type), alignment_of<value_type>::value>::type v;\
       BOOST_ASSERT((((size_type)(&v)) % alignment_of<value_type>::value) == 0);\
-      value_type *vp = static_cast<value_type *>(static_cast<void *>(&v));\
+      value_type *vp = static_cast<value_type *>(static_cast<void *>(v.data));\
       alloc_traits::construct(a, vp BOOST_MOVE_I##N BOOST_MOVE_MFWD##N);\
       BOOST_TRY{\
          *p = ::lslboost::move(*vp);\
@@ -437,7 +437,7 @@ struct insert_emplace_proxy_arg1<Allocator, Iterator, typename lslboost::contain
 //Any problem is solvable with an extra layer of indirection? ;-)
 template<class Allocator, class Iterator>
 struct insert_emplace_proxy_arg1<Allocator, Iterator
-   , typename lslboost::container::container_detail::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type
+   , typename lslboost::container::dtl::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type
    >
    : public insert_copy_proxy<Allocator, Iterator>
 {
@@ -457,7 +457,7 @@ struct insert_emplace_proxy_arg1<Allocator, Iterator, typename lslboost::contain
 
 template<class Allocator, class Iterator>
 struct insert_emplace_proxy_arg1<Allocator, Iterator
-   , typename lslboost::container::container_detail::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type &
+   , typename lslboost::container::dtl::add_const<typename lslboost::container::allocator_traits<Allocator>::value_type>::type &
    >
    : public insert_copy_proxy<Allocator, Iterator>
 {
@@ -468,7 +468,7 @@ struct insert_emplace_proxy_arg1<Allocator, Iterator
 
 #endif
 
-}}}   //namespace lslboost { namespace container { namespace container_detail {
+}}}   //namespace lslboost { namespace container { namespace dtl {
 
 #endif   // !defined(BOOST_NO_CXX11_VARIADIC_TEMPLATES)
 

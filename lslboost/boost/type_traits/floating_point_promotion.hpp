@@ -6,6 +6,8 @@
 #ifndef FILE_boost_type_traits_floating_point_promotion_hpp_INCLUDED
 #define FILE_boost_type_traits_floating_point_promotion_hpp_INCLUDED
 
+#include <boost/config.hpp>
+
 namespace lslboost {
 
    template<class T> struct floating_point_promotion { typedef T type; };

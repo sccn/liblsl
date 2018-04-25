@@ -14,6 +14,7 @@
 #endif
 
 #include <boost/config.hpp> /* keep it first to prevent nasty warns in MSVC */
+#include <boost/core/addressof.hpp>
 #include <boost/detail/allocator_utilities.hpp>
 #include <boost/detail/no_exceptions_support.hpp>
 #include <boost/detail/workaround.hpp>
@@ -102,7 +103,7 @@ protected:
   {
     x=final().allocate_node();
     BOOST_TRY{
-      lslboost::detail::allocator::construct(&x->value(),v);
+      lslboost::detail::allocator::construct(lslboost::addressof(x->value()),v);
     }
     BOOST_CATCH(...){
       final().deallocate_node(x);
@@ -123,7 +124,8 @@ protected:
        * perfect forwarding emulation of Boost.Move might break other libs.
        */
 
-      new (&x->value()) value_type(lslboost::move(const_cast<value_type&>(v)));
+      new (lslboost::addressof(x->value()))
+        value_type(lslboost::move(const_cast<value_type&>(v)));
     }
     BOOST_CATCH(...){
       final().deallocate_node(x);
@@ -158,12 +160,12 @@ protected:
 
   void erase_(node_type* x)
   {
-    lslboost::detail::allocator::destroy(&x->value());
+    lslboost::detail::allocator::destroy(lslboost::addressof(x->value()));
   }
 
   void delete_node_(node_type* x)
   {
-    lslboost::detail::allocator::destroy(&x->value());
+    lslboost::detail::allocator::destroy(lslboost::addressof(x->value()));
   }
 
   void clear_(){}

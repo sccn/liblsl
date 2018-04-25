@@ -30,7 +30,7 @@
 
 namespace lslboost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 using lslboost::move_detail::integral_constant;
 using lslboost::move_detail::true_type;
@@ -76,7 +76,7 @@ struct select1st
    {  return const_cast<type&>(x.first);   }
 };
 
-}  //namespace container_detail {
+}  //namespace dtl {
 }  //namespace container {
 }  //namespace lslboost {
 

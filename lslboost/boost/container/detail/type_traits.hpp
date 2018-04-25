@@ -28,7 +28,7 @@
 
 namespace lslboost {
 namespace container {
-namespace container_detail {
+namespace dtl {
 
 using ::lslboost::move_detail::enable_if;
 using ::lslboost::move_detail::enable_if_and;
@@ -63,7 +63,7 @@ using ::lslboost::move_detail::aligned_storage;
 using ::lslboost::move_detail::nat;
 using ::lslboost::move_detail::max_align_t;
 
-}  //namespace container_detail {
+}  //namespace dtl {
 }  //namespace container {
 }  //namespace lslboost {
 

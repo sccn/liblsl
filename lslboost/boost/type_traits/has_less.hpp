@@ -36,6 +36,9 @@
                ::lslboost::is_void< Rhs_noptr >::value\
             )\
          )\
+      ) || \
+      (\
+         ::lslboost::type_traits_detail::is_likely_stateless_lambda<Lhs_noref>::value\
       )\
       )
 

@@ -147,7 +147,7 @@ class optional_base : public optional_tag
     }
 #endif
 
-    // Creates an optional<T> initialized with 'val' IFF cond is true, otherwise creates an uninitialzed optional<T>.
+    // Creates an optional<T> initialized with 'val' IFF cond is true, otherwise creates an uninitialized optional<T>.
     // Can throw if T::T(T const&) does
     optional_base ( bool cond, argument_type val )
       :
@@ -730,7 +730,7 @@ class optional : public optional_detail::optional_base<T>
   explicit optional ( Expr&& expr, 
                       BOOST_DEDUCED_TYPENAME lslboost::disable_if_c<
                         (lslboost::is_base_of<optional_detail::optional_tag, BOOST_DEDUCED_TYPENAME lslboost::decay<Expr>::type>::value) || 
-                        lslboost::is_same<BOOST_DEDUCED_TYPENAME lslboost::decay<Expr>::type, none_t>::value >::type* = 0 
+                        lslboost::is_same<BOOST_DEDUCED_TYPENAME lslboost::decay<Expr>::type, none_t>::value, bool >::type = true 
   ) 
     : base(lslboost::forward<Expr>(expr),lslboost::addressof(expr)) 
     {optional_detail::prevent_binding_rvalue_ref_to_optional_lvalue_ref<T, Expr&&>();}

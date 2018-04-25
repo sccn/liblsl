@@ -18,13 +18,18 @@
 #include <boost/type_traits/is_reference.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/declval.hpp>
+#include <boost/type_traits/is_complete.hpp>
+#include <boost/static_assert.hpp>
 
 namespace lslboost {
 
 #ifdef BOOST_IS_NOTHROW_MOVE_ASSIGN
 
 template <class T>
-struct is_nothrow_move_assignable : public integral_constant<bool, BOOST_IS_NOTHROW_MOVE_ASSIGN(T)>{};
+struct is_nothrow_move_assignable : public integral_constant<bool, BOOST_IS_NOTHROW_MOVE_ASSIGN(T)>
+{
+   BOOST_STATIC_ASSERT_MSG(lslboost::is_complete<T>::value, "Arguments to is_nothrow_move_assignable must be complete types");
+};
 template <class T> struct is_nothrow_move_assignable<T const> : public false_type{};
 template <class T> struct is_nothrow_move_assignable<T volatile> : public false_type{};
 template <class T> struct is_nothrow_move_assignable<T const volatile> : public false_type{};
@@ -50,7 +55,10 @@ struct false_or_cpp11_noexcept_move_assignable <
 }
 
 template <class T>
-struct is_nothrow_move_assignable : public integral_constant<bool, ::lslboost::detail::false_or_cpp11_noexcept_move_assignable<T>::value>{};
+struct is_nothrow_move_assignable : public integral_constant<bool, ::lslboost::detail::false_or_cpp11_noexcept_move_assignable<T>::value>
+{
+   BOOST_STATIC_ASSERT_MSG(lslboost::is_complete<T>::value, "Arguments to is_nothrow_move_assignable must be complete types");
+};
 
 template <class T> struct is_nothrow_move_assignable<T const> : public ::lslboost::false_type {};
 template <class T> struct is_nothrow_move_assignable<T const volatile> : public ::lslboost::false_type{};
@@ -64,7 +72,10 @@ template <class T> struct is_nothrow_move_assignable<T&&> : public ::lslboost::f
 
 template <class T>
 struct is_nothrow_move_assignable : public integral_constant<bool,
-   (::lslboost::has_trivial_move_assign<T>::value || ::lslboost::has_nothrow_assign<T>::value) &&  ! ::lslboost::is_array<T>::value>{};
+   (::lslboost::has_trivial_move_assign<T>::value || ::lslboost::has_nothrow_assign<T>::value) &&  ! ::lslboost::is_array<T>::value>
+{
+   BOOST_STATIC_ASSERT_MSG(lslboost::is_complete<T>::value, "Arguments to is_nothrow_move_assignable must be complete types");
+};
 
 #endif
 

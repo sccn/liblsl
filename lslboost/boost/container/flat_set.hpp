@@ -80,13 +80,13 @@ template <class Key, class Compare, class AllocatorOrContainer>
 #endif
 class flat_set
    ///@cond
-   : public container_detail::flat_tree<Key, container_detail::identity<Key>, Compare, AllocatorOrContainer>
+   : public dtl::flat_tree<Key, dtl::identity<Key>, Compare, AllocatorOrContainer>
    ///@endcond
 {
    #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
    private:
    BOOST_COPYABLE_AND_MOVABLE(flat_set)
-   typedef container_detail::flat_tree<Key, container_detail::identity<Key>, Compare, AllocatorOrContainer> tree_t;
+   typedef dtl::flat_tree<Key, dtl::identity<Key>, Compare, AllocatorOrContainer> tree_t;
 
    public:
    tree_t &tree()
@@ -134,8 +134,8 @@ class flat_set
    //!
    //! <b>Complexity</b>: Constant.
    BOOST_CONTAINER_FORCEINLINE
-   flat_set() BOOST_NOEXCEPT_IF(container_detail::is_nothrow_default_constructible<AllocatorOrContainer>::value &&
-                                container_detail::is_nothrow_default_constructible<Compare>::value)
+   flat_set() BOOST_NOEXCEPT_IF(dtl::is_nothrow_default_constructible<AllocatorOrContainer>::value &&
+                                dtl::is_nothrow_default_constructible<Compare>::value)
       : tree_t()
    {}
 
@@ -350,7 +350,7 @@ class flat_set
    //!
    //! <b>Postcondition</b>: x is emptied.
    BOOST_CONTAINER_FORCEINLINE flat_set(BOOST_RV_REF(flat_set) x)
-      BOOST_NOEXCEPT_IF(lslboost::container::container_detail::is_nothrow_move_constructible<Compare>::value)
+      BOOST_NOEXCEPT_IF(lslboost::container::dtl::is_nothrow_move_constructible<Compare>::value)
       : tree_t(BOOST_MOVE_BASE(tree_t, x))
    {}
 
@@ -384,7 +384,7 @@ class flat_set
    BOOST_CONTAINER_FORCEINLINE flat_set& operator=(BOOST_RV_REF(flat_set) x)
       BOOST_NOEXCEPT_IF( (allocator_traits_type::propagate_on_container_move_assignment::value ||
                           allocator_traits_type::is_always_equal::value) &&
-                           lslboost::container::container_detail::is_nothrow_move_assignable<Compare>::value)
+                           lslboost::container::dtl::is_nothrow_move_assignable<Compare>::value)
    {  return static_cast<flat_set&>(this->tree_t::operator=(BOOST_MOVE_BASE(tree_t, x)));  }
 
 #if !defined(BOOST_NO_CXX11_HDR_INITIALIZER_LIST)
@@ -687,8 +687,7 @@ class flat_set
    //! <b>Effects</b>: inserts each element from the range [first,last) if and only
    //!   if there is no element with key equivalent to the key of that element.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from first to last)
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: N log(N).
    //!
    //! <b>Note</b>: If an element is inserted it might invalidate elements.
    template <class InputIterator>
@@ -702,8 +701,7 @@ class flat_set
    //! <b>Effects</b>: inserts each element from the range [first,last) .This function
    //! is more efficient than the normal range creation for ordered ranges.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from first to last)
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: Linear.
    //!
    //! <b>Note</b>: Non-standard extension. If an element is inserted it might invalidate elements.
    template <class InputIterator>
@@ -714,8 +712,7 @@ class flat_set
    //! <b>Effects</b>: inserts each element from the range [il.begin(), il.end()) if and only
    //!   if there is no element with key equivalent to the key of that element.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from il.begin() to il.end())
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: N log(N).
    //!
    //! <b>Note</b>: If an element is inserted it might invalidate elements.
    BOOST_CONTAINER_FORCEINLINE void insert(std::initializer_list<value_type> il)
@@ -727,8 +724,7 @@ class flat_set
    //! <b>Effects</b>: inserts each element from the range [il.begin(), il.end()) .This function
    //! is more efficient than the normal range creation for ordered ranges.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from il.begin() to il.end())
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: Linear.
    //!
    //! <b>Note</b>: Non-standard extension. If an element is inserted it might invalidate elements.
    BOOST_CONTAINER_FORCEINLINE void insert(ordered_unique_range_t, std::initializer_list<value_type> il)
@@ -794,7 +790,7 @@ class flat_set
    //! <b>Complexity</b>: Constant.
    void swap(flat_set& x)
       BOOST_NOEXCEPT_IF(  allocator_traits_type::is_always_equal::value
-                                 && lslboost::container::container_detail::is_nothrow_swappable<Compare>::value );
+                                 && lslboost::container::dtl::is_nothrow_swappable<Compare>::value );
 
    //! <b>Effects</b>: erase(a.begin(),a.end()).
    //!
@@ -1052,13 +1048,13 @@ template <class Key, class Compare, class AllocatorOrContainer>
 #endif
 class flat_multiset
    ///@cond
-   : public container_detail::flat_tree<Key, container_detail::identity<Key>, Compare, AllocatorOrContainer>
+   : public dtl::flat_tree<Key, dtl::identity<Key>, Compare, AllocatorOrContainer>
    ///@endcond
 {
    #ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
    private:
    BOOST_COPYABLE_AND_MOVABLE(flat_multiset)
-   typedef container_detail::flat_tree<Key, container_detail::identity<Key>, Compare, AllocatorOrContainer> tree_t;
+   typedef dtl::flat_tree<Key, dtl::identity<Key>, Compare, AllocatorOrContainer> tree_t;
 
    public:
    tree_t &tree()
@@ -1095,8 +1091,8 @@ class flat_multiset
    typedef typename sequence_type::const_reverse_iterator                           const_reverse_iterator;
 
    //! @copydoc ::lslboost::container::flat_set::flat_set()
-   BOOST_CONTAINER_FORCEINLINE flat_multiset() BOOST_NOEXCEPT_IF(container_detail::is_nothrow_default_constructible<AllocatorOrContainer>::value &&
-                                                                 container_detail::is_nothrow_default_constructible<Compare>::value)
+   BOOST_CONTAINER_FORCEINLINE flat_multiset() BOOST_NOEXCEPT_IF(dtl::is_nothrow_default_constructible<AllocatorOrContainer>::value &&
+                                                                 dtl::is_nothrow_default_constructible<Compare>::value)
       : tree_t()
    {}
 
@@ -1249,7 +1245,7 @@ class flat_multiset
 
    //! @copydoc ::lslboost::container::flat_set::flat_set(flat_set &&)
    BOOST_CONTAINER_FORCEINLINE flat_multiset(BOOST_RV_REF(flat_multiset) x)
-      BOOST_NOEXCEPT_IF(lslboost::container::container_detail::is_nothrow_move_constructible<Compare>::value)
+      BOOST_NOEXCEPT_IF(lslboost::container::dtl::is_nothrow_move_constructible<Compare>::value)
       : tree_t(lslboost::move(static_cast<tree_t&>(x)))
    {}
 
@@ -1271,7 +1267,7 @@ class flat_multiset
    BOOST_CONTAINER_FORCEINLINE flat_multiset& operator=(BOOST_RV_REF(flat_multiset) x)
       BOOST_NOEXCEPT_IF( (allocator_traits_type::propagate_on_container_move_assignment::value ||
                           allocator_traits_type::is_always_equal::value) &&
-                           lslboost::container::container_detail::is_nothrow_move_assignable<Compare>::value)
+                           lslboost::container::dtl::is_nothrow_move_assignable<Compare>::value)
    {  return static_cast<flat_multiset&>(this->tree_t::operator=(BOOST_MOVE_BASE(tree_t, x)));  }
 
 #if !defined(BOOST_NO_CXX11_HDR_INITIALIZER_LIST)
@@ -1456,8 +1452,7 @@ class flat_multiset
    //!
    //! <b>Effects</b>: inserts each element from the range [first,last) .
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from first to last)
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: N log(N).
    //!
    //! <b>Note</b>: If an element is inserted it might invalidate elements.
    template <class InputIterator>
@@ -1470,8 +1465,7 @@ class flat_multiset
    //! <b>Effects</b>: inserts each element from the range [first,last) .This function
    //! is more efficient than the normal range creation for ordered ranges.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from first to last)
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: Linear.
    //!
    //! <b>Note</b>: Non-standard extension. If an element is inserted it might invalidate elements.
    template <class InputIterator>
@@ -1481,8 +1475,7 @@ class flat_multiset
 #if !defined(BOOST_NO_CXX11_HDR_INITIALIZER_LIST)
    //! <b>Effects</b>: inserts each element from the range [il.begin(), il.end()).
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from first to last)
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: N log(N).
    //!
    //! <b>Note</b>: If an element is inserted it might invalidate elements.
    BOOST_CONTAINER_FORCEINLINE void insert(std::initializer_list<value_type> il)
@@ -1493,8 +1486,7 @@ class flat_multiset
    //! <b>Effects</b>: inserts each element from the range [il.begin(), il.end()). This function
    //! is more efficient than the normal range creation for ordered ranges.
    //!
-   //! <b>Complexity</b>: At most N log(size()+N) (N is the distance from il.begin() to il.end())
-   //!   search time plus N*size() insertion time.
+   //! <b>Complexity</b>: Linear.
    //!
    //! <b>Note</b>: Non-standard extension. If an element is inserted it might invalidate elements.
    BOOST_CONTAINER_FORCEINLINE void insert(ordered_range_t, std::initializer_list<value_type> il)
@@ -1535,7 +1527,7 @@ class flat_multiset
    //! @copydoc ::lslboost::container::flat_set::swap
    void swap(flat_multiset& x)
       BOOST_NOEXCEPT_IF(  allocator_traits_type::is_always_equal::value
-                                 && lslboost::container::container_detail::is_nothrow_swappable<Compare>::value );
+                                 && lslboost::container::dtl::is_nothrow_swappable<Compare>::value );
 
    //! @copydoc ::lslboost::container::flat_set::clear
    void clear() BOOST_NOEXCEPT_OR_NOTHROW;

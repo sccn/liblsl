@@ -13,6 +13,7 @@
 #include <algorithm>
 #include <memory>
 
+#include <boost/next_prior.hpp>
 #include <boost/aligned_storage.hpp>
 #include <boost/assert.hpp>
 #include <boost/static_assert.hpp>
