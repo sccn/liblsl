@@ -156,6 +156,21 @@ namespace lsl {
 			return samples_written*num_chans;
 		}
 
+		template<class T> std::size_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer, std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements, double timeout=0.0, lsl_error_code_t* ec=NULL) BOOST_NOEXCEPT {
+			lsl_error_code_t dummy;
+			if(!ec) ec = &dummy;
+			*ec = lsl_no_error;
+			try {
+				return pull_chunk_multiplexed(data_buffer, timestamp_buffer, data_buffer_elements, timeout);
+			}
+			catch (timeout_error&) { *ec = lsl_timeout_error; }
+			catch (lost_error&) { *ec = lsl_lost_error; }
+			catch (std::invalid_argument&) { *ec = lsl_argument_error; }
+			catch (std::range_error&) { *ec = lsl_argument_error; }
+			catch (std::exception&) { *ec = lsl_internal_error; }
+			return 0;
+		}
+
 		/**
 		* Retrieve the complete information of the given stream, including the extended description.
 		* Can be invoked at any time of the stream's lifetime.
