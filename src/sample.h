@@ -176,7 +176,7 @@ namespace lsl {
 		// === untyped accessors ===
 
 		/// Assign numeric data to the sample.
-		sample &assign_untyped(void *newdata) { 
+		sample &assign_untyped(const void *newdata) {
 			if (format_ != cf_string)
 				memcpy(&data_,newdata,format_sizes[format_]*num_channels_);
 			else
@@ -197,12 +197,12 @@ namespace lsl {
 
 		/// Helper function to save raw binary data to a stream buffer.
 		static void save_raw(std::streambuf &sb, const void *address, std::size_t count) {
-			if ((std::size_t)sb.sputn((char*)address,(std::streamsize)count) != count)
+			if ((std::size_t)sb.sputn((const char*)address,(std::streamsize)count) != count)
 				throw std::runtime_error("Output stream error.");
 		}
 
 		/// Helper function to load raw binary data from a stream buffer.
-		static void load_raw(std::streambuf &sb, const void *address, std::size_t count) {
+		static void load_raw(std::streambuf &sb, void *address, std::size_t count) {
 			if ((std::size_t)sb.sgetn((char*)address,(std::streamsize)count) != count)
 				throw std::runtime_error("Input stream error.");
 		}
@@ -246,7 +246,6 @@ namespace lsl {
 				default: throw std::runtime_error("Unsupported channel format for endian conversion.");
 			}
 		}
-
 		/// Serialize a sample into a portable archive (protocol 1.00).
 		template<class Archive> void save(Archive &ar, const unsigned int archive_version) const {
 			// write sample header
