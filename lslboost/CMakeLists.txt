@@ -41,7 +41,7 @@ target_compile_definitions(lslboost PUBLIC
 	PRIVATE
 	BOOST_THREAD_BUILD_DLL
 )
-target_include_directories(lslboost PUBLIC
+target_include_directories(lslboost SYSTEM PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(lslboost PRIVATE ${Boost_LIBRARIES})
 set_target_properties(lslboost PROPERTIES
