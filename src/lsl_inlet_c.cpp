@@ -1,8 +1,7 @@
 #include "../include/lsl_c.h"
 #include "stream_inlet_impl.h"
 
-
-
+extern "C" {
 // === implementation of the stream_inlet class ===
 
 using namespace lsl;
@@ -233,7 +232,7 @@ LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int buffer_
 		double result = ((stream_inlet_impl*)in)->pull_sample(tmp,timeout);
         if (buffer_elements < (int)tmp.size())
             throw std::range_error("The provided buffer has fewer elements than the stream's number of channels.");
-		// allocate memory and copy over into buffer
+		// allocate memory and copy over into buffer#include "../include/lsl_c.h"
 		for (unsigned k=0;k<tmp.size();k++) {
 			buffer[k] = (char*)malloc(tmp[k].size()+1);
 			if (buffer[k] == NULL) {
@@ -509,4 +508,5 @@ LIBLSL_C_API int lsl_smoothing_halftime(lsl_inlet in, float value) {
 	catch(std::exception &) {
 		return lsl_internal_error;
 	}
+}
 }

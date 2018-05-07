@@ -307,7 +307,7 @@ namespace lsl {
         ~stream_info() { lsl_destroy_streaminfo(obj); }
 
 		/// Utility function to create a stream_info from an XML representation
-		static stream_info from_xml(const std::string &xml) { return stream_info(lsl_streaminfo_from_xml((char*)xml.c_str())); }
+		static stream_info from_xml(const std::string &xml) { return stream_info(lsl_streaminfo_from_xml(xml.c_str())); }
     private:
         mutable lsl_streaminfo obj;
     };
