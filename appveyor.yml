@@ -4,9 +4,7 @@ pull_requests:
 shallow_clone: true
 environment:
   VCVER: 14.0
-  matrix:
-    - ARCH: x86    
-    - ARCH: x64
+  ARCH: x64
   CMakeArgs: ""
 install:
 - cmd: >-
