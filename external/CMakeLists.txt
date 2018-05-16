@@ -66,9 +66,5 @@ if(NOT MSVC)
   target_compile_features(lslboost PRIVATE cxx_auto_type)
 endif ()
 
-install(TARGETS lslboost EXPORT lslboostConfig
-	COMPONENT "liblsl-dev"
-  ARCHIVE DESTINATION LSL/lib)
-install(EXPORT lslboostConfig
-	COMPONENT "liblsl-dev"
-	DESTINATION LSL/cmake)
+export(TARGETS lslboost
+	FILE lslboostConfig.cmake)

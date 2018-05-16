@@ -173,17 +173,15 @@ install(TARGETS ${lsl_export_targets}
 )
 
 install(EXPORT "${PROJECT_NAME}Config"
-	COMPONENT liblsl-dev
+	COMPONENT liblsl
 	NAMESPACE "LSL::"
 	DESTINATION "${LSLPREFIX}share/LSL")
 
 # install headers
 install(FILES ${headers}
-	COMPONENT "liblsl-dev"
+	COMPONENT liblsl
 	DESTINATION "${LSLPREFIX}include"
 )
-set(CPACK_COMPONENT_liblsl-dev_DEPENDS liblsl GLOBAL_SCOPE)
-
 
 install(FILES LSLCMake.cmake
 	COMPONENT liblsl
