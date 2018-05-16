@@ -8,7 +8,7 @@ if(NOT CMAKE_BUILD_TYPE)
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-	set(CMAKE_INSTALL_PREFIX "${CMAKE_CURRENT_SOURCE_DIR}/build/install" CACHE PATH
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/build/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
 	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}")
 endif()
@@ -53,11 +53,7 @@ set(CMAKE_AUTORCC ON)
 #SET(Boost_DETAILED_FAILURE_MSG ON)
 if(WIN32)
 	set(Boost_USE_STATIC_LIBS ON)
-	# Disable boost auto linking.
-	add_definitions(-DBOOST_ALL_NO_LIB )
 endif()
-
-
 
 # LSL functions, mostly for Apps
 
