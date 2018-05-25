@@ -16,19 +16,15 @@ install:
 
     ninja --version
 build_script:
-- cmd: >-
-    call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
-
-    mkdir build
-
-    cd build
-
-    cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=install -DLSL_LSLBOOST_PATH=lslboost -DLSL_WINVER=0x0601 %CMakeArgs% ../
-
-    cmake --build . --config Release --target install
+- cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
+- mkdir build
+- cd build
+- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_WINVER=0x0601 %CMakeArgs% ../
+- cmake --build . --config Release --target install
+- cpack
 artifacts:
-- path: build/install
-  name: lsl-liblsl_1.12.0-win_%ARCH%-msvc%VCVER%
+- path: 'build/lsl*.7z'
+  name: liblsl
 deploy:
 - provider: BinTray
   username: tstenner
