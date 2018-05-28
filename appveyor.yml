@@ -7,14 +7,10 @@ environment:
   ARCH: x64
   CMakeArgs: ""
 install:
-- cmd: >-
-    appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
-
-    7z x ninja.zip -oC:\projects\deps\ninja > nul
-
-    set PATH=C:\projects\deps\ninja;%PATH%
-
-    ninja --version
+- cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
+- cmd: 7z x ninja.zip -oC:\projects\deps\ninja > nul
+- cmd: set PATH=C:\projects\deps\ninja;%PATH%
+- cmd: ninja --version
 build_script:
 - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
 - mkdir build
@@ -23,7 +19,7 @@ build_script:
 - cmake --build . --config Release --target install
 - cpack
 artifacts:
-- path: 'build/lsl*.7z'
+- path: 'build/*.7z'
   name: liblsl
 deploy:
 - provider: BinTray
