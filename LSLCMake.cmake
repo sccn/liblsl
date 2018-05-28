@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 6")
+message(STATUS "Included LSL CMake helpers, rev. 7")
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -289,11 +289,15 @@ macro(LSLGenerateCPackConfig)
 	set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
 	set(CPACK_STRIP_FILES ON)
 
+	set(PACKAGEARCH ${CMAKE_SYSTEM_PROCESSOR})
 	if(APPLE)
 		set(CPACK_GENERATOR "TBZ2")
 	elseif(WIN32)
 		set(CPACK_GENERATOR "7Z")
 		set(CPACK_LSLEXTRA "MSVC${_vs_ver}")
+		if($ENV{ARCH})
+			set(PACKAGEARCH $ENV{ARCH})
+		endif()
 	elseif(UNIX)
 		set(CPACK_GENERATOR DEB)
 		set(CPACK_SET_DESTDIR 1)
@@ -313,7 +317,7 @@ macro(LSLGenerateCPackConfig)
 		set(CPACK_LSLEXTRA ${LSB_RELEASE_CODENAME})
 		set(CPACK_DEBIAN_PACKAGE_RELEASE ${LSB_RELEASE_CODENAME})
 	endif()
-	set(CPACK_PACKAGE_FILE_NAME "lsl-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${CMAKE_SYSTEM_NAME}-${CPACK_LSLEXTRA}-${CMAKE_SYSTEM_PROCESSOR}")
+	set(CPACK_PACKAGE_FILE_NAME "lsl-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${CMAKE_SYSTEM_NAME}-${CPACK_LSLEXTRA}-${PACKAGEARCH}")
 
 	get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
 	message(STATUS "Installing Components: ${CPACK_COMPONENTS_ALL}")
