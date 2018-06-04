@@ -1,3 +1,4 @@
+#include "consumer_queue.h"
 #include "send_buffer.h"
 #include <boost/bind.hpp>
 

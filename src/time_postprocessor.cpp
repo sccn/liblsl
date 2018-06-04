@@ -1,3 +1,4 @@
+#include <boost/thread/lock_guard.hpp>
 #include "time_postprocessor.h"
 #include "api_config.h"
 

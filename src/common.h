@@ -3,6 +3,7 @@
 
 #include <stdexcept>
 #include <boost/version.hpp>
+#include <string>
 
 #ifdef _WIN32
 #define LIBLSL_CPP_API __declspec(dllexport)

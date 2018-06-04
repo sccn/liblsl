@@ -3,17 +3,16 @@
 
 #pragma warning (disable:4800)	// (inefficiently converting int to bool in portable_oarchive instantiation...)
 
-#include "stream_info_impl.h"
 #include <set>
-#include <iostream>
-#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/thread.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/scoped_array.hpp>
+#include <boost/smart_ptr/scoped_ptr.hpp>
+#include <boost/thread/condition_variable.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 #include "common.h"
-
-#include "send_buffer.h"
+#include "forward.h"
 #include "api_config.h"
 
 using lslboost::asio::ip::tcp;
@@ -27,10 +26,6 @@ namespace lsl {
 	typedef lslboost::shared_ptr<tcp::socket> tcp_socket_p;
 	/// shared pointer to an acceptor socket
 	typedef lslboost::shared_ptr<tcp::acceptor> tcp_acceptor_p;
-	/// shared pointer to a TCP socket
-	typedef lslboost::shared_ptr<class tcp_server> tcp_server_p;
-	/// pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
 
 	/**
 	* The TCP data server.
@@ -58,7 +53,7 @@ namespace lsl {
 		* @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 		* @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 		*/
-		tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size);
+		tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size);
 
 		/// Begin serving TCP connections.
 		/// Should not be called before info_ has been fully initialized by all involved parties (tcp_server, udp_server)
@@ -184,7 +179,7 @@ namespace lsl {
 		// data shared with the outlet
 		stream_info_impl_p info_;				// shared stream_info object
 		io_service_p io_;						// shared ptr to IO service; ensures that the IO is still around by the time the acceptor needs to be destroyed
-		sample::factory_p factory_;				// reference to the sample factory (which owns the samples)
+		factory_p factory_;						// reference to the sample factory (which owns the samples)
 		send_buffer_p send_buffer_;				// the send buffer, shared with other TCP's and the outlet
 
 		// acceptor socket

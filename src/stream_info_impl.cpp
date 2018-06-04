@@ -1,7 +1,6 @@
-#include <sstream>
 #include <iostream>
 #include <boost/lexical_cast.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/lock_guard.hpp>
 #include "stream_info_impl.h"
 #include "api_config.h"
 
@@ -209,6 +208,12 @@ bool stream_info_impl::matches_query(const string &query) {
 			return false; // error: unsupported query
 		}
 	}
+}
+
+int stream_info_impl::channel_bytes() const
+{
+	const int channel_format_sizes[] = {0,sizeof(float),sizeof(double),sizeof(std::string),sizeof(int32_t),sizeof(int16_t),sizeof(int8_t),8};
+	return channel_format_sizes[channel_format_];
 }
 
 /**

@@ -3,8 +3,8 @@
 
 #include <string>
 #include <vector>
-#include <boost/thread/once.hpp>
 
+namespace lslboost { struct once_flag; }
 
 namespace lsl {
 

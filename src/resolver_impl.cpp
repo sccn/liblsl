@@ -1,12 +1,13 @@
-#include <sstream>
 #include <iostream>
-#include <istream>
-#include <boost/asio.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include <boost/lexical_cast.hpp>
-#include <boost/functional/hash.hpp>
+#include <boost/thread/thread_only.hpp>
+#include "resolve_attempt_udp.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
+#include "api_config.h"
 
 
 // === implementation of the resolver_impl class ===

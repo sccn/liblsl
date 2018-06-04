@@ -1,10 +1,13 @@
 #include <iostream>
-#include <boost/asio.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/ip/multicast.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/thread/thread_only.hpp>
 #include "udp_server.h"
-#include "api_config.h"
 #include "socket_utils.h"
+#include "stream_info_impl.h"
 
 
 // === implementation of the udp_server class ===

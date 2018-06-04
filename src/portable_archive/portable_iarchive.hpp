@@ -105,16 +105,8 @@
 #define POLYMORPHIC(T) lslboost::archive::detail::polymorphic_iarchive_route<T>
 
 // endian and fpclassify
-#if BOOST_VERSION < 103600
-#include <boost/integer/endian.hpp>
-#include <boost/math/fpclassify.hpp>
-#elif BOOST_VERSION < 104800
-#include <boost/spirit/home/support/detail/integer/endian.hpp>
-#include <boost/spirit/home/support/detail/math/fpclassify.hpp>
-#else
 #include <boost/spirit/home/support/detail/endian/endian.hpp>
 #include <boost/spirit/home/support/detail/math/fpclassify.hpp>
-#endif
 
 // namespace alias
 #if BOOST_VERSION < 103800
@@ -124,11 +116,7 @@ namespace fp = lslboost::spirit::math;
 #endif
 
 // namespace alias endian
-#if BOOST_VERSION < 104800
-namespace endian = lslboost::detail;
-#else
 namespace endian = lslboost::spirit::detail;
-#endif
 
 #if BOOST_VERSION >= 104500 && !defined BOOST_NO_STD_WSTRING
 // used for wstring to utf8 conversion

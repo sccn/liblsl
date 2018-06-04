@@ -1,5 +1,8 @@
 #include "stream_outlet_impl.h"
+#include <boost/thread/thread_only.hpp>
 #include <boost/bind.hpp>
+#include "tcp_server.h"
+#include "udp_server.h"
 
 // === implementation of the stream_outlet_impl class ===
 
@@ -15,7 +18,7 @@ using namespace lslboost::asio;
 *					   The default is sufficient to hold a bit more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB of RAM.
 */
 stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_size, int max_capacity): chunk_size_(chunk_size), info_(new stream_info_impl(info)), 
-	sample_factory_(new sample::factory(info.channel_format(),info.channel_count(),info.nominal_srate()?info.nominal_srate()*api_config::get_instance()->outlet_buffer_reserve_ms()/1000:api_config::get_instance()->outlet_buffer_reserve_samples())), send_buffer_(new send_buffer(max_capacity))
+	sample_factory_(new factory(info.channel_format(),info.channel_count(),info.nominal_srate()?info.nominal_srate()*api_config::get_instance()->outlet_buffer_reserve_ms()/1000:api_config::get_instance()->outlet_buffer_reserve_samples())), send_buffer_(new send_buffer(max_capacity))
 {
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();

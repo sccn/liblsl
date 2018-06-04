@@ -2,14 +2,13 @@
 #define RESOLVER_IMPL_H
 
 #include "common.h"
-#include "api_config.h"
+#include "forward.h"
 #include "stream_info_impl.h"
-#include "resolve_attempt_udp.h"
-#include <set>
+#include "cancellation.h"
 #include <boost/asio/deadline_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -18,11 +17,10 @@ using lslboost::asio::ip::tcp;
 using lslboost::system::error_code;
 
 namespace lsl {
+	class api_config;
 
-	/// Pointer to a deadline timer
-	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
-	/// Pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
+	/// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
+	typedef std::map<std::string,std::pair<stream_info_impl,double> > result_container;
 
 	/**
 	* A stream resolver object.

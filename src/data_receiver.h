@@ -1,14 +1,11 @@
 #ifndef DATA_RECEIVER_H
 #define DATA_RECEIVER_H
 
-#include <boost/thread/thread.hpp>
+#include <boost/thread/thread_only.hpp>
 #include "consumer_queue.h"
 #include "inlet_connection.h"
-#include "cancellable_streambuf.h"
+#include "sample.h"
 
-
-
-using lslboost::asio::ip::tcp;
 
 namespace lsl {
 
@@ -88,7 +85,7 @@ namespace lsl {
 		inlet_connection &conn_;
 
 		// fields related to the data reader thread
-		sample::factory_p sample_factory_;			// a factory to create samples of appropriate type
+		factory_p sample_factory_;					// a factory to create samples of appropriate type
 		lslboost::thread data_thread_;					// background read thread
 		bool check_thread_start_;					// whether we need to check whether the thread has been started
 		bool closing_stream_;						// indicates to the data thread that it a close has been requested

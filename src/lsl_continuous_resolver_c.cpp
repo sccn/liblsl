@@ -1,6 +1,6 @@
 #include "../include/lsl_c.h"
 #include "resolver_impl.h"
-#include "common.h"
+#include "api_config.h"
 #include <iostream>
 
 extern "C" {

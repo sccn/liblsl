@@ -1,8 +1,9 @@
 #include "consumer_queue.h"
+#include "sample.h"
 #include "send_buffer.h"
 #include "common.h"
 #include <iostream>
-#include <boost/date_time/time_duration.hpp>
+#include <boost/chrono/duration.hpp>
 
 // === implementation of the consumer_queue class ===
 
@@ -57,7 +58,7 @@ sample_p consumer_queue::pop_sample(double timeout) {
 			do {
 				if (lsl::lsl_clock() >= timeout)
 					break;
-				lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(1));
+				lslboost::this_thread::sleep_for(lslboost::chrono::milliseconds(1));
 			} while (!buffer_.pop(result));
 		}
 	}

@@ -36,7 +36,6 @@ add_library (lslboost STATIC ${lslboost_sources} ${lslboost_sources_platform})
 target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
 	BOOST_ASIO_ENABLE_OLD_SERVICES
-	BOOST_ASIO_USE_BOOST_DATE_TIME_FOR_SOCKET_IOSTREAM
 	_WIN32_WINNT=${LSL_WINVER}
 	BOOST_UUID_RANDOM_PROVIDER_FORCE_WINCRYPT
 	PRIVATE

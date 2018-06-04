@@ -1,35 +1,24 @@
 #ifndef RESOLVE_ATTEMPT_UDP_H
 #define RESOLVE_ATTEMPT_UDP_H
 
-#include "common.h"
 #include "stream_info_impl.h"
 #include "cancellation.h"
 #include <map>
-#include <boost/asio.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
+
+namespace lslboost { class mutex; }
+namespace lslboost { namespace system { class error_code; } }
 
 using lslboost::asio::ip::udp;
-using lslboost::asio::ip::tcp;
-using lslboost::system::error_code;
-
-
-using lslboost::asio::ip::udp;
-using lslboost::asio::ip::tcp;
 using lslboost::system::error_code;
 
 namespace lsl {
 
 	/// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
 	typedef std::map<std::string,std::pair<stream_info_impl,double> > result_container;
-
-	/// Pointer to a UDP resolve attempt.
-	typedef lslboost::shared_ptr<class resolve_attempt_udp> resolve_attempt_udp_p;
-	/// Pointer to a deadline timer
-	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
-	/// Pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
-
 
 	/**
 	* An asynchronous resolve attempt for a single query targeted at a set of endpoints, via UDP.

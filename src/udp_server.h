@@ -1,10 +1,9 @@
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
-#include "common.h"
-#include "stream_info_impl.h"
+#include "forward.h"
 #include <boost/asio/ip/udp.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 using lslboost::asio::ip::udp;
 using lslboost::system::error_code;

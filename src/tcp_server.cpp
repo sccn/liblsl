@@ -1,12 +1,23 @@
 #include <iostream>
-#include <boost/asio.hpp>
-#include <boost/algorithm/string.hpp>
-#include <boost/uuid/uuid.hpp>
-#include <boost/uuid/uuid_generators.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/host_name.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
-#include <boost/container/flat_set.hpp>
-#include "tcp_server.h"
+#include <boost/thread/thread_only.hpp>
+#include "consumer_queue.h"
+#include "sample.h"
+#include "send_buffer.h"
 #include "socket_utils.h"
+#include "stream_info_impl.h"
+#include "tcp_server.h"
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads
@@ -32,7 +43,7 @@ using namespace lslboost::asio;
 * @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 */
-tcp_server::tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size): chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory), send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
+tcp_server::tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size): chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory), send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -361,7 +372,7 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 			}
 
 			// send test pattern samples
-			lslboost::scoped_ptr<sample> temp(sample::factory::new_sample_unmanaged(serv_->info_->channel_format(),serv_->info_->channel_count(),0.0,false));
+			lslboost::scoped_ptr<sample> temp(factory::new_sample_unmanaged(serv_->info_->channel_format(),serv_->info_->channel_count(),0.0,false));
 			temp->assign_test_pattern(4);
 			if (data_protocol_version_ >= 110)
 				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());

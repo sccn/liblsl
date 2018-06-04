@@ -1,22 +1,22 @@
 #ifndef STREAM_OUTLET_IMPL_H
 #define STREAM_OUTLET_IMPL_H
 
-#include <boost/container/flat_set.hpp>
-#include "tcp_server.h"
+#include <iostream>
+#include "forward.h"
 #include "send_buffer.h"
+#include "stream_info_impl.h"
 #include "common.h"
 #include "api_config.h"
-#include "udp_server.h"
 #include "sample.h"
 
 
+using lslboost::asio::ip::tcp;
+using lslboost::asio::ip::udp;
 
 namespace lsl { 
 
 	/// pointer to a thread
 	typedef lslboost::shared_ptr<lslboost::thread> thread_p;
-	/// pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
 
 	/**
 	* A stream outlet.
@@ -249,7 +249,7 @@ namespace lsl {
 				throw std::range_error("The provided sample data has a different length than the stream's number of channels.");	
 		}
 
-		sample::factory_p sample_factory_;			// a factory for samples of appropriate type
+		factory_p sample_factory_;					// a factory for samples of appropriate type
 		int32_t chunk_size_;							// the preferred chunk size
 		stream_info_impl_p info_;					// stream_info shared between the various server instances
 		send_buffer_p send_buffer_;					// the single-producer, multiple-receiver send buffer

@@ -1,4 +1,5 @@
 #include "info_receiver.h"
+#include "inlet_connection.h"
 #include "cancellable_streambuf.h"
 #include <iostream>
 #include <boost/bind.hpp>
@@ -90,4 +91,6 @@ void info_receiver::info_thread() {
 	} catch(lost_error &) { }
 	conn_.release_watchdog();
 }
+
+bool info_receiver::info_ready() { return fullinfo_ || conn_.lost(); }
 

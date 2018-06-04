@@ -47,6 +47,7 @@ set (sources
 	src/data_receiver.h
 	src/endian/conversion.hpp
 	src/endian/detail/intrinsic.hpp
+	src/forward.h
 	src/info_receiver.cpp
 	src/info_receiver.h
 	src/inlet_connection.cpp

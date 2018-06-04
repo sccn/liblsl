@@ -1,6 +1,7 @@
 #include "../include/lsl_c.h"
 #include "common.h"
 #include "resolver_impl.h"
+#include "api_config.h"
 #include <boost/chrono/system_clocks.hpp>
 
 

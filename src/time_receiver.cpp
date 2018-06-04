@@ -1,7 +1,8 @@
 #include "time_receiver.h"
 #include "api_config.h"
-#include <boost/asio.hpp>
+#include "inlet_connection.h"
 #include <iostream>
+#include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include "socket_utils.h"
 
@@ -218,6 +219,8 @@ void time_receiver::result_aggregation_scheduled(error_code err) {
 		}
 	}
 }
+
+bool time_receiver::timeoffset_available() { return (timeoffset_ != std::numeric_limits<double>::max()) || conn_.lost(); }
 
 /// Ensures that the time-offset is reset when the underlying connection is recovered (e.g., switches to another host)
 void time_receiver::reset_timeoffset_on_recovery() {

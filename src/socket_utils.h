@@ -1,11 +1,9 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
-#include "common.h"
 #include "api_config.h"
-#include <boost/cstdint.hpp>
 #include <boost/system/system_error.hpp>
-#include <boost/thread/thread.hpp>
+#include <boost/date_time/posix_time/posix_time_duration.hpp>
 
 namespace lsl {
 	inline lslboost::posix_time::millisec timeout_sec(double timeout_seconds) {
