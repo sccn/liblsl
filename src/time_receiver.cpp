@@ -1,8 +1,8 @@
 #include "time_receiver.h"
 #include "api_config.h"
-#include <boost/asio.hpp>
+#include <lslboost/asio.hpp>
 #include <iostream>
-#include <boost/bind.hpp>
+#include <lslboost/bind.hpp>
 #include "socket_utils.h"
 
 
