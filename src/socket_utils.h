@@ -6,7 +6,6 @@
 #include <lslboost/cstdint.hpp>
 #include <lslboost/system/system_error.hpp>
 #include <lslboost/thread/thread.hpp>
-#include <iostream>
 
 namespace lsl {
 	inline lslboost::posix_time::millisec timeout_sec(double timeout_seconds) {
@@ -53,31 +52,6 @@ namespace lsl {
 			}
 		} else
 			throw std::runtime_error("All local ports were found occupied. You may have more open outlets on this machine than your PortRange setting allows (see Network Connectivity in the LSL wiki) or you have a problem with your network configuration.");
-	}
-    
-	/// Gracefully close a socket.
-	template<class SocketPtr> void close_if_open(SocketPtr sock) {
-		try {
-			if (sock->is_open())
-				sock->close();
-		}  catch(std::exception &e) {
-			std::cerr << "Error during close_if_open (thread id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-		}
-	}
-
-	/// Gracefully shut down a socket.
-	template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock) {
-		try {
-			if (sock->is_open()) {
-				try {
-					// (in some cases shutdown may fail)
-					sock->shutdown(Protocol::socket::shutdown_both);
-				} catch(...) {}
-				sock->close();
-			}
-		}  catch(std::exception &e) {
-			std::cerr << "Error during shutdown_and_close (thread id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-		}
 	}
 
 	/// Measure the endian conversion performance of this machine.

@@ -119,6 +119,21 @@ void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
 	inflight_.erase(sock);
 }
 
+/// Gracefully shut down a socket.
+template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock) {
+	try {
+		if (sock->is_open()) {
+			try {
+				// (in some cases shutdown may fail)
+				sock->shutdown(Protocol::socket::shutdown_both);
+			} catch(...) {}
+			sock->close();
+		}
+	}  catch(std::exception &e) {
+		std::cerr << "Error during shutdown_and_close (thread id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+	}
+}
+
 /// Post a close of all in-flight sockets.
 void tcp_server::close_inflight_sockets() {
 	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
