@@ -3,9 +3,9 @@
 
 #include "common.h"
 #include "api_config.h"
-#include <lslboost/cstdint.hpp>
-#include <lslboost/system/system_error.hpp>
-#include <lslboost/thread/thread.hpp>
+#include <boost/cstdint.hpp>
+#include <boost/system/system_error.hpp>
+#include <boost/thread/thread.hpp>
 
 namespace lsl {
 	inline lslboost::posix_time::millisec timeout_sec(double timeout_seconds) {
