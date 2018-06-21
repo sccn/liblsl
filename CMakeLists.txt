@@ -46,8 +46,6 @@ set (sources
 	src/consumer_queue.h
 	src/data_receiver.cpp
 	src/data_receiver.h
-	src/endian/conversion.hpp
-	src/endian/detail/intrinsic.hpp
 	src/info_receiver.cpp
 	src/info_receiver.h
 	src/inlet_connection.cpp
