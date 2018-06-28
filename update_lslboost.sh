@@ -1,9 +1,12 @@
+# the absolute path to the extracted boost source archive (https://www.boost.org/users/download/)
 BOOSTPATH=/tmp/boost_1_67_0
-# to update this, use boost bcp as follows (on windows, you need to install a unix shell):
+
+# Remove the old boost sources
 rm -rf lslboost/{boost,libs}
+# copy all needed boost files and rename all mentions of boost to lslboost
 bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` lslboost/
+# remove superfluous directories:
 rm lslboost/Jamroot
-# optionally: remove superfluous directories:
 find lslboost -type d -and \( -name build -o -name test -o -name edg -o -name dmc -o -name msvc70 -o -name msvc60 -o -name bcc* \) -print0 | xargs -0 rm -rf
 
 # apply patches to boost

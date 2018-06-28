@@ -1,25 +1,35 @@
-# Lab streaming layer API.
+# Lab streaming layer library
 
 The lab streaming layer is a simple all-in-one approach to streaming experiment
-ata between applications in a lab, e.g. instrument time series, event markers,
+data between applications in a lab, e.g. instrument time series, event markers,
 audio, and so on.
 
+## Building liblsl
 
-## 
 To compile the library yourself from source please follow the instructions in
-the file INSTALL.
+the [main build documentation](https://github.com/labstreaminglayer/tree/master/doc/BUILD.md).
 
 To build language bindings (e.g. for
 [Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
 [Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
 the [corresponding directory](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/LSL)
-in the [superrepository](https://github.com/labstreaminglayer/labstreaminglayer).
+in the [main repository](https://github.com/labstreaminglayer/labstreaminglayer).
 
 You might also be interested in
 [apps to connect recording equipment](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/Apps)
-and the [LabRecorder](https://github.com/labstreaminglayer/Apps-LabRecorder).
+and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
 
 Please stay put while we figure out how to best offer precompiled packages.
+
+## Boost
+
+liblsl uses boost (mainly Boost.ASIO and Boost.Thread) extensively.
+Because Windows has timing problems with newer Boost versions and embedding liblsl
+in an application that links to an other Boost version (notably Matlab) causes runtime
+errors, we bundle two subset of boost, the older, tested Boost in `external` and the new
+`lslboost` (with patches to fix the timing behavior on Windows).
+
+To update the included lslboost, install Boost bcp and use the `update_lslboost.sh` script.
 
 ## Design goals
 
@@ -61,5 +71,5 @@ To connect an application to the lab streaming layer:
 * Have a look at the example sources in the
   [examples/ folder](https://github.com/labstreaminglayer/App-Examples)
 
-The library and example applications are licensed under the MIT license. 
+The library and example applications are licensed under the MIT license.  
 The library uses code that is licensed under the Boost software license.
