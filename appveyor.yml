@@ -6,6 +6,7 @@ environment:
   VCVER: 14.0
   ARCH: x64
   CMakeArgs: ""
+  DODEPLOY: false
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
 - cmd: 7z x ninja.zip -oC:\projects\deps\ninja > nul
@@ -30,4 +31,7 @@ deploy:
   version: 1.12
   repo: LSL
   package: liblsl
+  publish: true
   override: true
+  on:
+    dodeploy: true
