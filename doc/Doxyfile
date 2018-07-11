@@ -1,0 +1,35 @@
+# Doxyfile 1.8.13
+
+DOXYFILE_ENCODING      = UTF-8
+PROJECT_NAME           = liblsl
+PROJECT_NUMBER         = 1.12
+PROJECT_BRIEF          = "Multi-modal time-synched data transmission over local network"
+OUTPUT_DIRECTORY       = output
+FULL_PATH_NAMES        = NO
+DISTRIBUTE_GROUP_DOC   = YES
+INLINE_SIMPLE_STRUCTS  = YES
+EXTRACT_ALL            = YES
+SHOW_NAMESPACES        = NO
+INPUT                  = ../src \
+                         ../include
+FILE_PATTERNS          = *.c \
+                         *.cpp \
+                        *.h
+EXCLUDE_SYMBOLS        =  lslboost
+SOURCE_BROWSER         = YES
+CLANG_ASSISTED_PARSING = NO
+CLANG_OPTIONS          = -I../lslboost
+ALPHABETICAL_INDEX     = NO
+HTML_DYNAMIC_SECTIONS  = YES
+GENERATE_TREEVIEW      = YES
+GENERATE_QHP           = YES
+QCH_FILE               = lsl.qch
+QHP_NAMESPACE          = edu.sccn.labstreaminglayer.liblsl
+QHG_LOCATION           = 
+GENERATE_XML           = YES
+GENERATE_TAGFILE       = 
+CLASS_DIAGRAMS         = NO
+COLLABORATION_GRAPH    = NO
+INCLUDE_GRAPH          = YES
+INCLUDED_BY_GRAPH      = YES
+DOT_IMAGE_FORMAT       = svg
