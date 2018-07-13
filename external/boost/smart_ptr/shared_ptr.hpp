@@ -1,4 +1,4 @@
-#include <lslboost/archive/detail/polymorphic_oarchive_dispatch.hpp>
+#include <lslboost/smart_ptr/shared_ptr.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

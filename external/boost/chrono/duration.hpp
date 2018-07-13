@@ -1,4 +1,4 @@
-#include <lslboost/date_time/time_duration.hpp>
+#include <lslboost/chrono/duration.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

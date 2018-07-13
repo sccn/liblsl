@@ -1,4 +1,4 @@
-#include <lslboost/format.hpp>
+#include <lslboost/thread/thread_only.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

@@ -1,4 +1,4 @@
-#include <lslboost/type_traits.hpp>
+#include <lslboost/smart_ptr/scoped_array.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

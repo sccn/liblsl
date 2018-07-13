@@ -1,4 +1,4 @@
-#include <lslboost/circular_buffer.hpp>
+#include <lslboost/asio/placeholders.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

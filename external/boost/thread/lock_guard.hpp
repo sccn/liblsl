@@ -1,4 +1,4 @@
-#include <lslboost/filesystem.hpp>
+#include <lslboost/thread/lock_guard.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

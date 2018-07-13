@@ -1,4 +1,4 @@
-#include <lslboost/variant.hpp>
+#include <lslboost/random/mersenne_twister.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

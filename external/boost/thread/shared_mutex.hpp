@@ -1,4 +1,4 @@
-#include <lslboost/asio.hpp>
+#include <lslboost/thread/shared_mutex.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

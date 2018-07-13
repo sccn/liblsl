@@ -1,4 +1,4 @@
-#include <lslboost/thread.hpp>
+#include <lslboost/algorithm/string/predicate.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

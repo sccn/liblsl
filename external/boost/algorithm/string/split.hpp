@@ -1,4 +1,4 @@
-#include <lslboost/thread/thread.hpp>
+#include <lslboost/algorithm/string/split.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

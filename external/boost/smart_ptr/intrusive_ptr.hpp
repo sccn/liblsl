@@ -1,4 +1,4 @@
-#include <lslboost/uuid/uuid.hpp>
+#include <lslboost/smart_ptr/intrusive_ptr.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

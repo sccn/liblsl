@@ -1,4 +1,4 @@
-#include <lslboost/integer/endian.hpp>
+#include <lslboost/smart_ptr/enable_shared_from_this.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

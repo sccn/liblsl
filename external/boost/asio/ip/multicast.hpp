@@ -1,4 +1,4 @@
-#include <lslboost/scoped_ptr.hpp>
+#include <lslboost/asio/ip/multicast.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

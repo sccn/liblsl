@@ -1,4 +1,4 @@
-#include <lslboost/shared_ptr.hpp>
+#include <lslboost/smart_ptr/scoped_ptr.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

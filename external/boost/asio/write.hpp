@@ -1,4 +1,4 @@
-#include <lslboost/archive/detail/polymorphic_iarchive_impl.hpp>
+#include <lslboost/asio/write.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED

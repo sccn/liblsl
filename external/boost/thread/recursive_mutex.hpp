@@ -1,4 +1,4 @@
-#include <lslboost/random.hpp>
+#include <lslboost/thread/recursive_mutex.hpp>
 
 #ifndef LSLBOOST_NAMESPACE_DECLARED
 #define LSLBOOST_NAMESPACE_DECLARED
