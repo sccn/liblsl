@@ -13,7 +13,7 @@ script:
 - cd ..
 matrix:
   include:
-    - os: linux
+#    - os: linux
     - os: osx
 deploy:
   skip_cleanup: true

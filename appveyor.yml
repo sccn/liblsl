@@ -3,10 +3,19 @@ pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
 environment:
-  VCVER: 14.0
-  ARCH: x64
-  CMakeArgs: ""
   DODEPLOY: false
+  CMakeArgs: ""
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
+      VCVER: 14.0
+      ARCH: x64
+      LSLBOOST: lslboost
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+      VCVER: 9.0
+      ARCH: x86
+      LSLBOOST: external
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
+      LSLBOOST: lslboost
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
 - cmd: 7z x ninja.zip -oC:\projects\deps\ninja > nul
@@ -16,12 +25,14 @@ build_script:
 - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
 - mkdir build
 - cd build
-- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_WINVER=0x0601 %CMakeArgs% ../
+- cmd: cmake -G Ninja -DLSL_LSLBOOST_PATH=%LSLBOOST% %CMakeArgs% ..
+- sh: cmake -DLSL_LSLBOOST_PATH=${LSLBOOST} ${CMakeArgs} ..
 - cmake --build . --config Release --target install
 - cpack
 artifacts:
 - path: 'build/*.7z'
-  name: liblsl
+- path: 'build/*.deb'
+- path: 'build/*.tar.*'
 deploy:
 - provider: BinTray
   username: tstenner
@@ -30,8 +41,8 @@ deploy:
   subject: labstreaminglayer
   version: 1.12
   repo: LSL
-  package: liblsl
+  package: $(APPVEYOR_PROJECT_NAME)
   publish: true
   override: true
   on:
-    dodeploy: true
+    DODEPLOY: true
