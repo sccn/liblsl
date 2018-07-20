@@ -303,8 +303,15 @@ namespace lsl {
         /// Assignment operator.
         stream_info &operator=(const stream_info &rhs) { if (this != &rhs) obj = lsl_copy_streaminfo(rhs.obj); return *this; }
 
+#if  __cplusplus > 199711L
+		stream_info(stream_info&& rhs) noexcept {
+			this->obj = rhs.obj;
+			rhs.obj = nullptr;
+		}
+#endif
+
         /// Destructor.
-        ~stream_info() { lsl_destroy_streaminfo(obj); }
+		~stream_info() { if(obj) lsl_destroy_streaminfo(obj); }
 
 		/// Utility function to create a stream_info from an XML representation
 		static stream_info from_xml(const std::string &xml) { return stream_info(lsl_streaminfo_from_xml(xml.c_str())); }
