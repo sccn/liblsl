@@ -4,12 +4,6 @@
 #include <stdexcept>
 #include <boost/version.hpp>
 
-#ifdef _WIN32
-#define LIBLSL_CPP_API __declspec(dllexport)
-#else
-#define LIBLSL_CPP_API
-#endif
-
 #ifdef _MSC_VER
 #pragma warning( disable : 4275 )
 #if _MSC_VER < 1600
@@ -102,7 +96,7 @@ namespace lsl {
 #endif
 
 	/// Exception class that indicates that a stream inlet's source has been irrecoverably lost.
-	class LIBLSL_CPP_API lost_error: public std::runtime_error {
+	class lost_error: public std::runtime_error {
 	public:
 		explicit lost_error(const std::string &msg): std::runtime_error(msg) {}
 		~lost_error();
@@ -110,32 +104,11 @@ namespace lsl {
 
 
 	/// Exception class that indicates that an operation failed due to a timeout.
-	class LIBLSL_CPP_API timeout_error: public std::runtime_error {
+	class timeout_error: public std::runtime_error {
 	public:
 		explicit timeout_error(const std::string &msg): std::runtime_error(msg) {}
 		~timeout_error();
 	};
 }
 
-
-// === Auto-generated target platform version defines (for Microsoft and asio) ===
-
-#ifndef WINVER
-#define WINVER 0x0501
 #endif
-
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0501
-#endif
-
-#ifndef _WIN32_WINDOWS
-#define _WIN32_WINDOWS 0x0501
-#endif
-
-#ifndef _WIN32_IE
-#define _WIN32_IE 0x0500
-#endif
-
-
-#endif
-

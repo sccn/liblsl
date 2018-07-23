@@ -87,9 +87,6 @@ set (sources
 	src/udp_server.cpp
 	src/udp_server.h
 )
-if(MSVC)
-	list(APPEND sources src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h)
-endif()
 
 set(headers
 	include/lsl_c.h
