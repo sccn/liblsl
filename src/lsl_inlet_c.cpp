@@ -232,7 +232,7 @@ LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buf
 		double result = ((stream_inlet_impl*)in)->pull_sample(tmp,timeout);
         if (buffer_elements < (int)tmp.size())
             throw std::range_error("The provided buffer has fewer elements than the stream's number of channels.");
-		// allocate memory and copy over into buffer#include "../include/lsl_c.h"
+		// allocate memory and copy over into buffer
 		for (unsigned k=0;k<tmp.size();k++) {
 			buffer[k] = (char*)malloc(tmp[k].size()+1);
 			if (buffer[k] == NULL) {

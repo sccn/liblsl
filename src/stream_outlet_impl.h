@@ -76,7 +76,7 @@ namespace lsl {
 		void push_sample(const char *data, double timestamp=0.0, bool pushthrough=true) { enqueue(data,timestamp,pushthrough); }
 		void push_sample(const std::string *data, double timestamp=0.0, bool pushthrough=true) { enqueue(data,timestamp,pushthrough); }
 
-		
+
 	    template <typename T>
 	    inline lsl_error_code_t push_sample_noexcept(const T* data, double timestamp = 0.0,
 		                                             bool pushthrough = true) BOOST_NOEXCEPT {
