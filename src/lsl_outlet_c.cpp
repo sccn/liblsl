@@ -191,7 +191,7 @@ LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, co
 	try {
 		stream_outlet_impl* outimpl = (stream_outlet_impl*)out;
 		std::vector<std::string> tmp;
-		for (uint32_t k=0;k<(uint)outimpl->info().channel_count();k++)
+		for (uint32_t k=0;k<(uint32_t)outimpl->info().channel_count();k++)
 			tmp.push_back(std::string(data[k],lengths[k]));
 		return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
 	}
@@ -209,7 +209,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_d(lsl_outlet out, const double *data, unsign
 	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
 }
 
-LIBLSL_C_API int32_t lsl_push_chunk_l(lsl_outlet out, const int64_t *data, unsigned long data_elements) {
+LIBLSL_C_API int32_t lsl_push_chunk_l(lsl_outlet out, const long *data, unsigned long data_elements) {
 	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
 }
 
