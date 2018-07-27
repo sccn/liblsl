@@ -7,7 +7,7 @@ audio, and so on.
 ## Building liblsl
 
 To compile the library yourself from source please follow the instructions in
-the [main build documentation](https://github.com/labstreaminglayer/tree/master/doc/BUILD.md).
+the [main build documentation](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/doc/BUILD.md).
 
 To build language bindings (e.g. for
 [Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
