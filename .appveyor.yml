@@ -25,8 +25,8 @@ build_script:
 - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
 - mkdir build
 - cd build
-- cmd: cmake -G Ninja -DLSL_LSLBOOST_PATH=%LSLBOOST% %CMakeArgs% ..
-- sh: cmake -DLSL_LSLBOOST_PATH=${LSLBOOST} ${CMakeArgs} ..
+- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=%LSLBOOST% %CMakeArgs% ..
+- sh: cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=${LSLBOOST} ${CMakeArgs} ..
 - cmake --build . --config Release --target install
 - cpack
 artifacts:
