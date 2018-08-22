@@ -1,6 +1,6 @@
 # Building liblsl
 
-This file includes quick start recipes. To see general principles, look in labstreaminglayer/docs/BUILD.md.
+This file includes quick start recipes. To see general principles, look [here](https://github.com/labstreaminglayer/labstreaminglayer/blob/master/doc/BUILD.md).
 
 
 ## Windows - CMake - Visual Studio 2017
