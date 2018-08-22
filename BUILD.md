@@ -19,18 +19,20 @@ From Visual Studio:<BR/>
  * Select x86-Release
  * CMake menu -> Change CMake Settings -> LabStreamingLayer
 
-    {
-      "name": "x86-Release",
-      "generator": "Ninja",
-      "configurationType": "RelWithDebInfo",
-      "inheritEnvironments": [ "msvc_x86" ],
-      "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
-      "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
-      "cmakeCommandArgs": "",
-      "buildCommandArgs": "-v",
-      "ctestCommandArgs": ""
-    }
-	
+```
+{
+  "name": "x86-Release",
+  "generator": "Ninja",
+  "configurationType": "RelWithDebInfo",
+  "inheritEnvironments": [ "msvc_x86" ],
+  "buildRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\build\\${name}",
+  "installRoot": "${env.USERPROFILE}\\CMakeBuilds\\${workspaceHash}\\install\\${name}",
+  "cmakeCommandArgs": "",
+  "buildCommandArgs": "-v",
+  "ctestCommandArgs": ""
+}
+```
+
  * Consider changing the build and install roots, as the default path is obscure. When you save this file, CMake should reconfigure, and show the output in the output window (including any CMake configuration errors).
 
  * Cmake -> Build All
