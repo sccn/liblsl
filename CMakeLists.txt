@@ -27,6 +27,8 @@ option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
 set(LSL_WINVER "0x0501" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0501 for Windows XP)")
 
+option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
+
 set (sources
 	src/api_config.cpp
 	src/api_config.h
@@ -189,4 +191,9 @@ install(FILES LSLCMake.cmake
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 include(LSLCMake)
+
+if(LSL_UNITTESTS)
+	add_subdirectory(testing/UnitTests)
+endif()
+
 LSLGenerateCPackConfig()
