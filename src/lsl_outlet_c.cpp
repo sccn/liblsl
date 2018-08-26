@@ -334,7 +334,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtp(lsl_outlet out, const char **data, uns
 		for (unsigned long k=0;k<data_elements;k++)
 			tmp.push_back(std::string(data[k]));
 		if (data_elements)
-			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0], data_elements, timestamp, pushthrough);
+			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0], tmp.size(), timestamp, pushthrough);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -393,7 +393,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftp(lsl_outlet out, const char **data, con
 		for (unsigned long k=0;k<data_elements;k++)
 			tmp.push_back(std::string(data[k],lengths[k]));
 		if (data_elements)
-			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0], data_elements, timestamp, pushthrough);
+			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0],tmp.size(),timestamp,pushthrough);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
