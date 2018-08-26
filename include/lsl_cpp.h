@@ -991,7 +991,7 @@ namespace lsl {
 		template <typename T>
 		bool pull_chunk_multiplexed(std::vector<T>& chunk,
 		                            std::vector<double>* timestamps = nullptr,
-		                            double timeout = 0.0, bool append=false) {
+									double timeout = 0.0, bool append = false) {
 			if(!append) {
 			chunk.clear();
 			if(timestamps) timestamps->clear();
@@ -1001,7 +1001,7 @@ namespace lsl {
 			if(timestamps)
 				timestamps->reserve(timestamps->size() + target);
 			std::vector<T> sample;
-			while (double ts = pull_sample(sample, 0.0)) {
+			while (double ts = pull_sample(sample, timeout)) {
 #if  __cplusplus > 199711L
 				chunk.insert(chunk.end(),
 				             std::make_move_iterator(sample.cbegin()),
