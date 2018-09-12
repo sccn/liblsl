@@ -308,7 +308,7 @@ namespace lsl {
         /// Assignment operator.
         stream_info &operator=(const stream_info &rhs) { if (this != &rhs) obj = lsl_copy_streaminfo(rhs.obj); return *this; }
 
-#if  __cplusplus > 199711L
+#if  __cplusplus > 199711L || _MSC_VER>=1900
 		stream_info(stream_info&& rhs) noexcept {
 			this->obj = rhs.obj;
 			rhs.obj = nullptr;
@@ -626,7 +626,7 @@ namespace lsl {
         */
 		~stream_outlet() { if(obj) lsl_destroy_outlet(obj); }
 
-#if  __cplusplus > 199711L
+#if __cplusplus > 199711L || _MSC_VER >= 1900
 		/**
 		 * @brief stream_outlet Move constructor
 		 * @param rhs Outlet to move from. Using it afterwards will dereference
@@ -1007,7 +1007,7 @@ namespace lsl {
 				timestamps->reserve(timestamps->size() + target);
 			std::vector<T> sample;
 			while (double ts = pull_sample(sample, timeout)) {
-#if  __cplusplus > 199711L
+#if __cplusplus > 199711L || _MSC_VER >= 1900
 				chunk.insert(chunk.end(),
 				             std::make_move_iterator(sample.cbegin()),
 				             std::make_move_iterator(sample.cend()));
