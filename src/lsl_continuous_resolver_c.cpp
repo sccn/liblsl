@@ -22,7 +22,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forge
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "'";
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
 		return NULL;
@@ -45,7 +45,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << prop << "='" << value << "'";
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
 		return NULL;
@@ -67,7 +67,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << pred;
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
 		return NULL;

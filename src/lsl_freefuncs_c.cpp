@@ -70,7 +70,7 @@ LIBLSL_C_API int lsl_resolve_all(lsl_streaminfo *buffer, uint32_t buffer_element
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+			buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		std::cerr << "Error during resolve_all: " << e.what() << std::endl;
@@ -104,7 +104,7 @@ LIBLSL_C_API int lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_elem
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+			buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		std::cerr << "Error during resolve_byprop: " << e.what() << std::endl;
@@ -138,7 +138,7 @@ LIBLSL_C_API int lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_elem
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+			buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		std::cerr << "Error during resolve_bypred: " << e.what() << std::endl;
