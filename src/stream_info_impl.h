@@ -269,5 +269,8 @@ namespace lsl {
 
 }
 
+using lsl_xml_ptr = pugi::xml_node*;
+using lsl_streaminfo = lsl::stream_info_impl *;
+
 #endif
 

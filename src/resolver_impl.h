@@ -131,5 +131,6 @@ namespace lsl {
 
 }
 
-#endif
+using lsl_continuous_resolver = lsl::resolver_impl *;
 
+#endif

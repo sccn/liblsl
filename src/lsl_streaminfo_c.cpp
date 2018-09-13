@@ -3,7 +3,7 @@
 #include <iostream>
 
 extern "C" {
-#include "../include/lsl_c.h"
+#include "../include/streaminfo.h"
 
 // === Implementation of the streaminfo-related functions of the C API ===
 

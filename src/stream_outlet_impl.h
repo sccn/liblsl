@@ -8,8 +8,7 @@
 #include "api_config.h"
 #include "udp_server.h"
 #include "sample.h"
-
-
+#include "../include/common.h"
 
 namespace lsl { 
 

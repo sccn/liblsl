@@ -1,8 +1,12 @@
-#include "../include/lsl_c.h"
 #include "stream_inlet_impl.h"
 
 extern "C" {
 // === implementation of the stream_inlet class ===
+
+using lsl_streaminfo = lsl::stream_info_impl *;
+using lsl_inlet = lsl::stream_inlet_impl *;
+
+#include "../include/inlet.h"
 
 using namespace lsl;
 

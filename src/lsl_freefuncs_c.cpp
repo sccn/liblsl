@@ -1,4 +1,3 @@
-#include "../include/lsl_c.h"
 #include "common.h"
 #include "resolver_impl.h"
 #include <boost/chrono/system_clocks.hpp>
@@ -11,6 +10,8 @@ using std::string;
 using std::vector;
 
 extern "C" {
+#include "../include/freefuncs.h"
+
 /**
 * Get the protocol version.
 */

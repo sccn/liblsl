@@ -1,7 +1,8 @@
 #include "pugixml/pugixml.hpp"
 
 extern "C" {
-#include "../include/lsl_c.h"
+using lsl_xml_ptr = pugi::xml_node_struct*;
+#include "../include/xml_element.h"
 
 // === implementation of the lsl_xml_ptr functions of lsl_c.h ===
 
