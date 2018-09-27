@@ -73,3 +73,7 @@ To connect an application to the lab streaming layer:
 
 The library and example applications are licensed under the MIT license.  
 The library uses code that is licensed under the Boost software license.
+
+# Acknowledgements
+
+The original version of this software was written at the Swartz Center for Computational Neuroscience, UCSD. This work was funded by the Army Research Laboratory under Cooperative Agreement Number W911NF-10-2-0022 as well as through NINDS grant 3R01NS047293-06S1.
