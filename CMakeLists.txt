@@ -18,8 +18,7 @@ option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
 # If you need a specific boost version, you can put it in a subdirectory
 # and add a CMakeLists.txt that exports the lslboost target
 # (see lslboost/CMakeLists.txt for an example).
-# If in doubt, use "external" (1.57 with patches) or "lslboost" (1.65.1)
-set(LSL_LSLBOOST_PATH "external" CACHE STRING "Subdirectory with lslboost")
+set(LSL_LSLBOOST_PATH "lslboost" CACHE STRING "Subdirectory with lslboost")
 
 # Build static library
 option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
