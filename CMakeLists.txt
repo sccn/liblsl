@@ -19,6 +19,11 @@ option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
 # and add a CMakeLists.txt that exports the lslboost target
 # (see lslboost/CMakeLists.txt for an example).
 set(LSL_LSLBOOST_PATH "lslboost" CACHE STRING "Subdirectory with lslboost")
+if(${LSL_LSLBOOST_PATH} STREQUAL "external")
+	set(LSL_LSLBOOST_PATH "lslboost")
+	message(WARNING "The old boost in external was removed, switching to lslboost.")
+endif()
+
 
 # Build static library
 option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
