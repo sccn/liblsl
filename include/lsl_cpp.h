@@ -646,8 +646,10 @@ namespace lsl {
 
         /// Check whether a given data length matches the number of channels; throw if not
         void check_numchan(std::size_t N) const {
-            if (N != channel_count)
-                throw std::runtime_error("Provided element count does not match the stream's channel count.");
+			if (N != channel_count)
+				throw std::runtime_error("Provided element count (" + std::to_string(N) +
+			                             ") does not match the stream's channel count (" +
+			                             std::to_string(channel_count) + '.');
         }
 
         int32_t channel_count;
