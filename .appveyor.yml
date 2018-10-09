@@ -9,13 +9,10 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       VCVER: 14.0
       ARCH: x64
-      LSLBOOST: lslboost
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
       VCVER: 9.0
       ARCH: x86
-      LSLBOOST: external
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu
-      LSLBOOST: lslboost
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
 - cmd: 7z x ninja.zip -oC:\projects\deps\ninja > nul
@@ -25,8 +22,8 @@ build_script:
 - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
 - mkdir build
 - cd build
-- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=%LSLBOOST% %CMakeArgs% ..
-- sh: cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=${LSLBOOST} ${CMakeArgs} ..
+- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release %CMakeArgs% ..
+- sh: cmake -DCMAKE_BUILD_TYPE=Release ${CMakeArgs} ..
 - cmake --build . --config Release --target install
 - cpack
 artifacts:
