@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 7")
+message(STATUS "Included LSL CMake helpers, rev. 8")
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -210,7 +210,7 @@ endfunction()
 
 # default paths, versions and magic to guess it on windows
 # guess default paths for Windows / VC
-set(LATEST_QT_VERSION "5.10.1")
+set(LATEST_QT_VERSION "5.11.2")
 
 # Boost autoconfig:
 # Original author: Ryan Pavlik <ryan@sensics.com> <ryan.pavlik@gmail.com
