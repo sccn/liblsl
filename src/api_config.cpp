@@ -1,10 +1,8 @@
 #include "api_config.h"
 #include "common.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include "inireader.h"
 #include <boost/thread/once.hpp>
+#include <fstream>
 
 // === implementation of the api_config class ===
 
@@ -90,15 +88,18 @@ api_config::api_config() {
 */
 void api_config::load_from_file(const std::string &filename) {
 	try {
-		lslboost::property_tree::ptree pt;
-		if (!filename.empty())
-			read_ini(filename, pt);
+		INI pt;
+		if(!filename.empty()) {
+			std::ifstream infile(filename);
+			if(infile.good())
+				pt.load(infile);
+		}
 
 		// read out the [ports] parameters
 		multicast_port_ = pt.get("ports.MulticastPort",16571);
-		base_port_ = pt.get("ports.BasePort",16572);
-		port_range_ = pt.get("ports.PortRange",32);
-		allow_random_ports_ = pt.get("ports.AllowRandomPorts",true);
+		base_port_ = pt.get("ports.BasePort", 16572);
+		port_range_ = pt.get("ports.PortRange", 32);
+		allow_random_ports_ = pt.get("ports.AllowRandomPorts", true);
 		std::string ipv6_str = pt.get("ports.IPv6",
 #ifdef __APPLE__
 		"disable"); // on Mac OS (10.7) there's a bug in the IPv6 implementation that breaks LSL when it tries to use both v4 and v6

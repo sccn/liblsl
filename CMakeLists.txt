@@ -42,6 +42,8 @@ set(lslobj_sources
 	src/forward.h
 	src/info_receiver.cpp
 	src/info_receiver.h
+	src/inireader.h
+	src/inireader.cpp
 	src/inlet_connection.cpp
 	src/inlet_connection.h
 	src/loguru/loguru.hpp
