@@ -20,7 +20,7 @@ using thread_p = std::shared_ptr<lslboost::thread>;
 	* A stream outlet.
 	* Outlets are used to make streaming data (and the meta-data) available on the lab network.
 	*/
-	class stream_outlet_impl: public lslboost::noncopyable {
+	class stream_outlet_impl {
 	public:
 		/**
 		* Establish a new stream outlet. This makes the stream discoverable.
@@ -37,6 +37,8 @@ using thread_p = std::shared_ptr<lslboost::thread>;
 		* The stream will no longer be discoverable after destruction and all paired inlets will stop delivering data.
 		*/
 		~stream_outlet_impl();
+
+		stream_outlet_impl(const stream_outlet_impl&) = delete;
 
 
 		//

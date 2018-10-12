@@ -33,7 +33,7 @@ namespace lsl {
 	*				   by calling resolve_continuous() and the list is retrieved in parallel when desired using
 	*				   results(). In this case a new resolver instance must be created to issue a new query.
 	*/
-	class resolver_impl: public cancellable_registry, public lslboost::noncopyable {
+	class resolver_impl: public cancellable_registry {
 	public:
 		/**
 		* Instantiate a new resolver and configure timing parameters.
@@ -47,6 +47,8 @@ namespace lsl {
 		/// Destructor.
 		/// Cancels any ongoing processes and waits until they finish.
 		~resolver_impl();
+
+		resolver_impl(const resolver_impl&) = delete;
 
 		/**
 		* Resolve a query string into a list of matching stream_info's on the network.

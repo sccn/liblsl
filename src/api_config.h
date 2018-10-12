@@ -172,6 +172,12 @@ namespace lsl {
 		/// Override timestamps with lsl clock if True
 		bool force_default_timestamps() const { return force_default_timestamps_; }
 
+		/// Deleted copy constructor (noncopyable).
+		api_config(const api_config &rhs) = delete;
+
+		/// Deleted assignment operator (noncopyable).
+		api_config &operator=(const api_config &rhs) = delete;
+
 	private:
 		// Thread-safe initialization logic (boilerplate).
 		static lslboost::once_flag once_flag;
@@ -183,12 +189,6 @@ namespace lsl {
 
 		/// Load a configuration file (or apply defaults if filename is empty).
 		void load_from_file(const std::string &filename=std::string());
-
-		/// Private copy constructor (noncopyable).
-		api_config(const api_config &rhs);
-
-		/// Private assignment operator (noncopyable).
-		api_config &operator=(const api_config &rhs);
 
 		// core parameters
 		bool allow_ipv6_, allow_ipv4_;
