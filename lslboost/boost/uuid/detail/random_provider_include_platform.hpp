@@ -17,6 +17,8 @@
 # include <boost/uuid/detail/random_provider_bcrypt.ipp>
 #elif defined(BOOST_UUID_RANDOM_PROVIDER_GETENTROPY)
 # include <boost/uuid/detail/random_provider_getentropy.ipp>
+#elif defined(BOOST_UUID_RANDOM_PROVIDER_GETRANDOM)
+# include <boost/uuid/detail/random_provider_getrandom.ipp>
 #elif defined(BOOST_UUID_RANDOM_PROVIDER_POSIX)
 # include <boost/uuid/detail/random_provider_posix.ipp>
 #elif defined(BOOST_UUID_RANDOM_PROVIDER_WINCRYPT)

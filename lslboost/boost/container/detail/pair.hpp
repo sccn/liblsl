@@ -550,6 +550,61 @@ struct is_class< std::pair<T1, T2> >
    static const bool value = true;
 };
 
+
+//Triviality of pair
+template<class T>
+struct is_trivially_copy_constructible;
+
+template<class A, class B>
+struct is_trivially_copy_assignable
+   <lslboost::container::dtl::pair<A,B> >
+{
+   static const bool value = lslboost::move_detail::is_trivially_copy_assignable<A>::value &&
+                             lslboost::move_detail::is_trivially_copy_assignable<B>::value ;
+};
+
+template<class T>
+struct is_trivially_move_constructible;
+
+template<class A, class B>
+struct is_trivially_move_assignable
+   <lslboost::container::dtl::pair<A,B> >
+{
+   static const bool value = lslboost::move_detail::is_trivially_move_assignable<A>::value &&
+                             lslboost::move_detail::is_trivially_move_assignable<B>::value ;
+};
+
+template<class T>
+struct is_trivially_copy_assignable;
+
+template<class A, class B>
+struct is_trivially_copy_constructible<lslboost::container::dtl::pair<A,B> >
+{
+   static const bool value = lslboost::move_detail::is_trivially_copy_constructible<A>::value &&
+                             lslboost::move_detail::is_trivially_copy_constructible<B>::value ;
+};
+
+template<class T>
+struct is_trivially_move_assignable;
+
+template<class A, class B>
+struct is_trivially_move_constructible<lslboost::container::dtl::pair<A,B> >
+{
+   static const bool value = lslboost::move_detail::is_trivially_move_constructible<A>::value &&
+                             lslboost::move_detail::is_trivially_move_constructible<B>::value ;
+};
+
+template<class T>
+struct is_trivially_destructible;
+
+template<class A, class B>
+struct is_trivially_destructible<lslboost::container::dtl::pair<A,B> >
+{
+   static const bool value = lslboost::move_detail::is_trivially_destructible<A>::value &&
+                             lslboost::move_detail::is_trivially_destructible<B>::value ;
+};
+
+
 }  //namespace move_detail{
 
 }  //namespace lslboost {

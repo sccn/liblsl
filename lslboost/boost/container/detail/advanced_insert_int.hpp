@@ -125,8 +125,16 @@ struct insert_value_initialized_n_proxy
    void uninitialized_copy_n_and_update(Allocator &a, Iterator p, size_type n) const
    {  lslboost::container::uninitialized_value_init_alloc_n(a, n, p);  }
 
-   void copy_n_and_update(Allocator &, Iterator, size_type) const
-   {  BOOST_ASSERT(false); }
+   void copy_n_and_update(Allocator &a, Iterator p, size_type n) const
+   {
+      for (; 0 < n; --n, ++p){
+         typename aligned_storage<sizeof(value_type), alignment_of<value_type>::value>::type stor;
+         value_type &v = *static_cast<value_type *>(static_cast<void *>(stor.data));
+         alloc_traits::construct(a, &v);
+         value_destructor<Allocator> on_exit(a, v); (void)on_exit;
+         *p = ::lslboost::move(v);
+      }
+   }
 };
 
 template<class Allocator, class Iterator>
@@ -139,8 +147,18 @@ struct insert_default_initialized_n_proxy
    void uninitialized_copy_n_and_update(Allocator &a, Iterator p, size_type n) const
    {  lslboost::container::uninitialized_default_init_alloc_n(a, n, p);  }
 
-   void copy_n_and_update(Allocator &, Iterator, size_type) const
-   {  BOOST_ASSERT(false); }
+   void copy_n_and_update(Allocator &a, Iterator p, size_type n) const
+   {
+      if(!is_pod<value_type>::value){
+         for (; 0 < n; --n, ++p){
+            typename aligned_storage<sizeof(value_type), alignment_of<value_type>::value>::type stor;
+            value_type &v = *static_cast<value_type *>(static_cast<void *>(stor.data));
+            alloc_traits::construct(a, &v, default_init);
+            value_destructor<Allocator> on_exit(a, v); (void)on_exit;
+            *p = ::lslboost::move(v);
+         }
+      }
+   }
 };
 
 template<class Allocator, class Iterator>

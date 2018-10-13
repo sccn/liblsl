@@ -8,7 +8,10 @@
 // BCrypt provider for entropy
 //
 
+#include <cstddef>
+#include <boost/config.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/move/core.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/winapi/bcrypt.hpp>
 #include <boost/winapi/get_last_error.hpp>
@@ -27,7 +30,9 @@ namespace detail {
 
 class random_provider_base
 {
-  public:
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider_base)
+
+public:
     random_provider_base()
       : hProv_(NULL)
     {
@@ -38,24 +43,34 @@ class random_provider_base
                 NULL,
                 0);
 
-        if (status)
+        if (BOOST_UNLIKELY(status != 0))
         {
             BOOST_THROW_EXCEPTION(entropy_error(status, "BCryptOpenAlgorithmProvider"));
         }
     }
 
+    random_provider_base(BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT : hProv_(that.hProv_)
+    {
+        that.hProv_ = NULL;
+    }
+
+    random_provider_base& operator= (BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT
+    {
+        destroy();
+        hProv_ = that.hProv_;
+        that.hProv_ = NULL;
+        return *this;
+    }
+
     ~random_provider_base() BOOST_NOEXCEPT
     {
-        if (hProv_)
-        {
-            ignore_unused(lslboost::winapi::BCryptCloseAlgorithmProvider(hProv_, 0));
-        }
+        destroy();
     }
 
     //! Obtain entropy and place it into a memory location
     //! \param[in]  buf  the location to write entropy
     //! \param[in]  siz  the number of bytes to acquire
-    void get_random_bytes(void *buf, size_t siz)
+    void get_random_bytes(void *buf, std::size_t siz)
     {
         lslboost::winapi::NTSTATUS_ status =
             lslboost::winapi::BCryptGenRandom(
@@ -64,13 +79,22 @@ class random_provider_base
                 lslboost::numeric_cast<lslboost::winapi::ULONG_>(siz),
                 0);
 
-        if (status)
+        if (BOOST_UNLIKELY(status != 0))
         {
             BOOST_THROW_EXCEPTION(entropy_error(status, "BCryptGenRandom"));
         }
     }
 
-  private:
+private:
+    void destroy() BOOST_NOEXCEPT
+    {
+        if (hProv_)
+        {
+            lslboost::ignore_unused(lslboost::winapi::BCryptCloseAlgorithmProvider(hProv_, 0));
+        }
+    }
+
+private:
     lslboost::winapi::BCRYPT_ALG_HANDLE_ hProv_;
 };
 

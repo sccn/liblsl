@@ -23,18 +23,18 @@ typedef HANDLE_ HLOCAL_;
 }}
 
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ WINAPI
+BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
 LocalAlloc(
     lslboost::winapi::UINT_ uFlags,
     lslboost::winapi::SIZE_T_ uBytes);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ WINAPI
+BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
 LocalReAlloc(
     lslboost::winapi::HLOCAL_ hMem,
     lslboost::winapi::SIZE_T_ uBytes,
     lslboost::winapi::UINT_ uFlags);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ WINAPI LocalFree(lslboost::winapi::HLOCAL_ hMem);
+BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC LocalFree(lslboost::winapi::HLOCAL_ hMem);
 } // extern "C"
 #endif
 

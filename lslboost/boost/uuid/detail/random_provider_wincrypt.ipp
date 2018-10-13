@@ -12,7 +12,10 @@
 * $Id$
 */
 
+#include <cstddef>
+#include <boost/config.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/move/core.hpp>
 #include <boost/numeric/conversion/cast.hpp>
 #include <boost/winapi/crypt.hpp>
 #include <boost/winapi/get_last_error.hpp>
@@ -35,45 +38,69 @@ namespace detail {
 
 class random_provider_base
 {
-  public:
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider_base)
+
+public:
     random_provider_base()
-        : hProv_(NULL)
+        : hProv_(0)
     {
-        if (!lslboost::winapi::CryptAcquireContextW(
+        lslboost::winapi::BOOL_ res = lslboost::winapi::CryptAcquireContextW(
             &hProv_,
             NULL,
             NULL,
             lslboost::winapi::PROV_RSA_FULL_,
-            lslboost::winapi::CRYPT_VERIFYCONTEXT_ | lslboost::winapi::CRYPT_SILENT_))
+            lslboost::winapi::CRYPT_VERIFYCONTEXT_ | lslboost::winapi::CRYPT_SILENT_);
+        if (BOOST_UNLIKELY(!res))
         {
             lslboost::winapi::DWORD_ err = lslboost::winapi::GetLastError();
             BOOST_THROW_EXCEPTION(entropy_error(err, "CryptAcquireContext"));
         }
     }
 
+    random_provider_base(BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT : hProv_(that.hProv_)
+    {
+        that.hProv_ = 0;
+    }
+
+    random_provider_base& operator= (BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT
+    {
+        destroy();
+        hProv_ = that.hProv_;
+        that.hProv_ = 0;
+        return *this;
+    }
+
     ~random_provider_base() BOOST_NOEXCEPT
     {
-        if (hProv_)
-        {
-            ignore_unused(lslboost::winapi::CryptReleaseContext(hProv_, 0));
-        }
+        destroy();
     }
 
     //! Obtain entropy and place it into a memory location
     //! \param[in]  buf  the location to write entropy
     //! \param[in]  siz  the number of bytes to acquire
-    void get_random_bytes(void *buf, size_t siz)
+    void get_random_bytes(void *buf, std::size_t siz)
     {
-        if (!lslboost::winapi::CryptGenRandom(hProv_, 
-                    lslboost::numeric_cast<lslboost::winapi::DWORD_>(siz), 
-                    static_cast<lslboost::winapi::BYTE_ *>(buf)))
+        lslboost::winapi::BOOL_ res = lslboost::winapi::CryptGenRandom(
+            hProv_,
+            lslboost::numeric_cast<lslboost::winapi::DWORD_>(siz),
+            static_cast<lslboost::winapi::BYTE_ *>(buf));
+        if (BOOST_UNLIKELY(!res))
         {
             lslboost::winapi::DWORD_ err = lslboost::winapi::GetLastError();
             BOOST_THROW_EXCEPTION(entropy_error(err, "CryptGenRandom"));
         }
     }
 
-  private:
+private:
+    void destroy() BOOST_NOEXCEPT
+    {
+        if (hProv_)
+        {
+            lslboost::ignore_unused(lslboost::winapi::CryptReleaseContext(hProv_, 0));
+        }
+    }
+
+private:
     lslboost::winapi::HCRYPTPROV_ hProv_;
 };
 

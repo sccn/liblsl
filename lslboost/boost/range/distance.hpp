@@ -15,18 +15,19 @@
 # pragma once
 #endif
 
+#include <boost/iterator/distance.hpp>
 #include <boost/range/begin.hpp>
 #include <boost/range/end.hpp>
 #include <boost/range/difference_type.hpp>
 
-namespace lslboost 
+namespace lslboost
 {
 
     template< class T >
-    inline BOOST_DEDUCED_TYPENAME range_difference<T>::type 
+    inline BOOST_CXX14_CONSTEXPR BOOST_DEDUCED_TYPENAME range_difference<T>::type
     distance( const T& r )
     {
-        return std::distance( lslboost::begin( r ), lslboost::end( r ) );
+        return lslboost::distance( lslboost::begin( r ), lslboost::end( r ) );
     }
 
 } // namespace 'boost'

@@ -856,18 +856,15 @@ void rational<IntType>::normalize()
     num /= g;
     den /= g;
 
+    if (den < -(std::numeric_limits<IntType>::max)()) {
+        BOOST_THROW_EXCEPTION(bad_rational("bad rational: non-zero singular denominator"));
+    }
+
     // Ensure that the denominator is positive
     if (den < zero) {
         num = -num;
         den = -den;
     }
-
-    // ...But acknowledge that the previous step doesn't always work.
-    // (Nominally, this should be done before the mutating steps, but this
-    // member function is only called during the constructor, so we never have
-    // to worry about zombie objects.)
-    if (den < zero)
-       BOOST_THROW_EXCEPTION(bad_rational("bad rational: non-zero singular denominator"));
 
     BOOST_ASSERT( this->test_invariant() );
 }

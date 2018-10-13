@@ -24,7 +24,7 @@
 
 #if !defined( BOOST_USE_WINDOWS_H )
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ WINAPI
+BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 GetProcessTimes(
     lslboost::winapi::HANDLE_ hProcess,
     ::_FILETIME* lpCreationTime,

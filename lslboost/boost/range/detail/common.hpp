@@ -18,10 +18,8 @@
 #include <boost/range/config.hpp>
 #include <boost/range/detail/sfinae.hpp>
 #include <boost/type_traits/is_void.hpp>
-#include <boost/mpl/bool.hpp>
 #include <boost/mpl/if.hpp>
 #include <boost/mpl/int.hpp>
-#include <boost/mpl/or.hpp>
 #include <cstddef>
 
 //////////////////////////////////////////////////////////////////////////////
@@ -71,7 +69,7 @@ namespace lslboost
             BOOST_STATIC_CONSTANT( bool, is_const_wchar_t_ptr_   = sizeof( lslboost::range_detail::is_const_wchar_t_ptr_impl( ptr ) ) == sizeof( yes_type ) );
             BOOST_STATIC_CONSTANT( bool, is_char_array_          = sizeof( lslboost::range_detail::is_char_array_impl( ptr ) ) == sizeof( yes_type ) );
             BOOST_STATIC_CONSTANT( bool, is_wchar_t_array_       = sizeof( lslboost::range_detail::is_wchar_t_array_impl( ptr ) ) == sizeof( yes_type ) );
-            BOOST_STATIC_CONSTANT( bool, is_string_              = (lslboost::mpl::or_<lslboost::mpl::bool_<is_const_char_ptr_>, lslboost::mpl::bool_<is_const_wchar_t_ptr_> >::value ));
+            BOOST_STATIC_CONSTANT( bool, is_string_              = (is_const_char_ptr_ || is_const_wchar_t_ptr_));
             BOOST_STATIC_CONSTANT( bool, is_array_               = lslboost::is_array<C>::value );
             
         };

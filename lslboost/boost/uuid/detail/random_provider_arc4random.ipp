@@ -9,7 +9,8 @@
 // https://man.openbsd.org/arc4random.3
 //
 
-#include <stdlib.h> 
+#include <cstddef>
+#include <stdlib.h>
 
 namespace lslboost {
 namespace uuids {
@@ -21,7 +22,7 @@ class random_provider_base
     //! Obtain entropy and place it into a memory location
     //! \param[in]  buf  the location to write entropy
     //! \param[in]  siz  the number of bytes to acquire
-    void get_random_bytes(void *buf, size_t siz)
+    void get_random_bytes(void *buf, std::size_t siz)
     {
         arc4random_buf(buf, siz);
     }

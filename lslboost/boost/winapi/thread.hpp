@@ -21,12 +21,12 @@
 
 #if !defined( BOOST_USE_WINDOWS_H )
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::DWORD_ WINAPI
+BOOST_SYMBOL_IMPORT lslboost::winapi::DWORD_ BOOST_WINAPI_WINAPI_CC
 SleepEx(
     lslboost::winapi::DWORD_ dwMilliseconds,
     lslboost::winapi::BOOL_ bAlertable);
-BOOST_SYMBOL_IMPORT lslboost::winapi::VOID_ WINAPI Sleep(lslboost::winapi::DWORD_ dwMilliseconds);
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ WINAPI SwitchToThread(BOOST_WINAPI_DETAIL_VOID);
+BOOST_SYMBOL_IMPORT lslboost::winapi::VOID_ BOOST_WINAPI_WINAPI_CC Sleep(lslboost::winapi::DWORD_ dwMilliseconds);
+BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC SwitchToThread(BOOST_WINAPI_DETAIL_VOID);
 } // extern "C"
 #endif
 

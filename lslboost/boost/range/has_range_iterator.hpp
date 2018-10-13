@@ -37,9 +37,9 @@ namespace lslboost
             T,
             BOOST_DEDUCED_TYPENAME ::lslboost::enable_if<
                 BOOST_DEDUCED_TYPENAME mpl::eval_if<is_const<T>,
-                    has_type<range_const_iterator<
+                    has_type<lslboost::range_const_iterator<
                                 BOOST_DEDUCED_TYPENAME remove_const<T>::type> >,
-                    has_type<range_mutable_iterator<T> >
+                    has_type<lslboost::range_mutable_iterator<T> >
                 >::type
             >::type
         >
@@ -57,7 +57,7 @@ namespace lslboost
         struct has_range_const_iterator_impl<
             T,
             BOOST_DEDUCED_TYPENAME ::lslboost::enable_if<
-                has_type<range_const_iterator<T> >
+                has_type<lslboost::range_const_iterator<T> >
             >::type
         >
             : lslboost::mpl::true_

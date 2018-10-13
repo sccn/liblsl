@@ -14,7 +14,7 @@
 #pragma once
 #endif
 
-#if defined(BOOST_WINAPI_IS_MINGW_W64) || (BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6)
+#if BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6
 
 #if BOOST_WINAPI_PARTITION_APP_SYSTEM
 
@@ -34,13 +34,13 @@ typedef PVOID_ BCRYPT_ALG_HANDLE_;
 
 extern "C" {
 
-lslboost::winapi::NTSTATUS_ WINAPI
+lslboost::winapi::NTSTATUS_ BOOST_WINAPI_WINAPI_CC
 BCryptCloseAlgorithmProvider(
     lslboost::winapi::BCRYPT_ALG_HANDLE_ hAlgorithm,
     lslboost::winapi::ULONG_             dwFlags
 );
 
-lslboost::winapi::NTSTATUS_ WINAPI
+lslboost::winapi::NTSTATUS_ BOOST_WINAPI_WINAPI_CC
 BCryptGenRandom(
     lslboost::winapi::BCRYPT_ALG_HANDLE_ hAlgorithm,
     lslboost::winapi::PUCHAR_            pbBuffer,
@@ -48,7 +48,7 @@ BCryptGenRandom(
     lslboost::winapi::ULONG_             dwFlags
 );
 
-lslboost::winapi::NTSTATUS_ WINAPI
+lslboost::winapi::NTSTATUS_ BOOST_WINAPI_WINAPI_CC
 BCryptOpenAlgorithmProvider(
     lslboost::winapi::BCRYPT_ALG_HANDLE_ *phAlgorithm,
     lslboost::winapi::LPCWSTR_           pszAlgId,
@@ -78,6 +78,6 @@ using ::BCryptOpenAlgorithmProvider;
 
 #endif // BOOST_WINAPI_PARTITION_APP_SYSTEM
 
-#endif // defined(BOOST_WINAPI_IS_MINGW_W64) || (BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6)
+#endif // BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6
 
 #endif // BOOST_WINAPI_BCRYPT_HPP_INCLUDED_

@@ -122,42 +122,42 @@ class vec_iterator
 
    //Pointer like operators
    BOOST_CONTAINER_FORCEINLINE reference operator*()   const BOOST_NOEXCEPT_OR_NOTHROW
-   {  return *m_ptr;  }
+   {  BOOST_ASSERT(!!m_ptr);  return *m_ptr;  }
 
    BOOST_CONTAINER_FORCEINLINE pointer operator->()  const BOOST_NOEXCEPT_OR_NOTHROW
-   {  return ::lslboost::intrusive::pointer_traits<pointer>::pointer_to(this->operator*());  }
+   {  return m_ptr;  }
 
    BOOST_CONTAINER_FORCEINLINE reference operator[](difference_type off) const BOOST_NOEXCEPT_OR_NOTHROW
-   {  return m_ptr[off];   }
+   {  BOOST_ASSERT(!!m_ptr);  return m_ptr[off];  }
 
    //Increment / Decrement
    BOOST_CONTAINER_FORCEINLINE vec_iterator& operator++() BOOST_NOEXCEPT_OR_NOTHROW
-   { ++m_ptr;  return *this; }
+   {  BOOST_ASSERT(!!m_ptr); ++m_ptr;  return *this; }
 
    BOOST_CONTAINER_FORCEINLINE vec_iterator operator++(int) BOOST_NOEXCEPT_OR_NOTHROW
-   {  return vec_iterator(m_ptr++); }
+   {  BOOST_ASSERT(!!m_ptr); return vec_iterator(m_ptr++); }
 
    BOOST_CONTAINER_FORCEINLINE vec_iterator& operator--() BOOST_NOEXCEPT_OR_NOTHROW
-   {  --m_ptr; return *this;  }
+   {  BOOST_ASSERT(!!m_ptr); --m_ptr; return *this;  }
 
    BOOST_CONTAINER_FORCEINLINE vec_iterator operator--(int) BOOST_NOEXCEPT_OR_NOTHROW
-   {  return vec_iterator(m_ptr--); }
+   {  BOOST_ASSERT(!!m_ptr); return vec_iterator(m_ptr--); }
 
    //Arithmetic
    BOOST_CONTAINER_FORCEINLINE vec_iterator& operator+=(difference_type off) BOOST_NOEXCEPT_OR_NOTHROW
-   {  m_ptr += off; return *this;   }
+   {  BOOST_ASSERT(!!m_ptr); m_ptr += off; return *this;   }
 
    BOOST_CONTAINER_FORCEINLINE vec_iterator& operator-=(difference_type off) BOOST_NOEXCEPT_OR_NOTHROW
-   {  m_ptr -= off; return *this;   }
+   {  BOOST_ASSERT(!!m_ptr); m_ptr -= off; return *this;   }
 
    BOOST_CONTAINER_FORCEINLINE friend vec_iterator operator+(const vec_iterator &x, difference_type off) BOOST_NOEXCEPT_OR_NOTHROW
-   {  return vec_iterator(x.m_ptr+off);  }
+   {  BOOST_ASSERT(!!x.m_ptr); return vec_iterator(x.m_ptr+off);  }
 
    BOOST_CONTAINER_FORCEINLINE friend vec_iterator operator+(difference_type off, vec_iterator right) BOOST_NOEXCEPT_OR_NOTHROW
-   {  right.m_ptr += off;  return right; }
+   {  BOOST_ASSERT(!!right.m_ptr); right.m_ptr += off;  return right; }
 
    BOOST_CONTAINER_FORCEINLINE friend vec_iterator operator-(vec_iterator left, difference_type off) BOOST_NOEXCEPT_OR_NOTHROW
-   {  left.m_ptr -= off;  return left; }
+   {  BOOST_ASSERT(!!left.m_ptr); left.m_ptr -= off;  return left; }
 
    BOOST_CONTAINER_FORCEINLINE friend difference_type operator-(const vec_iterator &left, const vec_iterator& right) BOOST_NOEXCEPT_OR_NOTHROW
    {  return left.m_ptr - right.m_ptr;   }
@@ -931,6 +931,12 @@ class vector
    //!   throws or T's constructor taking a dereferenced InIt throws.
    //!
    //! <b>Complexity</b>: Linear to the range [first, last).
+//    template <class InIt>
+//    vector(InIt first, InIt last
+//           BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_c
+//                                  < dtl::is_convertible<InIt BOOST_MOVE_I size_type>::value
+//                                  BOOST_MOVE_I dtl::nat >::type * = 0)
+//           ) -> vector<typename iterator_traits<InIt>::value_type, new_allocator<typename iterator_traits<InIt>::value_type>>;
    template <class InIt>
    vector(InIt first, InIt last
       BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_c
@@ -947,6 +953,12 @@ class vector
    //!   throws or T's constructor taking a dereferenced InIt throws.
    //!
    //! <b>Complexity</b>: Linear to the range [first, last).
+//    template <class InIt>
+//    vector(InIt first, InIt last, const allocator_type& a
+//           BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_c
+//                                  < dtl::is_convertible<InIt BOOST_MOVE_I size_type>::value
+//                                  BOOST_MOVE_I dtl::nat >::type * = 0)
+//           ) -> vector<typename iterator_traits<InIt>::value_type, new_allocator<typename iterator_traits<InIt>::value_type>>;
    template <class InIt>
    vector(InIt first, InIt last, const allocator_type& a
       BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_c
@@ -1180,6 +1192,7 @@ class vector
    //! <b>Complexity</b>: Linear to n.
    template <class InIt>
    void assign(InIt first, InIt last
+      //Input iterators or version 0 allocator
       BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_or
          < void
          BOOST_MOVE_I dtl::is_convertible<InIt BOOST_MOVE_I size_type>
@@ -1229,6 +1242,7 @@ class vector
    //! <b>Complexity</b>: Linear to n.
    template <class FwdIt>
    void assign(FwdIt first, FwdIt last
+      //Forward iterators and version > 0 allocator
       BOOST_CONTAINER_DOCIGN(BOOST_MOVE_I typename dtl::disable_if_or
          < void
          BOOST_MOVE_I dtl::is_same<alloc_version BOOST_MOVE_I version_0>
@@ -1268,21 +1282,9 @@ class vector
             //Forward expansion, use assignment + back deletion/construction that comes later
          }
       }
-      //Overwrite all elements we can from [first, last)
-      iterator cur = this->begin();
-      const iterator end_it = this->end();
-      for ( ; first != last && cur != end_it; ++cur, ++first){
-         *cur = *first;
-      }
 
-      if (first == last){
-         //There are no more elements in the sequence, erase remaining
-         this->priv_destroy_last_n(this->size() - input_sz);
-      }
-      else{
-         //Uninitialized construct at end the remaining range
-         this->priv_uninitialized_construct_at_end(first, last);
-      }
+      lslboost::container::copy_assign_range_alloc_n(this->m_holder.alloc(), first, input_sz, this->priv_raw_begin(), this->size());
+      this->m_holder.m_size = input_sz;
    }
 
    //! <b>Effects</b>: Assigns the n copies of val to *this.
@@ -2195,11 +2197,11 @@ class vector
    template<class InputIt, class Compare>
    BOOST_CONTAINER_FORCEINLINE void merge_unique(InputIt first, InputIt last, Compare comp)
    {
-      size_type const s = this->size();
+      size_type const old_size = this->size();
       this->priv_set_difference_back(first, last, comp);
       T *const raw_beg = this->priv_raw_begin();
       T *const raw_end = this->priv_raw_end();
-      T *raw_pos = raw_beg + s;
+      T *raw_pos = raw_beg + old_size;
       lslboost::movelib::adaptive_merge(raw_beg, raw_pos, raw_end, comp, raw_end, this->capacity() - this->size());
    }
 
@@ -2276,14 +2278,14 @@ class vector
 
          if (comp(*first1, *first2)) {
             this->emplace_back(*first1);
-            //Reallocation happened, update range
             T * const raw_begin = this->priv_raw_begin();
-            if(old_first2 != raw_begin){
+            if(old_first2 != raw_begin)
+            {
+               //Reallocation happened, update range
                first2 = raw_begin + (first2 - old_first2);
-               last2  = first2 + (last2 - old_first2);
+               last2  = raw_begin + (last2 - old_first2);
                old_first2 = raw_begin;
             }
-
             ++first1;
          }
          else {
@@ -3351,6 +3353,19 @@ class vector
    #endif
    #endif   //#ifndef BOOST_CONTAINER_DOXYGEN_INVOKED
 };
+
+#if __cplusplus >= 201703L
+
+template <typename InputIterator>
+vector(InputIterator, InputIterator) ->
+   vector<typename iterator_traits<InputIterator>::value_type>;
+
+template <typename InputIterator, typename Allocator>
+vector(InputIterator, InputIterator, Allocator const&) ->
+   vector<typename iterator_traits<InputIterator>::value_type, Allocator>;
+
+#endif
+
 
 }} //namespace lslboost::container
 

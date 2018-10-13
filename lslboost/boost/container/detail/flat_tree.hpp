@@ -1160,8 +1160,41 @@ class flat_tree
       return i;
    }
 
-   // set operations:
+   template<class K>
+   typename dtl::enable_if_transparent<key_compare, K, iterator>::type
+      find(const K& k)
+   {
+      iterator i = this->lower_bound(k);
+      iterator end_it = this->end();
+      if (i != end_it && this->m_data.get_comp()(k, KeyOfValue()(*i))){
+         i = end_it;
+      }
+      return i;
+   }
+
+   template<class K>
+   typename dtl::enable_if_transparent<key_compare, K, const_iterator>::type
+      find(const K& k) const
+   {
+      const_iterator i = this->lower_bound(k);
+
+      const_iterator end_it = this->cend();
+      if (i != end_it && this->m_data.get_comp()(k, KeyOfValue()(*i))){
+         i = end_it;
+      }
+      return i;
+   }
+
    size_type count(const key_type& k) const
+   {
+      std::pair<const_iterator, const_iterator> p = this->equal_range(k);
+      size_type n = p.second - p.first;
+      return n;
+   }
+
+   template<class K>
+   typename dtl::enable_if_transparent<key_compare, K, size_type>::type
+      count(const K& k) const
    {
       std::pair<const_iterator, const_iterator> p = this->equal_range(k);
       size_type n = p.second - p.first;
@@ -1212,10 +1245,34 @@ class flat_tree
    BOOST_CONTAINER_FORCEINLINE const_iterator lower_bound(const key_type& k) const
    {  return this->priv_lower_bound(this->cbegin(), this->cend(), k);  }
 
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE 
+      typename dtl::enable_if_transparent<key_compare, K, iterator>::type
+         lower_bound(const K& k)
+   {  return this->priv_lower_bound(this->begin(), this->end(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE 
+      typename dtl::enable_if_transparent<key_compare, K, const_iterator>::type
+         lower_bound(const K& k) const
+   {  return this->priv_lower_bound(this->cbegin(), this->cend(), k);  }
+
    BOOST_CONTAINER_FORCEINLINE iterator upper_bound(const key_type& k)
    {  return this->priv_upper_bound(this->begin(), this->end(), k);  }
 
    BOOST_CONTAINER_FORCEINLINE const_iterator upper_bound(const key_type& k) const
+   {  return this->priv_upper_bound(this->cbegin(), this->cend(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,iterator>::type
+   upper_bound(const K& k)
+   {  return this->priv_upper_bound(this->begin(), this->end(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,const_iterator>::type
+         upper_bound(const K& k) const
    {  return this->priv_upper_bound(this->cbegin(), this->cend(), k);  }
 
    BOOST_CONTAINER_FORCEINLINE std::pair<iterator,iterator> equal_range(const key_type& k)
@@ -1224,10 +1281,35 @@ class flat_tree
    BOOST_CONTAINER_FORCEINLINE std::pair<const_iterator, const_iterator> equal_range(const key_type& k) const
    {  return this->priv_equal_range(this->cbegin(), this->cend(), k);  }
 
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,std::pair<iterator,iterator> >::type
+         equal_range(const K& k)
+   {  return this->priv_equal_range(this->begin(), this->end(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,std::pair<const_iterator,const_iterator> >::type
+         equal_range(const K& k) const
+   {  return this->priv_equal_range(this->cbegin(), this->cend(), k);  }
+
+
    BOOST_CONTAINER_FORCEINLINE std::pair<iterator, iterator> lower_bound_range(const key_type& k)
    {  return this->priv_lower_bound_range(this->begin(), this->end(), k);  }
 
    BOOST_CONTAINER_FORCEINLINE std::pair<const_iterator, const_iterator> lower_bound_range(const key_type& k) const
+   {  return this->priv_lower_bound_range(this->cbegin(), this->cend(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,std::pair<iterator,iterator> >::type
+         lower_bound_range(const K& k)
+   {  return this->priv_lower_bound_range(this->begin(), this->end(), k);  }
+
+   template<class K>
+   BOOST_CONTAINER_FORCEINLINE
+      typename dtl::enable_if_transparent<key_compare, K,std::pair<const_iterator,const_iterator> >::type
+         lower_bound_range(const K& k) const
    {  return this->priv_lower_bound_range(this->cbegin(), this->cend(), k);  }
 
    BOOST_CONTAINER_FORCEINLINE size_type capacity() const
@@ -1419,9 +1501,9 @@ class flat_tree
          , lslboost::forward<Convertible>(convertible));
    }
 
-   template <class RanIt>
+   template <class RanIt, class K>
    RanIt priv_lower_bound(RanIt first, const RanIt last,
-                          const key_type & key) const
+                          const K & key) const
    {
       const Compare &key_cmp = this->m_data.get_comp();
       KeyOfValue key_extract;
@@ -1444,9 +1526,9 @@ class flat_tree
       return first;
    }
 
-   template <class RanIt>
+   template <class RanIt, class K>
    RanIt priv_upper_bound
-      (RanIt first, const RanIt last,const key_type & key) const
+      (RanIt first, const RanIt last,const K & key) const
    {
       const Compare &key_cmp = this->m_data.get_comp();
       KeyOfValue key_extract;
@@ -1469,9 +1551,9 @@ class flat_tree
       return first;
    }
 
-   template <class RanIt>
+   template <class RanIt, class K>
    std::pair<RanIt, RanIt>
-      priv_equal_range(RanIt first, RanIt last, const key_type& key) const
+      priv_equal_range(RanIt first, RanIt last, const K& key) const
    {
       const Compare &key_cmp = this->m_data.get_comp();
       KeyOfValue key_extract;
@@ -1502,8 +1584,8 @@ class flat_tree
       return std::pair<RanIt, RanIt>(first, first);
    }
 
-   template<class RanIt>
-   std::pair<RanIt, RanIt> priv_lower_bound_range(RanIt first, RanIt last, const key_type& k) const
+   template<class RanIt, class K>
+   std::pair<RanIt, RanIt> priv_lower_bound_range(RanIt first, RanIt last, const K& k) const
    {
       const Compare &key_cmp = this->m_data.get_comp();
       KeyOfValue key_extract;

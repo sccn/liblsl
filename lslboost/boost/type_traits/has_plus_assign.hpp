@@ -153,4 +153,9 @@ namespace lslboost
 #undef BOOST_TT_FORBIDDEN_IF
 
 #endif
+
+#if defined(BOOST_MSVC)
+#   pragma warning (pop)
+#endif
+
 #endif

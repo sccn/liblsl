@@ -12,10 +12,13 @@
 * $Id$
 */
 
+#include <boost/config.hpp>
 #include <boost/core/ignore_unused.hpp>
+#include <boost/move/core.hpp>
 #include <boost/throw_exception.hpp>
 #include <boost/uuid/entropy_error.hpp>
 #include <cerrno>
+#include <cstddef>
 #include <fcntl.h>    // open
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -39,9 +42,11 @@ namespace detail {
 
 class random_provider_base
 {
-  public:
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider_base)
+
+public:
     random_provider_base()
-      : fd_(0)
+      : fd_(-1)
     {
         int flags = O_RDONLY;
 #if defined(O_CLOEXEC)
@@ -49,44 +54,64 @@ class random_provider_base
 #endif
         fd_ = BOOST_UUID_RANDOM_PROVIDER_POSIX_IMPL_OPEN("/dev/urandom", flags);
 
-        if (-1 == fd_)
+        if (BOOST_UNLIKELY(-1 == fd_))
         {
             int err = errno;
             BOOST_THROW_EXCEPTION(entropy_error(err, "open /dev/urandom"));
         }
     }
 
+    random_provider_base(BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT : fd_(that.fd_)
+    {
+        that.fd_ = -1;
+    }
+
+    random_provider_base& operator= (BOOST_RV_REF(random_provider_base) that) BOOST_NOEXCEPT
+    {
+        destroy();
+        fd_ = that.fd_;
+        that.fd_ = -1;
+        return *this;
+    }
+
     ~random_provider_base() BOOST_NOEXCEPT
     {
-        if (fd_)
-        {
-            ignore_unused(BOOST_UUID_RANDOM_PROVIDER_POSIX_IMPL_CLOSE(fd_));
-        }
+        destroy();
     }
 
     //! Obtain entropy and place it into a memory location
     //! \param[in]  buf  the location to write entropy
     //! \param[in]  siz  the number of bytes to acquire
-    void get_random_bytes(void *buf, size_t siz)
+    void get_random_bytes(void *buf, std::size_t siz)
     {
-        size_t offset = 0;
-        do
+        std::size_t offset = 0;
+        while (offset < siz)
         {
             ssize_t sz = BOOST_UUID_RANDOM_PROVIDER_POSIX_IMPL_READ(
                 fd_, static_cast<char *>(buf) + offset, siz - offset);
 
-            if (sz < 1)
+            if (BOOST_UNLIKELY(sz < 0))
             {
                 int err = errno;
+                if (err == EINTR)
+                    continue;
                 BOOST_THROW_EXCEPTION(entropy_error(err, "read"));
             }
 
             offset += sz;
-
-        } while (offset < siz);
+        }
     }
 
-  private:
+private:
+    void destroy() BOOST_NOEXCEPT
+    {
+        if (fd_ >= 0)
+        {
+            lslboost::ignore_unused(BOOST_UUID_RANDOM_PROVIDER_POSIX_IMPL_CLOSE(fd_));
+        }
+    }
+
+private:
     int fd_;
 };
 

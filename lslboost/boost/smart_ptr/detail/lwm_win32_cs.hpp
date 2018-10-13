@@ -61,7 +61,9 @@ extern "C" __declspec(dllimport) void __stdcall EnterCriticalSection(::_RTL_CRIT
 extern "C" __declspec(dllimport) void __stdcall LeaveCriticalSection(::_RTL_CRITICAL_SECTION *);
 extern "C" __declspec(dllimport) void __stdcall DeleteCriticalSection(::_RTL_CRITICAL_SECTION *);
 
-#else
+typedef ::_RTL_CRITICAL_SECTION rtl_critical_section;
+
+#else // #ifndef BOOST_USE_WINDOWS_H
 
 typedef ::CRITICAL_SECTION critical_section;
 
@@ -73,6 +75,8 @@ using ::InitializeCriticalSection;
 using ::EnterCriticalSection;
 using ::LeaveCriticalSection;
 using ::DeleteCriticalSection;
+
+typedef ::CRITICAL_SECTION rtl_critical_section;
 
 #endif // #ifndef BOOST_USE_WINDOWS_H
 
@@ -90,15 +94,15 @@ public:
     lightweight_mutex()
     {
 #if BOOST_PLAT_WINDOWS_RUNTIME
-        lslboost::detail::InitializeCriticalSectionEx(reinterpret_cast< ::_RTL_CRITICAL_SECTION* >(&cs_), 4000, 0);
+        lslboost::detail::InitializeCriticalSectionEx(reinterpret_cast< rtl_critical_section* >(&cs_), 4000, 0);
 #else
-        lslboost::detail::InitializeCriticalSection(reinterpret_cast< ::_RTL_CRITICAL_SECTION* >(&cs_));
+        lslboost::detail::InitializeCriticalSection(reinterpret_cast< rtl_critical_section* >(&cs_));
 #endif
     }
 
     ~lightweight_mutex()
     {
-        lslboost::detail::DeleteCriticalSection(reinterpret_cast< ::_RTL_CRITICAL_SECTION* >(&cs_));
+        lslboost::detail::DeleteCriticalSection(reinterpret_cast< rtl_critical_section* >(&cs_));
     }
 
     class scoped_lock;
@@ -117,12 +121,12 @@ public:
 
         explicit scoped_lock(lightweight_mutex & m): m_(m)
         {
-            lslboost::detail::EnterCriticalSection(reinterpret_cast< ::_RTL_CRITICAL_SECTION* >(&m_.cs_));
+            lslboost::detail::EnterCriticalSection(reinterpret_cast< rtl_critical_section* >(&m_.cs_));
         }
 
         ~scoped_lock()
         {
-            lslboost::detail::LeaveCriticalSection(reinterpret_cast< ::_RTL_CRITICAL_SECTION* >(&m_.cs_));
+            lslboost::detail::LeaveCriticalSection(reinterpret_cast< rtl_critical_section* >(&m_.cs_));
         }
     };
 };

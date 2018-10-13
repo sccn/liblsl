@@ -79,10 +79,11 @@ BOOST_ARCHIVE_SIGNATURE(){
 // 15- corrections to optional and collection loading
 // 16- eliminated dependency on <codecvt> which is buggy in some libraries
 //     and now officially deprecated in the standard
+// 17- Boost 1.68 August 2018
 
 BOOST_SYMBOL_VISIBLE library_version_type
 BOOST_ARCHIVE_VERSION(){
-    return library_version_type(16);
+    return library_version_type(17);
 }
 
 } // namespace archive

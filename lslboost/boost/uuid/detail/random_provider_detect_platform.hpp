@@ -14,7 +14,11 @@
 #include <boost/predef/library/c/cloudabi.h>
 #include <boost/predef/library/c/gnu.h>
 #include <boost/predef/os/bsd/open.h>
+#include <boost/predef/os/linux.h>
 #include <boost/predef/os/windows.h>
+#if BOOST_OS_LINUX
+#include <sys/syscall.h>
+#endif
 
 //
 // Platform Detection - will load in the correct header and
@@ -30,8 +34,7 @@
 # if BOOST_WINAPI_PARTITION_APP_SYSTEM && \
      !defined(BOOST_UUID_RANDOM_PROVIDER_FORCE_WINCRYPT) && \
      !defined(_WIN32_WCE) && \
-     (defined(BOOST_WINAPI_IS_MINGW_W64) || \
-        (BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6))
+     (BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6)
 #  define BOOST_UUID_RANDOM_PROVIDER_BCRYPT
 #  define BOOST_UUID_RANDOM_PROVIDER_NAME bcrypt
 
@@ -41,6 +44,10 @@
 # else
 #  error Unable to find a suitable windows entropy provider
 # endif
+
+#elif BOOST_OS_LINUX && defined(SYS_getrandom) && !defined(BOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX) && !defined(BOOST_UUID_RANDOM_PROVIDER_DISABLE_GETRANDOM)
+# define BOOST_UUID_RANDOM_PROVIDER_GETRANDOM
+# define BOOST_UUID_RANDOM_PROVIDER_NAME getrandom
 
 #elif BOOST_LIB_C_GNU >= BOOST_VERSION_NUMBER(2, 25, 0) && !defined(BOOST_UUID_RANDOM_PROVIDER_FORCE_POSIX)
 # define BOOST_UUID_RANDOM_PROVIDER_GETENTROPY

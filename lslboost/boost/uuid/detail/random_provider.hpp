@@ -11,10 +11,12 @@
 #ifndef BOOST_UUID_DETAIL_RANDOM_PROVIDER_HPP
 #define BOOST_UUID_DETAIL_RANDOM_PROVIDER_HPP
 
-#include <boost/core/noncopyable.hpp>
+#include <boost/config.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/limits.hpp>
 #include <boost/static_assert.hpp>
+#include <boost/move/core.hpp>
+#include <boost/move/utility_core.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_unsigned.hpp>
 #include <boost/uuid/entropy_error.hpp>
@@ -38,11 +40,25 @@ namespace detail {
 //! \note  noncopyable because of some base implementations so
 //!        this makes it uniform across platforms to avoid any  
 //!        porting surprises
-class random_provider
-    : public detail::random_provider_base,
-      public noncopyable
+class random_provider :
+    public detail::random_provider_base
 {
+    BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider)
+
 public:
+    BOOST_DEFAULTED_FUNCTION(random_provider(), {})
+
+    random_provider(BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT :
+        detail::random_provider_base(lslboost::move(static_cast< detail::random_provider_base& >(that)))
+    {
+    }
+
+    random_provider& operator= (BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT
+    {
+        static_cast< detail::random_provider_base& >(*this) = lslboost::move(static_cast< detail::random_provider_base& >(that));
+        return *this;
+    }
+
     //! Leverage the provider as a SeedSeq for
     //! PseudoRandomNumberGeneration seeing.
     //! \note: See Boost.Random documentation for more details
