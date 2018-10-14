@@ -11,6 +11,7 @@ if(NOT CMAKE_DEBUG_POSTFIX)
 	set(CMAKE_DEBUG_POSTFIX -debug)
 endif()
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
+option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
 
 # lsl uses boost, but several other projects (e.g. Matlab) also use boost.
 # To prevent clashes with different boost versions, lsl ships a subset of
@@ -99,6 +100,11 @@ if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(lslplatform 64)
 else()
 	set(lslplatform 32)
+endif()
+
+if(LSL_NO_FANCY_LIBNAME)
+	set(lslplatform "")
+	set(CMAKE_DEBUG_POSTFIX "")
 endif()
 
 # try to find out which revision is currently checked out
