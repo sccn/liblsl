@@ -20,7 +20,8 @@ if (UNIX)
 		libs/thread/src/pthread/once.cpp
 		libs/thread/src/pthread/thread.cpp
 	)
-	set(Boost_LIBRARIES pthread)
+	find_package(Threads REQUIRED)
+	set(Boost_LIBRARIES "Threads::Threads")
 else ()  # WIN32
 	set(lslboost_sources_platform
 		libs/serialization/src/codecvt_null.cpp
@@ -41,6 +42,7 @@ target_compile_definitions(lslboost PUBLIC
 	PRIVATE
 	BOOST_THREAD_BUILD_DLL
 )
+
 target_include_directories(lslboost SYSTEM PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 target_link_libraries(lslboost PRIVATE ${Boost_LIBRARIES})
