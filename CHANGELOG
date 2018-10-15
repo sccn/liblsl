@@ -1,5 +1,12 @@
 Changes for liblsl 1.13
 
+* fix: updates to the included Boost, fixing Android compilation and reducing the number of warnings (Tristan Stenner)
+* fix: patch Boost.Thread to avoid latency spikes on Windows (Tristan Stenner)
+* add: lsl_stream_info_matches_query() to test a resolved stream against a query (Tristan Stenner)
+* add: lsl_library_info() function returning some information about the dll/so file (Tristan Stenner)
+* add: Raspberry Pi cross compilation support (Chadwick Boulay)
+* fix: Boost.Serialization objects are only defined to fix compilation on ARM (Tristan Stenner)
+* change: added move-semantics to most C++ API classes (Tristan Stenner)
 * change: move error handling from C API to C++ implementation (Tristan Stenner)
 * fix: Fix possible string stream corruption on 32bit platforms (Tristan Stenner)
 * change: add some Continuous Integration and packaging configuration (Tristan Stenner)
