@@ -1,5 +1,5 @@
 #include "cancellation.h"
-#include <iostream>
+#include "loguru/loguru.hpp"
 
 lsl::cancellable_registry::~cancellable_registry() {}
 
@@ -11,6 +11,8 @@ void lsl::cancellable_obj::unregister_from_all() {
 			(*i)->unregister_cancellable(this);
 		registered_at_.clear();
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error trying to unregister a cancellable object from its registry:" << e.what() << std::endl;
+		LOG_F(ERROR,
+			"Unexpected error trying to unregister a cancellable object from its registry: %s",
+			e.what());
 	}
 }

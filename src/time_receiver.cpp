@@ -1,11 +1,9 @@
 #include "time_receiver.h"
 #include "api_config.h"
-#include <boost/asio/placeholders.hpp>
-#include <iostream>
-#include <boost/asio/placeholders.hpp>
-#include <boost/bind.hpp>
 #include "inlet_connection.h"
 #include "socket_utils.h"
+#include <boost/asio/placeholders.hpp>
+#include <boost/bind.hpp>
 
 
 // === implementation of the time_receiver class ===
@@ -34,11 +32,8 @@ time_receiver::~time_receiver() {
 			time_thread_.join();
 	} 
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during destruction of a time_receiver: " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during time receiver shutdown." << std::endl;
-	}
+		LOG_F(ERROR, "Unexpected error during destruction of a time_receiver: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during time receiver shutdown."); }
 }
 
 
@@ -104,11 +99,11 @@ void time_receiver::time_thread() {
 				time_io_.run();
 				break;
 			} catch(std::exception &e) {
-				std::cerr << "Hiccup during time_thread io_context processing: " << e.what() << std::endl;
+				LOG_F(WARNING, "Hiccup during time_thread io_context processing: %s", e.what());
 			}
 		}
 	} catch(std::exception &e) {
-		std::cerr << "time_thread failed unexpectedly with message: " << e.what() << std::endl;
+		LOG_F(WARNING, "time_thread failed unexpectedly with message: %s", e.what());
 	}
 	conn_.release_watchdog();
 }
@@ -146,7 +141,7 @@ void time_receiver::send_next_packet(int packet_num) {
 		time_sock_.async_send_to(lslboost::asio::buffer(*msg_buffer), conn_.get_udp_endpoint(),
 			lslboost::bind(&time_receiver::handle_send_outcome,this,msg_buffer,placeholders::error));
 	} catch(std::exception &e) {
-		std::cerr << "Error trying to send a time packet: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error trying to send a time packet: %s", e.what());
 	}
 	// schedule next packet
 	if (packet_num < cfg_->time_probe_count()) {
@@ -189,7 +184,7 @@ void time_receiver::handle_receive_outcome(error_code err, std::size_t len) {
 			}
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Error while processing a time estimation return packet: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error while processing a time estimation return packet: %s", e.what());
 	}
 	if (err != error::operation_aborted)
 		receive_next_packet();

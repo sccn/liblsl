@@ -2,7 +2,6 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include "common.h"
-#include <iostream>
 #include <boost/chrono/duration.hpp>
 
 // === implementation of the consumer_queue class ===
@@ -28,7 +27,9 @@ consumer_queue::~consumer_queue() {
 		if (registry_)
 			registry_->unregister_consumer(this);
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while trying to unregister a consumer queue from its registry:" << e.what() << std::endl;
+		LOG_F(ERROR,
+			"Unexpected error while trying to unregister a consumer queue from its registry: %s",
+			e.what());
 	}
 }
 

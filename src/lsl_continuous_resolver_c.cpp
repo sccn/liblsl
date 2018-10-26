@@ -1,6 +1,5 @@
 #include "resolver_impl.h"
 #include "api_config.h"
-#include <iostream>
 
 extern "C" {
 #include "../include/lsl_c.h"
@@ -24,7 +23,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forge
 		resolver->resolve_continuous(os.str(),forget_after);
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
-		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
+		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return NULL;
 	}
 }
@@ -47,7 +46,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const
 		resolver->resolve_continuous(os.str(),forget_after);
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
-		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
+		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return NULL;
 	}
 }
@@ -69,7 +68,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const
 		resolver->resolve_continuous(os.str(),forget_after);
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
-		std::cerr << "Error while creating a continuous_resolver: " << e.what() << std::endl;
+		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return NULL;
 	}
 }
@@ -94,7 +93,7 @@ LIBLSL_C_API int32_t lsl_resolver_results(lsl_continuous_resolver res, lsl_strea
 			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error querying lsl_resolver_results: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error querying lsl_resolver_results: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -106,7 +105,7 @@ LIBLSL_C_API void lsl_destroy_continuous_resolver(lsl_continuous_resolver res) {
 	try {
 		delete (resolver_impl*)res; 
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected during destruction of a continuous_resolver: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected during destruction of a continuous_resolver: %s", e.what());
 	}
 }
 }

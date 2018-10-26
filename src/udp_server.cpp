@@ -1,13 +1,13 @@
-#include <iostream>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/ip/multicast.hpp>
-#include <boost/asio/placeholders.hpp>
-#include <boost/bind.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/thread/thread_only.hpp>
 #include "udp_server.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/multicast.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/bind.hpp>
+#include <boost/thread/thread_only.hpp>
 
 
 // === implementation of the udp_server class ===
@@ -33,6 +33,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 		info_->v4service_port(port);
 	else
 		info_->v6service_port(port);
+	DLOG_F(1, "%p Started unicast udp server at port %d", this, port);
 }
 
 /*
@@ -40,6 +41,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 * This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast local service discovery.
 */
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, uint16_t port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
+	DLOG_F(1, "%p Started multicast udp server at address %s", this, address.c_str());
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
@@ -95,9 +97,7 @@ void close_if_open(udp_socket_p sock) {
 	try {
 		if (sock->is_open())
 			sock->close();
-	}  catch(std::exception &e) {
-		std::cerr << "Error during close_if_open (thread id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-	}
+	} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", __func__, e.what()); }
 }
 
 /// Initiate teardown of UDP traffic.
@@ -112,12 +112,14 @@ void udp_server::end_serving() {
 /// Initiate next packet request.
 /// The result of the operation will eventually trigger the handle_receive_outcome() handler.
 void udp_server::request_next_packet() {
+	DLOG_F(5, "udp_server::request_next_packet");
 	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
 		lslboost::bind(&udp_server::handle_receive_outcome, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
 }
 
 /// Handler that gets called when the next packet was received (or the op was cancelled).
 void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
+	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err != error::operation_aborted && err != error::shut_down) {
 		try {
 			if (!err) {
@@ -131,33 +133,45 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					// shortinfo request: parse content query string
 					std::string query; getline(request_stream,query); lslboost::trim(query);
 					// parse return address, port, and query ID
-					uint16_t return_port; request_stream >> return_port;
-					std::string query_id; request_stream >> query_id;
+					uint16_t return_port;
+					request_stream >> return_port;
+					std::string query_id;
+					request_stream >> query_id;
 					// check query
 					if (info_->matches_query(query)) {
 						// query matches: send back reply
 						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 						string_p replymsg(new std::string((query_id += "\r\n") += shortinfo_msg_));
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
-							lslboost::bind(&udp_server::handle_send_outcome,shared_from_this(),replymsg,placeholders::error));
+							lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
+								replymsg, placeholders::error));
 						return;
+					} else {
+						LOG_F(INFO, "%p Got shortinfo query for mismatching query string: %s", this,
+							query.c_str());
 					}
+				} else if (time_services_enabled_ && method == "LSL:timedata") {
+					// timedata request: parse time of original transmission
+					int wave_id;
+					request_stream >> wave_id;
+					double t0;
+					request_stream >> t0;
+					// send it off (including the time of packet submission and a shared ptr to the
+					// message content owned by the handler)
+					std::ostringstream reply;
+					reply.precision(16);
+					reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
+					string_p replymsg(new std::string(reply.str()));
+					socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
+						lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
+							replymsg, placeholders::error));
+					return;
 				} else {
-					if (time_services_enabled_ && method == "LSL:timedata") {
-						// timedata request: parse time of original transmission
-						int wave_id; request_stream >> wave_id;
-						double t0; request_stream >> t0;
-						// send it off (including the time of packet submission and a shared ptr to the message content owned by the handler)
-						std::ostringstream reply; reply.precision(16); reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
-						string_p replymsg(new std::string(reply.str()));
-						socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
-							lslboost::bind(&udp_server::handle_send_outcome,shared_from_this(),replymsg,placeholders::error));
-						return;
-					}
+					DLOG_F(INFO, "Unknown method '%s' received by udp-server", method.c_str());
 				}
 			}
-		} catch(std::exception &e) {
-			std::cerr << "udp_server: hiccup during request processing: " << e.what() << std::endl;
+		} catch (std::exception &e) {
+			LOG_F(WARNING, "udp_server: hiccup during request processing: %s", e.what());
 		}
 		request_next_packet();
 	}

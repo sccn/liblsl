@@ -14,7 +14,7 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_siz
 		lsl_outlet result = (lsl_outlet)new stream_outlet_impl(*infoimpl, chunk_size, infoimpl->nominal_srate()?(int)(infoimpl->nominal_srate()*max_buffered):max_buffered*100);
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error during construction of stream outlet: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during construction of stream outlet: %s", e.what());
 		return NULL;
 	}
 }
@@ -23,7 +23,7 @@ LIBLSL_C_API void lsl_destroy_outlet(lsl_outlet out) {
 	try {
 		delete (stream_outlet_impl*)out; 
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error during deletion of stream outlet: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during deletion of stream outlet: %s", e.what());
 	}
 }
 
@@ -105,15 +105,15 @@ LIBLSL_C_API int32_t lsl_push_sample_v(lsl_outlet out, const void *data) {
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -124,15 +124,15 @@ LIBLSL_C_API int32_t lsl_push_sample_vt(lsl_outlet out, const void *data, double
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -143,15 +143,15 @@ LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data, doubl
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_sample: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -173,7 +173,7 @@ LIBLSL_C_API int32_t lsl_push_sample_strtp(lsl_outlet out, const char **data, do
 		return outimpl->push_sample_noexcept(&tmp[0],timestamp,pushthrough!=0);
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -195,7 +195,7 @@ LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, co
 		return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -338,15 +338,15 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtp(lsl_outlet out, const char **data, uns
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -366,15 +366,15 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtnp(lsl_outlet out, const char **data, un
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -397,15 +397,15 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftp(lsl_outlet out, const char **data, con
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -425,15 +425,15 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftnp(lsl_outlet out, const char **data, co
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 		return lsl_argument_error;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -443,7 +443,7 @@ LIBLSL_C_API int32_t lsl_have_consumers(lsl_outlet out) {
 		return ((stream_outlet_impl*)out)->have_consumers(); 
 	} 
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in have_consumers: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error in have_consumers: %s", e.what());
 		return 1;
 	}
 }
@@ -453,7 +453,7 @@ LIBLSL_C_API int32_t lsl_wait_for_consumers(lsl_outlet out, double timeout) {
 		return ((stream_outlet_impl*)out)->wait_for_consumers(timeout);
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in wait_for_consumers: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error in wait_for_consumers: %s", e.what());
 		return 1;
 	}
 }
@@ -463,7 +463,7 @@ LIBLSL_C_API lsl_streaminfo lsl_get_info(lsl_outlet out) {
 		return (lsl_streaminfo)new stream_info_impl(((stream_outlet_impl*)out)->info()); 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in lsl_get_info: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error in lsl_get_info: %s", e.what());
 		return NULL;
 	}
 }

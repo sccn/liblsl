@@ -19,8 +19,19 @@ double lsl::lsl_clock() {
 /// Ensure that LSL is initialized. Performs initialization tasks
 void lsl::ensure_lsl_initialized() {
 	static bool is_initialized = false;
+
 	if (!is_initialized) {
 		is_initialized = true;
+
+		loguru::g_stderr_verbosity = loguru::Verbosity_WARNING;
+#ifdef LOGURU_DEBUG_LOGGING
+		// Initialize loguru, mainly to print stacktraces on segmentation faults
+		int argc = 1;
+		const char *argv[] = {"liblsl", 0};
+		loguru::init(argc, const_cast<char **>(argv));
+#else
+#endif
+
 #ifdef _WIN32
 		// if a timer resolution other than 0 is requested (0 means don't override)...
 		if (int desired_timer_resolution = lsl::api_config::get_instance()->timer_resolution()) {			

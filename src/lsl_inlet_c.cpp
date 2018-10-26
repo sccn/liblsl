@@ -28,11 +28,11 @@ LIBLSL_C_API lsl_inlet lsl_create_inlet(lsl_streaminfo info, int32_t max_buflen,
 		return result;
 	} 
 	catch(std::invalid_argument &e) {
-		std::cerr << "Error during construction of a stream_inlet: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during construction of a stream_inlet: %s", e.what());
 		return NULL;
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during construction of a stream_inlet: " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		return NULL;
 	}
 }
@@ -43,10 +43,8 @@ LIBLSL_C_API lsl_inlet lsl_create_inlet(lsl_streaminfo info, int32_t max_buflen,
 */
 LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) { 
 	try {
-		delete (stream_inlet_impl*)in; 
-	} catch(std::exception &e) {
-		std::cerr << "Unexpected during destruction of a stream_inlet: " << e.what() << std::endl;
-	}
+		delete (stream_inlet_impl*)in;
+	} catch (std::exception &e) { LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what()); }
 }
 
 /**
@@ -70,7 +68,7 @@ LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout, int32
 			*ec = lsl_lost_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -100,7 +98,7 @@ LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *ec) {
 			*ec = lsl_lost_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -115,9 +113,7 @@ LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *ec) {
 LIBLSL_C_API void lsl_close_stream(lsl_inlet in) { 
 	try {
 		((stream_inlet_impl*)in)->close_stream();
-	} catch(std::exception &e) {
-		std::cerr << "Unexpected error during close_stream(): " << e.what() << std::endl;
-	}
+	} catch (std::exception &e) { LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what()); }
 }
 
 /**
@@ -144,7 +140,7 @@ LIBLSL_C_API double lsl_time_correction(lsl_inlet in, double timeout, int32_t *e
 			*ec = lsl_lost_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -265,7 +261,7 @@ LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buf
 			*ec = lsl_argument_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -312,7 +308,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 			*ec = lsl_argument_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -352,7 +348,7 @@ LIBLSL_C_API double lsl_pull_sample_v(lsl_inlet in, void *buffer, int32_t buffer
 			*ec = lsl_argument_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -423,7 +419,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, 
 			*ec = lsl_argument_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
@@ -471,7 +467,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer, 
 			*ec = lsl_argument_error; 
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 		if (ec)
 			*ec = lsl_internal_error; 
 	}

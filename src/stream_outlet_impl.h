@@ -1,7 +1,6 @@
 #ifndef STREAM_OUTLET_IMPL_H
 #define STREAM_OUTLET_IMPL_H
 
-#include <iostream>
 #include "forward.h"
 #include "send_buffer.h"
 #include "stream_info_impl.h"
@@ -83,14 +82,14 @@ namespace lsl {
 			    enqueue(data, timestamp, pushthrough);
 			    return lsl_no_error;
 		    } catch (std::range_error& e) {
-			    std::cerr << "Error during push_sample: " << e.what() << std::endl;
-			    return lsl_argument_error;
+				LOG_F(WARNING, "Error during push_sample: %s", e.what());
+				return lsl_argument_error;
 		    } catch (std::invalid_argument& e) {
-			    std::cerr << "Error during push_sample: " << e.what() << std::endl;
-			    return lsl_argument_error;
+				LOG_F(WARNING, "Error during push_sample: %s", e.what());
+				return lsl_argument_error;
 		    } catch (std::exception& e) {
-			    std::cerr << "Unexpected error during push_sample: " << e.what() << std::endl;
-			    return lsl_internal_error;
+				LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
+				return lsl_internal_error;
 		    }
 	    }
 
@@ -140,15 +139,15 @@ namespace lsl {
 				return lsl_no_error;
 			}
 			catch(std::range_error &e) {
-				std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 				return lsl_argument_error;
 			}
 			catch(std::invalid_argument &e) {
-				std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 				return lsl_argument_error;
 			}
 			catch(std::exception &e) {
-				std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 				return lsl_internal_error;
 			}
 		}
@@ -186,15 +185,15 @@ namespace lsl {
 				return lsl_no_error;
 			}
 			catch(std::range_error &e) {
-				std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 				return lsl_argument_error;
 			}
 			catch(std::invalid_argument &e) {
-				std::cerr << "Error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Error during push_chunk: %s", e.what());
 				return lsl_argument_error;
 			}
 			catch(std::exception &e) {
-				std::cerr << "Unexpected error during push_chunk: " << e.what() << std::endl;
+				LOG_F(WARNING, "Unexpected error during push_chunk: %s", e.what());
 				return lsl_internal_error;
 			}
 		}

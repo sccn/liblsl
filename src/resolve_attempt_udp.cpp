@@ -1,4 +1,3 @@
-#include <iostream>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
@@ -41,20 +40,23 @@ resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	try {
 		bind_port_in_range(recv_socket_,protocol);
 	} catch(std::exception &e) {
-		std::cerr << "Could not bind to a port in the configured port range; using a randomly assigned one: " << e.what() << std::endl;
+		LOG_F(WARNING,
+			"Could not bind to a port in the configured port range; using a randomly assigned one: "
+			"%s",
+			e.what());
 	}
 	unicast_socket_.open(protocol);
 	try {
 		broadcast_socket_.open(protocol);
 		broadcast_socket_.set_option(socket_base::broadcast(true));
 	} catch(std::exception &e) {
-		std::cerr << "Cannot open UDP broadcast socket for resolves: " << e.what() << std::endl;
+		LOG_F(WARNING, "Cannot open UDP broadcast socket for resolves: %s", e.what());
 	}
 	try {
 		multicast_socket_.open(protocol);
 		multicast_socket_.set_option(ip::multicast::hops(api_config::get_instance()->multicast_ttl()));
 	} catch(std::exception &e) {
-		std::cerr << "Cannot open UDP multicast socket for resolves: " << e.what() << std::endl;
+		LOG_F(WARNING, "Cannot open UDP multicast socket for resolves: %s", e.what());
 	}
 
 	// precalc the query id (hash of the query string, as string)
@@ -139,7 +141,8 @@ void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len
 					}
 				}
 			} catch(std::exception &e) {
-				std::cerr << "resolve_attempt_udp: hiccup while processing the received data: " << e.what() << std::endl;
+				LOG_F(WARNING, "resolve_attempt_udp: hiccup while processing the received data: %s",
+					e.what());
 			}
 		}
 		// ask for the next result
@@ -199,7 +202,9 @@ void resolve_attempt_udp::do_cancel() {
 			recv_socket_.close();
 		cancel_timer_.cancel();
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while trying to cancel operations of resolve_attempt_udp: " << e.what() << std::endl;
+		LOG_F(WARNING,
+			"Unexpected error while trying to cancel operations of resolve_attempt_udp: %s",
+			e.what());
 	}
 }
 

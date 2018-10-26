@@ -2,8 +2,6 @@
 #include "resolver_impl.h"
 #include "api_config.h"
 #include <boost/chrono/system_clocks.hpp>
-#include <iostream>
-
 
 // === Implementation of the free-standing functions in lsl_c.h ===
 
@@ -74,7 +72,7 @@ LIBLSL_C_API int32_t lsl_resolve_all(lsl_streaminfo *buffer, uint32_t buffer_ele
 			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Error during resolve_all: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during resolve_all: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -108,7 +106,7 @@ LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_
 			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Error during resolve_byprop: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during resolve_byprop: %s", e.what());
 		return lsl_internal_error;
 	}
 }
@@ -142,7 +140,7 @@ LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_
 			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Error during resolve_bypred: " << e.what() << std::endl;
+		LOG_F(WARNING, "Error during resolve_bypred: %s", e.what());
 		return lsl_internal_error;
 	}
 }

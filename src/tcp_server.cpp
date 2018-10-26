@@ -1,4 +1,3 @@
-#include <iostream>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/placeholders.hpp>
@@ -64,6 +63,8 @@ tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
 		info_->v4data_port(port);
 	else
 		info_->v6data_port(port);
+	LOG_F(2, "Created TCP server for outlet %s on IPv%d port %d", info_->name().c_str(),
+		protocol == tcp::v4() ? 4 : 6, port);
 }
 
 
@@ -108,7 +109,7 @@ void tcp_server::accept_next_connection() {
 		acceptor_->async_accept(*newsession->socket(),
 			lslboost::bind(&tcp_server::handle_accept_outcome,shared_from_this(),newsession,placeholders::error));
 	}  catch(std::exception &e) {
-		std::cerr << "Error during tcp_server::accept_next_connection (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(ERROR, "Error during tcp_server::accept_next_connection: %s", e.what());
 	}
 }
 
@@ -148,9 +149,7 @@ template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock
 			} catch(...) {}
 			sock->close();
 		}
-	}  catch(std::exception &e) {
-		std::cerr << "Error during shutdown_and_close (thread id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-	}
+	} catch (std::exception &e) { LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what()); }
 }
 
 /// Post a close of all in-flight sockets.
@@ -182,11 +181,8 @@ tcp_server::client_session::~client_session() {
 			serv_->unregister_inflight_socket(sock_);
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error in client_session destructor (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during client session shutdown." << std::endl;
-	}
+		LOG_F(WARNING, "Unexpected error in client_session destructor: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during client session shutdown."); }
 }
 
 /// Get the socket of this session.
@@ -203,7 +199,7 @@ void tcp_server::client_session::begin_processing() {
 		async_read_until(*sock_, requestbuf_, "\r\n",
 			lslboost::bind(&client_session::handle_read_command_outcome,shared_from_this(),placeholders::error));
 	} catch(std::exception &e) {
-		std::cerr << "Error during client_session::begin_processing (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
 }
 
@@ -236,7 +232,7 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 			}
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while parsing a client command (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while parsing a client command: %s", e.what());
 	}
 }
 
@@ -250,9 +246,11 @@ void tcp_server::client_session::handle_read_query_outcome(error_code err) {
 				// matches: reply (otherwise just close the stream)
 				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
 					lslboost::bind(&client_session::handle_send_outcome,shared_from_this(),placeholders::error));
+			else
+				LOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while parsing a client request (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while parsing a client request: %s", e.what());
 	}
 }
 
@@ -273,14 +271,16 @@ void tcp_server::client_session::handle_status_outcome(string_p msg, error_code 
 void tcp_server::client_session::handle_read_feedparams(int request_protocol_version, std::string request_uid, error_code err) {
 	try {
 		if (!err) {
+			DLOG_F(3, "%p got a streamfeed request", this);
 			// --- protocol negotiation ---
 			using namespace lslboost::algorithm;
 
 			// check request validity
 			if (request_protocol_version/100 > api_config::get_instance()->use_protocol_version()/100) {
-				send_status_message("LSL/" +
-									to_string(api_config::get_instance()->use_protocol_version()) +
-									" 505 Version not supported");
+				send_status_message(
+					"LSL/" + std::to_string(api_config::get_instance()->use_protocol_version()) +
+					" 505 Version not supported");
+				LOG_F(INFO, "%p Got a request for a too new protocol version", this);
 				return;
 			}
 			if (!request_uid.empty() && request_uid != serv_->info_->uid()) {
@@ -326,8 +326,10 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 							max_buffered_ = from_string<int>(rest);
 						if (type == "max-chunk-length")
 							chunk_granularity_ = from_string<int>(rest);
-						if (type == "protocol-version")
-							client_protocol_version = from_string<int>(rest);
+						if (type == "protocol-version") client_protocol_version = std::stoi(rest);
+					} else {
+						DLOG_F(4, "%p Request line '%s' contained no key-value pair", this,
+							hdrline.c_str());
 					}
 				}
 
@@ -396,9 +398,10 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 			// send off the newly created feedheader
 			async_write(*sock_,feedbuf_.data(),
 				lslboost::bind(&client_session::handle_send_feedheader_outcome,shared_from_this(),placeholders::error,placeholders::bytes_transferred));
+			DLOG_F(4, "%p sent test pattern samples", this);
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while serializing the feed header (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while serializing the feed header: %s", e.what());
 	}
 }
 
@@ -413,7 +416,7 @@ void tcp_server::client_session::handle_send_feedheader_outcome(error_code err, 
 			lslboost::thread(&client_session::transfer_samples_thread,this,shared_from_this());
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while handling the feedheader send outcome (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while handling the feedheader send outcome: %s", e.what());
 	}
 }
 
@@ -463,11 +466,11 @@ void tcp_server::client_session::transfer_samples_thread(client_session_p) {
 				}
 
 			} catch(std::exception &e) {
-				std::cerr << "Unexpected glitch in transfer_samples_thread (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+				LOG_F(WARNING, "Unexpected glitch in transfer_samples_thread: %s", e.what());
 			}
 		}
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error in transfer_samples_thread (id: " << lslboost::this_thread::get_id() << "): " << e.what() << "; exiting..." << std::endl;
+		LOG_F(ERROR, "Unexpected error in transfer_samples_thread: %s, exiting...", e.what());
 	}
 }
 
@@ -484,7 +487,9 @@ void tcp_server::client_session::handle_chunk_transfer_outcome(error_code err, s
 		// notify the server thread
 		completion_cond_.notify_all();
 	} catch(std::exception &e) {
-		std::cerr << "Catastrophic error in handling the chunk transfer outcome (in tcp_server): " << e.what() << std::endl;
+		LOG_F(WARNING,
+			"Catastrophic error in handling the chunk transfer outcome (in tcp_server): %s",
+			e.what());
 	}
 }
 
