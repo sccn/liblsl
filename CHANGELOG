@@ -1,5 +1,6 @@
 Changes for liblsl 1.13
 
+* add: the path to the lsl_api.cfg can now be specified via the environment variable LSLAPICFG
 * fix: updates to the included Boost, fixing Android compilation and reducing the number of warnings (Tristan Stenner)
 * fix: patch Boost.Thread to avoid latency spikes on Windows (Tristan Stenner)
 * add: lsl_stream_info_matches_query() to test a resolved stream against a query (Tristan Stenner)
