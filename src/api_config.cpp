@@ -55,8 +55,11 @@ bool file_is_readable(const std::string& filename) {
 */
 api_config::api_config() {
 	// for each config file location under consideration...
-	std::vector<std::string> filenames = {"lsl_api.cfg", expand_tilde("~/lsl_api/lsl_api.cfg"), "/etc/lsl_api/lsl_api.cfg"};
+	std::vector<std::string> filenames;
 	if(getenv("LSLAPICFG")) filenames.insert(filenames.begin(), getenv("LSLAPICFG"));
+	filenames.push_back("lsl_api.cfg");
+	filenames.push_back(expand_tilde("~/lsl_api/lsl_api.cfg"));
+	filenames.push_back("/etc/lsl_api/lsl_api.cfg");
 	for (std::size_t k=0; k < filenames.size(); k++) {
 		try {
 			if (file_is_readable(filenames[k])) {
