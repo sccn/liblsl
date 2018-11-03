@@ -36,7 +36,7 @@ using lslboost::uint64_t;
 const int LSL_PROTOCOL_VERSION = 110;
 
 // the library version
-const int LSL_LIBRARY_VERSION = 112;
+const int LSL_LIBRARY_VERSION = 113;
 
 namespace lsl {
 	/// A very large time duration (> 1 year) for timeout values.

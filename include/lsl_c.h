@@ -194,6 +194,16 @@ typedef struct lsl_continuous_resolver_* lsl_continuous_resolver;
 /* ==== Free functions provided by the lab streaming layer ==== */
 /* ============================================================ */
 
+/** LSL version the binary was compiled against
+ * Used either to check if the same version is used
+ * (if(lsl_protocol_version()!=LIBLSL_COMPILE_HEADER_VERSION) … 
+ * or to require a certain set of features:
+ * #if LIBLSL_COMPILE_HEADER_VERSION > 113
+ * do_stuff();
+ * #endif
+ * */
+#define LIBLSL_COMPILE_HEADER_VERSION = 113;
+
 /**
 * Protocol version.
 * The major version is protocol_version() / 100;

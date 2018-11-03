@@ -1,4 +1,4 @@
-version: 1.12.{build}
+version: 1.13.{build}
 pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
@@ -39,7 +39,7 @@ deploy:
   api_key:
     secure: Fo9tIQnGjVnCXB3euItvYrt85A5O9FPqq7LEpsdOuwW+eOg1rwA5Q1HLp4yWDXAl
   subject: labstreaminglayer
-  version: 1.12
+  version: 1.13
   repo: LSL
   package: $(APPVEYOR_PROJECT_NAME)
   publish: true
