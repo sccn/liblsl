@@ -141,16 +141,16 @@ udp::endpoint inlet_connection::get_udp_endpoint() {
 	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
 	
 	if(udp_protocol_ == udp::v4()) {
-        std::string address = host_info_.v4address();
-        uint16_t port = host_info_.v4data_port();
+		std::string address = host_info_.v4address();
+        uint16_t port = host_info_.v4service_port();
         return udp::endpoint(ip::address::from_string(address), port);
-        
+
     //This more complicated procedure is required when the address is an ipv6 link-local address.
     //Simplified from https://stackoverflow.com/questions/10286042/using-lslboost-to-accept-on-ipv6-link-scope-address
 	//It does not hurt when the address is not link-local.
 	} else {
-        std::string address = host_info_.v6address();
-        std::string port = lslboost::lexical_cast<std::string>(host_info_.v6data_port());
+		std::string address = host_info_.v6address();
+		std::string port = lslboost::lexical_cast<std::string>(host_info_.v6service_port());
 
         io_service io; 
         ip::udp::resolver resolver(io);

@@ -1,5 +1,6 @@
 Changes for liblsl 1.13
 
+* fix: Fix for the sometimes appearing "no clock offsets found"-bug
 * add: the path to the lsl_api.cfg can now be specified via the environment variable LSLAPICFG
 * fix: updates to the included Boost, fixing Android compilation and reducing the number of warnings (Tristan Stenner)
 * fix: patch Boost.Thread to avoid latency spikes on Windows (Tristan Stenner)
