@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 8")
+message(STATUS "Included LSL CMake helpers, rev. 9")
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -9,7 +9,7 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 # OR ((${MSVC_VERSION} GREATER_EQUAL 1910) AND ("${CMAKE_GENERATOR}" STREQUAL "Ninja"))
-	set(CMAKE_INSTALL_PREFIX "${CMAKE_SOURCE_DIR}/build/install" CACHE PATH
+	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
 	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}")
 endif()
