@@ -1,17 +1,16 @@
 # Doxyfile 1.8.13
 
 DOXYFILE_ENCODING      = UTF-8
-PROJECT_NAME           = liblsl_internal
-PROJECT_NUMBER         = 1.12
+PROJECT_NAME           = liblsl_api
+PROJECT_NUMBER         = 1.13
 PROJECT_BRIEF          = "Multi-modal time-synched data transmission over local network"
-OUTPUT_DIRECTORY       = liblsl_internal
+OUTPUT_DIRECTORY       = liblsl_api
 FULL_PATH_NAMES        = NO
 DISTRIBUTE_GROUP_DOC   = YES
 INLINE_SIMPLE_STRUCTS  = YES
 EXTRACT_ALL            = YES
 SHOW_NAMESPACES        = NO
-INPUT                  = ../src \
-                         ../include
+INPUT                  = ../include
 FILE_PATTERNS          = *.c \
                          *.cpp \
                         *.h
@@ -27,6 +26,7 @@ QCH_FILE               = lsl.qch
 QHP_NAMESPACE          = edu.sccn.labstreaminglayer.liblsl
 QHG_LOCATION           = 
 GENERATE_XML           = NO
+GENERATE_LATEX         = NO
 CLASS_DIAGRAMS         = NO
 COLLABORATION_GRAPH    = NO
 INCLUDE_GRAPH          = YES
