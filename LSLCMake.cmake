@@ -94,6 +94,21 @@ function(installLSLApp target)
 	endif()
 endfunction()
 
+macro(findQtInstallationTool qtdeploytoolname)
+	if(QT_QMAKE_EXE AND EXISTS ${QT_QMAKE_EXE})
+		message(STATUS "Qt deploy tool found at ${QT_QMAKE_EXE}")
+		return()
+	endif()
+	get_target_property(QT_QMAKE_EXE Qt5::qmake IMPORTED_LOCATION)
+	execute_process(COMMAND ${QT_QMAKE_EXE} -query QT_VERSION OUTPUT_VARIABLE QT_VERSION)
+	get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXE}" DIRECTORY)
+	find_program (QT_DEPLOYQT_EXECUTABLE ${qtdeploytoolname} HINTS "${QT_BIN_DIR}")
+	if (NOT QT_DEPLOYQT_EXECUTABLE)
+		message(WARNING "Windeployqt wasn't found, installing ${PROJECT_NAME} will fail!")
+		return()
+	endif()
+endmacro()
+
 # installLSLAppSingleFolder: installs the app its folder and copies needed libraries
 #
 # when calling make install / ninja install the executable is installed to
@@ -118,60 +133,60 @@ function(installLSLAppSingleFolder target)
 	# do we need to install with Qt5?
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
 	if(";${TARGET_LIBRARIES}" MATCHES ";Qt5::")
-		# TODO: add the executable name to a list we feed to *deployqt later on?
-		# https://gitlab.pluribusgames.com/games/apitrace/blob/master/gui/CMakeLists.txt#L121-174
-		get_target_property(QT_QMAKE_EXECUTABLE Qt5::qmake IMPORTED_LOCATION)
-		execute_process(COMMAND ${QT_QMAKE_EXECUTABLE} -query QT_VERSION OUTPUT_VARIABLE QT_VERSION)
-		get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXECUTABLE}" DIRECTORY)
 		if(WIN32)
-			find_program (QT_DEPLOYQT_EXECUTABLE windeployqt HINTS "${QT_BIN_DIR}")
+			findQtInstallationTool("windeployqt")
 			if (QT_DEPLOYQT_EXECUTABLE)
 				file (TO_NATIVE_PATH "${QT_BIN_DIR}" QT_BIN_DIR_NATIVE)
 				# It's safer to use `\` separators in the Path, but we need to escape them
 				string (REPLACE "\\" "\\\\" QT_BIN_DIR_NATIVE "${QT_BIN_DIR_NATIVE}")
 
-				# windeployqt needs VCINSTALLDIR to copy MSVC Runtime files, but it's
-				# usually not define with MSBuild builds.
-				if ($ENV{VCINSTALLDIR})
-					set (VCINSTALLDIR "$ENV{VCINSTALLDIR}")
-				elseif (MSVC11)
-					set (VCINSTALLDIR "$ENV{VS110COMNTOOLS}../../VC")
-				elseif (MSVC12)
-					set (VCINSTALLDIR "\$ENV{VS120COMNTOOLS}/../../VC")
-				elseif (MSVC14)
-					set (VCINSTALLDIR "\$ENV{VS140COMNTOOLS}/../../VC")
-				else ()
-					message (FATAL_ERROR "Unsupported MSVC version ${MSVC_VERSION}")
-				endif ()
-				file(TO_CMAKE_PATH ${VCINSTALLDIR} VCINSTALLDIR)
-				if(QT_VERSION VERSION_LESS 5.3.0)
-					set(QT_DEPLOYQT_FLAGS --no-translations --no-system-d3d-compiler)
-				else()
-					set(QT_DEPLOYQT_FLAGS --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime)
-				endif()
+				set(QT_DEPLOYQT_FLAGS --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime)
+				file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${target}_path"
+					CONTENT "$<TARGET_FILE:${target}>"
+				)
+				get_filename_component(appdir ${appbin} DIRECTORY CACHE)
 				install (CODE "
-					message (STATUS \"Running Qt Deploy Tool...\")
+					file(READ \"${CMAKE_CURRENT_BINARY_DIR}/${target}_path\" _file)
+					message (STATUS \"Running Qt Deploy Tool for \${_file}\")
 					if (CMAKE_INSTALL_CONFIG_NAME STREQUAL \"Debug\")
-						list (APPEND QT_DEPLOYQT_FLAGS --debug)
+						set(QT_DEPLOYQT_FLAGS \"\${QT_DEPLOYQT_FLAGS} --debug\")
 					else ()
-						list (APPEND QT_DEPLOYQT_FLAGS --release)
+						set(QT_DEPLOYQT_FLAGS \"\${QT_DEPLOYQT_FLAGS} --release\")
 					endif ()
 					execute_process(COMMAND
 						\"${CMAKE_COMMAND}\" -E env
 						\"Path=${QT_BIN_DIR_NATIVE};\$ENV{SystemRoot}\\\\System32;\$ENV{SystemRoot}\"
-						\"VCINSTALLDIR=${VCINSTALLDIR}\"
 						\"${QT_DEPLOYQT_EXECUTABLE}\"
-						${QT_DEPLOYQT_FLAGS}
+						${QT_DEPLOYQT_FLAGS} --dry-run --list mapping
 						\"${appbin}\"
+						OUTPUT_VARIABLE output
+						OUTPUT_STRIP_TRAILING_WHITESPACE
 					)
-				")
-			endif(QT_DEPLOYQT_EXECUTABLE)
-
+					string(REPLACE \"\\\\\" \"/\" _output \${output})
+					separate_arguments(_files WINDOWS_COMMAND \${_output})
+					while(_files)
+						list(GET _files 0 _src)
+						list(GET _files 1 _dest)
+						execute_process(
+							COMMAND \"${CMAKE_COMMAND}\" -E
+								copy \${_src} \"\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/$\{_dest}\"
+						)
+						list(REMOVE_AT _files 0 1)
+					endwhile()
+					" COMPONENT ${target})
+					#add_custom_command(TARGET ${target} POST_BUILD
+					#	COMMAND "${CMAKE_COMMAND}" -E env PATH="${QT_BIN_DIR}" "${QT_DEPLOYQT_EXECUTABLE}"
+					#	${QT_DEPLOYQT_FLAGS}
+					#	\"$<TARGET_FILE:${target}>\")
+			endif()
+			set_property(GLOBAL APPEND PROPERTY
+				LSLMENU "${PROJECT_NAME}/${target}.exe" "${target}")
+			message(STATUS "MENU appended: ${target}")
 		elseif(APPLE)
 			# It should be enough to call fixup_bundle (see below),
 			# but this fails to install qt plugins (cocoa).
 			# Use macdeployqt instead (but this is bad at grabbing lsl dylib, so we did that above)
-			find_program (QT_DEPLOYQT_EXECUTABLE macdeployqt HINTS "${QT_BIN_DIR}")
+			findQtInstallationTool("macdeployqt")
 			if(QT_DEPLOYQT_EXECUTABLE)
 				set(QT_DEPLOYQT_FLAGS "-verbose=1")  # Adding -libpath=${CMAKE_INSTALL_PREFIX}/LSL/lib seems to do nothing, maybe deprecated
 				install(CODE "
@@ -186,8 +201,8 @@ function(installLSLAppSingleFolder target)
 						${QT_DEPLOYQT_FLAGS}
 					)
 				")
-			endif(QT_DEPLOYQT_EXECUTABLE)
-		endif(WIN32)
+			endif()
+		endif()
 	elseif(APPLE)
 		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
 		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
@@ -201,9 +216,9 @@ function(installLSLAppSingleFolder target)
 					\"${CMAKE_INSTALL_PREFIX}/LSL/lib\"
 				)
 				"
-				COMPONENT Runtime
+				COMPONENT ${PROJECT_NAME}
 			)
-		endif(target_is_bundle)
+		endif()
 	endif()
 endfunction()
 
@@ -302,8 +317,11 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_GENERATOR "TBZ2")
 			set(LSL_OS "OSX${lslplatform}")
 		elseif(WIN32)
-			set(CPACK_GENERATOR "7Z")
+			set(CPACK_GENERATOR "7Z;NSIS")
+			set(CPACK_NSIS_MODIFY_PATH ON)
 			set(LSL_OS "Win${lslplatform}")
+			get_property(CPACK_NSIS_MENU_LINKS GLOBAL PROPERTY LSLMENU)
+			message(STATUS "MENU: ${CPACK_NSIS_MENU_LINKS}")
 		elseif(UNIX)
 			set(CPACK_GENERATOR DEB)
 			set(CPACK_SET_DESTDIR 1)
