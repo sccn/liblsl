@@ -303,7 +303,7 @@ macro(LSLGenerateCPackConfig)
 			set(LSL_OS "OSX${lslplatform}")
 		elseif(WIN32)
 			set(CPACK_GENERATOR "7Z")
-			set(LSL_OS "Win${lslplatform}-MSVC${_vs_ver}")
+			set(LSL_OS "Win${lslplatform}")
 		elseif(UNIX)
 			set(CPACK_GENERATOR DEB)
 			set(CPACK_SET_DESTDIR 1)
@@ -314,7 +314,6 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_DEBIAN_PACKAGE_PRIORITY optional)
 
 			# include distribution name (e.g. trusty or xenial) in the file name
-			# only works on CMake>=3.6, does nothing on CMake<3.6
 			find_program(LSB_RELEASE lsb_release)
 			execute_process(COMMAND ${LSB_RELEASE} -cs
 				OUTPUT_VARIABLE LSB_RELEASE_CODENAME
@@ -324,14 +323,12 @@ macro(LSLGenerateCPackConfig)
 			set(LSL_OS "Linux${lslplatform}-${LSB_RELEASE_CODENAME}")
 		endif()
 
-		message(STATUS ${LSL_CPACK_FILENAME})
-
 		get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
 		foreach(component ${CPACK_COMPONENTS_ALL})
 			string(TOUPPER ${component} COMPONENT)
 			message(STATUS "Setting packages name for ${COMPONENT}")
 			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${LSL_OS}")
-			message(STATUS "${LSL_CPACK_FILENAME}")
+			message(STATUS "File name: ${LSL_CPACK_FILENAME}")
 			set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
 			set("CPACK_ARCHIVE_${COMPONENT}_FILE_NAME" ${LSL_CPACK_FILENAME})
 			#set(CPACK_DEBIAN_${component}_FILE_NAME "${FILENAME}.deb")
