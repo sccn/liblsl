@@ -49,7 +49,7 @@ public:
 	/// Post-process the given time stamp and return the new time-stamp.
 	double process_timestamp(double value) {
 		if (options_ & post_threadsafe) {
-			boost::lock_guard<boost::mutex> lock(processing_mut_);
+			lslboost::lock_guard<lslboost::mutex> lock(processing_mut_);
 			return process_internal(value);
 		} else
 			return process_internal(value);
@@ -155,7 +155,7 @@ private:
 	double last_value_;						// last observed time-stamp value, to force monotonically increasing stamps
 
 	// mutex for thread safety
-	boost::mutex processing_mut_;			// a mutex that protects the runtime data structures
+	lslboost::mutex processing_mut_;			// a mutex that protects the runtime data structures
 };
 
 
@@ -170,14 +170,14 @@ void main() {
 		std::cout << "running test for srate = " << rate << std::endl;
 		// get path to test cases
 		std::string loadpath(datapath);
-		loadpath += ("NR" + boost::lexical_cast<std::string>(rate));
+		loadpath += ("NR" + lslboost::lexical_cast<std::string>(rate));
 		// run test
 		double sum_errors = 0.0;
 		int n_samples = 0;
 		for (int chunk=1; chunk<=n_chunks; chunk++) {
-			std::string true_data = loadpath + "_YMatrix_" + boost::lexical_cast<std::string>(chunk) + ".bin";
-			std::string jittered_data = loadpath + "_ZMatrix_" + boost::lexical_cast<std::string>(chunk) + ".bin";
-			std::string estimated_data = loadpath + "_WMatrix_" + boost::lexical_cast<std::string>(chunk) + ".bin";
+			std::string true_data = loadpath + "_YMatrix_" + lslboost::lexical_cast<std::string>(chunk) + ".bin";
+			std::string jittered_data = loadpath + "_ZMatrix_" + lslboost::lexical_cast<std::string>(chunk) + ".bin";
+			std::string estimated_data = loadpath + "_WMatrix_" + lslboost::lexical_cast<std::string>(chunk) + ".bin";
 			std::ifstream true_stream(true_data.c_str(), std::ifstream::binary);
 			std::ifstream jittered_stream(jittered_data.c_str(), std::ifstream::binary);
 			std::ofstream estimated_stream(estimated_data.c_str(), std::ofstream::binary | std::ofstream::trunc);
