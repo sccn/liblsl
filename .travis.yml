@@ -1,23 +1,25 @@
 language: cpp
-#compiler: clang # 3.5 instead of GCC 4.8
 dist: xenial
 env:
   CMakeArgs=""
+matrix:
+  include:
+    - os: osx
 script:
 - mkdir -p build/install
 - cd build
 - cmake --version
-- cmake -DCMAKE_BUILD_TYPE=Release -DLSL_LSLBOOST_PATH=lslboost -DLSL_UNIXFOLDERS=1 $CMakeArgs ../
+- cmake -DCMAKE_BUILD_TYPE=Release ${CMakeArgs} ../
 - cmake --build . --config Release --target install
 - cpack
 - cd ..
-matrix:
-  include:
-    - os: osx
 deploy:
+  provider: releases
   skip_cleanup: true
-  provider: bintray
-  user: tstenner
-  key:
-    secure: "MGxCeZ7ENmWBFHNRNTaYNMLp/w08qSyOJK0iQ4LgqNX6H1lz3RdX9TL/BcmVbfZEKfKzTiDXASvsCeFMrvrQDgfR57tiQVwV3njapin1yhgDoFdxL/WvBznvRsLW1g55MacaDXke2Ez/mN3d1m0Ys923CHv/6lBpS3ZzhMnjFrNtF67nyMysVSW6BvrdW1SAYIM4DZknaq+/fP6xSF5MjlRJqL6GYuXXubunycfyND2ghlsAAbX/O21OA02BsyGMnGXet1Bu2dyweJ140lzTkbiLIlt539Wdunwr7PexNkolcXsa1V6qEppW5WVx8odtld5n7fkaAuPnmriwrDngplEZBkKo5USlh9TdIqcSuKWQy5mc3q+1gjz41DQffKgYq5p2Vf47YKMpvlZFH3oSnxi5811CDo4/hkTvkMmojKI8mNGQ2y/A7GHVdykvkIddkFuF/zjKDFUDPHdxejW0qLVkswhaSMfbn+ykv5ECZYrHUwF3UpQh3YTjtVbti+B/oDfBariIBqy9yS7fSkJBo3NScP75aMK79yivCAldgwGLaCCy1TIW5l7xfyr+bxPnU3emZIQho/4EkSk8eladfnJlNIbq/HbTKlbJLPJP/YsQnEQy3eSExOAUjVdmTD6Lm9GPguKaF4jPDNxf7iqpNjg02BPInj/+nrtdoZ5OqlQ="
-  file: .bintray.json
+  on:
+    tags: true
+  draft: true
+  api_key:
+    secure: cv/WRLXrJMkcU6AQy5UQn54c5LR+PbVUHveJpEryv54TGQ2+KXrVu0JNeiU9KSb93Ii/QgtctepbkAMgPp9yYP+D0cDCV9GLt/pudLGhdGfwltSEjSJb2+891fdDVEC7GLEkg/DpGj0YRgHYlMLm6mqUtM+SWFiy4RzEBNofBK86mjKM2RTKU+dFgryaObvzriAKumVmybhkL8jRWAGsZ/C1IUNZEjqZm7iCxIeHHMcmni8Eq5WS7kSg7S2s80yQ2YLqVaAK+xAK3+ZjljhvtVWUvW4Eela6o2/fYu3Bw2qi4zDbdvmq4TvaOFWW5vPsR6TCUSZ7LEzDyh1CCdlCwJ6f2HuGwoRGYm+jZcNF6Qut4Z6vAPrioSVq0it1MBD667yuA2W1vjS2b1m/q26YYBAYqbTo4ENBe/VaurLfjK1r5GPLdxNGenj6g8psztQOgxHu4RxxtxqALgjHFgFib9WKEI+1z+PanqOLbh7TQZIxtiduIO3KZj3dKOvoXux2bPT/4FtkW+z8vgS5qxEL0IpiASdHxH6Z5kfZsdToYYnC+3lg4ppVFQYFYMN/IKye34yPjTHvY5J62iY3uX3J1ggT+9NQCKdWDlKZLyqQZoPbVFnzYjSoCcjSonlVCOhBCyMF4lOv093UvPye8XpjraKZt0UXxCbbI9gJylsTxOE=
+  file: build/*.tar.*
+  file_glob: true
