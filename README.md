@@ -7,16 +7,16 @@ audio, and so on.
 ## Building liblsl
 
 To compile the library yourself from source please follow the instructions in
-the [main build documentation](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/doc/BUILD.md).
+the [main build documentation](https://github.com/sccn/labstreaminglayer/tree/master/doc/BUILD.md).
 
 To build language bindings (e.g. for
 [Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
 [Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
-the [corresponding directory](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/LSL)
-in the [main repository](https://github.com/labstreaminglayer/labstreaminglayer).
+the [corresponding directory](https://github.com/sccn/labstreaminglayer/tree/master/LSL)
+in the [main repository](https://github.com/sccn/labstreaminglayer).
 
 You might also be interested in
-[apps to connect recording equipment](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/Apps)
+[apps to connect recording equipment](https://github.com/sccn/labstreaminglayer/tree/master/Apps)
 and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
 
 Please stay put while we figure out how to best offer precompiled packages.
@@ -58,7 +58,7 @@ Package overview:
 To connect an application to the lab streaming layer:
 * Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h for C++`)
   (automatically done when using CMake) or get
-  [bindings for your preferred language](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/LSL)
+  [bindings for your preferred language](https://github.com/sccn/labstreaminglayer/tree/master/LSL)
 * Make sure that the library file (`liblsl32`/`64``.dll`/`.so`/`.dylib`) is found by your application. 
   On Windows, it should be enough to put it in the same folder as your executable.
   When building a Windows app, also make sure that the liblsl64.lib (or liblsl32.lib) file is visible 
