@@ -115,17 +115,15 @@ if(GIT_FOUND)
 		COMMAND ${GIT_EXECUTABLE} describe --tags HEAD
 		WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
 		OUTPUT_VARIABLE lslgitrevision
-		ERROR_QUIET
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
 	execute_process(
 		COMMAND ${GIT_EXECUTABLE} rev-parse --symbolic-full-name --abbrev-ref @
 		WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
 		OUTPUT_VARIABLE lslgitbranch
-		ERROR_QUIET
 		OUTPUT_STRIP_TRAILING_WHITESPACE
 	)
-
+	message(STATUS "Git version information: ${lslgitbranch}/${lslgitrevision}")
 else()
 	set(lslgitrevision "unknown")
 	set(lslgitbranch "unknown")

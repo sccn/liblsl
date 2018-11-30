@@ -17,7 +17,7 @@ deploy:
   provider: releases
   skip_cleanup: true
   on:
-    tags: true
+    condition: $TRAVIS_TAG || $DODEPLOY
   draft: true
   api_key:
     secure: cv/WRLXrJMkcU6AQy5UQn54c5LR+PbVUHveJpEryv54TGQ2+KXrVu0JNeiU9KSb93Ii/QgtctepbkAMgPp9yYP+D0cDCV9GLt/pudLGhdGfwltSEjSJb2+891fdDVEC7GLEkg/DpGj0YRgHYlMLm6mqUtM+SWFiy4RzEBNofBK86mjKM2RTKU+dFgryaObvzriAKumVmybhkL8jRWAGsZ/C1IUNZEjqZm7iCxIeHHMcmni8Eq5WS7kSg7S2s80yQ2YLqVaAK+xAK3+ZjljhvtVWUvW4Eela6o2/fYu3Bw2qi4zDbdvmq4TvaOFWW5vPsR6TCUSZ7LEzDyh1CCdlCwJ6f2HuGwoRGYm+jZcNF6Qut4Z6vAPrioSVq0it1MBD667yuA2W1vjS2b1m/q26YYBAYqbTo4ENBe/VaurLfjK1r5GPLdxNGenj6g8psztQOgxHu4RxxtxqALgjHFgFib9WKEI+1z+PanqOLbh7TQZIxtiduIO3KZj3dKOvoXux2bPT/4FtkW+z8vgS5qxEL0IpiASdHxH6Z5kfZsdToYYnC+3lg4ppVFQYFYMN/IKye34yPjTHvY5J62iY3uX3J1ggT+9NQCKdWDlKZLyqQZoPbVFnzYjSoCcjSonlVCOhBCyMF4lOv093UvPye8XpjraKZt0UXxCbbI9gJylsTxOE=
