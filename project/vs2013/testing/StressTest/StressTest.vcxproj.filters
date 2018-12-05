@@ -1,0 +1,32 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <ClCompile Include="..\..\..\..\testing\StressTest\StressTest.cpp" />
+    <ClCompile Include="..\..\..\..\lslboost\libs\thread\src\tss_null.cpp">
+      <Filter>thread</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lslboost\libs\thread\src\win32\thread.cpp">
+      <Filter>thread\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lslboost\libs\thread\src\win32\tss_dll.cpp">
+      <Filter>thread\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lslboost\libs\thread\src\win32\tss_pe.cpp">
+      <Filter>thread\win32</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\..\lslboost\libs\system\src\error_code.cpp">
+      <Filter>system</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="thread">
+      <UniqueIdentifier>{05d48276-db95-4bd3-9e32-2e3012769506}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="thread\win32">
+      <UniqueIdentifier>{8a921f01-91e4-4d37-9967-12417be7480e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="system">
+      <UniqueIdentifier>{8ad77712-963d-4e22-b2c7-5a43c9037456}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+</Project>

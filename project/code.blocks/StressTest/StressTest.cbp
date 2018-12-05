@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="StressTest" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="../../../bin/StressTest-linux-debug" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin" />
+				<Option object_output="../../../output/linux64/debug" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++11" />
+					<Add option="-g" />
+					<Add option="-DBOOST_ALL_NO_LIB" />
+					<Add option="-DBOOST_THREAD_BUILD_LIB" />
+					<Add option="-DBOOST_ASIO_ENABLE_OLD_SERVICES" />
+					<Add directory="../../../lslboost" />
+				</Compiler>
+				<Linker>
+					<Add library="liblsl64-debug" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="../../../bin/StressTest-linux" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="../../../bin" />
+				<Option object_output="../../../output/linux64/release" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-std=c++11" />
+					<Add option="-DBOOST_ALL_NO_LIB" />
+					<Add option="-DBOOST_THREAD_BUILD_LIB" />
+					<Add option="-DBOOST_ASIO_ENABLE_OLD_SERVICES" />
+					<Add directory="../../../lslboost" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
+					<Add library="liblsl64" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-DBOOST_ALL_NO_LIB" />
+			<Add option="-DBOOST_THREAD_BUILD_LIB" />
+			<Add option="-DBOOST_ASIO_ENABLE_OLD_SERVICES" />
+			<Add directory="../../../include" />
+			<Add directory="../../../lslboost" />
+		</Compiler>
+		<Linker>
+			<Add option="-pthread -lrt -fvisibility=hidden" />
+			<Add option="-fvisibility-inlines-hidden" />
+			<Add option="-z muldefs" />
+			<Add directory="../../../bin" />
+		</Linker>
+		<Unit filename="../../../lslboost/libs/system/src/error_code.cpp" />
+		<Unit filename="../../../lslboost/libs/thread/src/pthread/once.cpp" />
+		<Unit filename="../../../lslboost/libs/thread/src/pthread/thread.cpp" />
+		<Unit filename="../../../lslboost/libs/thread/src/tss_null.cpp" />
+		<Unit filename="../../../testing/StressTest/StressTest.cpp" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>

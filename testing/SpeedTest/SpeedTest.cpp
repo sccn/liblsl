@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "../../include/lsl_cpp.h"
 #include <boost/chrono.hpp>
 #include <boost/thread.hpp>
@@ -43,7 +44,7 @@ void run_outlet(string name, string type, int numchan, lsl::channel_format_t fmt
 		cout << "outlet started." << endl;
 
 		while (!start_outlet)
-			boost::this_thread::sleep(boost::posix_time::milliseconds(1));
+			lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(1));
 
 		// initialize data to send
 		vector<T> sample,chunk;
@@ -53,7 +54,7 @@ void run_outlet(string name, string type, int numchan, lsl::channel_format_t fmt
 		// send in bursts
 		double start_time = lsl::local_clock();
 		for (int target,diff,written=0;written<max_samples && !stop_outlet;written+=diff) {
-			boost::this_thread::sleep(boost::posix_time::milliseconds(chunk_len));
+			lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(chunk_len));
 			target = (int)floor((lsl::local_clock()-start_time)*srate);
 			int num_elements = std::min((std::size_t)((target-written)*numchan),chunk.size());
 			outlet.push_chunk_multiplexed(&chunk[0],num_elements);
@@ -61,7 +62,7 @@ void run_outlet(string name, string type, int numchan, lsl::channel_format_t fmt
 		}
 		cout << "outlet finished." << endl;
 	}
-	catch(boost::thread_interrupted &) {}
+	catch(lslboost::thread_interrupted &) {}
 	catch(std::exception &e) {
 		std::cerr << "ERROR during run_outlet() Stress-test function: " <<	e.what() << std::endl;
 	}
@@ -87,7 +88,7 @@ void run_inlet(string type, bool in_chunks, int buffer_len) {
 
 		// run
 		for (int k=0,num_samples=0;!stop_inlet;k++) {
-			boost::this_thread::sleep(boost::posix_time::milliseconds(10));
+			lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(10));
 			if (in_chunks) {
 				inlet.pull_chunk(chunk);
 				num_samples += chunk.size();
@@ -108,7 +109,7 @@ void run_inlet(string type, bool in_chunks, int buffer_len) {
 		}
 		cout << "inlet finished." << endl;
 	} 
-	catch(boost::thread_interrupted &) {}
+	catch(lslboost::thread_interrupted &) {}
 	catch(std::exception &e) {
 		std::cerr << "ERROR during run_inlet() Stress-test function: " <<	e.what() << std::endl;
 	}
@@ -122,24 +123,24 @@ int main(int argc, char* argv[]) {
 	int maxsamples = 10000000;
 	int bufferlen = 10;
 	if (argc > 1)
-		srate = boost::lexical_cast<double>(argv[1]);
+		srate = lslboost::lexical_cast<double>(argv[1]);
 	if (argc > 2)
-		numchans = boost::lexical_cast<int>(argv[2]);
+		numchans = lslboost::lexical_cast<int>(argv[2]);
 	if (argc > 3) {
 		std::map<std::string,lsl::channel_format_t> m; m["int8"]=lsl::cf_int8;m["int16"]=lsl::cf_int16;m["int32"]=lsl::cf_int32;m["int64"]=lsl::cf_int64;m["float"]=lsl::cf_float32;m["double"]=lsl::cf_double64;m["float32"]=lsl::cf_float32;m["double64"]=lsl::cf_double64; m["string"]=lsl::cf_string;
 		format = m[argv[3]];
 	}
 	if (argc > 4)
-		burstlen = boost::lexical_cast<int>(argv[4]);
+		burstlen = lslboost::lexical_cast<int>(argv[4]);
 	if (argc > 5)
-		maxsamples = boost::lexical_cast<int>(argv[5]);
+		maxsamples = lslboost::lexical_cast<int>(argv[5]);
 	if (argc > 6)
-		bufferlen = boost::lexical_cast<int>(argv[6]);
+		bufferlen = lslboost::lexical_cast<int>(argv[6]);
 
 	{
 		// fast serial transmission (1-channel char)
-		boost::thread outlet(boost::bind(&run_outlet<float>,"FastSerial","Serial",numchans,format,srate,burstlen,maxsamples));
-		boost::thread inlet(boost::bind(&run_inlet<float>,"Serial",false,bufferlen));
+		lslboost::thread outlet(lslboost::bind(&run_outlet<float>,"FastSerial","Serial",numchans,format,srate,burstlen,maxsamples));
+		lslboost::thread inlet(lslboost::bind(&run_inlet<float>,"Serial",false,bufferlen));
 
 		// typical audio transmission (44KHz, 2-ch, 16-bit, 512-sample chunks)
 		//boost::thread a(boost::bind(&run_outlet<char>,"TypicalAudio","Audio",2,lsl::cf_int16,44100,512,1000000));

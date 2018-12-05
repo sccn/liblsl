@@ -1,0 +1,331 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 50;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		F55426D021B5EEC8007C93F1 /* thread.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F55426CE21B5EEC8007C93F1 /* thread.cpp */; };
+		F55426D121B5EEC8007C93F1 /* once.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F55426CF21B5EEC8007C93F1 /* once.cpp */; };
+		F55426D321B5EEDD007C93F1 /* tss_null.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F55426D221B5EEDD007C93F1 /* tss_null.cpp */; };
+		F55426D621B5EF19007C93F1 /* error_code.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F55426D521B5EF19007C93F1 /* error_code.cpp */; };
+		F572E41721B20E0300C0D82F /* liblsl64.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = F572E41621B20E0300C0D82F /* liblsl64.dylib */; settings = {ATTRIBUTES = (Required, ); }; };
+		F5DA928F21B5DFDB00348AC0 /* StressTest.cpp in Sources */ = {isa = PBXBuildFile; fileRef = F5DA928E21B5DFDB00348AC0 /* StressTest.cpp */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		F572E40321B208F200C0D82F /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = /usr/share/man/man1/;
+			dstSubfolderSpec = 0;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		F55426CE21B5EEC8007C93F1 /* thread.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = thread.cpp; path = ../../../lslboost/libs/thread/src/pthread/thread.cpp; sourceTree = "<group>"; };
+		F55426CF21B5EEC8007C93F1 /* once.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = once.cpp; path = ../../../lslboost/libs/thread/src/pthread/once.cpp; sourceTree = "<group>"; };
+		F55426D221B5EEDD007C93F1 /* tss_null.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = tss_null.cpp; path = ../../../lslboost/libs/thread/src/tss_null.cpp; sourceTree = "<group>"; };
+		F55426D521B5EF19007C93F1 /* error_code.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = error_code.cpp; path = ../../../lslboost/libs/system/src/error_code.cpp; sourceTree = "<group>"; };
+		F572E40521B208F200C0D82F /* StressTest */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = StressTest; sourceTree = BUILT_PRODUCTS_DIR; };
+		F572E41621B20E0300C0D82F /* liblsl64.dylib */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.dylib"; path = liblsl64.dylib; sourceTree = BUILT_PRODUCTS_DIR; };
+		F5DA928E21B5DFDB00348AC0 /* StressTest.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; name = StressTest.cpp; path = ../../../testing/StressTest/StressTest.cpp; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		F572E40221B208F200C0D82F /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F572E41721B20E0300C0D82F /* liblsl64.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		F55426CC21B5EE9B007C93F1 /* thread */ = {
+			isa = PBXGroup;
+			children = (
+				F55426D221B5EEDD007C93F1 /* tss_null.cpp */,
+				F55426CD21B5EEA8007C93F1 /* pthread */,
+			);
+			name = thread;
+			sourceTree = "<group>";
+		};
+		F55426CD21B5EEA8007C93F1 /* pthread */ = {
+			isa = PBXGroup;
+			children = (
+				F55426CF21B5EEC8007C93F1 /* once.cpp */,
+				F55426CE21B5EEC8007C93F1 /* thread.cpp */,
+			);
+			name = pthread;
+			sourceTree = "<group>";
+		};
+		F55426D421B5EEEF007C93F1 /* system */ = {
+			isa = PBXGroup;
+			children = (
+				F55426D521B5EF19007C93F1 /* error_code.cpp */,
+			);
+			name = system;
+			sourceTree = "<group>";
+		};
+		F572E3FC21B208F200C0D82F = {
+			isa = PBXGroup;
+			children = (
+				F55426D421B5EEEF007C93F1 /* system */,
+				F55426CC21B5EE9B007C93F1 /* thread */,
+				F5DA928E21B5DFDB00348AC0 /* StressTest.cpp */,
+				F572E40621B208F200C0D82F /* Products */,
+				F572E41521B20E0300C0D82F /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		F572E40621B208F200C0D82F /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				F572E40521B208F200C0D82F /* StressTest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		F572E41521B20E0300C0D82F /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				F572E41621B20E0300C0D82F /* liblsl64.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		F572E40421B208F200C0D82F /* StressTest */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F572E40C21B208F200C0D82F /* Build configuration list for PBXNativeTarget "StressTest" */;
+			buildPhases = (
+				F572E40121B208F200C0D82F /* Sources */,
+				F572E40221B208F200C0D82F /* Frameworks */,
+				F572E40321B208F200C0D82F /* CopyFiles */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = StressTest;
+			productName = StressTest;
+			productReference = F572E40521B208F200C0D82F /* StressTest */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		F572E3FD21B208F200C0D82F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 1010;
+				ORGANIZATIONNAME = "Lab Streaming Layer";
+				TargetAttributes = {
+					F572E40421B208F200C0D82F = {
+						CreatedOnToolsVersion = 10.1;
+					};
+				};
+			};
+			buildConfigurationList = F572E40021B208F200C0D82F /* Build configuration list for PBXProject "StressTest" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+			);
+			mainGroup = F572E3FC21B208F200C0D82F;
+			productRefGroup = F572E40621B208F200C0D82F /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				F572E40421B208F200C0D82F /* StressTest */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		F572E40121B208F200C0D82F /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F5DA928F21B5DFDB00348AC0 /* StressTest.cpp in Sources */,
+				F55426D621B5EF19007C93F1 /* error_code.cpp in Sources */,
+				F55426D321B5EEDD007C93F1 /* tss_null.cpp in Sources */,
+				F55426D021B5EEC8007C93F1 /* thread.cpp in Sources */,
+				F55426D121B5EEC8007C93F1 /* once.cpp in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		F572E40A21B208F200C0D82F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEPLOYMENT_POSTPROCESSING = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				STRIP_INSTALLED_PRODUCT = YES;
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../lslboost";
+			};
+			name = Debug;
+		};
+		F572E40B21B208F200C0D82F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_IDENTITY = "-";
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEPLOYMENT_POSTPROCESSING = NO;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				MACOSX_DEPLOYMENT_TARGET = 10.13;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				STRIP_INSTALLED_PRODUCT = YES;
+				SYSTEM_HEADER_SEARCH_PATHS = "$(SRCROOT)/../../../lslboost";
+			};
+			name = Release;
+		};
+		F572E40D21B208F200C0D82F /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Debug;
+		};
+		F572E40E21B208F200C0D82F /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = "";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F572E40021B208F200C0D82F /* Build configuration list for PBXProject "StressTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F572E40A21B208F200C0D82F /* Debug */,
+				F572E40B21B208F200C0D82F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F572E40C21B208F200C0D82F /* Build configuration list for PBXNativeTarget "StressTest" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F572E40D21B208F200C0D82F /* Debug */,
+				F572E40E21B208F200C0D82F /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = F572E3FD21B208F200C0D82F /* Project object */;
+}

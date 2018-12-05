@@ -1,3 +1,4 @@
+#include <stdint.h>
 #include "../../include/lsl_cpp.h"
 #include <boost/thread.hpp>
 #include <boost/lexical_cast.hpp>
@@ -34,8 +35,8 @@ int max_buffered = 6;
 int max_chunk_oversize_factor = 5;
 int max_samples = 10000000;
 
-boost::atomic<int> num_outlets(0);
-boost::atomic<int> num_inlets(0);
+lslboost::atomic<int> num_outlets(0);
+lslboost::atomic<int> num_inlets(0);
 
 // some random names, types and formats
 lsl::channel_format_t fmts[] = {lsl::cf_int8,lsl::cf_int16,lsl::cf_int32,lsl::cf_float32,lsl::cf_double64,lsl::cf_string};
@@ -58,8 +59,8 @@ void init_sample(int numchan, vector<T> &sample) {
 // run an outlet for some time (optionally with sporadic interruptions in between)
 void run_outlet(const double duration_=0.0, const string name_=string(), const string type_=string(), const int numchan_=0, const lsl::channel_format_t fmt_=lsl::cf_undefined, const double srate_=0.0, const double seconds_between_failures_=0.0, const int chunk_len_=0) {
 	num_outlets.fetch_add(1);
-	std::ostringstream s; s << boost::this_thread::get_id();
-	srand((unsigned)boost::hash<string>()(s.str()));
+	std::ostringstream s; s << lslboost::this_thread::get_id();
+	srand((unsigned)lslboost::hash<string>()(s.str()));
 	try {
 		// choose random parameters if desired
 		double duration = (duration_ == 0.0) ? 1.0+rand()%(max_outlet_duration-1) : duration_;
@@ -72,7 +73,7 @@ void run_outlet(const double duration_=0.0, const string name_=string(), const s
 		int chunk_len = (chunk_len_ == 0) ? std::max(min_chunk_len_ms,(rand()%max_chunk_len_ms)) : chunk_len_;
 
 		// create a new streaminfo
-		lsl::stream_info info(name,type,numchan,srate,fmt,boost::uuids::to_string(boost::uuids::random_generator()()));
+		lsl::stream_info info(name,type,numchan,srate,fmt,lslboost::uuids::to_string(lslboost::uuids::random_generator()()));
 
 		// initialize data to send
 		vector<float> chunk;
@@ -88,7 +89,7 @@ void run_outlet(const double duration_=0.0, const string name_=string(), const s
 				// send in bursts
 				double now, start_time = lsl::local_clock(), fail_at=start_time+seconds_between_failures;
 				for (int target,diff,written=0;written<max_samples && !stop_outlet;written+=diff) {
-					boost::this_thread::sleep(boost::posix_time::milliseconds(chunk_len));
+					lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(chunk_len));
 					now = lsl::local_clock();
 					if (now>fail_at)
 						break;
@@ -101,7 +102,7 @@ void run_outlet(const double duration_=0.0, const string name_=string(), const s
 			}
 			cout << "del outlet(" << name << "," << type << "," << numchan << "," << fmt << "," << srate << ")" << endl;
 			// downtime
-			boost::this_thread::sleep(boost::posix_time::millisec(100*(rand()%50)));
+			lslboost::this_thread::sleep(lslboost::posix_time::millisec(100*(rand()%50)));
 		}
 	} catch(std::exception &e) {
 		std::cerr << "ERROR during run_outlet() Stress-test function: " <<	e.what() << std::endl;
@@ -112,8 +113,8 @@ void run_outlet(const double duration_=0.0, const string name_=string(), const s
 // run an inlet for some time (optionally with sporadic interruptions in between)
 void run_inlet(const double duration_=0.0, const string name_=string(), const string type_=string(), const int in_chunks_=-1, const int request_info_=-1, const int request_time_=-1, const double seconds_between_failures_=0.0) {
 	num_inlets.fetch_add(1);
-	std::ostringstream s; s << boost::this_thread::get_id();
-	srand((unsigned)boost::hash<string>()(s.str()));
+	std::ostringstream s; s << lslboost::this_thread::get_id();
+	srand((unsigned)lslboost::hash<string>()(s.str()));
 	try {
 		// choose random parameters if desired		
 		double duration = (duration_ == 0.0) ? 1.0+rand()%(max_outlet_duration-1) : duration_;
@@ -144,7 +145,7 @@ void run_inlet(const double duration_=0.0, const string name_=string(), const st
 					cout << "  info = " << inlet.info(1.0).name() << endl;
 				}
 				for (double fail_at = lsl::local_clock()+seconds_between_failures;lsl::local_clock()<fail_at;) {
-					boost::this_thread::sleep(boost::posix_time::milliseconds(1+rand()%max_inlet_poll_interval_ms));
+					lslboost::this_thread::sleep(lslboost::posix_time::milliseconds(1+rand()%max_inlet_poll_interval_ms));
 					inlet.pull_chunk_multiplexed(&chunk[0],NULL,chunk.size(),0);
 					if (request_time)
 						t = inlet.time_correction(1.0);
@@ -154,7 +155,7 @@ void run_inlet(const double duration_=0.0, const string name_=string(), const st
 			if (request_time)
 				cout << "  tcorr = " << t << endl;
 			// downtime
-			boost::this_thread::sleep(boost::posix_time::millisec(100*(rand()%50)));
+			lslboost::this_thread::sleep(lslboost::posix_time::millisec(100*(rand()%50)));
 		}
 	} 
 	catch(lsl::timeout_error &) { std::cerr << "Timeout exceeded; stopping inlet." << std::endl; }
@@ -171,11 +172,11 @@ void random_inlets(double spawn_every=0.0, double duration=0.0, string name=stri
 	while(true) {
         try {
 			if (num_inlets.load() < max_outlets)
-				boost::thread tmp(&run_inlet,duration,name,type,in_chunks,request_info,request_time,seconds_between_failures);
+				lslboost::thread tmp(&run_inlet,duration,name,type,in_chunks,request_info,request_time,seconds_between_failures);
 		} catch(std::exception &e) {
 			std::cerr << "Could not spawn a new inlet thread: " << e.what() << std::endl;
         }		
-		boost::this_thread::sleep(boost::posix_time::millisec((boost::int64_t)(1000*spawn_every)));
+		lslboost::this_thread::sleep(lslboost::posix_time::millisec((lslboost::int64_t)(1000*spawn_every)));
 	}
 }
 
@@ -185,11 +186,11 @@ void random_outlets(double spawn_every=0.0, double duration=0.0, string name=str
 	while(true) {
         try {
 			if (num_outlets.load() < max_inlets)
-				boost::thread tmp(&run_outlet,duration,name,type,numchan,fmt,srate,seconds_between_failures,chunk_len);
+				lslboost::thread tmp(&run_outlet,duration,name,type,numchan,fmt,srate,seconds_between_failures,chunk_len);
 		} catch(std::exception &e) {
 			std::cerr << "Could not spawn a new outlet thread: " << e.what() << std::endl;
         }		
-		boost::this_thread::sleep(boost::posix_time::millisec((boost::int64_t)(1000*spawn_every)));
+		lslboost::this_thread::sleep(lslboost::posix_time::millisec((lslboost::int64_t)(1000*spawn_every)));
 	}
 }
 
@@ -202,8 +203,8 @@ int main(int argc, char* argv[]) {
 	cout << "alert network operators and/or may crash unreliable equipment." << endl << endl; 
 	cout << "Are you sure you want to continue? [y/n]" << endl;
 	if ((argc>1 && string(argv[1]) == "-f") || tolower(cin.get()) == 'y') {
-		boost::thread outlets(&random_outlets,0.0,0.0,string(),string(),0,lsl::cf_undefined,0.0,0.0,0);
-		boost::thread inlets(&random_inlets,0.0,0.0,string(),string(),-1,-1,-1,0.0);
+		lslboost::thread outlets(&random_outlets,0.0,0.0,string(),string(),0,lsl::cf_undefined,0.0,0.0,0);
+		lslboost::thread inlets(&random_inlets,0.0,0.0,string(),string(),-1,-1,-1,0.0);
 		cout << "Press ENTER to exit. " << endl; cin.get();cin.get();
 	}
 	return 0;
