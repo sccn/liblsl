@@ -138,7 +138,15 @@ add_subdirectory(${LSL_LSLBOOST_PATH})
 
 # common definitions for the lsl and lsl-static
 function(lsllib_properties libname)
-	target_link_libraries(${libname} PRIVATE lslboost)
+	IF (UNIX)
+		target_link_libraries(${libname} PRIVATE lslboost rt)
+	ELSEIF (MINGW)
+		target_link_libraries(${libname}
+			PRIVATE lslboost
+			PUBLIC ws2_32 wsock32 winmm)
+	ELSE()
+		target_link_libraries(${libname} PRIVATE lslboost)
+	ENDIF(UNIX)
 	target_include_directories(${libname}
 		INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	)
@@ -152,7 +160,6 @@ function(lsllib_properties libname)
 		target_compile_features(${libname} PRIVATE cxx_auto_type)
 	endif()
 endfunction()
-
 
 # shared library
 add_library(${target} SHARED ${sources} ${headers})
@@ -171,10 +178,6 @@ if(${LSL_BUILD_STATIC})
 	target_compile_definitions(${target}-static PRIVATE LIBLSL_STATIC)
 	set_target_properties(${target}-static PROPERTIES
 		OUTPUT_NAME "${target}${lslplatform}-static")
-endif()
-
-if (MINGW)
-	target_link_libraries (${target} PUBLIC ws2_32 wsock32 winmm)
 endif()
 
 if(LSL_UNIXFOLDERS)
