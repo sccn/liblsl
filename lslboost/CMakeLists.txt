@@ -12,7 +12,6 @@ set(lslboost_sources
 	libs/serialization/src/extended_type_info.cpp
 	libs/serialization/src/extended_type_info_typeid.cpp
 	libs/serialization/src/void_cast.cpp
-	libs/system/src/error_code.cpp
 )
 if (UNIX)
 	set(lslboost_sources_platform
