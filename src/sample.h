@@ -20,6 +20,16 @@ class portable_oarchive;
 
 // Boost.Endian has no functions to reverse floats, so we pretend they're ints
 // of the same size.
+#ifndef BOOST_BYTE_ORDER
+#if BOOST_ENDIAN_BIG_BYTE
+const int BOOST_BYTE_ORDER = 4321;
+#elif BOOST_ENDIAN_LITTLE_BYTE
+const int BOOST_BYTE_ORDER = 1234;
+#elif BOOST_ENDIAN_LITTLE_WORD
+const int BOOST_BYTE_ORDER = 2134;
+#endif
+#endif
+
 template<typename T> inline void endian_reverse_inplace(T& t) {
 	lslboost::endian::endian_reverse_inplace(t);
 }
