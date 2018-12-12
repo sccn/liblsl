@@ -6,9 +6,7 @@
 #include <boost/archive/basic_binary_iprimitive.hpp>
 #include <boost/archive/basic_binary_iarchive.hpp>
 
-// funny polymorphics
 #include <boost/archive/detail/polymorphic_iarchive_route.hpp>
-#define POLYMORPHIC(T) lslboost::archive::detail::polymorphic_iarchive_route<T>
 
 
 namespace eos {
@@ -247,17 +245,11 @@ namespace eos {
 			load((typename lslboost::uint_t<sizeof(T)*CHAR_BIT>::least&)(t));
 		}
 	};
-
-	// polymorphic portable binary iarchive typedef
-	typedef POLYMORPHIC(portable_iarchive) polymorphic_portable_iarchive;
-	#undef POLYMORPHIC
-
 } // namespace eos
 
 // this is required by export which registers all of your
 // classes with all the inbuilt archives plus our archive.
 BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::portable_iarchive)
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::polymorphic_portable_iarchive)
 
 // if you include this header multiple times and your compiler is picky
 // about multiple template instantiations (eg. gcc is) then you need to

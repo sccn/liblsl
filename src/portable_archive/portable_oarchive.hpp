@@ -6,10 +6,6 @@
 #include <boost/archive/basic_binary_oprimitive.hpp>
 #include <boost/archive/basic_binary_oarchive.hpp>
 
-// funny polymorphics
-#include <boost/archive/detail/polymorphic_oarchive_route.hpp>
-#define POLYMORPHIC(T) lslboost::archive::detail::polymorphic_oarchive_route<T>
-
 
 namespace eos {
 
@@ -236,16 +232,7 @@ namespace eos {
 			save((typename lslboost::uint_t<sizeof(T)*CHAR_BIT>::least)(t));
 		}
 	};
-
-	// polymorphic portable binary oarchive typedef
-	typedef POLYMORPHIC(portable_oarchive) polymorphic_portable_oarchive;
-	#undef POLYMORPHIC
-
 } // namespace eos
-
-// required by export
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::portable_oarchive)
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::polymorphic_portable_oarchive)
 
 // if you include this header multiple times and your compiler is picky
 // about multiple template instantiations (eg. gcc is) then you need to
