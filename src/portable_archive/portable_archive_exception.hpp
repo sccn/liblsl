@@ -27,19 +27,11 @@ namespace eos {
 	const unsigned no_infnan = 64;
 
 	// integral type for the archive version
-	#if BOOST_VERSION < 104400
-		typedef lslboost::archive::version_type archive_version_type;
-	#else
 		typedef lslboost::archive::library_version_type archive_version_type;
-	#endif
 
 	// version of the linked lslboost archive library
 	const archive_version_type archive_version(
-	#if BOOST_VERSION < 103700
-		lslboost::archive::ARCHIVE_VERSION()
-	#else
 		lslboost::archive::BOOST_ARCHIVE_VERSION()
-	#endif
 	);
 
 	/**

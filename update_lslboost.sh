@@ -1,5 +1,5 @@
 # the absolute path to the extracted boost source archive (https://www.boost.org/users/download/)
-BOOSTPATH=/tmp/boost_1_68_0
+BOOSTPATH=/tmp/boost_1_69_0
 
 # Remove the old boost sources
 rm -rf lslboost/{boost,libs}

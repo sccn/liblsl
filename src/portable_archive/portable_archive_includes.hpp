@@ -106,12 +106,6 @@ namespace fp = lslboost::math;
 // namespace alias endian
 namespace endian = lslboost::endian;
 
-#if BOOST_VERSION >= 104500 && !defined BOOST_NO_STD_WSTRING
-// used for wstring to utf8 conversion
-#include <boost/program_options/config.hpp>
-#include <boost/program_options/detail/convert.hpp>
-#endif
-
 // generic type traits for numeric types
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_signed.hpp>

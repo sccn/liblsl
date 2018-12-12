@@ -2,7 +2,6 @@
 set(lslboost_sources
 	libs/atomic/src/lockpool.cpp
 	libs/chrono/src/chrono.cpp
-	libs/program_options/src/convert.cpp
 	libs/serialization/src/archive_exception.cpp
 	libs/serialization/src/basic_archive.cpp
 	libs/serialization/src/basic_iarchive.cpp

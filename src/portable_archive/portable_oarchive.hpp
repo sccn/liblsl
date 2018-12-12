@@ -25,12 +25,8 @@ namespace eos {
 
 	typedef lslboost::archive::basic_binary_oprimitive<
 		portable_oarchive
-	#if BOOST_VERSION < 103400
-		, std::ostream
-	#else
-		, std::ostream::char_type 
+		, std::ostream::char_type
 		, std::ostream::traits_type
-	#endif
 	> portable_oprimitive;
 
 	/**
@@ -50,11 +46,6 @@ namespace eos {
 		// the example derives from common_oarchive but that lacks the
 		// save_override functions so we chose to stay one level higher
 		, public lslboost::archive::basic_binary_oarchive<portable_oarchive>
-
-	#if BOOST_VERSION >= 103500 && BOOST_VERSION < 105600
-		// mix-in helper class for serializing shared_ptr
-		, public lslboost::archive::detail::shared_ptr_helper
-	#endif
 	{
 		// workaround for gcc: use a dummy struct
 		// as additional argument type for overloading
@@ -100,49 +91,24 @@ namespace eos {
 		 * library version. Due to efficiency we stick with our own.
 		 */
 		portable_oarchive(std::ostream& os, unsigned flags = 0)
-		#if BOOST_VERSION < 103400
-			: portable_oprimitive(os, flags & lslboost::archive::no_codecvt)
-		#else
 			: portable_oprimitive(*os.rdbuf(), flags & lslboost::archive::no_codecvt)
-		#endif
 			, lslboost::archive::basic_binary_oarchive<portable_oarchive>(flags)
 		{
 			init(flags);
 		}
 
-	#if BOOST_VERSION >= 103400
 		portable_oarchive(std::streambuf& sb, unsigned flags = 0)
 			: portable_oprimitive(sb, flags & lslboost::archive::no_codecvt)
 			, lslboost::archive::basic_binary_oarchive<portable_oarchive>(flags)
 		{
 			init(flags);
 		}
-	#endif
 
 		//! Save narrow strings.
 		void save(const std::string& s)
 		{
 			portable_oprimitive::save(s);
 		}
-
-	#ifndef BOOST_NO_STD_WSTRING
-		/**
-		 * \brief Save wide strings.
-		 *
-		 * This is rather tricky to get right for true portability as there
-		 * are so many different character encodings around. However, wide
-		 * strings that are encoded in one of the Unicode schemes only need
-		 * to be _transcoded_ which is a lot easier actually.
-		 *
-		 * We expect the input string to be encoded in the system's native
-		 * format, ie. UTF-16 on Windows and UTF-32 on Linux machines. Don't
-		 * know about Mac here so I can't really say about that.
-		 */
-		void save(const std::wstring& s)
-		{
-			save(lslboost::to_utf8(s));
-		}
-	#endif
 
         /**
          * \brief Saving bool type.
@@ -278,12 +244,8 @@ namespace eos {
 } // namespace eos
 
 // required by export
-#if BOOST_VERSION < 103500
-#define BOOST_ARCHIVE_CUSTOM_OARCHIVE_TYPES eos::portable_oarchive
-#else
 BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::portable_oarchive)
 BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::polymorphic_portable_oarchive)
-#endif
 
 // if you include this header multiple times and your compiler is picky
 // about multiple template instantiations (eg. gcc is) then you need to
@@ -294,9 +256,7 @@ BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::polymorphic_portable_oarchive)
 #include <boost/archive/impl/basic_binary_oarchive.ipp>
 #include <boost/archive/impl/basic_binary_oprimitive.ipp>
 
-#if BOOST_VERSION < 104000
-#include <boost/archive/impl/archive_pointer_oserializer.ipp>
-#elif !defined BOOST_ARCHIVE_SERIALIZER_INCLUDED
+#if !defined BOOST_ARCHIVE_SERIALIZER_INCLUDED
 #include <boost/archive/impl/archive_serializer_map.ipp>
 #define BOOST_ARCHIVE_SERIALIZER_INCLUDED
 #endif
@@ -307,21 +267,11 @@ namespace lslboost { namespace archive {
 
 	template class basic_binary_oprimitive<
 		eos::portable_oarchive
-	#if BOOST_VERSION < 103400
-		, std::ostream
-	#else
 		, std::ostream::char_type
 		, std::ostream::traits_type
-	#endif
 	>;
 
-#if BOOST_VERSION < 104000
-	template class detail::archive_pointer_oserializer<eos::portable_oarchive>;
-#else
 	template class detail::archive_serializer_map<eos::portable_oarchive>;
-	//template class detail::archive_serializer_map<eos::polymorphic_portable_oarchive>;
-#endif
-
 } } // namespace lslboost::archive
 
 #endif
