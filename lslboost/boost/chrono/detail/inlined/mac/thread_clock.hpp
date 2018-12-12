@@ -58,21 +58,21 @@ namespace lslboost { namespace chrono {
         mach_msg_type_number_t count = THREAD_BASIC_INFO_COUNT;
         if ( thread_info(port, THREAD_BASIC_INFO, (thread_info_t)&info, &count) != KERN_SUCCESS )
         {
-            if (BOOST_CHRONO_IS_THROWS(ec))
+            if (::lslboost::chrono::is_throws(ec))
             {
                 lslboost::throw_exception(
                         system::system_error(
                                 EINVAL,
-                                BOOST_CHRONO_SYSTEM_CATEGORY,
+                                ::lslboost::system::system_category(),
                                 "chrono::thread_clock" ));
             }
             else
             {
-                ec.assign( errno, BOOST_CHRONO_SYSTEM_CATEGORY );
+                ec.assign( errno, ::lslboost::system::system_category() );
                 return time_point();
             }
         }
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::lslboost::chrono::is_throws(ec))
         {
             ec.clear();
         }

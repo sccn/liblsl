@@ -10,10 +10,11 @@
 
 #include <boost/system/error_code.hpp>
 
-#define BOOST_CHRONO_SYSTEM_CATEGORY lslboost::system::system_category()
-
-#define BOOST_CHRONO_THROWS lslboost::throws()
-#define BOOST_CHRONO_IS_THROWS(EC) (&EC==&lslboost::throws())
+namespace lslboost {
+namespace chrono {
+    inline bool is_throws(system::error_code  & ec) { return (&ec==&lslboost::throws()); }
+}
+}
 
 #endif
 #endif

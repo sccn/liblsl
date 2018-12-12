@@ -594,7 +594,7 @@ namespace lslboost
 #endif
 
 #if defined BOOST_THREAD_USES_DATETIME
-        inline BOOST_SYMBOL_VISIBLE void sleep(xtime const& abs_time)
+        inline BOOST_SYMBOL_VISIBLE void sleep(::lslboost::xtime const& abs_time)
         {
             sleep(system_time(abs_time));
         }

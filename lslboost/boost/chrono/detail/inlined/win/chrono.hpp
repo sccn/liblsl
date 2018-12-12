@@ -12,9 +12,9 @@
 #ifndef BOOST_CHRONO_DETAIL_INLINED_WIN_CHRONO_HPP
 #define BOOST_CHRONO_DETAIL_INLINED_WIN_CHRONO_HPP
 
-#include <boost/detail/winapi/time.hpp>
-#include <boost/detail/winapi/timers.hpp>
-#include <boost/detail/winapi/get_last_error.hpp>
+#include <boost/winapi/time.hpp>
+#include <boost/winapi/timers.hpp>
+#include <boost/winapi/get_last_error.hpp>
 #include <boost/assert.hpp>
 
 namespace lslboost
@@ -26,8 +26,8 @@ namespace chrono_detail
 
   BOOST_CHRONO_INLINE double get_nanosecs_per_tic() BOOST_NOEXCEPT
   {
-      lslboost::detail::winapi::LARGE_INTEGER_ freq;
-      if ( !lslboost::detail::winapi::QueryPerformanceFrequency( &freq ) )
+      lslboost::winapi::LARGE_INTEGER_ freq;
+      if ( !lslboost::winapi::QueryPerformanceFrequency( &freq ) )
           return 0.0L;
       return double(1000000000.0L / freq.QuadPart);
   }
@@ -38,14 +38,14 @@ namespace chrono_detail
   {
     double nanosecs_per_tic = chrono_detail::get_nanosecs_per_tic();
 
-    lslboost::detail::winapi::LARGE_INTEGER_ pcount;
+    lslboost::winapi::LARGE_INTEGER_ pcount;
     if ( nanosecs_per_tic <= 0.0L )
     {
       BOOST_ASSERT(0 && "Boost::Chrono - get_nanosecs_per_tic Internal Error");
       return steady_clock::time_point();
     }
     unsigned times=0;
-    while ( ! lslboost::detail::winapi::QueryPerformanceCounter( &pcount ) )
+    while ( ! lslboost::winapi::QueryPerformanceCounter( &pcount ) )
     {
       if ( ++times > 3 )
       {
@@ -64,29 +64,29 @@ namespace chrono_detail
   {
     double nanosecs_per_tic = chrono_detail::get_nanosecs_per_tic();
 
-    lslboost::detail::winapi::LARGE_INTEGER_ pcount;
+    lslboost::winapi::LARGE_INTEGER_ pcount;
     if ( (nanosecs_per_tic <= 0.0L)
-            || (!lslboost::detail::winapi::QueryPerformanceCounter( &pcount )) )
+            || (!lslboost::winapi::QueryPerformanceCounter( &pcount )) )
     {
-        lslboost::detail::winapi::DWORD_ cause =
+        lslboost::winapi::DWORD_ cause =
             ((nanosecs_per_tic <= 0.0L)
                     ? ERROR_NOT_SUPPORTED
-                    : lslboost::detail::winapi::GetLastError());
-        if (BOOST_CHRONO_IS_THROWS(ec)) {
+                    : lslboost::winapi::GetLastError());
+        if (::lslboost::chrono::is_throws(ec)) {
             lslboost::throw_exception(
                     system::system_error(
                             cause,
-                            BOOST_CHRONO_SYSTEM_CATEGORY,
+                            ::lslboost::system::system_category(),
                             "chrono::steady_clock" ));
         }
         else
         {
-            ec.assign( cause, BOOST_CHRONO_SYSTEM_CATEGORY );
+            ec.assign( cause, ::lslboost::system::system_category() );
             return steady_clock::time_point(duration(0));
         }
     }
 
-    if (!BOOST_CHRONO_IS_THROWS(ec))
+    if (!::lslboost::chrono::is_throws(ec))
     {
         ec.clear();
     }
@@ -98,8 +98,8 @@ namespace chrono_detail
   BOOST_CHRONO_INLINE
   system_clock::time_point system_clock::now() BOOST_NOEXCEPT
   {
-    lslboost::detail::winapi::FILETIME_ ft;
-    lslboost::detail::winapi::GetSystemTimeAsFileTime( &ft );  // never fails
+    lslboost::winapi::FILETIME_ ft;
+    lslboost::winapi::GetSystemTimeAsFileTime( &ft );  // never fails
     return system_clock::time_point(
       system_clock::duration(
         ((static_cast<__int64>( ft.dwHighDateTime ) << 32) | ft.dwLowDateTime)
@@ -113,9 +113,9 @@ namespace chrono_detail
   BOOST_CHRONO_INLINE
   system_clock::time_point system_clock::now( system::error_code & ec )
   {
-    lslboost::detail::winapi::FILETIME_ ft;
-    lslboost::detail::winapi::GetSystemTimeAsFileTime( &ft );  // never fails
-    if (!BOOST_CHRONO_IS_THROWS(ec))
+    lslboost::winapi::FILETIME_ ft;
+    lslboost::winapi::GetSystemTimeAsFileTime( &ft );  // never fails
+    if (!::lslboost::chrono::is_throws(ec))
     {
         ec.clear();
     }

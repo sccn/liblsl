@@ -36,9 +36,18 @@
 // std
 #include <cstring> //for memmove/memcpy
 
-#if defined(BOOST_GCC) && (BOOST_GCC >= 80000)
+#if defined(BOOST_GCC) && (BOOST_GCC >= 40600)
 #pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wclass-memaccess"
+//pair memcpy optimizations rightfully detected by GCC
+#  if defined(BOOST_GCC) && (BOOST_GCC >= 80000)
+#     pragma GCC diagnostic ignored "-Wclass-memaccess"
+#  endif
+//GCC 8 seems a bit confused about array access error with static_vector
+//when out of bound exceptions are being thrown.
+#  if defined(BOOST_GCC) && (BOOST_GCC >= 80000) && (BOOST_GCC < 80200)
+#     pragma GCC diagnostic ignored "-Wstringop-overflow"
+#  endif
+#  pragma GCC diagnostic ignored "-Warray-bounds"
 #endif
 
 namespace lslboost {
@@ -165,9 +174,13 @@ template
 inline F memmove(I f, I l, F r) BOOST_NOEXCEPT_OR_NOTHROW
 {
    typedef typename lslboost::container::iterator_traits<I>::value_type value_type;
-   typename lslboost::container::iterator_traits<I>::difference_type n = lslboost::container::iterator_distance(f, l);
-   if(n){
-      std::memmove(lslboost::movelib::iterator_to_raw_pointer(r), lslboost::movelib::iterator_to_raw_pointer(f), sizeof(value_type)*n);
+   value_type *const dest_raw = lslboost::movelib::iterator_to_raw_pointer(r);
+   const value_type *const beg_raw = lslboost::movelib::iterator_to_raw_pointer(f);
+   const value_type *const end_raw = lslboost::movelib::iterator_to_raw_pointer(l);
+   if(BOOST_LIKELY(beg_raw != end_raw)){
+      BOOST_ASSERT(beg_raw != 0);
+      const typename lslboost::container::iterator_traits<I>::difference_type n = end_raw - beg_raw;
+      std::memmove(dest_raw, beg_raw, sizeof(value_type)*n);
       lslboost::container::iterator_advance(r, n);
    }
    return r;
@@ -180,10 +193,11 @@ template
 F memmove_n(I f, U n, F r) BOOST_NOEXCEPT_OR_NOTHROW
 {
    typedef typename lslboost::container::iterator_traits<I>::value_type value_type;
-   if(n){
+   if(BOOST_LIKELY(n)){
       std::memmove(lslboost::movelib::iterator_to_raw_pointer(r), lslboost::movelib::iterator_to_raw_pointer(f), sizeof(value_type)*n);
       lslboost::container::iterator_advance(r, n);
    }
+
    return r;
 }
 
@@ -193,7 +207,7 @@ template
     typename F> // F models ForwardIterator
 I memmove_n_source(I f, U n, F r) BOOST_NOEXCEPT_OR_NOTHROW
 {
-   if(n){
+   if(BOOST_LIKELY(n)){
       typedef typename lslboost::container::iterator_traits<I>::value_type value_type;
       std::memmove(lslboost::movelib::iterator_to_raw_pointer(r), lslboost::movelib::iterator_to_raw_pointer(f), sizeof(value_type)*n);
       lslboost::container::iterator_advance(f, n);
@@ -208,7 +222,7 @@ template
 I memmove_n_source_dest(I f, U n, F &r) BOOST_NOEXCEPT_OR_NOTHROW
 {
    typedef typename lslboost::container::iterator_traits<I>::value_type value_type;
-   if(n){
+   if(BOOST_LIKELY(n)){
       std::memmove(lslboost::movelib::iterator_to_raw_pointer(r), lslboost::movelib::iterator_to_raw_pointer(f), sizeof(value_type)*n);
       lslboost::container::iterator_advance(f, n);
       lslboost::container::iterator_advance(r, n);
@@ -725,7 +739,8 @@ typename F>   // F models ForwardIterator
 inline typename dtl::disable_if_memtransfer_copy_assignable<I, F, F>::type
    copy_n(I f, U n, F r)
 {
-   while (n--) {
+   while (n) {
+      --n;
       *r = *f;
       ++f; ++r;
    }
@@ -1146,9 +1161,9 @@ void move_assign_range_alloc_n( Allocator &a, I inp_start, typename allocator_tr
 }  //namespace container {
 }  //namespace lslboost {
 
-#if defined(BOOST_GCC) && (BOOST_GCC >= 80000)
+//#pragma GCC diagnostic ignored "-Wclass-memaccess"
+#if defined(BOOST_GCC) && (BOOST_GCC >= 40600)
 #pragma GCC diagnostic pop
 #endif
-
 
 #endif   //#ifndef BOOST_CONTAINER_DETAIL_COPY_MOVE_ALGO_HPP

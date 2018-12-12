@@ -127,10 +127,6 @@ namespace lslboost {
       BOOST_STATIC_CONSTANT(bool, value = imp::value);
    };
 
-#ifdef BOOST_MSVC
-#pragma warning( pop )
-#endif
-
 } // namespace detail
 
 template <class Base, class Derived> struct is_virtual_base_of : public integral_constant<bool, (::lslboost::detail::is_virtual_base_of_impl2<Base, Derived>::value)> {};
@@ -140,6 +136,10 @@ template <class Base, class Derived> struct is_virtual_base_of : public integral
 template <class Base, class Derived> struct is_virtual_base_of<Base&, Derived> : public false_type{};
 template <class Base, class Derived> struct is_virtual_base_of<Base, Derived&> : public false_type{};
 template <class Base, class Derived> struct is_virtual_base_of<Base&, Derived&> : public false_type{};
+
+#ifdef BOOST_MSVC
+#pragma warning( pop )
+#endif
 
 } // namespace lslboost
 

@@ -21,13 +21,19 @@
 // avoid ambiguity when swapping objects of a Boost type that does
 // not have its own lslboost::swap overload.
 
+#include <boost/core/enable_if.hpp>
+#include <boost/config.hpp>
 #include <utility> //for std::swap (C++11)
 #include <algorithm> //for std::swap (C++98)
 #include <cstddef> //for std::size_t
-#include <boost/config.hpp>
 
 namespace lslboost_swap_impl
 {
+  // we can't use type_traits here
+
+  template<class T> struct is_const { enum _vt { value = 0 }; };
+  template<class T> struct is_const<T const> { enum _vt { value = 1 }; };
+
   template<class T>
   BOOST_GPU_ENABLED
   void swap_impl(T& left, T& right)
@@ -51,7 +57,8 @@ namespace lslboost
 {
   template<class T1, class T2>
   BOOST_GPU_ENABLED
-  void swap(T1& left, T2& right)
+  typename enable_if_c< !lslboost_swap_impl::is_const<T1>::value && !lslboost_swap_impl::is_const<T2>::value >::type
+  swap(T1& left, T2& right)
   {
     ::lslboost_swap_impl::swap_impl(left, right);
   }

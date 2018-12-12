@@ -24,6 +24,7 @@
 
 #include <boost/type_traits/remove_cv.hpp>
 #include <boost/type_traits/is_empty.hpp>
+#include <boost/type_traits/is_final.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/call_traits.hpp>
 
@@ -42,6 +43,14 @@ class compressed_pair;
 
 namespace details
 {
+   template<class T, bool E = lslboost::is_final<T>::value>
+   struct compressed_pair_empty
+      : ::lslboost::false_type { };
+
+   template<class T>
+   struct compressed_pair_empty<T, false>
+      : ::lslboost::is_empty<T> { };
+
    // JM altered 26 Jan 2000:
    template <class T1, class T2, bool IsSame, bool FirstEmpty, bool SecondEmpty>
    struct compressed_pair_switch;
@@ -343,8 +352,8 @@ class compressed_pair
                     T1,
                     T2,
                     ::lslboost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-                    ::lslboost::is_empty<T1>::value,
-                    ::lslboost::is_empty<T2>::value>::value>
+                    ::lslboost::details::compressed_pair_empty<T1>::value,
+                    ::lslboost::details::compressed_pair_empty<T2>::value>::value>
 {
 private:
    typedef details::compressed_pair_imp<T1, T2,
@@ -352,8 +361,8 @@ private:
                     T1,
                     T2,
                     ::lslboost::is_same<typename remove_cv<T1>::type, typename remove_cv<T2>::type>::value,
-                    ::lslboost::is_empty<T1>::value,
-                    ::lslboost::is_empty<T2>::value>::value> base;
+                    ::lslboost::details::compressed_pair_empty<T1>::value,
+                    ::lslboost::details::compressed_pair_empty<T2>::value>::value> base;
 public:
    typedef T1                                                 first_type;
    typedef T2                                                 second_type;
@@ -388,8 +397,8 @@ class compressed_pair<T, T>
                     T,
                     T,
                     ::lslboost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-                    ::lslboost::is_empty<T>::value,
-                    ::lslboost::is_empty<T>::value>::value>
+                    ::lslboost::details::compressed_pair_empty<T>::value,
+                    ::lslboost::details::compressed_pair_empty<T>::value>::value>
 {
 private:
    typedef details::compressed_pair_imp<T, T,
@@ -397,8 +406,8 @@ private:
                     T,
                     T,
                     ::lslboost::is_same<typename remove_cv<T>::type, typename remove_cv<T>::type>::value,
-                    ::lslboost::is_empty<T>::value,
-                    ::lslboost::is_empty<T>::value>::value> base;
+                    ::lslboost::details::compressed_pair_empty<T>::value,
+                    ::lslboost::details::compressed_pair_empty<T>::value>::value> base;
 public:
    typedef T                                                  first_type;
    typedef T                                                  second_type;

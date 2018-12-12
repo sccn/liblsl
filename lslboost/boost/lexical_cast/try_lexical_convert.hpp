@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2016.
+// Copyright Antony Polukhin, 2011-2018.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -28,12 +28,14 @@
     (__GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 6)))
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wuninitialized"
+#pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
 
+
 #include <string>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/if.hpp>
+#include <boost/type_traits/is_integral.hpp>
+#include <boost/type_traits/type_identity.hpp>
+#include <boost/type_traits/conditional.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/type_traits/is_arithmetic.hpp>
 
@@ -72,8 +74,9 @@ namespace lslboost {
         template<typename Target, typename Source>
         struct is_arithmetic_and_not_xchars
         {
-            typedef lslboost::mpl::bool_<
-                    !(lslboost::detail::is_character<Target>::value) &&
+            typedef lslboost::integral_constant<
+                bool,
+                !(lslboost::detail::is_character<Target>::value) &&
                     !(lslboost::detail::is_character<Source>::value) &&
                     lslboost::is_arithmetic<Source>::value &&
                     lslboost::is_arithmetic<Target>::value
@@ -91,8 +94,9 @@ namespace lslboost {
         template<typename Target, typename Source>
         struct is_xchar_to_xchar 
         {
-            typedef lslboost::mpl::bool_<
-                     sizeof(Source) == sizeof(Target) &&
+            typedef lslboost::integral_constant<
+                bool,
+                sizeof(Source) == sizeof(Target) &&
                      sizeof(Source) == sizeof(char) &&
                      lslboost::detail::is_character<Target>::value &&
                      lslboost::detail::is_character<Source>::value
@@ -162,7 +166,8 @@ namespace lslboost {
         {
             typedef BOOST_DEDUCED_TYPENAME lslboost::detail::array_to_pointer_decay<Source>::type src;
 
-            typedef lslboost::mpl::bool_<
+            typedef lslboost::integral_constant<
+                bool,
                 lslboost::detail::is_xchar_to_xchar<Target, src >::value ||
                 lslboost::detail::is_char_array_to_stdstring<Target, src >::value ||
                 lslboost::detail::is_char_array_to_booststring<Target, src >::value ||
@@ -181,11 +186,11 @@ namespace lslboost {
 
             // We do evaluate second `if_` lazily to avoid unnecessary instantiations
             // of `shall_we_copy_with_dynamic_check_t` and improve compilation times.
-            typedef BOOST_DEDUCED_TYPENAME lslboost::mpl::if_c<
+            typedef BOOST_DEDUCED_TYPENAME lslboost::conditional<
                 shall_we_copy_t::value,
-                lslboost::mpl::identity<lslboost::detail::copy_converter_impl<Target, src > >,
-                lslboost::mpl::if_<
-                     shall_we_copy_with_dynamic_check_t,
+                lslboost::type_identity<lslboost::detail::copy_converter_impl<Target, src > >,
+                lslboost::conditional<
+                     shall_we_copy_with_dynamic_check_t::value,
                      lslboost::detail::dynamic_num_converter_impl<Target, src >,
                      lslboost::detail::lexical_converter_impl<Target, src >
                 >

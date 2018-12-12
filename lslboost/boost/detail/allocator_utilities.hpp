@@ -11,7 +11,7 @@
 
 #include <boost/config.hpp> /* keep it first to prevent nasty warns in MSVC */
 #include <boost/detail/workaround.hpp>
-#include <boost/mpl/eval_if.hpp>
+#include <boost/detail/select_type.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <cstddef>
 #include <memory>
@@ -142,11 +142,12 @@ struct compliant_allocator_rebind_to
 
 template<typename Allocator,typename Type>
 struct rebind_to:
-  mpl::eval_if_c<
-    is_partial_std_allocator<Allocator>::value,
+  lslboost::detail::if_true<
+    is_partial_std_allocator<Allocator>::value
+  >::template then<
     partial_std_allocator_rebind_to<Allocator,Type>,
     compliant_allocator_rebind_to<Allocator,Type>
-  >
+  >::type
 {
 };
 

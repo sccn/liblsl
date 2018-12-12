@@ -35,7 +35,7 @@ template <class T> struct is_nothrow_move_constructible<const volatile T> : publ
 #elif !defined(BOOST_NO_CXX11_NOEXCEPT) && !defined(BOOST_NO_SFINAE_EXPR) && !BOOST_WORKAROUND(BOOST_GCC_VERSION, < 40700)
 
 #include <boost/type_traits/declval.hpp>
-#include <boost/utility/enable_if.hpp>
+#include <boost/type_traits/enable_if.hpp>
 
 namespace lslboost{ namespace detail{
 
@@ -45,7 +45,7 @@ struct false_or_cpp11_noexcept_move_constructible: public ::lslboost::false_type
 template <class T>
 struct false_or_cpp11_noexcept_move_constructible <
         T,
-        typename ::lslboost::enable_if_c<sizeof(T) && BOOST_NOEXCEPT_EXPR(T(::lslboost::declval<T>()))>::type
+        typename ::lslboost::enable_if_<sizeof(T) && BOOST_NOEXCEPT_EXPR(T(::lslboost::declval<T>()))>::type
     > : public ::lslboost::integral_constant<bool, BOOST_NOEXCEPT_EXPR(T(::lslboost::declval<T>()))>
 {};
 

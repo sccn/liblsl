@@ -1,5 +1,3 @@
-// boost/uuid/sha1.hpp header file  ----------------------------------------------//
-
 // Copyright 2007 Andy Tompkins.
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at

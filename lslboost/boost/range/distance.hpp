@@ -23,12 +23,17 @@
 namespace lslboost
 {
 
-    template< class T >
-    inline BOOST_CXX14_CONSTEXPR BOOST_DEDUCED_TYPENAME range_difference<T>::type
-    distance( const T& r )
+    namespace range_distance_adl_barrier
     {
-        return lslboost::distance( lslboost::begin( r ), lslboost::end( r ) );
+        template< class T >
+        inline BOOST_CXX14_CONSTEXPR BOOST_DEDUCED_TYPENAME range_difference<T>::type
+        distance( const T& r )
+        {
+            return lslboost::iterators::distance( lslboost::begin( r ), lslboost::end( r ) );
+        }
     }
+
+    using namespace range_distance_adl_barrier;
 
 } // namespace 'boost'
 

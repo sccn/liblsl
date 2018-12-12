@@ -95,7 +95,11 @@ BOOST_SERIALIZATION_DECL void
 extended_type_info_typeid_0::type_unregister()
 {
     if(NULL != m_ti){
-        BOOST_ASSERT(! singleton<tkmap>::is_destroyed());
+        // note: previously this conditional was a runtime assertion with
+        // BOOST_ASSERT.  We've changed it because we've discovered that at
+        // least one platform is not guaranteed to destroy singletons in
+        // reverse order of distruction.
+        // BOOST_ASSERT(! singleton<tkmap>::is_destroyed());
         if(! singleton<tkmap>::is_destroyed()){
             tkmap & x = singleton<tkmap>::get_mutable_instance();
 

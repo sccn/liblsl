@@ -350,12 +350,19 @@ namespace lslboost
 #endif
 
 #ifndef BOOST_NO_CXX11_RVALUE_REFERENCES
-      template <class T>
-      typename decay<T>::type
-      decay_copy(T&& t)
-      {
-          return lslboost::forward<T>(t);
-      }
+  template <class T>
+  typename decay<T>::type
+  decay_copy(T&& t)
+  {
+      return lslboost::forward<T>(t);
+  }
+  typedef void (*void_fct_ptr)();
+
+//  inline void_fct_ptr
+//  decay_copy(void (&t)())
+//  {
+//      return &t;
+//  }
 #else
   template <class T>
   typename decay<T>::type

@@ -149,7 +149,7 @@ namespace lslboost
 
         lslboost::detail::thread_data_base* get_current_thread_data()
         {
-            lslboost::call_once(current_thread_tls_init_flag,create_current_thread_tls_key);
+            lslboost::call_once(current_thread_tls_init_flag,&create_current_thread_tls_key);
             return (lslboost::detail::thread_data_base*)pthread_getspecific(current_thread_tls_key);
         }
 
@@ -470,7 +470,7 @@ namespace lslboost
 #   elif defined(BOOST_HAS_PTHREAD_YIELD)
             BOOST_VERIFY(!pthread_yield());
 //#   elif defined BOOST_THREAD_USES_DATETIME
-//            xtime xt;
+//            ::lslboost::xtime xt;
 //            xtime_get(&xt, TIME_UTC_);
 //            sleep(xt);
 //            sleep_for(chrono::milliseconds(0));
@@ -478,7 +478,7 @@ namespace lslboost
             mutex mx;
             unique_lock<mutex> lock(mx);
             condition_variable cond;
-            cond.do_wait_until(lock, detail::internal_platform_clock::now())
+            cond.do_wait_until(lock, detail::internal_platform_clock::now());
 #   endif
         }
     }

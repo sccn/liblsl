@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2018.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -30,9 +30,9 @@
 #include <cstddef>
 #include <string>
 #include <boost/limits.hpp>
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/identity.hpp>
-#include <boost/mpl/if.hpp>
+#include <boost/type_traits/integral_constant.hpp>
+#include <boost/type_traits/type_identity.hpp>
+#include <boost/type_traits/conditional.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_float.hpp>
 #include <boost/type_traits/has_left_shift.hpp>
@@ -90,35 +90,35 @@ namespace lslboost {
         // Returns one of char, wchar_t, char16_t, char32_t or deduce_character_type_later<T> types
         // Executed on Stage 1 (See deduce_source_char<T> and deduce_target_char<T>)
         template < typename Type >
-        struct stream_char_common: public lslboost::mpl::if_c<
+        struct stream_char_common: public lslboost::conditional<
             lslboost::detail::is_character< Type >::value,
             Type,
             lslboost::detail::deduce_character_type_later< Type >
         > {};
 
         template < typename Char >
-        struct stream_char_common< Char* >: public lslboost::mpl::if_c<
+        struct stream_char_common< Char* >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< Char* >
         > {};
 
         template < typename Char >
-        struct stream_char_common< const Char* >: public lslboost::mpl::if_c<
+        struct stream_char_common< const Char* >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< const Char* >
         > {};
 
         template < typename Char >
-        struct stream_char_common< lslboost::iterator_range< Char* > >: public lslboost::mpl::if_c<
+        struct stream_char_common< lslboost::iterator_range< Char* > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< lslboost::iterator_range< Char* > >
         > {};
     
         template < typename Char >
-        struct stream_char_common< lslboost::iterator_range< const Char* > >: public lslboost::mpl::if_c<
+        struct stream_char_common< lslboost::iterator_range< const Char* > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< lslboost::iterator_range< const Char* > >
@@ -137,14 +137,14 @@ namespace lslboost {
         };
 
         template < typename Char, std::size_t N >
-        struct stream_char_common< lslboost::array< Char, N > >: public lslboost::mpl::if_c<
+        struct stream_char_common< lslboost::array< Char, N > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< lslboost::array< Char, N > >
         > {};
 
         template < typename Char, std::size_t N >
-        struct stream_char_common< lslboost::array< const Char, N > >: public lslboost::mpl::if_c<
+        struct stream_char_common< lslboost::array< const Char, N > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< lslboost::array< const Char, N > >
@@ -152,14 +152,14 @@ namespace lslboost {
 
 #ifndef BOOST_NO_CXX11_HDR_ARRAY
         template < typename Char, std::size_t N >
-        struct stream_char_common< std::array<Char, N > >: public lslboost::mpl::if_c<
+        struct stream_char_common< std::array<Char, N > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< std::array< Char, N > >
         > {};
 
         template < typename Char, std::size_t N >
-        struct stream_char_common< std::array< const Char, N > >: public lslboost::mpl::if_c<
+        struct stream_char_common< std::array< const Char, N > >: public lslboost::conditional<
             lslboost::detail::is_character< Char >::value,
             Char,
             lslboost::detail::deduce_character_type_later< std::array< const Char, N > >
@@ -167,8 +167,8 @@ namespace lslboost {
 #endif
 
 #ifdef BOOST_HAS_INT128
-        template <> struct stream_char_common< lslboost::int128_type >: public lslboost::mpl::identity< char > {};
-        template <> struct stream_char_common< lslboost::uint128_type >: public lslboost::mpl::identity< char > {};
+        template <> struct stream_char_common< lslboost::int128_type >: public lslboost::type_identity< char > {};
+        template <> struct stream_char_common< lslboost::uint128_type >: public lslboost::type_identity< char > {};
 #endif
 
 #if !defined(BOOST_LCAST_NO_WCHAR_T) && defined(BOOST_NO_INTRINSIC_WCHAR_T)
@@ -203,7 +203,7 @@ namespace lslboost {
                 "Source type is not std::ostream`able and std::wostream`s are not supported by your STL implementation");
             typedef char type;
 #else
-            typedef BOOST_DEDUCED_TYPENAME lslboost::mpl::if_c<
+            typedef BOOST_DEDUCED_TYPENAME lslboost::conditional<
                 result_t::value, char, wchar_t
             >::type type;
 
@@ -236,7 +236,7 @@ namespace lslboost {
                 "Target type is not std::istream`able and std::wistream`s are not supported by your STL implementation");
             typedef char type;
 #else
-            typedef BOOST_DEDUCED_TYPENAME lslboost::mpl::if_c<
+            typedef BOOST_DEDUCED_TYPENAME lslboost::conditional<
                 result_t::value, char, wchar_t
             >::type type;
             
@@ -421,21 +421,21 @@ namespace lslboost {
                 "Your compiler does not have full support for char32_t" );
 #endif
 
-            typedef BOOST_DEDUCED_TYPENAME lslboost::mpl::if_c<
+            typedef BOOST_DEDUCED_TYPENAME lslboost::conditional<
                 lslboost::detail::extract_char_traits<char_type, Target>::value,
                 BOOST_DEDUCED_TYPENAME lslboost::detail::extract_char_traits<char_type, Target>,
                 BOOST_DEDUCED_TYPENAME lslboost::detail::extract_char_traits<char_type, no_cv_src>
             >::type::trait_t traits;
             
-            typedef lslboost::mpl::bool_
-            	<
-                lslboost::is_same<char, src_char_t>::value &&                                 // source is not a wide character based type
+            typedef lslboost::integral_constant<
+              bool,
+              lslboost::is_same<char, src_char_t>::value &&                                 // source is not a wide character based type
                 (sizeof(char) != sizeof(target_char_t)) &&  // target type is based on wide character
                 (!(lslboost::detail::is_character<no_cv_src>::value))
             	> is_string_widening_required_t;
 
-            typedef lslboost::mpl::bool_
-            	<
+            typedef lslboost::integral_constant<
+              bool,
             	!(lslboost::is_integral<no_cv_src>::value || 
                   lslboost::detail::is_character<
                     BOOST_DEDUCED_TYPENAME deduce_src_char_metafunc::stage1_type          // if we did not get character type at stage1

@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2014.
+// Copyright Antony Polukhin, 2011-2018.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -23,7 +23,7 @@
 #   pragma once
 #endif
 
-#include <boost/mpl/bool.hpp>
+#include <boost/type_traits/integral_constant.hpp>
 #include <boost/type_traits/is_same.hpp>
 
 namespace lslboost {
@@ -34,8 +34,9 @@ namespace lslboost {
         template < typename T >
         struct is_character
         {
-            typedef BOOST_DEDUCED_TYPENAME lslboost::mpl::bool_<
-                    lslboost::is_same< T, char >::value ||
+            typedef BOOST_DEDUCED_TYPENAME lslboost::integral_constant<
+              bool,
+              lslboost::is_same< T, char >::value ||
                     #if !defined(BOOST_NO_STRINGSTREAM) && !defined(BOOST_NO_STD_WSTRING)
                         lslboost::is_same< T, wchar_t >::value ||
                     #endif

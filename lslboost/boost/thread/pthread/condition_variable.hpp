@@ -249,7 +249,7 @@ namespace lslboost
 #endif
         }
         template<typename lock_type>
-        bool timed_wait(lock_type& m,xtime const& abs_time)
+        bool timed_wait(lock_type& m,::lslboost::xtime const& abs_time)
         {
             return timed_wait(m,system_time(abs_time));
         }
@@ -309,7 +309,7 @@ namespace lslboost
         }
 
         template<typename lock_type,typename predicate_type>
-        bool timed_wait(lock_type& m,xtime const& abs_time, predicate_type pred)
+        bool timed_wait(lock_type& m,::lslboost::xtime const& abs_time, predicate_type pred)
         {
             return timed_wait(m,system_time(abs_time),pred);
         }

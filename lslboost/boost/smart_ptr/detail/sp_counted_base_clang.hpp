@@ -16,6 +16,7 @@
 //  http://www.boost.org/LICENSE_1_0.txt
 
 #include <boost/detail/sp_typeinfo.hpp>
+#include <boost/config.hpp>
 #include <boost/cstdint.hpp>
 
 namespace lslboost
@@ -63,7 +64,7 @@ inline lslboost::int_least32_t atomic_conditional_increment( atomic_int_least32_
 # pragma clang diagnostic ignored "-Wweak-vtables"
 #endif
 
-class sp_counted_base
+class BOOST_SYMBOL_VISIBLE sp_counted_base
 {
 private:
 

@@ -53,10 +53,10 @@ process_real_cpu_clock::time_point process_real_cpu_clock::now(
             lslboost::throw_exception(
                     system::system_error(
                             errno,
-                            BOOST_CHRONO_SYSTEM_CATEGORY,
+                            ::lslboost::system::system_category(),
                             "chrono::process_real_cpu_clock" ));
     }
-    if (!BOOST_CHRONO_IS_THROWS(ec))
+    if (!::lslboost::chrono::is_throws(ec))
     {
       ec.clear();
     }
@@ -103,7 +103,7 @@ process_user_cpu_clock::time_point process_user_cpu_clock::now(
             lslboost::detail::winapi::GetCurrentProcess(), &creation, &exit,
             &system_time, &user_time ) )
     {
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::lslboost::chrono::is_throws(ec))
         {
             ec.clear();
         }
@@ -115,17 +115,17 @@ process_user_cpu_clock::time_point process_user_cpu_clock::now(
     else
     {
         lslboost::detail::winapi::DWORD_ cause = lslboost::detail::winapi::GetLastError();
-        if (BOOST_CHRONO_IS_THROWS(ec))
+        if (::lslboost::chrono::is_throws(ec))
         {
             lslboost::throw_exception(
                     system::system_error(
                             cause,
-                            BOOST_CHRONO_SYSTEM_CATEGORY,
+                            ::lslboost::system::system_category(),
                             "chrono::process_user_cpu_clock" ));
         }
         else
         {
-            ec.assign( cause, BOOST_CHRONO_SYSTEM_CATEGORY );
+            ec.assign( cause, ::lslboost::system::system_category() );
             return time_point();
         }
     }
@@ -168,7 +168,7 @@ process_system_cpu_clock::time_point process_system_cpu_clock::now(
             lslboost::detail::winapi::GetCurrentProcess(), &creation, &exit,
             &system_time, &user_time ) )
     {
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::lslboost::chrono::is_throws(ec))
         {
             ec.clear();
         }
@@ -180,17 +180,17 @@ process_system_cpu_clock::time_point process_system_cpu_clock::now(
     else
     {
         lslboost::detail::winapi::DWORD_ cause = lslboost::detail::winapi::GetLastError();
-        if (BOOST_CHRONO_IS_THROWS(ec))
+        if (::lslboost::chrono::is_throws(ec))
         {
             lslboost::throw_exception(
                     system::system_error(
                             cause,
-                            BOOST_CHRONO_SYSTEM_CATEGORY,
+                            ::lslboost::system::system_category(),
                             "chrono::process_system_cpu_clock" ));
         }
         else
         {
-            ec.assign( cause, BOOST_CHRONO_SYSTEM_CATEGORY );
+            ec.assign( cause, ::lslboost::system::system_category() );
             return time_point();
         }
     }
@@ -239,7 +239,7 @@ process_cpu_clock::time_point process_cpu_clock::now(
             lslboost::detail::winapi::GetCurrentProcess(), &creation, &exit,
             &system_time, &user_time ) )
     {
-        if (!BOOST_CHRONO_IS_THROWS(ec))
+        if (!::lslboost::chrono::is_throws(ec))
         {
             ec.clear();
         }
@@ -257,17 +257,17 @@ process_cpu_clock::time_point process_cpu_clock::now(
     else
     {
         lslboost::detail::winapi::DWORD_ cause = lslboost::detail::winapi::GetLastError();
-        if (BOOST_CHRONO_IS_THROWS(ec))
+        if (::lslboost::chrono::is_throws(ec))
         {
             lslboost::throw_exception(
                     system::system_error(
                             cause,
-                            BOOST_CHRONO_SYSTEM_CATEGORY,
+                            ::lslboost::system::system_category(),
                             "chrono::process_cpu_clock" ));
         }
         else
         {
-            ec.assign( cause, BOOST_CHRONO_SYSTEM_CATEGORY );
+            ec.assign( cause, ::lslboost::system::system_category() );
             return time_point();
         }
     }
