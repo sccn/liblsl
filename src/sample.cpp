@@ -1,3 +1,4 @@
+#define BOOST_MATH_DISABLE_STD_FPCLASSIFY
 #include "sample.h"
 #include "portable_archive/portable_iarchive.hpp"
 #include "portable_archive/portable_oarchive.hpp"

@@ -57,6 +57,7 @@ set (sources
 	src/lsl_streaminfo_c.cpp
 	src/lsl_xml_element_c.cpp
 	src/portable_archive/portable_archive_exception.hpp
+	src/portable_archive/portable_archive_includes.hpp
 	src/portable_archive/portable_iarchive.hpp
 	src/portable_archive/portable_oarchive.hpp
 	src/pugixml/pugiconfig.hpp
