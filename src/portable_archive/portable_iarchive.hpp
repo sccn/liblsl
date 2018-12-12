@@ -344,7 +344,7 @@ namespace eos {
 
 				// load the value from little endian - it is then converted
 				// to the target type T and fits it because size <= sizeof(T)
-				t = endian::load_little_endian<T, sizeof(T)>(&temp);
+				t = endian::native_to_little(temp);
 			}
 
 			else t = 0; // zero optimization

@@ -332,7 +332,7 @@ namespace eos {
 
 				// we choose to use little endian because this way we just
 				// save the first size bytes to the stream and skip the rest
-				endian::store_little_endian<T, sizeof(T)>(&temp, t);
+				temp = endian::native_to_little(t);
 				save_binary(&temp, size);
 			}
 			// zero optimization
