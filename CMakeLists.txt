@@ -3,8 +3,6 @@ project (LSL
 	VERSION 1.13.0
 	LANGUAGES CXX)
 
-cmake_policy(SET CMP0042 NEW) # ENABLE CMP0042: MACOSX_RPATH is enabled by default.
-cmake_policy(SET CMP0063 NEW) # ENABLE CMP0063: Honor visibility for all targets
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 if(NOT CMAKE_DEBUG_POSTFIX)
