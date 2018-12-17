@@ -152,6 +152,9 @@ function(lsllib_properties libname)
 	target_include_directories(${libname}
 		INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	)
+	set_target_properties(${libname} PROPERTIES
+		POSITION_INDEPENDENT_CODE On
+		CXX_VISIBILITY_PRESET hidden)
 	target_compile_definitions(${libname} PRIVATE
 		LIBLSL_EXPORTS
 		_SCL_SECURE_NO_WARNINGS _CRT_SECURE_NO_WARNINGS
