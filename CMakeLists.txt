@@ -132,7 +132,6 @@ set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMA
 set_source_files_properties("src/lsl_freefuncs_c.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
 
 set(target lsl)
-set(lsl_export_targets ${target})
 
 add_subdirectory(${LSL_LSLBOOST_PATH})
 
@@ -178,7 +177,6 @@ set_target_properties(${target} PROPERTIES
 if(${LSL_BUILD_STATIC})
 	add_library(${target}-static ${sources} ${headers})
 	lsllib_properties(${target}-static)
-	list(APPEND lsl_export_targets "${target}-static")
 	# for LSL_CPP_API export header
 	target_compile_definitions(${target}-static PRIVATE LIBLSL_STATIC)
 	set_target_properties(${target}-static PROPERTIES
@@ -191,7 +189,7 @@ else()
 	set(LSLPREFIX "LSL/")
 endif()
 
-install(TARGETS ${lsl_export_targets}
+install(TARGETS lsl
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}lib
