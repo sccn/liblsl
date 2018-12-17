@@ -31,8 +31,8 @@ endif()
 # Build static library
 option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
 
-set(LSL_WINVER "0x0501" CACHE STRING
-	"Windows version (_WIN32_WINNT) to target (defaults to 0x0501 for Windows XP)")
+set(LSL_WINVER "0x0601" CACHE STRING
+	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 
