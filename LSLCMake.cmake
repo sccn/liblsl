@@ -139,14 +139,13 @@ function(installLSLAppSingleFolder target)
 				file (TO_NATIVE_PATH "${QT_BIN_DIR}" QT_BIN_DIR_NATIVE)
 				# It's safer to use `\` separators in the Path, but we need to escape them
 				string (REPLACE "\\" "\\\\" QT_BIN_DIR_NATIVE "${QT_BIN_DIR_NATIVE}")
-
 				set(QT_DEPLOYQT_FLAGS --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime)
-				file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${target}_path"
-					CONTENT "$<TARGET_FILE:${target}>"
+				file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${target}_$<CONFIG>_path"
+					CONTENT "$<TARGET_FILE:${target}>"  # Full path to .exe file
 				)
 				get_filename_component(appdir ${appbin} DIRECTORY CACHE)
 				install (CODE "
-					file(READ \"${CMAKE_CURRENT_BINARY_DIR}/${target}_path\" _file)
+					file(READ \"${CMAKE_CURRENT_BINARY_DIR}/${target}_${CMAKE_BUILD_TYPE}_path\" _file)
 					message (STATUS \"Running Qt Deploy Tool for \${_file}\")
 					if (CMAKE_INSTALL_CONFIG_NAME STREQUAL \"Debug\")
 						set(QT_DEPLOYQT_FLAGS \"\${QT_DEPLOYQT_FLAGS} --debug\")
