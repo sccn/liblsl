@@ -1,10 +1,24 @@
 language: cpp
-dist: xenial
 env:
   CMakeArgs=""
+branches:
+  only: 
+    - master
+# https://docs.travis-ci.com/user/reference/osx/#macos-version
 matrix:
   include:
-    - os: osx
+  - os: osx
+    osx_image: xcode10.1
+    env: OSXVER=MacOS10.13
+  - os: osx
+    osx_image: xcode9.2
+    env: OSXVER=MacOS10.12
+  - os: osx
+    osx_image: xcode8
+    env: OSXVER=MacOS10.11
+before_script:
+- brew update
+- brew upgrade cmake
 script:
 - mkdir -p build/install
 - cd build
@@ -16,10 +30,10 @@ script:
 deploy:
   provider: releases
   skip_cleanup: true
-  on:
-    condition: $TRAVIS_TAG || $DODEPLOY
-  draft: true
   api_key:
-    secure: cv/WRLXrJMkcU6AQy5UQn54c5LR+PbVUHveJpEryv54TGQ2+KXrVu0JNeiU9KSb93Ii/QgtctepbkAMgPp9yYP+D0cDCV9GLt/pudLGhdGfwltSEjSJb2+891fdDVEC7GLEkg/DpGj0YRgHYlMLm6mqUtM+SWFiy4RzEBNofBK86mjKM2RTKU+dFgryaObvzriAKumVmybhkL8jRWAGsZ/C1IUNZEjqZm7iCxIeHHMcmni8Eq5WS7kSg7S2s80yQ2YLqVaAK+xAK3+ZjljhvtVWUvW4Eela6o2/fYu3Bw2qi4zDbdvmq4TvaOFWW5vPsR6TCUSZ7LEzDyh1CCdlCwJ6f2HuGwoRGYm+jZcNF6Qut4Z6vAPrioSVq0it1MBD667yuA2W1vjS2b1m/q26YYBAYqbTo4ENBe/VaurLfjK1r5GPLdxNGenj6g8psztQOgxHu4RxxtxqALgjHFgFib9WKEI+1z+PanqOLbh7TQZIxtiduIO3KZj3dKOvoXux2bPT/4FtkW+z8vgS5qxEL0IpiASdHxH6Z5kfZsdToYYnC+3lg4ppVFQYFYMN/IKye34yPjTHvY5J62iY3uX3J1ggT+9NQCKdWDlKZLyqQZoPbVFnzYjSoCcjSonlVCOhBCyMF4lOv093UvPye8XpjraKZt0UXxCbbI9gJylsTxOE=
+    secure: MAin7yY6lRQNC7gLeE/aDGA90a2TZPjAwQGofyuGvih5T0p3OdKxFn64/lFzEWqb3x74MEu6I4AMteL/wjkminlHGn8fd1bSLtp+2TvnKFnaCuxuhlCNX4BmP741MHEmNMTo8qA+StuxDxwfHh8KVjuFxOkiLV9FolSpxZ3jhl8mBi3IMDodilyfsCniAw/WzekfATkJwmhQ9co642rkTwBKZ7goxdXJmewjEjBsiFn2SUT2+MCcy7NltjYvPdSrUH1LyhVKcSJch7lXqFnlGI21mJxlYdOhd9rA6wOYRZ1hzBRpqAWzE8kbDapMMOfLWrLQP+t5U3WZrt5e7Na/iuopYgzofgfzGr4xK0NwHUuHpc8C1Fair3nOke8IGNDraVHcZazEsBwxv5ekCUTOUFr5lka+ukcznP7PDw2ksIbpOR7bb9G2ubkQT4bDzIfMMOJSPzUbeTN+ds6xiVXukndMsXVW1rkZXk7O4uA60hGWBpX8okddask81Fk6jIBXdJomiRySDfd1DvP16vDGOfei2GZFX8iSvvATQIEE8CCL750vgUuEPPeRvyug2m6+CerAjvH73fmtGiKDmeaQNz+eBnbBpMphKCUvKRpSjSsBPNsQH/epPo34JnUczfzVbZGNNv87OeHDz7POe5YY6+PSwJbfIusPTMY6VdI/g9U=
   file: build/*.tar.*
   file_glob: true
+  on:
+    repo: sccn/liblsl
+    tags: true
