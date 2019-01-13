@@ -1011,8 +1011,8 @@ namespace lsl {
 			while (double ts = pull_sample(sample, timeout)) {
 #if __cplusplus > 199711L || _MSC_VER >= 1900
 				chunk.insert(chunk.end(),
-				             std::make_move_iterator(sample.cbegin()),
-				             std::make_move_iterator(sample.cend()));
+					std::make_move_iterator(sample.begin()),
+					std::make_move_iterator(sample.end()));
 #else
 				chunk.insert(chunk.end(), sample.begin(), sample.end());
 #endif
