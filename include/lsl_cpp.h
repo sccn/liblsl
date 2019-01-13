@@ -991,6 +991,8 @@ namespace lsl {
 		 * @param chunk A vector to hold the multiplexed (Sample 1 Channel 1,
 		 * S1C2, S2C1, S2C2, S3C1, S3C2, ...) samples
 		 * @param timestamps A vector to hold the timestamps or nullptr
+		 * @param timeout Time to wait for the first sample. The default value of 0.0 will not wait
+		 * for data to arrive, pulling only samples already received.
 		 * @param append (True:) Append data or (false:) clear them first
 		 * @return True if some data was obtained.
 		 * @throws lost_error (if the stream source has been lost).
@@ -1003,12 +1005,16 @@ namespace lsl {
 			chunk.clear();
 			if(timestamps) timestamps->clear();
 			}
+			std::vector<T> sample;
+			double ts;
+			if ((ts = pull_sample(sample, timeout)) == 0.0) return false;
+			chunk.insert(chunk.end(), sample.begin(), sample.end());
+			if (timestamps) timestamps->push_back(ts);
 			const auto target = samples_available();
 			chunk.reserve(chunk.size() + target * this->channel_count);
 			if(timestamps)
 				timestamps->reserve(timestamps->size() + target);
-			std::vector<T> sample;
-			while (double ts = pull_sample(sample, timeout)) {
+			while ((ts = pull_sample(sample, 0.0)) != 0.0) {
 #if __cplusplus > 199711L || _MSC_VER >= 1900
 				chunk.insert(chunk.end(),
 					std::make_move_iterator(sample.begin()),
@@ -1018,7 +1024,7 @@ namespace lsl {
 #endif
 				if (timestamps) timestamps->push_back(ts);
 			}
-			return !chunk.empty();
+			return true;
 		}
 
         /**
