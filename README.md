@@ -1,3 +1,6 @@
+[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/y8l55sf4n1pfnsck/branch/master?svg=true)](https://ci.appveyor.com/project/cboulay/liblsl/branch/master)
+[![Travis Build Status](https://travis-ci.org/sccn/liblsl.svg?branch=master)](https://travis-ci.org/sccn/liblsl)
+
 # Lab streaming layer library
 
 The lab streaming layer is a simple all-in-one approach to streaming experiment

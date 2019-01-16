@@ -2,6 +2,9 @@ version: 1.13.{build}
 pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
+branches:
+  only:
+  - master
 environment:
   CMakeArgs: ""
   matrix:
@@ -30,3 +33,11 @@ artifacts:
 - path: 'build/*.7z'
 - path: 'build/*.deb'
 - path: 'build/*.tar.*'
+deploy:
+  provider: GitHub
+  auth_token:
+    secure: XzGnVTRjZI2AuQzR5A6qPgZViAAbBVq7/VhM7O8kyTmjIkvUjH1RrwWiFLuinsus
+  force_update: true
+  on:
+    APPVEYOR_REPO_TAG: true
+
