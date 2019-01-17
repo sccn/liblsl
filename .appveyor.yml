@@ -2,9 +2,6 @@ version: 1.13.{build}
 pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
-branches:
-  only:
-  - master
 environment:
   CMakeArgs: ""
   matrix:

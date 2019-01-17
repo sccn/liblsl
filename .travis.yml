@@ -1,9 +1,6 @@
 language: cpp
 env:
   CMakeArgs=""
-branches:
-  only: 
-    - master
 # https://docs.travis-ci.com/user/reference/osx/#macos-version
 matrix:
   include:
