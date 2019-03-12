@@ -241,7 +241,7 @@ LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buf
 			if (buffer[k] == NULL) {
 				for (std::size_t k2=0;k2<k;k2++)
 					free(buffer[k2]);
-				*ec = lsl_internal_error;
+				if (ec) *ec = lsl_internal_error;
 				return 0.0;
 			}
 			strcpy(buffer[k],tmp[k].c_str());
@@ -287,7 +287,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 			if (buffer[k] == NULL) {
 				for (std::size_t k2=0;k2<k;k++)
 					free(buffer[k2]);
-				*ec = lsl_internal_error;
+				if (ec) *ec = lsl_internal_error;
 				return 0.0;
 			}
 			buffer_lengths[k] = (uint32_t)tmp[k].size();
@@ -397,7 +397,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, 
 				if (data_buffer[k] == NULL) {
 					for (std::size_t k2=0;k2<k;k2++)
 						free(data_buffer[k2]);
-					*ec = lsl_internal_error;
+					if (ec) *ec = lsl_internal_error;
 					return 0;
 				}
 				strcpy(data_buffer[k],tmp[k].c_str());
@@ -444,7 +444,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer, 
 				if (data_buffer[k] == NULL) {
 					for (uint32_t k2=0;k2<k;k++)
 						free(data_buffer[k2]);
-					*ec = lsl_internal_error;
+					if (ec) *ec = lsl_internal_error;
 					return 0;
 				}
 				lengths_buffer[k] = (uint32_t)tmp[k].size();
