@@ -1,0 +1,20 @@
+# Starter pipeline
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+jobs:
+  - job:  Windows_VS2017_x64
+    pool:
+       vmImage: 'vs2017-win2016'
+    steps:
+      - task: CMake@1
+        inputs:
+          workingDirectory: 'build'
+          cmakeArgs: '-DLSL_NO_FANCY_LIBNAME=1'
+      - script: 'cmake --build build --target install'
+        displayName: 'Build and install everything'
+
+trigger:
+- master
+
