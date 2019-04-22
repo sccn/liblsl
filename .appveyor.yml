@@ -8,10 +8,6 @@ environment:
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2017
       VCVER: 14.0
       ARCH: x64
-    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-      VCVER: 9.0
-      ARCH: x86
-    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1604
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1804
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.8.2/ninja-win.zip -FileName ninja.zip
@@ -26,10 +22,13 @@ build_script:
 - sh: cmake -DCMAKE_BUILD_TYPE=Release ${CMakeArgs} ..
 - cmake --build . --config Release --target install
 - cpack
+- sh: cd ..
+- sh: docker run --rm -v $PWD:$PWD -w $PWD tktechdocker/manylinux:gcc8.3.0 bash build_manylinux.sh
 artifacts:
 - path: 'build/*.7z'
 - path: 'build/*.deb'
 - path: 'build/*.tar.*'
+- path: 'build_manylinux/install/lib/liblsl*.so.*'
 deploy:
   provider: GitHub
   auth_token:
