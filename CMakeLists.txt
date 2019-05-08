@@ -135,9 +135,6 @@ add_subdirectory(${LSL_LSLBOOST_PATH})
 # common definitions for the lsl and lsl-static
 function(lsllib_properties libname)
 	target_link_libraries(${libname} PRIVATE lslboost)
-	if (MINGW)
-		target_link_libraries(${libname} PUBLIC ws2_32 wsock32 winmm)
-	endif()
 	target_include_directories(${libname}
 		INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	)
