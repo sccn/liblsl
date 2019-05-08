@@ -1,5 +1,5 @@
 # Platform-independent sources
-set(lslboost_sources
+add_library (lslboost STATIC
 	libs/atomic/src/lockpool.cpp
 	libs/chrono/src/chrono.cpp
 	libs/serialization/src/archive_exception.cpp
@@ -14,23 +14,24 @@ set(lslboost_sources
 	libs/serialization/src/void_cast.cpp
 )
 if (UNIX)
-	set(lslboost_sources_platform
+	target_sources(lslboost PRIVATE
 		libs/thread/src/pthread/once.cpp
 		libs/thread/src/pthread/thread.cpp
 	)
 	find_package(Threads REQUIRED)
-	set(Boost_LIBRARIES "Threads::Threads")
+	target_link_libraries(lslboost PRIVATE Threads::Threads)
 else ()  # WIN32
-	set(lslboost_sources_platform
+	target_sources(lslboost PRIVATE
 		libs/serialization/src/codecvt_null.cpp
 		libs/thread/src/win32/thread.cpp
 		libs/thread/src/win32/tss_dll.cpp
 		libs/thread/src/win32/tss_pe.cpp
 	)
-	set(Boost_LIBRARIES "")
+	if(MINGW)
+		target_link_libraries(lslboost PRIVATE wsock32 ws2_32 winmm)
+	endif()
 endif ()
 
-add_library (lslboost STATIC ${lslboost_sources} ${lslboost_sources_platform})
 target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
 	BOOST_ASIO_ENABLE_OLD_SERVICES
@@ -43,7 +44,6 @@ target_compile_definitions(lslboost PUBLIC
 
 target_include_directories(lslboost SYSTEM PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-target_link_libraries(lslboost PRIVATE ${Boost_LIBRARIES})
 set_target_properties(lslboost PROPERTIES
 	CXX_VISIBILITY_PRESET hidden
 	POSITION_INDEPENDENT_CODE On
