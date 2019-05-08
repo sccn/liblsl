@@ -11,7 +11,6 @@ endif()
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI" OFF)
-option(LSL_SO_LINKS_STDCPP_STATIC "On UNIX, the shared lib links std and libc statically." OFF)
 
 # lsl uses boost, but several other projects (e.g. Matlab) also use boost.
 # To prevent clashes with different boost versions, lsl ships a subset of
@@ -135,17 +134,10 @@ add_subdirectory(${LSL_LSLBOOST_PATH})
 
 # common definitions for the lsl and lsl-static
 function(lsllib_properties libname)
-	IF (UNIX AND LSL_SO_LINKS_STDCPP_STATIC)
-		target_link_libraries(${libname}
-			PRIVATE lslboost
-			PUBLIC -static-libgcc -static-libstdc++)
-	ELSEIF (MINGW)
-		target_link_libraries(${libname}
-			PRIVATE lslboost
-			PUBLIC ws2_32 wsock32 winmm)
-	ELSE()
-		target_link_libraries(${libname} PRIVATE lslboost)
-	ENDIF(UNIX AND LSL_SO_LINKS_STDCPP_STATIC)
+	target_link_libraries(${libname} PRIVATE lslboost)
+	if (MINGW)
+		target_link_libraries(${libname} PUBLIC ws2_32 wsock32 winmm)
+	endif()
 	target_include_directories(${libname}
 		INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	)
