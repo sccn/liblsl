@@ -3,8 +3,8 @@
 #include <istream>
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
+#include "cast.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
 
@@ -40,7 +40,7 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
     for (std::size_t k=0;k<peers.size();k++) {
         try {
             // resolve the name
-            udp::resolver::query q(peers[k],lslboost::lexical_cast<std::string>(cfg_->base_port()));
+			udp::resolver::query q(peers[k], to_string(cfg_->base_port()));
             // for each endpoint...
             for (udp::resolver::iterator i=udp_resolver.resolve(q); i != udp::resolver::iterator(); i++) {
                 // for each port in the range...

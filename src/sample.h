@@ -1,7 +1,5 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
-
-#include <boost/lexical_cast.hpp>
 #include <vector>
 #include <string>
 #include <streambuf>
@@ -11,6 +9,7 @@
 #include <boost/static_assert.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/endian/conversion.hpp>
+#include "cast.h"
 #include "common.h"
 
 namespace eos {
@@ -164,7 +163,7 @@ namespace lsl {
 #ifndef BOOST_NO_INT64_T
 					case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int64_t)*s++); break;
 #endif
-					case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<std::string>(*s++)); break; 
+					case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = to_string(*s++)); break;
 					default: throw std::invalid_argument("Unsupported channel format.");
 				}
 			}
@@ -185,7 +184,7 @@ namespace lsl {
 #ifndef BOOST_NO_INT64_T
 					case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
 #endif
-					case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<T>(*p++)); break; 
+				case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = from_string<T>(*p++)); break;
 					default: throw std::invalid_argument("Unsupported channel format.");
 				}
 			}

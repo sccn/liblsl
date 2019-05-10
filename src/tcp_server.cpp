@@ -5,6 +5,7 @@
 #include <boost/uuid/uuid_generators.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/container/flat_set.hpp>
+#include "cast.h"
 #include "tcp_server.h"
 #include "socket_utils.h"
 
@@ -213,7 +214,8 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 			if (lslboost::algorithm::starts_with(method,"LSL:streamfeed/")) {
 				// streamfeed request with version: read feed parameters
 				std::vector<std::string> parts; lslboost::algorithm::split(parts,method,lslboost::algorithm::is_any_of(" \t"));
-				int request_protocol_version = lslboost::lexical_cast<int>(parts[0].substr(parts[0].find_first_of('/')+1));
+				int request_protocol_version =
+					from_string<int>(parts[0].substr(parts[0].find_first_of('/') + 1));
 				std::string request_uid = (parts.size()>1) ? parts[1] : "";
 				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
 					lslboost::bind(&client_session::handle_read_feedparams,shared_from_this(),request_protocol_version,request_uid,placeholders::error));
@@ -262,11 +264,15 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 
 			// check request validity
 			if (request_protocol_version/100 > api_config::get_instance()->use_protocol_version()/100) {
-				send_status_message("LSL/"+lslboost::lexical_cast<std::string>(api_config::get_instance()->use_protocol_version())+" 505 Version not supported");
+				send_status_message("LSL/" +
+									to_string(api_config::get_instance()->use_protocol_version()) +
+									" 505 Version not supported");
 				return;
 			}
 			if (!request_uid.empty() && request_uid != serv_->info_->uid()) {
-				send_status_message("LSL/"+lslboost::lexical_cast<std::string>(api_config::get_instance()->use_protocol_version())+" 404 Not found");
+				send_status_message("LSL/" +
+									to_string(api_config::get_instance()->use_protocol_version()) +
+									" 404 Not found");
 				return;
 			}
 
@@ -293,21 +299,21 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 							rest = rest.substr(0,semicolon);
 						// get the header information
 						if (type == "native-byte-order")
-							client_byte_order = lslboost::lexical_cast<int>(rest);
+							client_byte_order = from_string<int>(rest);
 						if (type == "endian-performance")
-							client_endian_performance = lslboost::lexical_cast<double>(rest);
+							client_endian_performance = from_string<double>(rest);
 						if (type == "has-ieee754-floats")
-							client_has_ieee754_floats = lslboost::lexical_cast<bool>(rest);
+							client_has_ieee754_floats = from_string<bool>(rest);
 						if (type == "supports-subnormals")
-							client_supports_subnormals = lslboost::lexical_cast<bool>(rest);
+							client_supports_subnormals = from_string<bool>(rest);
 						if (type == "value-size")
-							client_value_size = lslboost::lexical_cast<int>(rest);
+							client_value_size = from_string<int>(rest);
 						if (type == "max-buffer-length")
-							max_buffered_ = lslboost::lexical_cast<int>(rest);
+							max_buffered_ = from_string<int>(rest);
 						if (type == "max-chunk-length")
-							chunk_granularity_ = lslboost::lexical_cast<int>(rest);
+							chunk_granularity_ = from_string<int>(rest);
 						if (type == "protocol-version")
-							client_protocol_version = lslboost::lexical_cast<int>(rest);
+							client_protocol_version = from_string<int>(rest);
 					}
 				}
 

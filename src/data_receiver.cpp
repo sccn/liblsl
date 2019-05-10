@@ -181,9 +181,9 @@ void data_receiver::data_thread() {
 					std::vector<std::string> parts; split(parts,buf,is_any_of(" \t"));
 					if (parts.size() < 3 || !starts_with(parts[0],"LSL/"))
 						throw std::runtime_error("Received a malformed response.");
-					if (lslboost::lexical_cast<int>(parts[0].substr(4))/100 > api_config::get_instance()->use_protocol_version()/100)
+					if (from_string<int>(parts[0].substr(4))/100 > api_config::get_instance()->use_protocol_version()/100)
 						throw std::runtime_error("The other party's protocol version is too new for this client; please upgrade your LSL library.");
-					int status_code = lslboost::lexical_cast<int>(parts[1]);
+					int status_code = from_string<int>(parts[1]);
 					if (status_code == 404)
 						throw lost_error("The given address does not serve the resolved stream (likely outdated).");
 					if (status_code >= 400)
@@ -204,16 +204,16 @@ void data_receiver::data_thread() {
 								rest = rest.substr(0,semicolon);
 							// get the header information
 							if (type == "byte-order") {
-								use_byte_order = lslboost::lexical_cast<int>(rest);
+								use_byte_order = from_string<int>(rest);
 								if (use_byte_order==2134 && BOOST_BYTE_ORDER!=2134 && format_sizes[conn_.type_info().channel_format()]>=8)
 									throw std::runtime_error("The byte order conversion requested by the other party is not supported.");
 							}
 							if (type == "suppress-subnormals") 
-								suppress_subnormals = lslboost::lexical_cast<bool>(rest);
+								suppress_subnormals = from_string<bool>(rest);
 							if (type == "uid" && rest != conn_.current_uid())
 								throw lost_error("The received UID does not match the current connection's UID.");
 							if (type == "data-protocol-version") {
-								data_protocol_version = lslboost::lexical_cast<int>(rest);
+								data_protocol_version = from_string<int>(rest);
 								if (data_protocol_version > api_config::get_instance()->use_protocol_version())
 									throw std::runtime_error("The protocol version requested by the other party is not supported by this client.");
 							}
