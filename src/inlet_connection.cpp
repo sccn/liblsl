@@ -1,6 +1,6 @@
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/lexical_cast.hpp>
+#include "cast.h"
 #include "inlet_connection.h"
 #include "api_config.h"
 
@@ -120,11 +120,11 @@ tcp::endpoint inlet_connection::get_tcp_endpoint() {
 	//It does not hurt when the address is not link-local.
 	} else {
         std::string address = host_info_.v6address();
-        std::string port = lslboost::lexical_cast<std::string>(host_info_.v6data_port());
+		std::string port = to_string(host_info_.v6data_port());
 
         io_service io; 
         ip::tcp::resolver resolver(io);
-        ip::tcp::resolver::query query( address, lslboost::lexical_cast<std::string>(port));
+		ip::tcp::resolver::query query( address, to_string(port));
         ip::tcp::resolver::iterator it = resolver.resolve(query);
         ip::tcp::resolver::iterator end;
         
@@ -150,11 +150,11 @@ udp::endpoint inlet_connection::get_udp_endpoint() {
 	//It does not hurt when the address is not link-local.
 	} else {
 		std::string address = host_info_.v6address();
-		std::string port = lslboost::lexical_cast<std::string>(host_info_.v6service_port());
+		std::string port = to_string(host_info_.v6service_port());
 
         io_service io; 
         ip::udp::resolver resolver(io);
-        ip::udp::resolver::query query( address, lslboost::lexical_cast<std::string>(port));
+		ip::udp::resolver::query query( address, to_string(port));
         ip::udp::resolver::iterator it = resolver.resolve(query);
         ip::udp::resolver::iterator end;
         
@@ -193,18 +193,23 @@ void inlet_connection::try_recover() {
 		try {
 			lslboost::lock_guard<lslboost::mutex> lock(recovery_mut_);
 			// first create the query string based on the known stream information
-			std::ostringstream query; 
+			std::ostringstream query;
 			{
 				lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
 				// construct query according to the fields that are present in the stream_info
 				const char *channel_format_strings[] = {"undefined","float32","double64","string","int32","int16","int8","int64"};
-				query << "channel_count='" << lslboost::lexical_cast<std::string>(host_info_.channel_count()) << "'";
+				query << "channel_count='" << host_info_.channel_count() << "'";
 				if (!host_info_.name().empty())
 					query << " and name='" << host_info_.name() << "'";
 				if (!host_info_.type().empty())
 					query << " and type='" << host_info_.type() << "'";
-				if (host_info_.nominal_srate() > 0)
-					query << " and nominal_srate='" << lslboost::lexical_cast<std::string>(host_info_.nominal_srate()) << "'";
+				// for floating point values, str2double(double2str(fpvalue)) == fpvalue is most
+				// likely wrong and might lead to streams not being resolved.
+				// We accept that a lost stream might be replaced by a stream from the same host
+				// with the same type, channel type and channel count but a different srate
+				/*if (host_info_.nominal_srate() > 0)
+					query << " and nominal_srate='" << host_info_.nominal_srate() << "'";
+					*/
 				if (!host_info_.source_id().empty())
 					query << " and source_id='" << host_info_.source_id() << "'";					
 				query << " and channel_format='" << channel_format_strings[host_info_.channel_format()] << "'";

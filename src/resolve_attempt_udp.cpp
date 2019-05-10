@@ -3,9 +3,9 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
-#include <boost/lexical_cast.hpp>
 #include <boost/functional/hash.hpp>
 #include "api_config.h"
+#include "cast.h"
 #include "resolve_attempt_udp.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
@@ -57,7 +57,7 @@ resolve_attempt_udp::resolve_attempt_udp(io_service &io, const udp &protocol, co
 	}
 
 	// precalc the query id (hash of the query string, as string)
-	query_id_ = lslboost::lexical_cast<std::string>(lslboost::hash<std::string>()(query));
+	query_id_ = to_string(lslboost::hash<std::string>()(query));
 	// precalc the query message
 	std::ostringstream os; os.precision(16);
 	os << "LSL:shortinfo\r\n";

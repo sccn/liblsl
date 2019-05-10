@@ -1,7 +1,6 @@
 #include <sstream>
-#include <iostream>
-#include <boost/lexical_cast.hpp>
 #include <boost/thread.hpp>
+#include "cast.h"
 #include "stream_info_impl.h"
 #include "api_config.h"
 
@@ -11,7 +10,6 @@
 using namespace lsl;
 using namespace pugi;
 using std::string;
-using lslboost::lexical_cast;
 
 /// Default Constructor.
 stream_info_impl::stream_info_impl(): channel_count_(0), nominal_srate_(0), channel_format_(cf_undefined), version_(0), v4data_port_(0), v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
@@ -35,27 +33,38 @@ stream_info_impl::stream_info_impl(const string &name, const string &type, int c
 	write_xml(doc_);
 }
 
+/// Helper function to add a child node with only a single text node
+template<typename T> void append_text_node(xml_node& node, const char* name, const T& value) {
+	node.append_child(name).append_child(node_pcdata).text().set(value);
+}
+
+template<> void append_text_node(xml_node& node, const char* name, const std::string& value) {
+	node.append_child(name).append_child(node_pcdata).set_value(value.c_str());
+}
+
+
 /// Initialize the XML DOM structure (leaving .desc unchanged) from the data.
 void stream_info_impl::write_xml(xml_document &doc) {
 	const char *channel_format_strings[] = {"undefined","float32","double64","string","int32","int16","int8","int64"};
 	xml_node info = doc.append_child("info");
-	info.append_child("name").append_child(node_pcdata).set_value(name_.c_str());
-	info.append_child("type").append_child(node_pcdata).set_value(type_.c_str());
-	info.append_child("channel_count").append_child(node_pcdata).set_value(lexical_cast<string>(channel_count_).c_str());
-	info.append_child("nominal_srate").append_child(node_pcdata).set_value(lexical_cast<string>(nominal_srate_).c_str());
-	info.append_child("channel_format").append_child(node_pcdata).set_value(channel_format_strings[channel_format_]);
-	info.append_child("source_id").append_child(node_pcdata).set_value(source_id_.c_str());
-	info.append_child("version").append_child(node_pcdata).set_value(lexical_cast<string>(version_/100.0).c_str());
-	info.append_child("created_at").append_child(node_pcdata).set_value(lexical_cast<string>(created_at_).c_str());
-	info.append_child("uid").append_child(node_pcdata).set_value(uid_.c_str());
-	info.append_child("session_id").append_child(node_pcdata).set_value(session_id_.c_str());
-	info.append_child("hostname").append_child(node_pcdata).set_value(hostname_.c_str());
-	info.append_child("v4address").append_child(node_pcdata).set_value(v4address_.c_str());
-	info.append_child("v4data_port").append_child(node_pcdata).set_value(lexical_cast<string>(v4data_port_).c_str());
-	info.append_child("v4service_port").append_child(node_pcdata).set_value(lexical_cast<string>(v4service_port_).c_str());
-	info.append_child("v6address").append_child(node_pcdata).set_value(v6address_.c_str());
-	info.append_child("v6data_port").append_child(node_pcdata).set_value(lexical_cast<string>(v6data_port_).c_str());
-	info.append_child("v6service_port").append_child(node_pcdata).set_value(lexical_cast<string>(v6service_port_).c_str());
+	append_text_node(info, "name", name_);
+	append_text_node(info, "type", type_);
+	append_text_node(info, "channel_count", channel_count_);
+	append_text_node(info, "channel_format", channel_format_strings[channel_format_]);
+	append_text_node(info, "source_id", source_id_);
+	// floating point fields: use locale independent to_string function
+	append_text_node(info, "nominal_srate", to_string(nominal_srate_));
+	append_text_node(info, "version", to_string(version_ / 100.));
+	append_text_node(info, "created_at", to_string(created_at_));
+	append_text_node(info, "uid", uid_);
+	append_text_node(info, "session_id", session_id_);
+	append_text_node(info, "hostname", hostname_);
+	append_text_node(info, "v4address", v4address_);
+	append_text_node(info, "v4data_port", v4data_port_);
+	append_text_node(info, "v4service_port", v4service_port_);
+	append_text_node(info, "v6address", v6address_);
+	append_text_node(info, "v6data_port", v6data_port_);
+	append_text_node(info, "v6service_port", v6service_port_);
 	info.append_child("desc");
 }
 
@@ -70,11 +79,11 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// type
 		type_ = info.child_value("type");
 		// channel_count
-		channel_count_ = lexical_cast<int>(info.child_value("channel_count"));
+		channel_count_ = from_string<int>(info.child_value("channel_count"));
 		if (channel_count_ < 0)
 			throw std::runtime_error("The channel count of the given stream info is smaller than 0.");
 		// nominal_srate
-		nominal_srate_ = lexical_cast<double>(info.child_value("nominal_srate"));
+		nominal_srate_ = from_string<double>(info.child_value("nominal_srate"));
 		if (nominal_srate_ < 0.0)
 			throw std::runtime_error("The sampling rate of the given stream info is negative.");
 		// channel_format
@@ -97,11 +106,11 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// source_id
 		source_id_ = info.child_value("source_id");
 		// version
-		version_ = (int)(lexical_cast<double>(info.child_value("version"))*100.0);
+		version_ = (int)(from_string<double>(info.child_value("version")) * 100.0);
 		if (version_ <= 0)
 			throw std::runtime_error("The version of the given stream info is invalid.");
 		// created_at
-		created_at_ = lexical_cast<double>(info.child_value("created_at"));
+		created_at_ = from_string<double>(info.child_value("created_at"));
 		// uid
 		uid_ = info.child_value("uid");
 		if (uid_.empty())
@@ -113,15 +122,15 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// address
 		v4address_ = info.child_value("v4address");
 		// data_port
-		v4data_port_ = lexical_cast<int>(info.child_value("v4data_port"));
+		v4data_port_ = from_string<int>(info.child_value("v4data_port"));
 		// service_port
-		v4service_port_ = lexical_cast<int>(info.child_value("v4service_port"));
+		v4service_port_ = from_string<int>(info.child_value("v4service_port"));
 		// address
 		v6address_ = info.child_value("v6address");
 		// data_port
-		v6data_port_ = lexical_cast<int>(info.child_value("v6data_port"));
+		v6data_port_ = from_string<int>(info.child_value("v6data_port"));
 		// service_port
-		v6service_port_ = lexical_cast<int>(info.child_value("v6service_port"));
+		v6service_port_ = from_string<int>(info.child_value("v6service_port"));
 	} catch(std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();
@@ -221,8 +230,8 @@ xml_node stream_info_impl::desc() const { return doc_.child("info").child("desc"
 * Set the info / protocol version used by the stream.
 */
 void stream_info_impl::version(int v) { 
-	version_ = v; 
-	doc_.child("info").child("version").first_child().set_value(lexical_cast<string>(version_/100.0).c_str()); 
+	version_ = v;
+	doc_.child("info").child("version").first_child().set_value(to_string(version_ / 100.).c_str());
 }
 
 /**
@@ -232,7 +241,7 @@ void stream_info_impl::version(int v) {
 */
 void stream_info_impl::created_at(double v) { 
 	created_at_ = v; 
-	doc_.child("info").child("created_at").first_child().set_value(lexical_cast<string>(created_at_).c_str()); 
+	doc_.child("info").child("created_at").first_child().set_value(to_string(created_at_).c_str());
 }
 
 /**
@@ -279,7 +288,7 @@ void stream_info_impl::v4address(const std::string &v) {
 */
 void stream_info_impl::v4data_port(int v) { 
 	v4data_port_ = v; 
-	doc_.child("info").child("v4data_port").first_child().set_value(lexical_cast<string>(v4data_port_).c_str()); 
+	doc_.child("info").child("v4data_port").first_child().text().set(v4data_port_);
 }
 
 /**
@@ -288,7 +297,7 @@ void stream_info_impl::v4data_port(int v) {
 */
 void stream_info_impl::v4service_port(int v) { 
 	v4service_port_ = v; 
-	doc_.child("info").child("v4service_port").first_child().set_value(lexical_cast<string>(v4service_port_).c_str()); 
+	doc_.child("info").child("v4service_port").first_child().text().set(v4service_port_);
 }
 
 /**
@@ -305,7 +314,7 @@ void stream_info_impl::v6address(const std::string &v) {
 */
 void stream_info_impl::v6data_port(int v) { 
 	v6data_port_ = v; 
-	doc_.child("info").child("v6data_port").first_child().set_value(lexical_cast<string>(v6data_port_).c_str()); 
+	doc_.child("info").child("v6data_port").first_child().text().set(v6data_port_);
 }
 
 /**
@@ -314,7 +323,7 @@ void stream_info_impl::v6data_port(int v) {
 */
 void stream_info_impl::v6service_port(int v) { 
 	v6service_port_ = v; 
-	doc_.child("info").child("v6service_port").first_child().set_value(lexical_cast<string>(v6service_port_).c_str()); 
+	doc_.child("info").child("v6service_port").first_child().text().set(v6service_port_);
 }
 
 /**

@@ -28,13 +28,13 @@ bool sample::operator==(const sample &rhs) const BOOST_NOEXCEPT {
 sample &sample::assign_typed(const std::string *s) { 
 	switch (format_) {
 		case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = *s++); break; 
-		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<float>(*s++)); break;
-		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<double>(*s++)); break;
-		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<int8_t>(*s++)); break;
-		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<int16_t>(*s++)); break;
-		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<int32_t>(*s++)); break;
+		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = from_string<float>(*s++)); break;
+		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = from_string<double>(*s++)); break;
+		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = from_string<int8_t>(*s++)); break;
+		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int16_t>(*s++)); break;
+		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int32_t>(*s++)); break;
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = lslboost::lexical_cast<int64_t>(*s++)); break;
+		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int64_t>(*s++)); break;
 #endif
 		default: throw std::invalid_argument("Unsupported channel format.");
 	}
@@ -45,13 +45,13 @@ sample &sample::assign_typed(const std::string *s) {
 sample &sample::retrieve_typed(std::string *d) {
 	switch (format_) {
 		case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = *p++); break; 
-		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break; 
-		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break; 
-		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break;
-		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break;
-		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break;
+		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = lslboost::lexical_cast<std::string>(*p++)); break;
+		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
 #endif
 		default: throw std::invalid_argument("Unsupported channel format.");
 	}
@@ -239,7 +239,7 @@ sample &sample::assign_test_pattern(int offset) {
 		case cf_string:{
 			std::string *data = (std::string*)&data_;
 			for (int k=0; k<num_channels_; k++)
-				data[k] = lslboost::lexical_cast<std::string>((k + 10) * (k%2==0 ? 1 : -1));
+				data[k] = to_string((k + 10) * (k%2==0 ? 1 : -1));
 			break;
 					   }
 		case cf_int32: {
