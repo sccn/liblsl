@@ -4,7 +4,7 @@ BOOSTPATH=/tmp/boost_1_69_0
 # Remove the old boost sources
 rm -rf lslboost/{boost,libs}
 # copy all needed boost files and rename all mentions of boost to lslboost
-bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` lslboost/
+bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` lslboost/asio_objects.cpp lslboost/
 # remove superfluous directories:
 rm lslboost/Jamroot
 find lslboost -type d -and \( -name build -o -name test -o -name edg -o -name dmc -o -name msvc70 -o -name msvc60 -o -name bcc* \) -print0 | xargs -0 rm -rf

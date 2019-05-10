@@ -1,5 +1,6 @@
 # Platform-independent sources
 add_library (lslboost STATIC
+	asio_objects.cpp
 	libs/atomic/src/lockpool.cpp
 	libs/chrono/src/chrono.cpp
 	libs/serialization/src/archive_exception.cpp
@@ -36,6 +37,7 @@ target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
 	BOOST_ASIO_ENABLE_OLD_SERVICES
 	BOOST_ASIO_USE_BOOST_DATE_TIME_FOR_SOCKET_IOSTREAM
+	BOOST_ASIO_SEPARATE_COMPILATION
 	_WIN32_WINNT=${LSL_WINVER}
 	BOOST_UUID_RANDOM_PROVIDER_FORCE_WINCRYPT
 	PRIVATE
