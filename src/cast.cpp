@@ -3,17 +3,17 @@
 #include <locale>
 #include <sstream>
 
-template <> std::string lsl::to_string(double src) {
+template <> std::string lsl::to_string(double str) {
 	std::ostringstream os;
 	os.imbue(std::locale::classic());
-	os << std::setprecision(16) << std::showpoint << src;
+	os << std::setprecision(16) << std::showpoint << str;
 	return os.str();
 }
 
-template <> std::string lsl::to_string(float src) {
+template <> std::string lsl::to_string(float str) {
 	std::ostringstream os;
 	os.imbue(std::locale::classic());
-	os << std::setprecision(8) << std::showpoint << src;
+	os << std::setprecision(8) << std::showpoint << str;
 	return os.str();
 }
 
@@ -25,6 +25,6 @@ template <> double lsl::from_string(const std::string &str) {
 	return res;
 }
 
-template <> float lsl::from_string(const std::string &src) {
-	return static_cast<float>(lsl::from_string<double>(src));
+template <> float lsl::from_string(const std::string &str) {
+	return static_cast<float>(lsl::from_string<double>(str));
 }
