@@ -1,17 +1,20 @@
 #include "cast.h"
+#include <iomanip>
 #include <locale>
 #include <sstream>
 
 template <> std::string lsl::to_string(double src) {
 	std::ostringstream os;
 	os.imbue(std::locale::classic());
-	os.precision(12);
-	os << src;
+	os << std::setprecision(16) << std::showpoint << src;
 	return os.str();
 }
 
 template <> std::string lsl::to_string(float src) {
-	return lsl::to_string(static_cast<double>(src));
+	std::ostringstream os;
+	os.imbue(std::locale::classic());
+	os << std::setprecision(8) << std::showpoint << src;
+	return os.str();
 }
 
 template <> double lsl::from_string(const std::string &str) {
