@@ -6,8 +6,8 @@
 set -e -x
 
 # Install system packages required to build liblsl
-PATH=/opt/python/cp37-cp37m/bin:$PATH
-python -m pip install cmake ninja
+PATH=/opt/python/cp37-cp37m/bin:~/.local/bin/:$PATH
+python -m pip install --user cmake ninja
 
 mkdir -p build_manylinux && cd build_manylinux
 
