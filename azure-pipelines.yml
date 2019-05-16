@@ -1,0 +1,27 @@
+trigger:
+- master
+jobs:
+- job: Linux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  steps:
+  - template: ci/azure_build_steps.yml
+- job: Windows
+  pool:
+    vmImage: 'vs2017-win2016'
+  steps:
+  - template: ci/azure_build_steps.yml
+    parameters:
+      cpack: false # cpack points to the wrong cpack
+- job: macOS
+  pool:
+    vmImage: 'macOS-10.14'
+  steps:
+  - template: ci/azure_build_steps.yml
+- job: manylinux
+  pool:
+    vmImage: 'ubuntu-16.04'
+  container: tktechdocker/manylinux:gcc8.3.0
+  steps:
+  - script: bash build_manylinux.sh
+    displayName: 'install prerequisites, build liblsl'

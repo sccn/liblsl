@@ -1,0 +1,23 @@
+parameters:
+  cpack: true
+  conda: false # doesn't work on macOS/Windows for some reason
+steps:
+- task: CMake@1
+  inputs:
+    cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+  displayName: 'Configure build'
+- task: CMake@1
+  inputs:
+    cmakeArgs: '--build . --target install'
+  displayName: 'Build files'
+- ${{ if eq(parameters.conda, 'true') }}:
+  - task: CondaEnvironment@1
+    inputs:
+      packageSpecs: conda-build
+    displayName: set up anaconda
+  - bash: conda build $(Build.SourcesDirectory) --output-folder $(Build.ArtifactStagingDirectory)/conda
+    displayName: 'build conda package'
+- ${{ if eq(parameters.cpack, 'true') }}:
+  - bash: cpack
+    workingDirectory: 'build'
+    displayName: 'create cpack packages'
