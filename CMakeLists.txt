@@ -38,6 +38,7 @@ set (sources
 	src/api_config.h
 	src/cancellable_streambuf.h
 	src/cancellation.h
+	src/cancellation.cpp
 	src/cast.h
 	src/cast.cpp
 	src/common.cpp

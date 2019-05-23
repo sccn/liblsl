@@ -12,6 +12,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
+#include <boost/thread/thread_only.hpp>
 
 using lslboost::asio::ip::udp;
 using lslboost::asio::ip::tcp;

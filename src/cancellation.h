@@ -1,10 +1,9 @@
 #ifndef CANCELLATION_H
 #define CANCELLATION_H
 
-#include <iostream>
 #include <set>
-#include <boost/thread.hpp>
-
+#include <boost/thread/lock_guard.hpp>
+#include <boost/thread/recursive_mutex.hpp>
 
 namespace lsl { 
 	/// Exception class that indicates that an operation was performed on an registry that is being shut down.
@@ -18,7 +17,7 @@ namespace lsl {
 	class cancellable_registry {
 	public:
 		cancellable_registry(): shutdown_issued_(false) {}
-		virtual ~cancellable_registry() {};
+		virtual ~cancellable_registry();
 
 		/// Invoke cancel() on all currently registered objects.
 		void cancel_all_registered();
@@ -55,7 +54,7 @@ namespace lsl {
 		virtual void cancel() { }
 
 		/// Unregister at destruction.
-		virtual ~cancellable_obj() { unregister_from_all(); }
+		virtual ~cancellable_obj();
 
 		/// Register at some registry.
 		/// IMPORTANT: The registry must outlive the cancellable.
@@ -66,15 +65,7 @@ namespace lsl {
 
 		/// IMPORTANT: If your registered cancel() operation may require some resources of your 
 		/// derived class(es), you must call unregister_from_all() *before* you destroy any of these resources...
-		void unregister_from_all() { 
-			try {
-				for (std::set<cancellable_registry*>::iterator i=registered_at_.begin(); i != registered_at_.end(); i++)
-					(*i)->unregister_cancellable(this);
-				registered_at_.clear();
-			} catch(std::exception &e) {
-				std::cerr << "Unexpected error trying to unregister a cancellable object from its registry:" << e.what() << std::endl;
-			}
-		}
+		void unregister_from_all();
 
 	private:
 		// set of registries where we are registered

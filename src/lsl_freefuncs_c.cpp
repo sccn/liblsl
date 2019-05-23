@@ -2,6 +2,7 @@
 #include "common.h"
 #include "resolver_impl.h"
 #include <boost/chrono/system_clocks.hpp>
+#include <iostream>
 
 
 // === Implementation of the free-standing functions in lsl_c.h ===
