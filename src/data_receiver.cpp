@@ -3,6 +3,7 @@
 #include <boost/bind.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/algorithm/string.hpp>
+#include "cancellable_streambuf.h"
 #include "data_receiver.h"
 #include "socket_utils.h"
 

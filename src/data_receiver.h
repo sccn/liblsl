@@ -5,7 +5,7 @@
 #include <boost/thread/thread_only.hpp>
 #include "consumer_queue.h"
 #include "inlet_connection.h"
-#include "cancellable_streambuf.h"
+#include "cancellation.h"
 
 
 

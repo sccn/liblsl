@@ -3,6 +3,7 @@
 
 #include "common.h"
 #include "stream_info_impl.h"
+#include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
