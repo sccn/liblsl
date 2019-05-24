@@ -5,7 +5,10 @@
 #include "stream_info_impl.h"
 #include "cancellation.h"
 #include <map>
-#include <boost/asio.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/udp.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/thread/mutex.hpp>
 

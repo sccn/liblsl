@@ -1,5 +1,8 @@
 #include <iostream>
-#include <boost/asio.hpp>
+#include <boost/asio/ip/host_name.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/write.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/uuid/uuid.hpp>
 #include <boost/uuid/uuid_generators.hpp>

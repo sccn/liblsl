@@ -1,6 +1,7 @@
 #include <iostream>
 #include <istream>
-#include <boost/asio.hpp>
+#include <boost/asio/ip/multicast.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
 #include <boost/functional/hash.hpp>

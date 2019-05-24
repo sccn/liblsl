@@ -1,6 +1,6 @@
 #include "time_receiver.h"
 #include "api_config.h"
-#include <boost/asio.hpp>
+#include <boost/asio/placeholders.hpp>
 #include <iostream>
 #include <boost/bind.hpp>
 #include "socket_utils.h"
