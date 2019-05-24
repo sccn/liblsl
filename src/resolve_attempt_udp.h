@@ -27,8 +27,8 @@ namespace lsl {
 	typedef lslboost::shared_ptr<class resolve_attempt_udp> resolve_attempt_udp_p;
 	/// Pointer to a deadline timer
 	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
-	/// Pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
+	/// Pointer to an io_context
+	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
 
 	/**
@@ -43,7 +43,7 @@ namespace lsl {
 	public:
 		/**
 		* Instantiate and set up a new resolve attempt.
-		* @param io The io_service that will run the async operations.
+		* @param io The io_context that will run the async operations.
 		* @param protocol The protocol (either udp::v4() or udp::v6()) to use for communications; 
 		*				  only the subset of target addresses matching this protocol will be considered.
 		* @param targets A list of udp::endpoint that should be targeted by this query.
@@ -56,7 +56,7 @@ namespace lsl {
 		* @param cancel_after The time duration after which the attempt is automatically cancelled, i.e. the receives are ended.
 		* @param registry A registry where the attempt can register itself as active so it can be cancelled during shutdown.
 		*/
-		resolve_attempt_udp(lslboost::asio::io_service &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after=5.0, cancellable_registry *registry=NULL);
+		resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after=5.0, cancellable_registry *registry=NULL);
 
 		/// Destructor
 		~resolve_attempt_udp();
@@ -96,7 +96,7 @@ namespace lsl {
 
 
 		// data shared with the resolver_impl
-		lslboost::asio::io_service &io_;	// reference to the IO service that executes our actions
+		lslboost::asio::io_context &io_;	// reference to the IO service that executes our actions
 		result_container &results_;		// shared result container
 		lslboost::mutex &results_mut_;		// shared mutex that protects the results
 

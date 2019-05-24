@@ -19,7 +19,7 @@ using namespace lslboost::asio;
 * @param info The stream_info of the stream to serve (shared). After success, the appropriate service port will be assigned.
 * @param protocol The protocol stack to use (tcp::v4() or tcp::v6()).
 */
-udp_server::udp_server(const stream_info_impl_p &info, io_service &io, udp protocol): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(true) {
+udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(true) {
 	// open the socket for the specified protocol
 	socket_->open(protocol);
 
@@ -37,7 +37,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_service &io, udp proto
 * Create a new UDP server in multicast mode.
 * This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast local service discovery.
 */
-udp_server::udp_server(const stream_info_impl_p &info, io_service &io, const std::string &address, int port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
+udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, int port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
 	ip::address addr = ip::address::from_string(address);
 	bool is_broadcast = address=="255.255.255.255";
 

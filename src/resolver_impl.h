@@ -22,8 +22,8 @@ namespace lsl {
 
 	/// Pointer to a deadline timer
 	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
-	/// Pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
+	/// Pointer to an io_context
+	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
 	/**
 	* A stream resolver object.
@@ -123,7 +123,7 @@ namespace lsl {
 		lslboost::mutex results_mut_;						// a mutex that protects the results map
 
 		// io objects
-		io_service_p io_;								// our IO service
+		io_context_p io_;								// our IO service
 		lslboost::shared_ptr<lslboost::thread> background_io_;// a thread that runs background IO if we are performing a resolve_continuous
 		lslboost::asio::deadline_timer resolve_timeout_expired_;	// the overall timeout for a query
 		lslboost::asio::deadline_timer wave_timer_;		// a timer that fires when a new wave should be scheduled

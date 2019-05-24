@@ -16,8 +16,8 @@ namespace lsl {
 
 	/// pointer to a thread
 	typedef lslboost::shared_ptr<lslboost::thread> thread_p;
-	/// pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
+	/// pointer to an io_context
+	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
 	/**
 	* A stream outlet.
@@ -227,8 +227,8 @@ namespace lsl {
 		*/
 		void instantiate_stack(tcp tcp_protocol, udp udp_protocol);
 
-		/// Run the given io_service
-		void run_io(io_service_p &ios);
+		/// Run the given io_context
+		void run_io(io_context_p &ios);
 
 		/**
 		* Allocate and enqueue a new sample into the send buffer.
@@ -254,7 +254,7 @@ namespace lsl {
 		int32_t chunk_size_;							// the preferred chunk size
 		stream_info_impl_p info_;					// stream_info shared between the various server instances
 		send_buffer_p send_buffer_;					// the single-producer, multiple-receiver send buffer
-		std::vector<io_service_p> ios_;				// the IO service objects (two per stack: one for UDP and one for TCP)
+		std::vector<io_context_p> ios_;				// the IO service objects (two per stack: one for UDP and one for TCP)
 
 		std::vector<tcp_server_p> tcp_servers_;		// the threaded TCP data server(s); two if using both IP stacks
 		std::vector<udp_server_p> udp_servers_;		// the UDP timing & ident service(s); two if using both IP stacks

@@ -66,10 +66,10 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	int multicast_ttl = cfg->multicast_ttl();
 	int multicast_port = cfg->multicast_port();
 	// create TCP data server
-	ios_.push_back(io_service_p(new io_service()));
+	ios_.push_back(io_context_p(new io_context()));
 	tcp_servers_.push_back(tcp_server_p(new tcp_server(info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_)));
 	// create UDP time server
-	ios_.push_back(io_service_p(new io_service()));
+	ios_.push_back(io_context_p(new io_context()));
 	udp_servers_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), udp_protocol)));
 	// create UDP multicast responders
 	for (std::vector<std::string>::iterator i=multicast_addrs.begin(); i != multicast_addrs.end(); i++) {
@@ -118,13 +118,13 @@ stream_outlet_impl::~stream_outlet_impl() {
 }
 
 // Run an IO service.
-void stream_outlet_impl::run_io(io_service_p &ios) {
+void stream_outlet_impl::run_io(io_context_p &ios) {
 	while (true) {
 		try {
 			ios->run();
 			return;
 		} catch(std::exception &e) {
-			std::cerr << "Error during io_service processing (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+			std::cerr << "Error during io_context processing (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
 		}
 	}
 }

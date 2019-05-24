@@ -21,7 +21,7 @@ using namespace lslboost::asio;
 * TCP resolves are currently not implemented (but may be at a later time); these are only necessary when UDP traffic is disabled on a particular router.
 */
 resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER), fast_mode_(true),  
-	io_(io_service_p(new io_service())), resolve_timeout_expired_(*io_), wave_timer_(*io_), unicast_timer_(*io_) 
+	io_(io_context_p(new io_context())), resolve_timeout_expired_(*io_), wave_timer_(*io_), unicast_timer_(*io_) 
 {
 	// parse the multicast addresses into endpoints and store them
 	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
@@ -114,7 +114,7 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_.reset(new lslboost::thread(lslboost::bind(&io_service::run,io_)));
+	background_io_.reset(new lslboost::thread(lslboost::bind(&io_context::run,io_)));
 }
 
 /// Get the current set of results (e.g., during continuous operation).

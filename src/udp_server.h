@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "stream_info_impl.h"
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/enable_shared_from_this.hpp>
 
@@ -33,13 +33,13 @@ namespace lsl {
 		* @param info The stream_info of the stream to serve (shared). After success, the appropriate service port will be assigned.
 		* @param protocol The protocol stack to use (tcp::v4() or tcp::v6()).
 		*/
-		udp_server(const stream_info_impl_p &info, lslboost::asio::io_service &io, udp protocol);
+		udp_server(const stream_info_impl_p &info, lslboost::asio::io_context &io, udp protocol);
 
 		/**
 		* Create a new UDP server in multicast mode.
 		* This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast (and optionally unicast) local service discovery.
 		*/
-		udp_server(const stream_info_impl_p &info, lslboost::asio::io_service &io, const std::string &address, int port, int ttl, const std::string &listen_address);
+		udp_server(const stream_info_impl_p &info, lslboost::asio::io_context &io, const std::string &address, int port, int ttl, const std::string &listen_address);
 
 
 		/// Start serving UDP traffic.
@@ -61,7 +61,7 @@ namespace lsl {
 		void handle_send_outcome(string_p replymsg, error_code err);
 
 		stream_info_impl_p info_;			// stream_info reference
-		lslboost::asio::io_service &io_;		// IO service reference
+		lslboost::asio::io_context &io_;		// IO service reference
 		udp_socket_p socket_;				// our socket
 
 		char buffer_[65536];				// a buffer of data (we're receiving on it)

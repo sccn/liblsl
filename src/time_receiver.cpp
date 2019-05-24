@@ -102,7 +102,7 @@ void time_receiver::time_thread() {
 				time_io_.run();
 				break;
 			} catch(std::exception &e) {
-				std::cerr << "Hiccup during time_thread io_service processing: " << e.what() << std::endl;
+				std::cerr << "Hiccup during time_thread io_context processing: " << e.what() << std::endl;
 			}
 		}
 	} catch(std::exception &e) {

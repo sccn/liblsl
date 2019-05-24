@@ -6,7 +6,7 @@
 #include "stream_info_impl.h"
 #include <set>
 #include <iostream>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/enable_shared_from_this.hpp>
@@ -31,8 +31,8 @@ namespace lsl {
 	typedef lslboost::shared_ptr<tcp::acceptor> tcp_acceptor_p;
 	/// shared pointer to a TCP socket
 	typedef lslboost::shared_ptr<class tcp_server> tcp_server_p;
-	/// pointer to an io_service
-	typedef lslboost::shared_ptr<lslboost::asio::io_service> io_service_p;
+	/// pointer to an io_context
+	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
 	/**
 	* The TCP data server.
@@ -54,13 +54,13 @@ namespace lsl {
 		* The latter should ideally not be done before the UDP service port has been
 		* successfully initialized, as well.
 		* @param info A stream_info that is shared with other server objects.
-		* @param io An io_service that is shared with other server objects.
+		* @param io An io_context that is shared with other server objects.
 		* @param sendbuf A send buffer that is shared with other server objects.
 		* @param factory A sample factory that is shared with other server objects.
 		* @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 		* @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 		*/
-		tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size);
+		tcp_server(const stream_info_impl_p &info, const io_context_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size);
 
 		/// Begin serving TCP connections.
 		/// Should not be called before info_ has been fully initialized by all involved parties (tcp_server, udp_server)
@@ -94,7 +94,7 @@ namespace lsl {
 		/**
 		* Active session with a TCP client.
 		* A note on memory ownership:
-		* - Generally, the stream_outlet maintains shared ownership of the tcp_server's, io_service's, and stream_info.
+		* - Generally, the stream_outlet maintains shared ownership of the tcp_server's, io_context's, and stream_info.
 		* - At any point in time there are likely multiple request/handler chains in flight somewhere between the operating system,
 		*   lslboost::asio, and the various handlers below. The handlers are set up such that any memory that may be referred to by them
 		*	in the future is owned (shared) by the handler/callback function objects (this is what is encapsulated by the client_session
@@ -103,12 +103,12 @@ namespace lsl {
 		*   long as there is at least one request chain running.
 		* - There is a per-session transfer thread (transfer_samples_thread) that owns the respective client_session and therefore the 
 		*   TCP server, as well (since it may refer to it); it goes out of scope once the server is being shut down.
-		* - The TCP server and client session also have shared ownership of the io_service (since in some cases some transfer threads
-		*	can outlive the stream outlet, and so the io_service is still kept around until all sockets have been properly released).
+		* - The TCP server and client session also have shared ownership of the io_context (since in some cases some transfer threads
+		*	can outlive the stream outlet, and so the io_context is still kept around until all sockets have been properly released).
 		* - So memory is generally owned by the code (functors and stack frames) that needs to refer to it for the duration of the execution.
 		*/
 		class client_session: public lslboost::enable_shared_from_this<client_session> {
-			typedef lslboost::shared_ptr<lslboost::asio::io_service::work> work_p;
+			typedef lslboost::shared_ptr<lslboost::asio::io_context::work> work_p;
 		public:
 			/// Instantiate a new session & its socket.
 			client_session(const tcp_server_p &serv);
@@ -155,10 +155,10 @@ namespace lsl {
 			bool transfer_completed() const { return transfer_completed_; }
 
 			bool registered_;					// whether we have registered ourselves at the server as active (so we need to unregister ourselves at destruction)
-			io_service_p io_;					// shared pointer to IO service; ensures that the IO is still around by the time the serv_ and sock_ need to be destroyed
+			io_context_p io_;					// shared pointer to IO service; ensures that the IO is still around by the time the serv_ and sock_ need to be destroyed
 			tcp_server_p serv_;					// the server that is associated with this connection
 			tcp_socket_p sock_;					// connection socket
-			work_p work_;						// a RAII class indicating to the owning io_service that there is work to do even if no outstanding handler is present
+			work_p work_;						// a RAII class indicating to the owning io_context that there is work to do even if no outstanding handler is present
 
 			// data used by the transfer thread (and some other handlers)
 			lslboost::asio::streambuf feedbuf_;	// this buffer holds the data feed generated by us
@@ -185,7 +185,7 @@ namespace lsl {
 
 		// data shared with the outlet
 		stream_info_impl_p info_;				// shared stream_info object
-		io_service_p io_;						// shared ptr to IO service; ensures that the IO is still around by the time the acceptor needs to be destroyed
+		io_context_p io_;						// shared ptr to IO service; ensures that the IO is still around by the time the acceptor needs to be destroyed
 		sample::factory_p factory_;				// reference to the sample factory (which owns the samples)
 		send_buffer_p send_buffer_;				// the send buffer, shared with other TCP's and the outlet
 

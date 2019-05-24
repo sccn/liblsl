@@ -28,7 +28,7 @@
 #include <boost/asio/basic_socket.hpp>
 #include <boost/asio/detail/array.hpp>
 #include <boost/asio/detail/throw_error.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/stream_socket_service.hpp>
 
 namespace lslboost {
@@ -36,13 +36,13 @@ namespace lslboost {
 
 		/// Iostream streambuf for a socket.
 		template <typename Protocol, typename StreamSocketService=stream_socket_service<Protocol> >
-		class cancellable_streambuf: public std::streambuf, private lslboost::base_from_member<io_service>, public basic_socket<Protocol, StreamSocketService>, public lsl::cancellable_obj {
+		class cancellable_streambuf: public std::streambuf, private lslboost::base_from_member<io_context>, public basic_socket<Protocol, StreamSocketService>, public lsl::cancellable_obj {
 		public:
 			/// The endpoint type.
 			typedef typename Protocol::endpoint endpoint_type;
 
 			/// Construct a cancellable_streambuf without establishing a connection.
-			cancellable_streambuf(): basic_socket<Protocol, StreamSocketService>(lslboost::base_from_member<lslboost::asio::io_service>::member), cancel_issued_(false), cancel_started_(false) {
+			cancellable_streambuf(): basic_socket<Protocol, StreamSocketService>(lslboost::base_from_member<lslboost::asio::io_context>::member), cancel_issued_(false), cancel_started_(false) {
 				init_buffers();
 			}
 
@@ -63,7 +63,7 @@ namespace lslboost {
 				cancel_issued_ = true;
 				lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
 				cancel_started_ = false;
-				this->get_service().get_io_service().post(lslboost::bind(&cancellable_streambuf::close_if_open,this));
+				this->get_service().get_io_context().post(lslboost::bind(&cancellable_streambuf::close_if_open,this));
 			}
 
 
@@ -85,10 +85,10 @@ namespace lslboost {
 
 					io_handler handler = { this };
 					this->basic_socket<Protocol, StreamSocketService>::async_connect(endpoint, handler);
-					this->get_service().get_io_service().reset();
+					this->get_service().get_io_context().reset();
 				}
 				ec_ = lslboost::asio::error::would_block;
-				do this->get_service().get_io_service().run_one();
+				do this->get_service().get_io_context().run_one();
 				while (!cancel_issued_ && ec_ == lslboost::asio::error::would_block);
 				return !ec_ ? this : 0;
 			}
@@ -122,13 +122,13 @@ namespace lslboost {
 				}
 			}
 
-			/// This function makes sure that a cancellation, if issued, is not being eaten by the io_service reset()
+			/// This function makes sure that a cancellation, if issued, is not being eaten by the io_context reset()
 			void protected_reset() {
 				lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
 				// if the cancel() comes between completion of a run_one() and this call, close will be issued right here at the next opportunity
 				if (cancel_issued_)
 					close_if_open();
-				this->get_service().get_io_service().reset();
+				this->get_service().get_io_context().reset();
 				// if the cancel() comes between this call and a completion of run_one(), the posted close will be processed by the run_one
 			}
 
@@ -141,7 +141,7 @@ namespace lslboost {
 
 					ec_ = lslboost::asio::error::would_block;
 					protected_reset(); // line changed for lsl
-					do this->get_service().get_io_service().run_one();
+					do this->get_service().get_io_context().run_one();
 					while (ec_ == lslboost::asio::error::would_block);
 					if (ec_)
 						return traits_type::eof();
@@ -164,7 +164,7 @@ namespace lslboost {
 						lslboost::asio::buffer(buffer), 0, handler);
 					ec_ = lslboost::asio::error::would_block;
 					protected_reset(); // line changed for lsl
-					do this->get_service().get_io_service().run_one();
+					do this->get_service().get_io_context().run_one();
 					while (ec_ == lslboost::asio::error::would_block);
 					if (ec_)
 						return traits_type::eof();

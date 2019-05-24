@@ -29,12 +29,12 @@ using namespace lslboost::asio;
 * The latter should ideally not be done before the UDP service port has been
 * successfully initialized, as well.
 * @param info A stream_info that is shared with other server objects.
-* @param io An io_service that is shared with other server objects.
+* @param io An io_context that is shared with other server objects.
 * @param sendbuf A send buffer that is shared with other server objects.
 * @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 */
-tcp_server::tcp_server(const stream_info_impl_p &info, const io_service_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size): chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory), send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
+tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size): chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory), send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -394,7 +394,7 @@ void tcp_server::client_session::handle_send_feedheader_outcome(error_code err, 
 		if (!err) {
 			feedbuf_.consume(n);
 			// register outstanding work at the server (will be unregistered at session destruction)
-			work_.reset(new io_service::work(*serv_->io_));
+			work_.reset(new io_context::work(*serv_->io_));
 			// spawn a sample transfer thread
 			lslboost::thread(&client_session::transfer_samples_thread,this,shared_from_this());
 		}

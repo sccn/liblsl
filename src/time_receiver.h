@@ -3,7 +3,7 @@
 
 #include <limits>
 #include <boost/asio/deadline_timer.hpp>
-#include <boost/asio/io_service.hpp>
+#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/random.hpp>
@@ -101,7 +101,7 @@ namespace lsl {
 
 		// data used internally by the background thread
 		const api_config *cfg_;						// the configuration object
-		lslboost::asio::io_service time_io_;			// an IO service for async time operations
+		lslboost::asio::io_context time_io_;			// an IO service for async time operations
 		char recv_buffer_[16384];					// a buffer to hold inbound packet contents
 		lslboost::random::mt19937 rng_;				// a random number generator
 		udp::socket time_sock_;						// the socket through which the time thread communicates

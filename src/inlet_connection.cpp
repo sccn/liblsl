@@ -122,7 +122,7 @@ tcp::endpoint inlet_connection::get_tcp_endpoint() {
         std::string address = host_info_.v6address();
 		std::string port = to_string(host_info_.v6data_port());
 
-        io_service io; 
+        io_context io; 
         ip::tcp::resolver resolver(io);
 		ip::tcp::resolver::query query( address, to_string(port));
         ip::tcp::resolver::iterator it = resolver.resolve(query);
@@ -152,7 +152,7 @@ udp::endpoint inlet_connection::get_udp_endpoint() {
 		std::string address = host_info_.v6address();
 		std::string port = to_string(host_info_.v6service_port());
 
-        io_service io; 
+        io_context io; 
         ip::udp::resolver resolver(io);
 		ip::udp::resolver::query query( address, to_string(port));
         ip::udp::resolver::iterator it = resolver.resolve(query);

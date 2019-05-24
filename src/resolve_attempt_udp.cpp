@@ -18,7 +18,7 @@ using namespace lslboost::asio;
 
 /**
 * Instantiate and set up a new resolve attempt.
-* @param io The io_service that will run the async operations.
+* @param io The io_context that will run the async operations.
 * @param protocol The protocol (either udp::v4() or udp::v6()) to use for communications; 
 *				  only the subset of target addresses matching this protocol will be considered.
 * @param targets A list of udp::endpoint that should be targetd by this query.
@@ -31,7 +31,7 @@ using namespace lslboost::asio;
 * @param cancel_after The time duration after which the attempt is automatically cancelled, i.e. the receives are ended.
 * @param registry A registry where the attempt can register itself as active so it can be cancelled during shutdown.
 */
-resolve_attempt_udp::resolve_attempt_udp(io_service &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry): 
+resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry): 
 	io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after), cancelled_(false), is_v4_(protocol == udp::v4()), protocol_(protocol),
 	targets_(targets), unicast_socket_(io), broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), query_(query), cancel_timer_(io)
 {
