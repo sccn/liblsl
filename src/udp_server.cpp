@@ -2,6 +2,7 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/thread/thread_only.hpp>
 #include "udp_server.h"
 #include "api_config.h"
 #include "socket_utils.h"

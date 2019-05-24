@@ -1,5 +1,6 @@
 #include "stream_outlet_impl.h"
 #include <boost/bind.hpp>
+#include <boost/thread/thread_only.hpp>
 
 // === implementation of the stream_outlet_impl class ===
 

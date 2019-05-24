@@ -4,7 +4,8 @@
 #include <map>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/shared_mutex.hpp>
+#include <boost/thread/thread_only.hpp>
 #include <boost/function.hpp>
 #include "common.h"
 #include "resolver_impl.h"

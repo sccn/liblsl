@@ -2,6 +2,7 @@
 #define STREAM_OUTLET_IMPL_H
 
 #include <boost/container/flat_set.hpp>
+#include <boost/thread/thread_only.hpp>
 #include "tcp_server.h"
 #include "send_buffer.h"
 #include "common.h"

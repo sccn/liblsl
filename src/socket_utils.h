@@ -5,7 +5,7 @@
 #include "api_config.h"
 #include <boost/cstdint.hpp>
 #include <boost/system/system_error.hpp>
-#include <boost/thread/thread.hpp>
+#include <boost/date_time/posix_time/conversion.hpp>
 
 namespace lsl {
 	inline lslboost::posix_time::millisec timeout_sec(double timeout_seconds) {

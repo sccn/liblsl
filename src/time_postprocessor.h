@@ -2,7 +2,7 @@
 #define TIME_POSTPROCESSOR_H
 
 #include <boost/function.hpp>
-#include <boost/thread.hpp>
+#include <boost/thread/mutex.hpp>
 #include "common.h"
 
 
