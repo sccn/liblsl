@@ -1,6 +1,7 @@
 parameters:
   cpack: true
   conda: false # doesn't work on macOS/Windows for some reason
+  run_tests: true
 steps:
 - task: CMake@1
   inputs:
@@ -8,7 +9,7 @@ steps:
   displayName: 'Configure build'
 - task: CMake@1
   inputs:
-    cmakeArgs: '--build . --target install'
+    cmakeArgs: '--build . --config Release -j --target install'
   displayName: 'Build files'
 - ${{ if eq(parameters.conda, 'true') }}:
   - task: CondaEnvironment@1
@@ -21,5 +22,9 @@ steps:
   - bash: cpack
     workingDirectory: 'build'
     displayName: 'create cpack packages'
-- bash: build/install/bin/asiocancel
-  displayName: 'Test asio socket cancellation'
+- ${{ if eq(parameters.run_tests, 'true') }}:
+  - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/Release/* build/; fi
+  - bash: build/asiocancel
+    displayName: 'Test asio socket cancellation'
+  - bash: build/DataType
+    displayName: 'Run data type unit tests'

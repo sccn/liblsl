@@ -208,10 +208,12 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 include(LSLCMake)
 
 if(LSL_UNITTESTS)
+	enable_testing()
 	add_subdirectory(testing/UnitTests)
 	add_executable(asiocancel testing/asiocancel.cpp src/cancellation.cpp)
 	target_link_libraries(asiocancel PRIVATE lslboost)
 	install(TARGETS asiocancel COMPONENT liblsl RUNTIME DESTINATION ${LSLPREFIX}bin)
+	add_test(asiocancel asiocancel)
 endif()
 
 LSLGenerateCPackConfig()

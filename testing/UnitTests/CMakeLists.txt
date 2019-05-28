@@ -20,5 +20,4 @@ add_executable(UnitTests
 target_link_libraries(UnitTests PRIVATE LSL::lsl)
 installLSLApp(UnitTests)
 
-enable_testing()
 add_test(NAME DataTypeTest COMMAND UnitTests)
