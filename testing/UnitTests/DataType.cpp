@@ -107,7 +107,7 @@ TEST_CASE("cf_int32", "[DataType]") {
 	}
 }
 
-
+/*
 //Confirm that cf_int64 is preserved during transmission
 TEST_CASE("cf_int64", "[DataTye]") {
 	std::cout << "cf_int64, [DataType]" << std::endl;
@@ -138,6 +138,7 @@ TEST_CASE("cf_int64", "[DataTye]") {
 
 	}
 }
+*/
 
 //Confirm that cf_int8 multichannel is preserved during transmission
 TEST_CASE("cf_int8 multichannel", "[DataTye]") {
@@ -238,7 +239,7 @@ TEST_CASE("cf_int32 multichannel", "[DataTye]") {
 }
 
 
-
+/*
 //Confirm that cf_int64 multichannel is preserved during transmission
 TEST_CASE("cf_int64 multichannel", "[DataTye]") {
 	std::cout << "cf_int64 multichannel, [DataType]" << std::endl;
@@ -270,6 +271,5 @@ TEST_CASE("cf_int64 multichannel", "[DataTye]") {
 	REQUIRE(received_data == sent_data);
 
 }
-
-
+*/
 
