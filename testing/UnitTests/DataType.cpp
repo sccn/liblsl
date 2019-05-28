@@ -10,7 +10,7 @@ TEST_CASE("cf_int8", "[DataType]") {
 	double timestamps[numBounces][2];
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", 1, lsl::IRREGULAR_RATE, lsl::cf_int8, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
@@ -46,7 +46,7 @@ TEST_CASE("cf_int16", "[DataType]") {
 	double timestamps[numBounces][2];
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", 1, lsl::IRREGULAR_RATE, lsl::cf_int16, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
@@ -82,7 +82,7 @@ TEST_CASE("cf_int32", "[DataType]") {
 	double timestamps[numBounces][2];
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", 1, lsl::IRREGULAR_RATE, lsl::cf_int32, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 
 	lsl::stream_info si = found_stream_info[0];
@@ -115,7 +115,7 @@ TEST_CASE("cf_int64", "[DataTye]") {
 	double timestamps[numBounces][2];
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", 1, lsl::IRREGULAR_RATE, lsl::cf_int64, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
 
@@ -145,7 +145,7 @@ TEST_CASE("cf_int8 multichannel", "[DataTye]") {
 	const int numChannels = 8;
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", numChannels, lsl::IRREGULAR_RATE, lsl::cf_int8, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
 
@@ -178,7 +178,7 @@ TEST_CASE("cf_int16 multichannel", "[DataTye]") {
 	const int numChannels = 16;
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", numChannels, lsl::IRREGULAR_RATE, lsl::cf_int16, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
 
@@ -211,7 +211,7 @@ TEST_CASE("cf_int32 multichannel", "[DataTye]") {
 	const int numChannels = 32;
 
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", numChannels, lsl::IRREGULAR_RATE, lsl::cf_int32, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
 
@@ -245,7 +245,7 @@ TEST_CASE("cf_int64 multichannel", "[DataTye]") {
 	const int numChannels = 64;
 	
 	lsl::stream_outlet outlet(lsl::stream_info("Sender", "Bounce", numChannels, lsl::IRREGULAR_RATE, lsl::cf_int64, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", "Sender");
+	auto found_stream_info = lsl::resolve_stream("name", "Sender", 1, 5.0);
 	REQUIRE(!found_stream_info.empty());
 	lsl::stream_info si = found_stream_info[0];
 
