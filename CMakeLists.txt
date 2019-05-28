@@ -4,6 +4,7 @@ project (LSL
 	LANGUAGES CXX)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_STANDARD 11)
 
 if(NOT CMAKE_DEBUG_POSTFIX)
 	set(CMAKE_DEBUG_POSTFIX -debug)
@@ -208,6 +209,9 @@ include(LSLCMake)
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing/UnitTests)
+	add_executable(asiocancel testing/asiocancel.cpp src/cancellation.cpp)
+	target_link_libraries(asiocancel PRIVATE lslboost)
+	install(TARGETS asiocancel COMPONENT liblsl RUNTIME DESTINATION ${LSLPREFIX}bin)
 endif()
 
 LSLGenerateCPackConfig()

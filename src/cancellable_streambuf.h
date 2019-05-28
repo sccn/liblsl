@@ -30,6 +30,7 @@
 #include <boost/asio/detail/throw_error.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/stream_socket_service.hpp>
+#include <boost/bind/bind.hpp>
 
 namespace lslboost {
 	namespace asio {

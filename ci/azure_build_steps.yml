@@ -4,7 +4,7 @@ parameters:
 steps:
 - task: CMake@1
   inputs:
-    cmakeArgs: '-DCMAKE_BUILD_TYPE=Release ..'
+    cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -DLSL_UNITTESTS=1 -DLSL_UNIXFOLDERS=1 ..'
   displayName: 'Configure build'
 - task: CMake@1
   inputs:
@@ -21,3 +21,5 @@ steps:
   - bash: cpack
     workingDirectory: 'build'
     displayName: 'create cpack packages'
+- bash: build/install/bin/asiocancel
+  displayName: 'Test asio socket cancellation'
