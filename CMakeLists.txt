@@ -209,10 +209,13 @@ include(LSLCMake)
 
 if(LSL_UNITTESTS)
 	enable_testing()
-	add_subdirectory(testing/UnitTests)
-	add_executable(asiocancel testing/asiocancel.cpp src/cancellation.cpp)
+	add_executable(asiocancel testing/UnitTests/asiocancel.cpp src/cancellation.cpp)
 	target_link_libraries(asiocancel PRIVATE lslboost)
-	install(TARGETS asiocancel COMPONENT liblsl RUNTIME DESTINATION ${LSLPREFIX}bin)
+	add_executable(DataType testing/UnitTests/DataType.cpp)
+	target_link_libraries(DataType PRIVATE lsl)
+	install(TARGETS asiocancel DataType
+		COMPONENT liblsl
+		RUNTIME DESTINATION ${LSLPREFIX}bin)
 	add_test(asiocancel asiocancel)
 endif()
 
