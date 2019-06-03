@@ -5,11 +5,11 @@
 #include "api_config.h"
 #include <boost/cstdint.hpp>
 #include <boost/system/system_error.hpp>
-#include <boost/date_time/posix_time/conversion.hpp>
+#include <boost/asio/detail/chrono.hpp>
 
 namespace lsl {
-	inline lslboost::posix_time::millisec timeout_sec(double timeout_seconds) {
-		return lslboost::posix_time::millisec(static_cast<unsigned int>(1000*timeout_seconds));
+	inline lslboost::asio::chrono::milliseconds timeout_sec(double timeout_seconds) {
+		return lslboost::asio::chrono::milliseconds(static_cast<unsigned int>(1000*timeout_seconds));
 	}
 
     /// Bind a socket (or acceptor) to a free port in the configured port range or throw an error otherwise.

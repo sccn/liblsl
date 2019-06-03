@@ -83,7 +83,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 
 	// start a timer that cancels all outstanding IO operations and wave schedules after the timeout has expired
 	if (timeout != FOREVER) {
-		resolve_timeout_expired_.expires_from_now(timeout_sec(timeout));
+		resolve_timeout_expired_.expires_after(timeout_sec(timeout));
 		resolve_timeout_expired_.async_wait(lslboost::bind(&resolver_impl::resolve_timeout_expired,this,placeholders::error));
 	}
 
@@ -152,13 +152,13 @@ void resolver_impl::next_resolve_wave() {
 		udp_multicast_burst();
 		if (!ucast_endpoints_.empty()) {
 			// we have known peer addresses: we spawn a unicast wave and shortly thereafter the next wave
-			unicast_timer_.expires_from_now(timeout_sec(cfg_->multicast_min_rtt()));
+			unicast_timer_.expires_after(timeout_sec(cfg_->multicast_min_rtt()));
 			unicast_timer_.async_wait(lslboost::bind(&resolver_impl::udp_unicast_burst,this,placeholders::error));
-			wave_timer_.expires_from_now(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+(cfg_->multicast_min_rtt()+cfg_->unicast_min_rtt())));
+			wave_timer_.expires_after(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+(cfg_->multicast_min_rtt()+cfg_->unicast_min_rtt())));
 			wave_timer_.async_wait(lslboost::bind(&resolver_impl::wave_timeout_expired,this,placeholders::error));
 		} else {
 			// there are no known peer addresses; just set up the next wave
-			wave_timer_.expires_from_now(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+cfg_->multicast_min_rtt()));
+			wave_timer_.expires_after(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+cfg_->multicast_min_rtt()));
 			wave_timer_.async_wait(lslboost::bind(&resolver_impl::wave_timeout_expired,this,placeholders::error));
 		}
 	}
@@ -222,10 +222,10 @@ void resolver_impl::cancel_ongoing_resolve() {
 	// make sure that ongoing handler loops terminate
 	expired_ = true;
 	// timer fires: cancel the next wave schedule
-	io_->post(lslboost::bind(&deadline_timer::cancel,&wave_timer_));
-	io_->post(lslboost::bind(&deadline_timer::cancel,&unicast_timer_));
+	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&wave_timer_));
+	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&unicast_timer_));
 	// and cancel the timeout, too
-	io_->post(lslboost::bind(&deadline_timer::cancel,&resolve_timeout_expired_));
+	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&resolve_timeout_expired_));
 	// cancel all currently active resolve attempts
 	cancel_all_registered();
 }

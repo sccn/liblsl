@@ -5,7 +5,7 @@
 #include "stream_info_impl.h"
 #include "cancellation.h"
 #include <map>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
@@ -28,8 +28,8 @@ namespace lsl {
 
 	/// Pointer to a UDP resolve attempt.
 	typedef lslboost::shared_ptr<class resolve_attempt_udp> resolve_attempt_udp_p;
-	/// Pointer to a deadline timer
-	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
+	/// Pointer to a steady timer
+	typedef lslboost::shared_ptr<lslboost::asio::steady_timer> steady_timer_p;
 	/// Pointer to an io_context
 	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
@@ -122,7 +122,7 @@ namespace lsl {
 		udp::socket broadcast_socket_;	// socket to send data over (for broadcasts)
 		udp::socket multicast_socket_;	// socket to send data over (for multicasts)
 		udp::socket recv_socket_;		// socket to receive replies (always unicast)
-		lslboost::asio::deadline_timer cancel_timer_;	// timer to schedule the cancel action
+		lslboost::asio::steady_timer cancel_timer_;	// timer to schedule the cancel action
 	};
 
 }

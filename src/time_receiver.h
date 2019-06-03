@@ -2,7 +2,7 @@
 #define TIME_RECEIVER_H
 
 #include <limits>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/thread/mutex.hpp>
@@ -10,7 +10,7 @@
 #include "inlet_connection.h"
 
 using lslboost::asio::ip::udp;
-using lslboost::asio::deadline_timer;
+using lslboost::asio::steady_timer;
 
 namespace lsl {
 
@@ -105,9 +105,9 @@ namespace lsl {
 		char recv_buffer_[16384];					// a buffer to hold inbound packet contents
 		lslboost::random::mt19937 rng_;				// a random number generator
 		udp::socket time_sock_;						// the socket through which the time thread communicates
-		deadline_timer next_estimate_;				// schedule the next time estimate
-		deadline_timer aggregate_results_;			// schedules result aggregation
-		deadline_timer next_packet_;				// schedules the next packet transfer
+		steady_timer next_estimate_;				// schedule the next time estimate
+		steady_timer aggregate_results_;			// schedules result aggregation
+		steady_timer next_packet_;				// schedules the next packet transfer
 		udp::endpoint remote_endpoint_;				// a dummy endpoint
 		estimate_list estimates_;					// a vector of time estimates collected so far during the current exchange
 		estimate_list estimate_times_;              // a vector of the local time and the remote time at a given estimate

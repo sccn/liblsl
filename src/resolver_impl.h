@@ -4,9 +4,9 @@
 #include "common.h"
 #include "api_config.h"
 #include "stream_info_impl.h"
+#include "cancellation.h"
 #include "resolve_attempt_udp.h"
-#include <set>
-#include <boost/asio/deadline_timer.hpp>
+#include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/shared_ptr.hpp>
@@ -20,8 +20,8 @@ using lslboost::system::error_code;
 
 namespace lsl {
 
-	/// Pointer to a deadline timer
-	typedef lslboost::shared_ptr<lslboost::asio::deadline_timer> deadline_timer_p;
+	/// Pointer to a steady timer
+	typedef lslboost::shared_ptr<lslboost::asio::steady_timer> steady_timer_p;
 	/// Pointer to an io_context
 	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
@@ -125,9 +125,9 @@ namespace lsl {
 		// io objects
 		io_context_p io_;								// our IO service
 		lslboost::shared_ptr<lslboost::thread> background_io_;// a thread that runs background IO if we are performing a resolve_continuous
-		lslboost::asio::deadline_timer resolve_timeout_expired_;	// the overall timeout for a query
-		lslboost::asio::deadline_timer wave_timer_;		// a timer that fires when a new wave should be scheduled
-		lslboost::asio::deadline_timer unicast_timer_;		// a timer that fires when the unicast wave should be scheduled
+		lslboost::asio::steady_timer resolve_timeout_expired_;	// the overall timeout for a query
+		lslboost::asio::steady_timer wave_timer_;		// a timer that fires when a new wave should be scheduled
+		lslboost::asio::steady_timer unicast_timer_;		// a timer that fires when the unicast wave should be scheduled
 	};
 
 }

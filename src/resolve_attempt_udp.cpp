@@ -87,7 +87,7 @@ void resolve_attempt_udp::begin() {
 
 	// also initiate the cancel event, if desired
 	if (cancel_after_ != FOREVER) {
-		cancel_timer_.expires_from_now(timeout_sec(cancel_after_));
+		cancel_timer_.expires_after(timeout_sec(cancel_after_));
 		cancel_timer_.async_wait(lslboost::bind(&resolve_attempt_udp::handle_timeout,shared_from_this(),placeholders::error));
 	}
 }

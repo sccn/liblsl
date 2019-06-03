@@ -122,10 +122,10 @@ void time_receiver::start_time_estimation() {
 	send_next_packet(1);
 	receive_next_packet();
 	// schedule the aggregation of results (by the time when all replies should have been received)
-	aggregate_results_.expires_from_now(timeout_sec(cfg_->time_probe_max_rtt() + cfg_->time_probe_interval()*cfg_->time_probe_count()));
+	aggregate_results_.expires_after(timeout_sec(cfg_->time_probe_max_rtt() + cfg_->time_probe_interval()*cfg_->time_probe_count()));
 	aggregate_results_.async_wait(lslboost::bind(&time_receiver::result_aggregation_scheduled,this,placeholders::error));
 	// schedule the next estimation step
-	next_estimate_.expires_from_now(timeout_sec(cfg_->time_update_interval()));
+	next_estimate_.expires_after(timeout_sec(cfg_->time_update_interval()));
 	next_estimate_.async_wait(lslboost::bind(&time_receiver::next_estimate_scheduled,this,placeholders::error));
 }
 
@@ -148,7 +148,7 @@ void time_receiver::send_next_packet(int packet_num) {
 	}
 	// schedule next packet
 	if (packet_num < cfg_->time_probe_count()) {
-		next_packet_.expires_from_now(timeout_sec(cfg_->time_probe_interval()));
+		next_packet_.expires_after(timeout_sec(cfg_->time_probe_interval()));
 		next_packet_.async_wait(lslboost::bind(&time_receiver::next_packet_scheduled,this,++packet_num,placeholders::error));
 	}
 }

@@ -306,8 +306,8 @@ void data_receiver::data_thread() {
 					std::cerr << "Stream transmission broke off (" << e.what() << "); re-connecting..." << std::endl;
 				conn_.try_recover_from_error();
 			}
-            // wait for a few msec so as to not spam the provider with reconnects
-            lslboost::this_thread::sleep(lslboost::posix_time::millisec(500));
+			// wait for a few msec so as to not spam the provider with reconnects
+			lslboost::this_thread::sleep_for(lslboost::chrono::milliseconds(500));
 		}
 	}
 	catch(lost_error &) {
