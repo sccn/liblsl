@@ -111,7 +111,9 @@ endif()
 
 # try to find out which revision is currently checked out
 find_package(Git)
-if(GIT_FOUND)
+if(lslgitrevision AND lslgitbranch)
+	message(STATUS "Got git information ${lslgitrevision}/${lslgitbranch} from the command line")
+elseif(GIT_FOUND)
 	execute_process(
 		COMMAND ${GIT_EXECUTABLE} describe --tags HEAD
 		WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
@@ -183,7 +185,7 @@ endif()
 install(TARGETS lsl
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
-	RUNTIME DESTINATION ${LSLPREFIX}lib
+	RUNTIME DESTINATION ${LSLPREFIX}bin
 	LIBRARY DESTINATION ${LSLPREFIX}lib
 	INCLUDES DESTINATION ${LSLPREFIX}include
 	ARCHIVE DESTINATION ${LSLPREFIX}lib
