@@ -94,7 +94,7 @@ void resolve_attempt_udp::begin() {
 
 /// Post a command to cancel all operations.
 void resolve_attempt_udp::cancel() {
-	io_.post(lslboost::bind(&resolve_attempt_udp::do_cancel,shared_from_this()));
+	post(io_, lslboost::bind(&resolve_attempt_udp::do_cancel, shared_from_this()));
 }
 
 

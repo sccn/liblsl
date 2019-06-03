@@ -222,10 +222,10 @@ void resolver_impl::cancel_ongoing_resolve() {
 	// make sure that ongoing handler loops terminate
 	expired_ = true;
 	// timer fires: cancel the next wave schedule
-	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&wave_timer_));
-	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&unicast_timer_));
+	post(*io_, lslboost::bind(&steady_timer::cancel, &wave_timer_));
+	post(*io_, lslboost::bind(&steady_timer::cancel, &unicast_timer_));
 	// and cancel the timeout, too
-	lslboost::asio::post(*io_, lslboost::bind(&steady_timer::cancel,&resolve_timeout_expired_));
+	post(*io_, lslboost::bind(&steady_timer::cancel, &resolve_timeout_expired_));
 	// cancel all currently active resolve attempts
 	cancel_all_registered();
 }

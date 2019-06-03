@@ -102,7 +102,7 @@ void close_if_open(udp_socket_p sock) {
 /// Initiate teardown of UDP traffic.
 void udp_server::end_serving() {
 	// gracefully close the socket; this will eventually lead to the cancellation of the IO operation(s) tied to its socket
-	io_.post(lslboost::bind(&close_if_open, socket_));
+	post(io_, lslboost::bind(&close_if_open, socket_));
 }
 
 

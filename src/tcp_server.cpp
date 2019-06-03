@@ -79,7 +79,7 @@ void tcp_server::end_serving() {
 	// the shutdown flag informs the transfer thread that we're shutting down
 	shutdown_ = true;
 	// issue closure of the server socket; this will result in a cancellation of the associated IO operations
-	io_->post(lslboost::bind(&tcp::acceptor::close,acceptor_));
+	post(*io_, lslboost::bind(&tcp::acceptor::close, acceptor_));
 	// issue closure of all active client session sockets; cancels the related outstanding IO jobs
 	close_inflight_sockets();
 	// also notify any transfer threads that are blocked waiting for a sample by sending them one (= a ping)
@@ -147,7 +147,7 @@ template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock
 void tcp_server::close_inflight_sockets() {
 	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
 	for (std::set<tcp_socket_p>::iterator i=inflight_.begin(); i!=inflight_.end(); i++)
-		io_->post(lslboost::bind(&shutdown_and_close<tcp_socket_p,tcp>,*i));
+		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, *i));
 }
 
 
