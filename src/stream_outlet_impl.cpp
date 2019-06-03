@@ -75,7 +75,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	for (std::vector<std::string>::iterator i=multicast_addrs.begin(); i != multicast_addrs.end(); i++) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
-			ip::address address(ip::address::from_string(*i));
+			ip::address address(ip::make_address(*i));
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
 				responders_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), *i, multicast_port, multicast_ttl, listen_address)));
 		} catch(std::exception &e) {
