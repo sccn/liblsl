@@ -124,15 +124,12 @@ tcp::endpoint inlet_connection::get_tcp_endpoint() {
 
         io_context io; 
         ip::tcp::resolver resolver(io);
-		ip::tcp::resolver::query query( address, to_string(port));
-        ip::tcp::resolver::iterator it = resolver.resolve(query);
-        ip::tcp::resolver::iterator end;
-        
-        if(it == end) {
+		ip::tcp::resolver::results_type res = resolver.resolve(address, port);
+		if(res.size() == 0) {
             throw lost_error("Unable to resolve tcp stream at address: " + address + ", port: " + port);
         }
         //assuming first (typically only) element in list is valid.
-        return *it;
+		return *res.begin();
     }
 }
 
@@ -154,15 +151,13 @@ udp::endpoint inlet_connection::get_udp_endpoint() {
 
         io_context io; 
         ip::udp::resolver resolver(io);
-		ip::udp::resolver::query query( address, to_string(port));
-        ip::udp::resolver::iterator it = resolver.resolve(query);
-        ip::udp::resolver::iterator end;
-        
-        if(it == end) {
+		ip::udp::resolver::results_type res = resolver.resolve(address, port);
+
+		if(res.size() == 0) {
              throw lost_error("Unable to resolve udp stream at address: " + address + ", port: " + port);
         }
         //assuming first (typically only) element in list is valid.
-        return *it;
+		return *res.begin();
     }
 }
 

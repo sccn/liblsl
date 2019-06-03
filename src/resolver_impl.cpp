@@ -41,9 +41,9 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
     for (std::size_t k=0;k<peers.size();k++) {
         try {
             // resolve the name
-			udp::resolver::query q(peers[k], to_string(cfg_->base_port()));
+			udp::resolver::results_type res = udp_resolver.resolve(peers[k], to_string(cfg_->base_port()));
             // for each endpoint...
-            for (udp::resolver::iterator i=udp_resolver.resolve(q); i != udp::resolver::iterator(); i++) {
+			for (udp::resolver::results_type::iterator i=res.begin(); i != res.end(); i++) {
                 // for each port in the range...
                 for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
                     // add a record
