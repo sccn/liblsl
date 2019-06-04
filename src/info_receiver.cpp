@@ -54,7 +54,7 @@ void info_receiver::info_thread() {
 		while (!conn_.lost() && !conn_.shutdown()) {
 			try {
 				// make a new stream buffer & stream
-				lslboost::asio::cancellable_streambuf<tcp> buffer;
+				cancellable_streambuf buffer;
 				buffer.register_at(&conn_);
 				std::iostream server_stream(&buffer);
 				// connect...

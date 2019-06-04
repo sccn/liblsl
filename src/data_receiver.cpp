@@ -140,7 +140,7 @@ void data_receiver::data_thread() {
 				// --- connection setup ---
 
 				// make a new stream buffer and a stream on top of it
-				lslboost::asio::cancellable_streambuf<tcp> buffer;
+				cancellable_streambuf buffer;
 				buffer.register_at(&conn_);
 				buffer.register_at(this);
 				std::iostream server_stream(&buffer);

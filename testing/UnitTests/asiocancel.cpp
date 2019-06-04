@@ -11,7 +11,7 @@
 namespace asio = lslboost::asio;
 namespace ip = lslboost::asio::ip;
 using lslboost::system::error_code;
-typedef lslboost::asio::cancellable_streambuf<ip::tcp> cancellable_streambuf;
+typedef lsl::cancellable_streambuf cancellable_streambuf;
 
 const uint16_t port = 28812;
 

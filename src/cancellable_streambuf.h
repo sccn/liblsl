@@ -29,21 +29,24 @@
 #include <boost/asio/detail/array.hpp>
 #include <boost/asio/detail/throw_error.hpp>
 #include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/stream_socket_service.hpp>
 #include <boost/bind/bind.hpp>
 
-namespace lslboost {
-	namespace asio {
+using lslboost::asio::ip::tcp;
+using lslboost::asio::io_context;
+using lslboost::asio::basic_socket;
 
+namespace lsl {
+	typedef tcp Protocol;
 		/// Iostream streambuf for a socket.
-		template <typename Protocol, typename StreamSocketService=stream_socket_service<Protocol> >
-		class cancellable_streambuf: public std::streambuf, private lslboost::base_from_member<io_context>, public basic_socket<Protocol, StreamSocketService>, public lsl::cancellable_obj {
+		class cancellable_streambuf: public std::streambuf, private lslboost::base_from_member<io_context>, public basic_socket<Protocol>, public lsl::cancellable_obj {
 		public:
 			/// The endpoint type.
 			typedef typename Protocol::endpoint endpoint_type;
 
 			/// Construct a cancellable_streambuf without establishing a connection.
-			cancellable_streambuf(): basic_socket<Protocol, StreamSocketService>(lslboost::base_from_member<lslboost::asio::io_context>::member), cancel_issued_(false), cancel_started_(false) {
+			cancellable_streambuf(): basic_socket<Protocol>(lslboost::base_from_member<lslboost::asio::io_context>::member), cancel_issued_(false), cancel_started_(false) {
 				init_buffers();
 			}
 
@@ -75,17 +78,17 @@ namespace lslboost {
 			* @return \c this if a connection was successfully established, a null
 			* pointer otherwise.
 			*/
-			cancellable_streambuf<Protocol, StreamSocketService>* connect(const endpoint_type& endpoint) {
+			cancellable_streambuf* connect(const endpoint_type& endpoint) {
 				{
 					lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
 					if (cancel_issued_)
 						throw std::runtime_error("Attempt to connect() a cancellable_streambuf after it has been cancelled.");
 
 					init_buffers();
-					this->basic_socket<Protocol, StreamSocketService>::close(ec_);
+					this->basic_socket<Protocol>::close(ec_);
 
 					io_handler handler = { this };
-					this->basic_socket<Protocol, StreamSocketService>::async_connect(endpoint, handler);
+					this->basic_socket<Protocol>::async_connect(endpoint, handler);
 					this->get_service().get_io_context().reset();
 				}
 				ec_ = lslboost::asio::error::would_block;
@@ -99,9 +102,9 @@ namespace lslboost {
 			* @return \c this if a connection was successfully established, a null
 			* pointer otherwise.
 			*/
-			cancellable_streambuf<Protocol, StreamSocketService>* close() {
+			cancellable_streambuf* close() {
 				sync();
-				this->basic_socket<Protocol, StreamSocketService>::close(ec_);
+				this->basic_socket<Protocol>::close(ec_);
 				if (!ec_)
 					init_buffers();
 				return !ec_ ? this : 0;
@@ -225,9 +228,7 @@ namespace lslboost {
 			bool cancel_started_;
 			lslboost::recursive_mutex cancel_mut_;
 		};
-
-	} // namespace asio
-} // namespace lslboost
+} // namespace lsl
 
 #endif // CANCELLABLE_STREAMBUF_HPP
 
