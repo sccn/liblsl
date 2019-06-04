@@ -1,5 +1,5 @@
 # Platform-independent sources
-add_library (lslboost STATIC
+add_library(lslboost OBJECT
 	asio_objects.cpp
 	libs/atomic/src/lockpool.cpp
 	libs/chrono/src/chrono.cpp
@@ -20,9 +20,9 @@ if (UNIX)
 		libs/thread/src/pthread/thread.cpp
 	)
 	find_package(Threads REQUIRED)
-	target_link_libraries(lslboost PRIVATE Threads::Threads)
+	target_link_libraries(lslboost PUBLIC Threads::Threads)
 	if(NOT APPLE AND NOT CMAKE_ANDROID_ARCH_ABI)
-		target_link_libraries(lslboost PRIVATE rt)
+		target_link_libraries(lslboost PUBLIC rt)
 	endif()
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
@@ -39,7 +39,7 @@ else ()  # WIN32
 		BOOST_THREAD_BUILD_DLL
 	)
 	if(MINGW)
-		target_link_libraries(lslboost PRIVATE wsock32 ws2_32 winmm)
+		target_link_libraries(lslboost PUBLIC wsock32 ws2_32 winmm)
 	endif()
 endif ()
 
@@ -47,18 +47,8 @@ target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
 	BOOST_ASIO_SEPARATE_COMPILATION
 )
-
-target_include_directories(lslboost SYSTEM PUBLIC
+target_include_directories(lslboost PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
-set_target_properties(lslboost PROPERTIES
-	CXX_VISIBILITY_PRESET hidden
-	POSITION_INDEPENDENT_CODE On
-)
-
-# gcc 5 needs -std=c++0x to compile lslboost
-if(NOT MSVC)
-  target_compile_features(lslboost PRIVATE cxx_auto_type)
-endif ()
 
 export(TARGETS lslboost
 	FILE lslboostConfig.cmake)

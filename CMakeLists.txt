@@ -1,9 +1,10 @@
-cmake_minimum_required (VERSION 3.5)
+cmake_minimum_required (VERSION 3.12)
 project (LSL
 	VERSION 1.13.0
 	LANGUAGES C CXX)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
+set(CMAKE_POSITION_INDEPENDENT_CODE On)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -12,31 +13,16 @@ if(NOT CMAKE_DEBUG_POSTFIX)
 endif()
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
-option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI" OFF)
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
-
-# lsl uses boost, but several other projects (e.g. Matlab) also use boost.
-# To prevent clashes with different boost versions, lsl ships a subset of
-# boost with renamed symbols (lslboost::xy instead of boost::xy)
-# If you need a specific boost version, you can put it in a subdirectory
-# and add a CMakeLists.txt that exports the lslboost target
-# (see lslboost/CMakeLists.txt for an example).
-set(LSL_LSLBOOST_PATH "lslboost" CACHE STRING "Subdirectory with lslboost")
-if(${LSL_LSLBOOST_PATH} STREQUAL "external")
-	set(LSL_LSLBOOST_PATH "lslboost")
-	message(WARNING "The old boost in external was removed, switching to lslboost.")
-endif()
-
-
-# Build static library
-option (LSL_BUILD_STATIC "Also build static LSL library." OFF)
+option(LSL_BUILD_STATIC "Also build static LSL library." OFF)
+option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
+option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
-option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
-
-set (sources
+# Add an object library so all files are only compiled once
+add_library(lslobj OBJECT
 	src/api_config.cpp
 	src/api_config.h
 	src/cancellable_streambuf.h
@@ -97,10 +83,11 @@ if(LSL_LEGACY_CPP_ABI)
 endif()
 
 set(headers
-	include/lsl_c.h
-	include/lsl_constants.h
-	include/lsl_cpp.h
+	${CMAKE_CURRENT_LIST_DIR}/include/lsl_c.h
+	${CMAKE_CURRENT_LIST_DIR}/include/lsl_constants.h
+	${CMAKE_CURRENT_LIST_DIR}/include/lsl_cpp.h
 )
+target_sources(lslobj PRIVATE ${headers})
 
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(lslplatform 64)
@@ -138,46 +125,34 @@ endif()
 set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}/boost:\" BOOST_LIB_VERSION")
 set_source_files_properties("src/lsl_freefuncs_c.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
 
-set(target lsl)
+## create the lslboost target
+add_subdirectory(lslboost)
 
-add_subdirectory(${LSL_LSLBOOST_PATH})
-
-# common definitions for the lsl and lsl-static
-function(lsllib_properties libname)
-	target_link_libraries(${libname} PRIVATE lslboost)
-	target_include_directories(${libname}
-		INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-	)
-	set_target_properties(${libname} PROPERTIES
-		POSITION_INDEPENDENT_CODE On
-		CXX_VISIBILITY_PRESET hidden)
-	target_compile_definitions(${libname} PRIVATE
-		LIBLSL_EXPORTS
-		_SCL_SECURE_NO_WARNINGS _CRT_SECURE_NO_WARNINGS
-		PUBLIC
-		LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-	)
-	if(NOT MSVC)
-		target_compile_features(${libname} PRIVATE cxx_auto_type)
-	endif()
-endfunction()
+target_link_libraries(lslobj PRIVATE lslboost)
+target_include_directories(lslobj
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
+target_compile_definitions(lslobj
+	PRIVATE LIBLSL_EXPORTS _SCL_SECURE_NO_WARNINGS _CRT_SECURE_NO_WARNINGS
+	PRIVATE $<TARGET_PROPERTY:lslboost,INTERFACE_COMPILE_DEFINITIONS>
+	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
+)
+target_compile_features(lslobj PUBLIC cxx_auto_type)
 
 # shared library
-add_library(${target} SHARED ${sources} ${headers})
-lsllib_properties(${target})
-set_target_properties(${target} PROPERTIES
+add_library(lsl SHARED)
+target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
+set_target_properties(lsl PROPERTIES
 	VERSION ${LSL_VERSION_MAJOR}.${LSL_VERSION_MINOR}.${LSL_VERSION_PATCH}
 	PREFIX ""
-	OUTPUT_NAME "lib${target}${lslplatform}"
+	OUTPUT_NAME "liblsl${lslplatform}"
 )
 
-if(${LSL_BUILD_STATIC})
-	add_library(${target}-static ${sources} ${headers})
-	lsllib_properties(${target}-static)
+if(${LSL_UNITTESTS})
+	add_library(lsl-static STATIC)
+	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
-	target_compile_definitions(${target}-static PUBLIC LIBLSL_STATIC)
-	set_target_properties(${target}-static PROPERTIES
-		OUTPUT_NAME "${target}${lslplatform}-static")
+	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
 endif()
 
 if(LSL_UNIXFOLDERS)
@@ -189,7 +164,7 @@ endif()
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
-install(TARGETS lsl lslver
+install(TARGETS lsl lslobj lslver
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
