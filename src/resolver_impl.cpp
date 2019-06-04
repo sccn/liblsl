@@ -72,7 +72,7 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
 */
 std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &query, int minimum, double timeout, double minimum_time) {
 	// reset the IO service & set up the query parameters
-	io_->reset();
+	io_->restart();
 	query_ = query;
 	minimum_ = minimum;
 	wait_until_ = lsl_clock() + minimum_time;
@@ -104,7 +104,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 
 void resolver_impl::resolve_continuous(const std::string &query, double forget_after) {
 	// reset the IO service & set up the query parameters
-	io_->reset();
+	io_->restart();
 	query_ = query;
 	minimum_ = 0;
 	wait_until_ = 0;

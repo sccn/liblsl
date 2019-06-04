@@ -397,7 +397,7 @@ void tcp_server::client_session::handle_send_feedheader_outcome(error_code err, 
 		if (!err) {
 			feedbuf_.consume(n);
 			// register outstanding work at the server (will be unregistered at session destruction)
-			work_.reset(new io_context::work(*serv_->io_));
+			work_.reset(new work_p::element_type(serv_->io_->get_executor()));
 			// spawn a sample transfer thread
 			lslboost::thread(&client_session::transfer_samples_thread,this,shared_from_this());
 		}
