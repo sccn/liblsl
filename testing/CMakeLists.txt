@@ -41,7 +41,7 @@ if(TARGET lsl-static)
 	add_executable(lsl_test_internal
 			asiocancel.cpp
 	)
-	target_link_libraries(lsl_test_internal PRIVATE lsl-static lslboost gtest_main)
+	target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost gtest_main)
 	list(APPEND LSL_TESTS lsl_test_internal)
 else()
 	message(WARNING "Skipping internal tests because the static library isn't build")
