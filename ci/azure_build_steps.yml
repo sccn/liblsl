@@ -27,5 +27,5 @@ steps:
     displayName: 'create cpack packages'
 - ${{ if eq(parameters.run_tests, 'true') }}:
   - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/testing/Release/* build/testing; fi
-  - bash: build/testing/UnitTests
+  - bash: build/testing/UnitTests --gtest_shuffle --gtest_output=xml
     displayName: 'Run unit tests'
