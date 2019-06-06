@@ -125,8 +125,57 @@ endif()
 set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}/boost:\" BOOST_LIB_VERSION")
 set_source_files_properties("src/lsl_freefuncs_c.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
 
+
 ## create the lslboost target
-add_subdirectory(lslboost)
+add_library(lslboost OBJECT
+	lslboost/asio_objects.cpp
+	lslboost/libs/atomic/src/lockpool.cpp
+	lslboost/libs/chrono/src/chrono.cpp
+	lslboost/libs/serialization/src/archive_exception.cpp
+	lslboost/libs/serialization/src/basic_archive.cpp
+	lslboost/libs/serialization/src/basic_iarchive.cpp
+	lslboost/libs/serialization/src/basic_iserializer.cpp
+	lslboost/libs/serialization/src/basic_oarchive.cpp
+	lslboost/libs/serialization/src/basic_oserializer.cpp
+	lslboost/libs/serialization/src/basic_serializer_map.cpp
+	lslboost/libs/serialization/src/extended_type_info.cpp
+	lslboost/libs/serialization/src/extended_type_info_typeid.cpp
+	lslboost/libs/serialization/src/void_cast.cpp
+)
+if (UNIX)
+	target_sources(lslboost PRIVATE
+		lslboost/libs/thread/src/pthread/once.cpp
+		lslboost/libs/thread/src/pthread/thread.cpp
+	)
+	find_package(Threads REQUIRED)
+	target_link_libraries(lslboost PUBLIC Threads::Threads)
+else ()  # WIN32
+	target_sources(lslboost PRIVATE
+		lslboost/libs/serialization/src/codecvt_null.cpp
+		lslboost/libs/thread/src/win32/thread.cpp
+		lslboost/libs/thread/src/win32/tss_dll.cpp
+		lslboost/libs/thread/src/win32/tss_pe.cpp
+	)
+        target_link_libraries(lslboost PRIVATE bcrypt)
+        target_compile_definitions(lslboost
+        PUBLIC
+                _WIN32_WINNT=${LSL_WINVER}
+        PRIVATE
+                BOOST_THREAD_BUILD_DLL
+        )
+	if(MINGW)
+		target_link_libraries(lslboost PUBLIC wsock32 ws2_32 winmm)
+	endif()
+endif ()
+
+target_compile_definitions(lslboost PUBLIC
+	BOOST_ALL_NO_LIB
+	BOOST_ASIO_SEPARATE_COMPILATION
+)
+target_include_directories(lslboost PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
+
+
 
 target_link_libraries(lslobj PRIVATE lslboost)
 target_include_directories(lslobj
@@ -137,7 +186,9 @@ target_compile_definitions(lslobj
 	PRIVATE $<TARGET_PROPERTY:lslboost,INTERFACE_COMPILE_DEFINITIONS>
 	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 )
-target_compile_features(lslobj PUBLIC cxx_auto_type)
+if(NOT MSVC_VERSION VERSION_LESS 1700)
+	target_compile_features(lslobj PUBLIC cxx_auto_type)
+endif()
 
 # shared library
 add_library(lsl SHARED)
@@ -164,7 +215,7 @@ endif()
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
-install(TARGETS lsl lslobj lslver
+install(TARGETS lsl lslobj lslboost lslver
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
