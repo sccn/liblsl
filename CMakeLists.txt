@@ -167,11 +167,11 @@ set_target_properties(${target} PROPERTIES
 	OUTPUT_NAME "lib${target}${lslplatform}"
 )
 
-if(${LSL_BUILD_STATIC})
+if(${LSL_BUILD_STATIC} OR ${LSL_UNITTESTS})
 	add_library(${target}-static ${sources} ${headers})
 	lsllib_properties(${target}-static)
 	# for LSL_CPP_API export header
-	target_compile_definitions(${target}-static PRIVATE LIBLSL_STATIC)
+	target_compile_definitions(${target}-static PUBLIC_HEADER LIBLSL_STATIC)
 	set_target_properties(${target}-static PROPERTIES
 		OUTPUT_NAME "${target}${lslplatform}-static")
 endif()
@@ -210,15 +210,7 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
 include(LSLCMake)
 
 if(LSL_UNITTESTS)
-	enable_testing()
-	add_executable(asiocancel testing/UnitTests/asiocancel.cpp src/cancellation.cpp)
-	target_link_libraries(asiocancel PRIVATE lslboost)
-	add_executable(DataType testing/UnitTests/DataType.cpp)
-	target_link_libraries(DataType PRIVATE lsl)
-	install(TARGETS asiocancel DataType
-		COMPONENT liblsl
-		RUNTIME DESTINATION ${LSLPREFIX}bin)
-	add_test(asiocancel asiocancel)
+	add_subdirectory(testing)
 endif()
 
 LSLGenerateCPackConfig()

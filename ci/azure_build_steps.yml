@@ -5,6 +5,9 @@ parameters:
 steps:
 - task: CMake@1
   inputs:
+    cmakeArgs: '--version'
+- task: CMake@1
+  inputs:
     cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -DLSL_UNITTESTS=1 -DLSL_UNIXFOLDERS=1 ..'
   displayName: 'Configure build'
 - task: CMake@1
@@ -23,8 +26,6 @@ steps:
     workingDirectory: 'build'
     displayName: 'create cpack packages'
 - ${{ if eq(parameters.run_tests, 'true') }}:
-  - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/Release/* build/; fi
-  - bash: build/asiocancel
-    displayName: 'Test asio socket cancellation'
-  - bash: build/DataType
-    displayName: 'Run data type unit tests'
+  - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/testing/Release/* build/testing; fi
+  - bash: build/testing/UnitTests
+    displayName: 'Run unit tests'

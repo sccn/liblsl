@@ -1,4 +1,5 @@
 #include "../src/cancellable_streambuf.h"
+#include "gtest/gtest.h"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <chrono>
@@ -53,7 +54,7 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	}
 }
 
-void test_connect() {
+TEST(asiocancel,connect) {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_connect;
 	std::cout << "Thread 0: Binding remote socket and keeping it busy…" << std::endl;
@@ -84,7 +85,7 @@ void test_connect() {
 	remote.close();
 }
 
-void test_read() {
+TEST(asiocancel,read) {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_read;
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port + 1);
@@ -102,14 +103,4 @@ void test_read() {
 			std::cout << "Thread 1: Read char " << c << std::endl;
 		},
 		sb_read);
-}
-
-int main(int argc, char **argv) {
-	try {
-		test_connect();
-		test_read();
-	} catch (std::exception &e) {
-		std::cout << e.what() << std::endl;
-		return 1;
-	}
 }
