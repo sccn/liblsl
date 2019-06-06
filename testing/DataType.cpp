@@ -11,7 +11,7 @@ template <typename T> void test_DataType(const char *name, lsl::channel_format_t
 		lsl::stream_info(name, "Bounce", 1, lsl::IRREGULAR_RATE, cf, "streamid"));
 	auto found_stream_info = lsl::resolve_stream("name", name, 1, 5.0);
 
-	EXPECT_FALSE(found_stream_info.empty());
+	ASSERT_GT(found_stream_info.size(), 0);
 	lsl::stream_info si = found_stream_info[0];
 
 	lsl::stream_inlet inlet(si);
@@ -45,7 +45,7 @@ template <typename T> void test_DataTypeMulti(const char *name, lsl::channel_for
 		lsl::stream_info(name, "Bounce", numChannels, lsl::IRREGULAR_RATE, cf, "streamid"));
 	auto found_stream_info = lsl::resolve_stream("name", name, 1, 5.0);
 
-	EXPECT_FALSE(found_stream_info.empty());
+	ASSERT_GT(found_stream_info.size(), 0);
 	lsl::stream_info si = found_stream_info[0];
 
 	lsl::stream_inlet inlet(si);
