@@ -27,9 +27,10 @@ steps:
     displayName: 'create cpack packages'
 - ${{ if eq(parameters.run_tests, 'true') }}:
   - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/testing/Release/* build/testing; fi
-  - bash: build/testing/UnitTests --gtest_shuffle --gtest_output=xml || true
+  - bash: build/testing/UnitTests --gtest_shuffle --gtest_output=xml:test_$(Agent.JobName).xml || true
     displayName: 'Run unit tests'
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
-      testResultsFiles: 'test_detail.xml'
+      testResultsFiles: 'test_*.xml'
+      failTaskOnFailedTests: true
