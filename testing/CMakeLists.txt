@@ -28,6 +28,8 @@ enable_testing()
 add_executable(UnitTests
 	DataType.cpp
 	asiocancel.cpp
+	discovery.cpp
+	timesync.cpp
 )
 add_test(NAME UnitTests COMMAND UnitTests)
 target_link_libraries(UnitTests lsl-static lslboost gtest_main)
