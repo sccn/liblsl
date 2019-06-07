@@ -18,9 +18,11 @@
 
 #if BOOST_WINAPI_PARTITION_APP_SYSTEM
 
+#include <boost/winapi/detail/header.hpp>
+
 #if !defined( BOOST_USE_WINDOWS_H )
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 GetThreadTimes(
     lslboost::winapi::HANDLE_ hThread,
     ::_FILETIME* lpCreationTime,
@@ -50,6 +52,8 @@ BOOST_FORCEINLINE BOOL_ GetThreadTimes(
 
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_WINAPI_PARTITION_APP_SYSTEM
 #endif // BOOST_WINAPI_GET_THREAD_TIMES_HPP_INCLUDED_

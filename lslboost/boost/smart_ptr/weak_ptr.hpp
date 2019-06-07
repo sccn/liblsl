@@ -13,10 +13,11 @@
 //  See http://www.boost.org/libs/smart_ptr/ for documentation.
 //
 
-#include <memory> // boost.TR1 include order fix
 #include <boost/smart_ptr/detail/shared_count.hpp>
 #include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/smart_ptr/detail/sp_noexcept.hpp>
+#include <memory>
+#include <cstddef>
 
 namespace lslboost
 {
@@ -137,6 +138,23 @@ public:
         lslboost::detail::sp_assert_convertible< Y, T >();
     }
 
+    // aliasing
+    template<class Y> weak_ptr(shared_ptr<Y> const & r, element_type * p) BOOST_SP_NOEXCEPT: px( p ), pn( r.pn )
+    {
+    }
+
+    template<class Y> weak_ptr(weak_ptr<Y> const & r, element_type * p) BOOST_SP_NOEXCEPT: px( p ), pn( r.pn )
+    {
+    }
+
+#if !defined( BOOST_NO_CXX11_RVALUE_REFERENCES )
+
+    template<class Y> weak_ptr(weak_ptr<Y> && r, element_type * p) BOOST_SP_NOEXCEPT: px( p ), pn( std::move( r.pn ) )
+    {
+    }
+
+#endif
+
 #if !defined(BOOST_MSVC) || (BOOST_MSVC >= 1300)
 
     template<class Y>
@@ -194,6 +212,11 @@ public:
         return pn.empty();
     }
 
+    bool empty() const BOOST_SP_NOEXCEPT // extension, not in std::weak_ptr
+    {
+        return pn.empty();
+    }
+
     void reset() BOOST_SP_NOEXCEPT
     {
         this_type().swap(*this);
@@ -205,13 +228,6 @@ public:
         pn.swap(other.pn);
     }
 
-    template<typename Y>
-    void _internal_aliasing_assign(weak_ptr<Y> const & r, element_type * px2) BOOST_SP_NOEXCEPT
-    {
-        px = px2;
-        pn = r.pn;
-    }
-
     template<class Y> bool owner_before( weak_ptr<Y> const & rhs ) const BOOST_SP_NOEXCEPT
     {
         return pn < rhs.pn;
@@ -220,6 +236,21 @@ public:
     template<class Y> bool owner_before( shared_ptr<Y> const & rhs ) const BOOST_SP_NOEXCEPT
     {
         return pn < rhs.pn;
+    }
+
+    template<class Y> bool owner_equals( weak_ptr<Y> const & rhs ) const BOOST_SP_NOEXCEPT
+    {
+        return pn == rhs.pn;
+    }
+
+    template<class Y> bool owner_equals( shared_ptr<Y> const & rhs ) const BOOST_SP_NOEXCEPT
+    {
+        return pn == rhs.pn;
+    }
+
+    std::size_t owner_hash_value() const BOOST_SP_NOEXCEPT
+    {
+        return pn.hash_value();
     }
 
 // Tasteless as this may seem, making all members public allows member templates
@@ -249,6 +280,46 @@ template<class T> void swap(weak_ptr<T> & a, weak_ptr<T> & b) BOOST_SP_NOEXCEPT
     a.swap(b);
 }
 
+#if defined(__cpp_deduction_guides)
+
+template<class T> weak_ptr( shared_ptr<T> ) -> weak_ptr<T>;
+
+#endif
+
+// hash_value
+
+template< class T > std::size_t hash_value( lslboost::weak_ptr<T> const & p ) BOOST_SP_NOEXCEPT
+{
+    return p.owner_hash_value();
+}
+
 } // namespace lslboost
+
+// std::hash, std::equal_to
+
+namespace std
+{
+
+#if !defined(BOOST_NO_CXX11_HDR_FUNCTIONAL)
+
+template<class T> struct hash< ::lslboost::weak_ptr<T> >
+{
+    std::size_t operator()( ::lslboost::weak_ptr<T> const & p ) const BOOST_SP_NOEXCEPT
+    {
+        return p.owner_hash_value();
+    }
+};
+
+#endif // #if !defined(BOOST_NO_CXX11_HDR_FUNCTIONAL)
+
+template<class T> struct equal_to< ::lslboost::weak_ptr<T> >
+{
+    bool operator()( ::lslboost::weak_ptr<T> const & a, ::lslboost::weak_ptr<T> const & b ) const BOOST_SP_NOEXCEPT
+    {
+        return a.owner_equals( b );
+    }
+};
+
+} // namespace std
 
 #endif  // #ifndef BOOST_SMART_PTR_WEAK_PTR_HPP_INCLUDED

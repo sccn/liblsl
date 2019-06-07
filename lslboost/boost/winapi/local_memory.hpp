@@ -17,24 +17,40 @@
 
 #if BOOST_WINAPI_PARTITION_APP_SYSTEM
 
+#include <boost/winapi/detail/header.hpp>
+
 #if !defined( BOOST_USE_WINDOWS_H )
 namespace lslboost { namespace winapi {
 typedef HANDLE_ HLOCAL_;
 }}
 
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
+
+#if defined (_WIN32_WCE )
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
+LocalAlloc(
+    lslboost::winapi::UINT_ uFlags,
+    lslboost::winapi::UINT_ uBytes);
+
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
+LocalReAlloc(
+    lslboost::winapi::HLOCAL_ hMem,
+    lslboost::winapi::UINT_ uBytes,
+    lslboost::winapi::UINT_ uFlags);
+#else
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
 LocalAlloc(
     lslboost::winapi::UINT_ uFlags,
     lslboost::winapi::SIZE_T_ uBytes);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC
 LocalReAlloc(
     lslboost::winapi::HLOCAL_ hMem,
     lslboost::winapi::SIZE_T_ uBytes,
     lslboost::winapi::UINT_ uFlags);
+#endif
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC LocalFree(lslboost::winapi::HLOCAL_ hMem);
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HLOCAL_ BOOST_WINAPI_WINAPI_CC LocalFree(lslboost::winapi::HLOCAL_ hMem);
 } // extern "C"
 #endif
 
@@ -48,6 +64,8 @@ using ::LocalReAlloc;
 using ::LocalFree;
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_WINAPI_PARTITION_APP_SYSTEM
 #endif // BOOST_WINAPI_LOCAL_MEMORY_HPP_INCLUDED_

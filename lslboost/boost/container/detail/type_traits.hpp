@@ -40,6 +40,7 @@ using ::lslboost::move_detail::add_const;
 using ::lslboost::move_detail::add_const_reference;
 using ::lslboost::move_detail::remove_const;
 using ::lslboost::move_detail::remove_reference;
+using ::lslboost::move_detail::remove_cvref;
 using ::lslboost::move_detail::make_unsigned;
 using ::lslboost::move_detail::is_floating_point;
 using ::lslboost::move_detail::is_integral;

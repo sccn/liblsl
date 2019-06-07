@@ -16,7 +16,8 @@
 #ifndef BOOST_INTEGER_STATIC_LOG2_HPP
 #define BOOST_INTEGER_STATIC_LOG2_HPP
 
-#include "boost/integer_fwd.hpp" // for lslboost::intmax_t
+#include <boost/config.hpp>
+#include <boost/integer_fwd.hpp>
 
 namespace lslboost {
 
@@ -121,7 +122,5 @@ namespace lslboost {
  struct static_log2<0> { };
 
 }
-
-
 
 #endif // include guard

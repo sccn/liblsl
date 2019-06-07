@@ -14,6 +14,7 @@
 // This header is not always included as part of windows.h
 #include <wincrypt.h>
 #endif
+#include <boost/winapi/detail/header.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #pragma once
@@ -27,7 +28,7 @@ typedef ULONG_PTR_ HCRYPTPROV_;
 extern "C" {
 #if BOOST_WINAPI_PARTITION_DESKTOP || BOOST_WINAPI_PARTITION_SYSTEM
 #if !defined( BOOST_NO_ANSI_APIS )
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptEnumProvidersA(
     lslboost::winapi::DWORD_ dwIndex,
     lslboost::winapi::DWORD_ *pdwReserved,
@@ -36,7 +37,7 @@ CryptEnumProvidersA(
     lslboost::winapi::LPSTR_ szProvName,
     lslboost::winapi::DWORD_ *pcbProvName);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptAcquireContextA(
     lslboost::winapi::HCRYPTPROV_ *phProv,
     lslboost::winapi::LPCSTR_ pszContainer,
@@ -45,7 +46,7 @@ CryptAcquireContextA(
     lslboost::winapi::DWORD_ dwFlags);
 #endif // !defined( BOOST_NO_ANSI_APIS )
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptEnumProvidersW(
     lslboost::winapi::DWORD_ dwIndex,
     lslboost::winapi::DWORD_ *pdwReserved,
@@ -54,7 +55,7 @@ CryptEnumProvidersW(
     lslboost::winapi::LPWSTR_ szProvName,
     lslboost::winapi::DWORD_ *pcbProvName);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptAcquireContextW(
     lslboost::winapi::HCRYPTPROV_ *phProv,
     lslboost::winapi::LPCWSTR_ szContainer,
@@ -62,7 +63,7 @@ CryptAcquireContextW(
     lslboost::winapi::DWORD_ dwProvType,
     lslboost::winapi::DWORD_ dwFlags);
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptGenRandom(
     lslboost::winapi::HCRYPTPROV_ hProv,
     lslboost::winapi::DWORD_ dwLen,
@@ -74,12 +75,12 @@ CryptGenRandom(
 // Standalone MS Windows SDK 6.0A and later until 10.0 provide a different declaration of CryptReleaseContext for Windows 2000 and older.
 // This is not the case for (a) MinGW and MinGW-w64, (b) MSVC 7.1 and 8, which are shipped with their own Windows SDK,
 // and (c) MSVC 14.0 and later, which are used with Windows SDK 10.
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptReleaseContext(
     lslboost::winapi::HCRYPTPROV_ hProv,
     lslboost::winapi::ULONG_PTR_ dwFlags);
 #else
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 CryptReleaseContext(
     lslboost::winapi::HCRYPTPROV_ hProv,
     lslboost::winapi::DWORD_ dwFlags);
@@ -184,5 +185,7 @@ BOOST_FORCEINLINE BOOL_ CryptReleaseContext(HCRYPTPROV_ hProv, DWORD_ dwFlags)
 
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_WINAPI_CRYPT_HPP_INCLUDED_

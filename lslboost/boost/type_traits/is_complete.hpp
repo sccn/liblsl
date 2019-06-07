@@ -50,7 +50,7 @@ namespace lslboost {
    }
 
    template <class T> struct is_complete
-      : public integral_constant<bool, ::lslboost::is_function<typename lslboost::remove_reference<T>::type>::value || (sizeof(detail::check_is_complete<T>(0)) != sizeof(char))> {};
+      : public integral_constant<bool, ::lslboost::is_function<typename lslboost::remove_reference<T>::type>::value || (sizeof(lslboost::detail::check_is_complete<T>(0)) != sizeof(char))> {};
 
 #elif !defined(BOOST_NO_SFINAE) && !defined(BOOST_NO_CXX11_FUNCTION_TEMPLATE_DEFAULT_ARGS) && !BOOST_WORKAROUND(BOOST_GCC_VERSION, < 40500)
 

@@ -34,7 +34,7 @@ basic_binary_oarchive<Archive>::init(){
     const std::string file_signature(BOOST_ARCHIVE_SIGNATURE());
     * this->This() << file_signature;
     // write library version
-    const library_version_type v(BOOST_ARCHIVE_VERSION());
+    const lslboost::serialization::library_version_type v(BOOST_ARCHIVE_VERSION());
     * this->This() << v;
 }
 

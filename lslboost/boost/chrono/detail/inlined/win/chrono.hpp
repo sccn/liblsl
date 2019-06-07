@@ -15,6 +15,7 @@
 #include <boost/winapi/time.hpp>
 #include <boost/winapi/timers.hpp>
 #include <boost/winapi/get_last_error.hpp>
+#include <boost/winapi/error_codes.hpp>
 #include <boost/assert.hpp>
 
 namespace lslboost
@@ -70,7 +71,7 @@ namespace chrono_detail
     {
         lslboost::winapi::DWORD_ cause =
             ((nanosecs_per_tic <= 0.0L)
-                    ? ERROR_NOT_SUPPORTED
+                    ? lslboost::winapi::ERROR_NOT_SUPPORTED_
                     : lslboost::winapi::GetLastError());
         if (::lslboost::chrono::is_throws(ec)) {
             lslboost::throw_exception(

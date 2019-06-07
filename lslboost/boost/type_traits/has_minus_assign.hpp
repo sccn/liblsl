@@ -53,25 +53,25 @@ namespace lslboost
 
       struct dont_care;
 
-      template <class T, class U, class Ret, class = lslboost::void_t<>>
+      template <class T, class U, class Ret, class = void>
       struct has_minus_assign_ret_imp : public lslboost::false_type {};
 
       template <class T, class U, class Ret>
-      struct has_minus_assign_ret_imp<T, U, Ret, lslboost::void_t<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())> >
+      struct has_minus_assign_ret_imp<T, U, Ret, typename lslboost::make_void<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())>::type>
          : public lslboost::integral_constant<bool, ::lslboost::is_convertible<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>()), Ret>::value> {};
 
-      template <class T, class U, class = lslboost::void_t<> >
+      template <class T, class U, class = void >
       struct has_minus_assign_void_imp : public lslboost::false_type {};
 
       template <class T, class U>
-      struct has_minus_assign_void_imp<T, U, lslboost::void_t<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())> >
+      struct has_minus_assign_void_imp<T, U, typename lslboost::make_void<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())>::type>
          : public lslboost::integral_constant<bool, ::lslboost::is_void<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())>::value> {};
 
-      template <class T, class U, class = lslboost::void_t<>>
+      template <class T, class U, class = void>
       struct has_minus_assign_dc_imp : public lslboost::false_type {};
 
       template <class T, class U>
-      struct has_minus_assign_dc_imp<T, U, lslboost::void_t<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())> >
+      struct has_minus_assign_dc_imp<T, U, typename lslboost::make_void<decltype(std::declval<typename add_reference<T>::type>() -= std::declval<typename add_reference<U>::type>())>::type>
          : public lslboost::true_type {};
 
       template <class T, class U, class Ret>

@@ -19,14 +19,16 @@
 
 #if BOOST_WINAPI_PARTITION_APP_SYSTEM
 
+#include <boost/winapi/detail/header.hpp>
+
 #if !defined( BOOST_USE_WINDOWS_H )
 extern "C" {
-BOOST_SYMBOL_IMPORT lslboost::winapi::DWORD_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::DWORD_ BOOST_WINAPI_WINAPI_CC
 SleepEx(
     lslboost::winapi::DWORD_ dwMilliseconds,
     lslboost::winapi::BOOL_ bAlertable);
-BOOST_SYMBOL_IMPORT lslboost::winapi::VOID_ BOOST_WINAPI_WINAPI_CC Sleep(lslboost::winapi::DWORD_ dwMilliseconds);
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC SwitchToThread(BOOST_WINAPI_DETAIL_VOID);
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::VOID_ BOOST_WINAPI_WINAPI_CC Sleep(lslboost::winapi::DWORD_ dwMilliseconds);
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC SwitchToThread(BOOST_WINAPI_DETAIL_VOID);
 } // extern "C"
 #endif
 
@@ -37,6 +39,8 @@ using ::Sleep;
 using ::SwitchToThread;
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_WINAPI_PARTITION_APP_SYSTEM
 #endif // BOOST_WINAPI_THREAD_HPP_INCLUDED_

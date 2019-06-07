@@ -21,17 +21,6 @@
 namespace lslboost
 {
 
-#ifdef BOOST_NO_FUNCTION_TEMPLATE_ORDERING
-
-template< class C >
-inline BOOST_DEDUCED_TYPENAME range_reverse_iterator<C>::type
-rend( C& c )
-{
-    return BOOST_DEDUCED_TYPENAME range_reverse_iterator<C>::type( lslboost::begin( c ) );
-}
-
-#else
-
 template< class C >
 inline BOOST_DEDUCED_TYPENAME range_reverse_iterator<C>::type
 rend( C& c )
@@ -49,8 +38,6 @@ rend( const C& c )
         iter_type;
     return iter_type( lslboost::begin( c ) );
 }
-
-#endif
 
 template< class T >
 inline BOOST_DEDUCED_TYPENAME range_reverse_iterator<const T>::type

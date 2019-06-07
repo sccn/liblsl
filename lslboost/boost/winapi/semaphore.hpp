@@ -10,6 +10,7 @@
 #define BOOST_WINAPI_SEMAPHORE_HPP_INCLUDED_
 
 #include <boost/winapi/basic_types.hpp>
+#include <boost/winapi/detail/header.hpp>
 
 #ifdef BOOST_HAS_PRAGMA_ONCE
 #pragma once
@@ -21,7 +22,7 @@ extern "C" {
 #if BOOST_WINAPI_PARTITION_APP_SYSTEM
 #if !defined( BOOST_NO_ANSI_APIS )
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 CreateSemaphoreA(
     ::_SECURITY_ATTRIBUTES* lpSemaphoreAttributes,
     lslboost::winapi::LONG_ lInitialCount,
@@ -29,7 +30,7 @@ CreateSemaphoreA(
     lslboost::winapi::LPCSTR_ lpName);
 
 #if BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 CreateSemaphoreExA(
     ::_SECURITY_ATTRIBUTES* lpSemaphoreAttributes,
     lslboost::winapi::LONG_ lInitialCount,
@@ -41,7 +42,7 @@ CreateSemaphoreExA(
 
 #endif // !defined( BOOST_NO_ANSI_APIS )
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 CreateSemaphoreW(
     ::_SECURITY_ATTRIBUTES* lpSemaphoreAttributes,
     lslboost::winapi::LONG_ lInitialCount,
@@ -49,7 +50,7 @@ CreateSemaphoreW(
     lslboost::winapi::LPCWSTR_ lpName);
 
 #if BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN6
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 CreateSemaphoreExW(
     ::_SECURITY_ATTRIBUTES* lpSemaphoreAttributes,
     lslboost::winapi::LONG_ lInitialCount,
@@ -59,7 +60,7 @@ CreateSemaphoreExW(
     lslboost::winapi::DWORD_ dwDesiredAccess);
 #endif
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT_EXCEPT_WM lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 ReleaseSemaphore(
     lslboost::winapi::HANDLE_ hSemaphore,
     lslboost::winapi::LONG_ lReleaseCount,
@@ -70,14 +71,14 @@ ReleaseSemaphore(
 #if BOOST_WINAPI_PARTITION_DESKTOP_SYSTEM
 
 #if !defined( BOOST_NO_ANSI_APIS )
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 OpenSemaphoreA(
     lslboost::winapi::DWORD_ dwDesiredAccess,
     lslboost::winapi::BOOL_ bInheritHandle,
     lslboost::winapi::LPCSTR_ lpName);
 #endif // !defined( BOOST_NO_ANSI_APIS )
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::HANDLE_ BOOST_WINAPI_WINAPI_CC
 OpenSemaphoreW(
     lslboost::winapi::DWORD_ dwDesiredAccess,
     lslboost::winapi::BOOL_ bInheritHandle,
@@ -182,5 +183,7 @@ BOOST_FORCEINLINE HANDLE_ open_semaphore(DWORD_ dwDesiredAccess, BOOL_ bInheritH
 
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_WINAPI_SEMAPHORE_HPP_INCLUDED_

@@ -276,7 +276,7 @@ namespace lslboost
                             = current_thread_data->tss_data.begin();
                         if(current->second.func && (current->second.value!=0))
                         {
-                            (*current->second.func)(current->second.value);
+                            (*current->second.caller)(current->second.func,current->second.value);
                         }
                         current_thread_data->tss_data.erase(current);
                     }
@@ -641,7 +641,9 @@ namespace lslboost
                 timer_handle=CreateWaitableTimer(NULL,false,NULL);
                 if(timer_handle!=0)
                 {
-                    ULONG tolerable=1; // Hopefully this works.
+                    ULONG tolerable=32; // Empirical testing shows Windows ignores this when <= 26
+                    if(time_left_msec/20>tolerable)  // 5%
+                        tolerable=static_cast<ULONG>(time_left_msec/20);
                     LARGE_INTEGER due_time={{0,0}};
                     if(time_left_msec>0)
                     {
@@ -731,7 +733,9 @@ namespace lslboost
                 timer_handle=CreateWaitableTimer(NULL,false,NULL);
                 if(timer_handle!=0)
                 {
-                    ULONG tolerable=1; // Hopefully this works.
+                    ULONG tolerable=32; // Empirical testing shows Windows ignores this when <= 26
+                    if(time_left_msec/20>tolerable)  // 5%
+                        tolerable=static_cast<ULONG>(time_left_msec/20);
                     LARGE_INTEGER due_time={{0,0}};
                     if(time_left_msec>0)
                     {
@@ -905,11 +909,12 @@ namespace lslboost
         }
 
         void add_new_tss_node(void const* key,
-                              lslboost::shared_ptr<tss_cleanup_function> func,
+                              detail::tss_data_node::cleanup_caller_t caller,
+                              detail::tss_data_node::cleanup_func_t func,
                               void* tss_data)
         {
             detail::thread_data_base* const current_thread_data(get_or_make_current_thread_data());
-            current_thread_data->tss_data.insert(std::make_pair(key,tss_data_node(func,tss_data)));
+            current_thread_data->tss_data.insert(std::make_pair(key,tss_data_node(caller,func,tss_data)));
         }
 
         void erase_tss_node(void const* key)
@@ -919,17 +924,19 @@ namespace lslboost
         }
 
         void set_tss_data(void const* key,
-                          lslboost::shared_ptr<tss_cleanup_function> func,
+                          detail::tss_data_node::cleanup_caller_t caller,
+                          detail::tss_data_node::cleanup_func_t func,
                           void* tss_data,bool cleanup_existing)
         {
             if(tss_data_node* const current_node=find_tss_data(key))
             {
                 if(cleanup_existing && current_node->func && (current_node->value!=0))
                 {
-                    (*current_node->func)(current_node->value);
+                    (*current_node->caller)(current_node->func,current_node->value);
                 }
                 if(func || (tss_data!=0))
                 {
+                    current_node->caller=caller;
                     current_node->func=func;
                     current_node->value=tss_data;
                 }
@@ -940,7 +947,7 @@ namespace lslboost
             }
             else if(func || (tss_data!=0))
             {
-                add_new_tss_node(key,func,tss_data);
+                add_new_tss_node(key,caller,func,tss_data);
             }
         }
     }

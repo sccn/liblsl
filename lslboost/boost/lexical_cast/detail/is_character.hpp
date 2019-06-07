@@ -1,6 +1,6 @@
 // Copyright Kevlin Henney, 2000-2005.
 // Copyright Alexander Nasonov, 2006-2010.
-// Copyright Antony Polukhin, 2011-2018.
+// Copyright Antony Polukhin, 2011-2020.
 //
 // Distributed under the Boost Software License, Version 1.0. (See
 // accompanying file LICENSE_1_0.txt or copy at
@@ -35,8 +35,8 @@ namespace lslboost {
         struct is_character
         {
             typedef BOOST_DEDUCED_TYPENAME lslboost::integral_constant<
-              bool,
-              lslboost::is_same< T, char >::value ||
+                bool,
+                lslboost::is_same< T, char >::value ||
                     #if !defined(BOOST_NO_STRINGSTREAM) && !defined(BOOST_NO_STD_WSTRING)
                         lslboost::is_same< T, wchar_t >::value ||
                     #endif
@@ -46,8 +46,8 @@ namespace lslboost {
                     #ifndef BOOST_NO_CXX11_CHAR32_T
                         lslboost::is_same< T, char32_t >::value ||
                     #endif
-                   	lslboost::is_same< T, unsigned char >::value ||
-                   	lslboost::is_same< T, signed char >::value
+                        lslboost::is_same< T, unsigned char >::value ||
+                        lslboost::is_same< T, signed char >::value
             > type;
 
             BOOST_STATIC_CONSTANT(bool, value = (type::value) );

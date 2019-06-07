@@ -29,7 +29,7 @@ namespace lslboost
 namespace placeholders
 {
 
-#if defined(__BORLANDC__) || defined(__GNUC__) && (__GNUC__ < 4)
+#if defined(BOOST_BORLANDC) || defined(__GNUC__) && (__GNUC__ < 4)
 
 inline lslboost::arg<1> _1() { return lslboost::arg<1>(); }
 inline lslboost::arg<2> _2() { return lslboost::arg<2>(); }
@@ -40,6 +40,18 @@ inline lslboost::arg<6> _6() { return lslboost::arg<6>(); }
 inline lslboost::arg<7> _7() { return lslboost::arg<7>(); }
 inline lslboost::arg<8> _8() { return lslboost::arg<8>(); }
 inline lslboost::arg<9> _9() { return lslboost::arg<9>(); }
+
+#elif !defined(BOOST_NO_CXX17_INLINE_VARIABLES)
+
+BOOST_INLINE_CONSTEXPR lslboost::arg<1> _1;
+BOOST_INLINE_CONSTEXPR lslboost::arg<2> _2;
+BOOST_INLINE_CONSTEXPR lslboost::arg<3> _3;
+BOOST_INLINE_CONSTEXPR lslboost::arg<4> _4;
+BOOST_INLINE_CONSTEXPR lslboost::arg<5> _5;
+BOOST_INLINE_CONSTEXPR lslboost::arg<6> _6;
+BOOST_INLINE_CONSTEXPR lslboost::arg<7> _7;
+BOOST_INLINE_CONSTEXPR lslboost::arg<8> _8;
+BOOST_INLINE_CONSTEXPR lslboost::arg<9> _9;
 
 #else
 
