@@ -108,6 +108,15 @@
    #define BOOST_CONTAINER_FORCEINLINE BOOST_FORCEINLINE
 #endif
 
+//#define BOOST_CONTAINER_DISABLE_NOINLINE
+
+#if defined(BOOST_CONTAINER_DISABLE_NOINLINE)
+   #define BOOST_CONTAINER_NOINLINE
+#else
+   #define BOOST_CONTAINER_NOINLINE BOOST_NOINLINE
+#endif
+
+
 #if !defined(__has_feature)
 #define BOOST_CONTAINER_HAS_FEATURE(feature) 0
 #else
@@ -121,9 +130,13 @@
 
 
 #if (__cplusplus >= 201703L)
-//CTAD supported
+   //CTAD supported
+   #ifdef __INTEL_COMPILER
+      //Intel compilers do not offer this feature yet
+      #define BOOST_CONTAINER_NO_CXX17_CTAD
+   #endif
 #else
-#define BOOST_CONTAINER_NO_CXX17_CTAD
+   #define BOOST_CONTAINER_NO_CXX17_CTAD
 #endif
 
 #endif   //#ifndef BOOST_CONTAINER_DETAIL_WORKAROUND_HPP

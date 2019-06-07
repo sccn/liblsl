@@ -2,7 +2,7 @@
 // ip/basic_resolver.hpp
 // ~~~~~~~~~~~~~~~~~~~~~
 //
-// Copyright (c) 2003-2018 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2003-2020 Christopher M. Kohlhoff (chris at kohlhoff dot com)
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
@@ -17,41 +17,43 @@
 
 #include <boost/asio/detail/config.hpp>
 #include <string>
+#include <boost/asio/any_io_executor.hpp>
 #include <boost/asio/async_result.hpp>
-#include <boost/asio/basic_io_object.hpp>
 #include <boost/asio/detail/handler_type_requirements.hpp>
+#include <boost/asio/detail/io_object_impl.hpp>
+#include <boost/asio/detail/non_const_lvalue.hpp>
 #include <boost/asio/detail/string_view.hpp>
 #include <boost/asio/detail/throw_error.hpp>
 #include <boost/asio/error.hpp>
-#include <boost/asio/io_context.hpp>
+#include <boost/asio/execution_context.hpp>
 #include <boost/asio/ip/basic_resolver_iterator.hpp>
 #include <boost/asio/ip/basic_resolver_query.hpp>
 #include <boost/asio/ip/basic_resolver_results.hpp>
 #include <boost/asio/ip/resolver_base.hpp>
+#if defined(BOOST_ASIO_WINDOWS_RUNTIME)
+# include <boost/asio/detail/winrt_resolver_service.hpp>
+#else
+# include <boost/asio/detail/resolver_service.hpp>
+#endif
 
 #if defined(BOOST_ASIO_HAS_MOVE)
 # include <utility>
 #endif // defined(BOOST_ASIO_HAS_MOVE)
-
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-# include <boost/asio/ip/resolver_service.hpp>
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-# if defined(BOOST_ASIO_WINDOWS_RUNTIME)
-#  include <boost/asio/detail/winrt_resolver_service.hpp>
-#  define BOOST_ASIO_SVC_T \
-    lslboost::asio::detail::winrt_resolver_service<InternetProtocol>
-# else
-#  include <boost/asio/detail/resolver_service.hpp>
-#  define BOOST_ASIO_SVC_T \
-    lslboost::asio::detail::resolver_service<InternetProtocol>
-# endif
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
 
 #include <boost/asio/detail/push_options.hpp>
 
 namespace lslboost {
 namespace asio {
 namespace ip {
+
+#if !defined(BOOST_ASIO_IP_BASIC_RESOLVER_FWD_DECL)
+#define BOOST_ASIO_IP_BASIC_RESOLVER_FWD_DECL
+
+// Forward declaration with defaulted arguments.
+template <typename InternetProtocol, typename Executor = any_io_executor>
+class basic_resolver;
+
+#endif // !defined(BOOST_ASIO_IP_BASIC_RESOLVER_FWD_DECL)
 
 /// Provides endpoint resolution functionality.
 /**
@@ -62,15 +64,21 @@ namespace ip {
  * @e Distinct @e objects: Safe.@n
  * @e Shared @e objects: Unsafe.
  */
-template <typename InternetProtocol
-    BOOST_ASIO_SVC_TPARAM_DEF1(= resolver_service<InternetProtocol>)>
+template <typename InternetProtocol, typename Executor>
 class basic_resolver
-  : BOOST_ASIO_SVC_ACCESS basic_io_object<BOOST_ASIO_SVC_T>,
-    public resolver_base
+  : public resolver_base
 {
 public:
   /// The type of the executor associated with the object.
-  typedef io_context::executor_type executor_type;
+  typedef Executor executor_type;
+
+  /// Rebinds the resolver type to another executor.
+  template <typename Executor1>
+  struct rebind_executor
+  {
+    /// The resolver type when rebound to the specified executor.
+    typedef basic_resolver<InternetProtocol, Executor1> other;
+  };
 
   /// The protocol type.
   typedef InternetProtocol protocol_type;
@@ -89,16 +97,33 @@ public:
   /// The results type.
   typedef basic_resolver_results<InternetProtocol> results_type;
 
-  /// Constructor.
+  /// Construct with executor.
   /**
    * This constructor creates a basic_resolver.
    *
-   * @param io_context The io_context object that the resolver will use to
+   * @param ex The I/O executor that the resolver will use, by default, to
    * dispatch handlers for any asynchronous operations performed on the
    * resolver.
    */
-  explicit basic_resolver(lslboost::asio::io_context& io_context)
-    : basic_io_object<BOOST_ASIO_SVC_T>(io_context)
+  explicit basic_resolver(const executor_type& ex)
+    : impl_(ex)
+  {
+  }
+
+  /// Construct with execution context.
+  /**
+   * This constructor creates a basic_resolver.
+   *
+   * @param context An execution context which provides the I/O executor that
+   * the resolver will use, by default, to dispatch handlers for any
+   * asynchronous operations performed on the resolver.
+   */
+  template <typename ExecutionContext>
+  explicit basic_resolver(ExecutionContext& context,
+      typename enable_if<
+        is_convertible<ExecutionContext&, execution_context&>::value
+      >::type* = 0)
+    : impl_(context)
   {
   }
 
@@ -111,10 +136,33 @@ public:
    * occur.
    *
    * @note Following the move, the moved-from object is in the same state as if
-   * constructed using the @c basic_resolver(io_context&) constructor.
+   * constructed using the @c basic_resolver(const executor_type&) constructor.
    */
   basic_resolver(basic_resolver&& other)
-    : basic_io_object<BOOST_ASIO_SVC_T>(std::move(other))
+    : impl_(std::move(other.impl_))
+  {
+  }
+
+  // All resolvers have access to each other's implementations.
+  template <typename InternetProtocol1, typename Executor1>
+  friend class basic_resolver;
+
+  /// Move-construct a basic_resolver from another.
+  /**
+   * This constructor moves a resolver from one object to another.
+   *
+   * @param other The other basic_resolver object from which the move will
+   * occur.
+   *
+   * @note Following the move, the moved-from object is in the same state as if
+   * constructed using the @c basic_resolver(const executor_type&) constructor.
+   */
+  template <typename Executor1>
+  basic_resolver(basic_resolver<InternetProtocol, Executor1>&& other,
+      typename enable_if<
+          is_convertible<Executor1, Executor>::value
+      >::type* = 0)
+    : impl_(std::move(other.impl_))
   {
   }
 
@@ -128,11 +176,34 @@ public:
    * occur.
    *
    * @note Following the move, the moved-from object is in the same state as if
-   * constructed using the @c basic_resolver(io_context&) constructor.
+   * constructed using the @c basic_resolver(const executor_type&) constructor.
    */
   basic_resolver& operator=(basic_resolver&& other)
   {
-    basic_io_object<BOOST_ASIO_SVC_T>::operator=(std::move(other));
+    impl_ = std::move(other.impl_);
+    return *this;
+  }
+
+  /// Move-assign a basic_resolver from another.
+  /**
+   * This assignment operator moves a resolver from one object to another.
+   * Cancels any outstanding asynchronous operations associated with the target
+   * object.
+   *
+   * @param other The other basic_resolver object from which the move will
+   * occur.
+   *
+   * @note Following the move, the moved-from object is in the same state as if
+   * constructed using the @c basic_resolver(const executor_type&) constructor.
+   */
+  template <typename Executor1>
+  typename enable_if<
+    is_convertible<Executor1, Executor>::value,
+    basic_resolver&
+  >::type operator=(basic_resolver<InternetProtocol, Executor1>&& other)
+  {
+    basic_resolver tmp(std::move(other));
+    impl_ = std::move(tmp.impl_);
     return *this;
   }
 #endif // defined(BOOST_ASIO_HAS_MOVE) || defined(GENERATING_DOCUMENTATION)
@@ -147,45 +218,11 @@ public:
   {
   }
 
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-  // These functions are provided by basic_io_object<>.
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-#if !defined(BOOST_ASIO_NO_DEPRECATED)
-  /// (Deprecated: Use get_executor().) Get the io_context associated with the
-  /// object.
-  /**
-   * This function may be used to obtain the io_context object that the I/O
-   * object uses to dispatch handlers for asynchronous operations.
-   *
-   * @return A reference to the io_context object that the I/O object will use
-   * to dispatch handlers. Ownership is not transferred to the caller.
-   */
-  lslboost::asio::io_context& get_io_context()
-  {
-    return basic_io_object<BOOST_ASIO_SVC_T>::get_io_context();
-  }
-
-  /// (Deprecated: Use get_executor().) Get the io_context associated with the
-  /// object.
-  /**
-   * This function may be used to obtain the io_context object that the I/O
-   * object uses to dispatch handlers for asynchronous operations.
-   *
-   * @return A reference to the io_context object that the I/O object will use
-   * to dispatch handlers. Ownership is not transferred to the caller.
-   */
-  lslboost::asio::io_context& get_io_service()
-  {
-    return basic_io_object<BOOST_ASIO_SVC_T>::get_io_service();
-  }
-#endif // !defined(BOOST_ASIO_NO_DEPRECATED)
-
   /// Get the executor associated with the object.
   executor_type get_executor() BOOST_ASIO_NOEXCEPT
   {
-    return basic_io_object<BOOST_ASIO_SVC_T>::get_executor();
+    return impl_.get_executor();
   }
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
 
   /// Cancel any asynchronous operations that are waiting on the resolver.
   /**
@@ -195,7 +232,7 @@ public:
    */
   void cancel()
   {
-    return this->get_service().cancel(this->get_implementation());
+    return impl_.get_service().cancel(impl_.get_implementation());
   }
 
 #if !defined(BOOST_ASIO_NO_DEPRECATED)
@@ -215,8 +252,8 @@ public:
   results_type resolve(const query& q)
   {
     lslboost::system::error_code ec;
-    results_type r = this->get_service().resolve(
-        this->get_implementation(), q, ec);
+    results_type r = impl_.get_service().resolve(
+        impl_.get_implementation(), q, ec);
     lslboost::asio::detail::throw_error(ec, "resolve");
     return r;
   }
@@ -236,7 +273,7 @@ public:
    */
   results_type resolve(const query& q, lslboost::system::error_code& ec)
   {
-    return this->get_service().resolve(this->get_implementation(), q, ec);
+    return impl_.get_service().resolve(impl_.get_implementation(), q, ec);
   }
 #endif // !defined(BOOST_ASIO_NO_DEPRECATED)
 
@@ -336,7 +373,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @returns A range object representing the list of endpoint entries. A
    * successful call to this function is guaranteed to return a non-empty
@@ -361,8 +399,8 @@ public:
     lslboost::system::error_code ec;
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
-    results_type r = this->get_service().resolve(
-        this->get_implementation(), q, ec);
+    results_type r = impl_.get_service().resolve(
+        impl_.get_implementation(), q, ec);
     lslboost::asio::detail::throw_error(ec, "resolve");
     return r;
   }
@@ -385,7 +423,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @param ec Set to indicate what error occurred, if any.
    *
@@ -410,7 +449,7 @@ public:
   {
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
-    return this->get_service().resolve(this->get_implementation(), q, ec);
+    return impl_.get_service().resolve(impl_.get_implementation(), q, ec);
   }
 
   /// Perform forward resolution of a query to a list of entries.
@@ -519,7 +558,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @returns A range object representing the list of endpoint entries. A
    * successful call to this function is guaranteed to return a non-empty
@@ -546,8 +586,8 @@ public:
     basic_resolver_query<protocol_type> q(
         protocol, static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
-    results_type r = this->get_service().resolve(
-        this->get_implementation(), q, ec);
+    results_type r = impl_.get_service().resolve(
+        impl_.get_implementation(), q, ec);
     lslboost::asio::detail::throw_error(ec, "resolve");
     return r;
   }
@@ -573,7 +613,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @param ec Set to indicate what error occurred, if any.
    *
@@ -599,7 +640,7 @@ public:
     basic_resolver_query<protocol_type> q(
         protocol, static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
-    return this->get_service().resolve(this->get_implementation(), q, ec);
+    return impl_.get_service().resolve(impl_.get_implementation(), q, ec);
   }
 
 #if !defined(BOOST_ASIO_NO_DEPRECATED)
@@ -619,36 +660,26 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(const query& q,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a ResolveHandler.
-    BOOST_ASIO_RESOLVE_HANDLER_CHECK(
-        ResolveHandler, handler, results_type) type_check;
-
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    return this->get_service().async_resolve(this->get_implementation(), q,
-        BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    lslboost::asio::async_completion<ResolveHandler,
-      void (lslboost::system::error_code, results_type)> init(handler);
-
-    this->get_service().async_resolve(
-        this->get_implementation(), q, init.completion_handler);
-
-    return init.result.get();
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
+    return lslboost::asio::async_initiate<ResolveHandler,
+      void (lslboost::system::error_code, results_type)>(
+        initiate_async_resolve(this), handler, q);
   }
 #endif // !defined(BOOST_ASIO_NO_DEPRECATED)
 
@@ -676,9 +707,9 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -694,12 +725,16 @@ public:
    * <tt>c:\\windows\\system32\\drivers\\etc\\services</tt>. Operating systems
    * may use additional locations when resolving service names.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(BOOST_ASIO_STRING_VIEW_PARAM host,
       BOOST_ASIO_STRING_VIEW_PARAM service,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
     return async_resolve(host, service, resolver_base::flags(),
         BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
@@ -723,7 +758,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @param handler The handler to be called when the resolve operation
    * completes. Copies will be made of the handler as required. The function
@@ -733,9 +769,9 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -751,34 +787,24 @@ public:
    * <tt>c:\\windows\\system32\\drivers\\etc\\services</tt>. Operating systems
    * may use additional locations when resolving service names.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(BOOST_ASIO_STRING_VIEW_PARAM host,
       BOOST_ASIO_STRING_VIEW_PARAM service,
       resolver_base::flags resolve_flags,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a ResolveHandler.
-    BOOST_ASIO_RESOLVE_HANDLER_CHECK(
-        ResolveHandler, handler, results_type) type_check;
-
     basic_resolver_query<protocol_type> q(static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
 
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    return this->get_service().async_resolve(this->get_implementation(), q,
-        BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    lslboost::asio::async_completion<ResolveHandler,
-      void (lslboost::system::error_code, results_type)> init(handler);
-
-    this->get_service().async_resolve(
-        this->get_implementation(), q, init.completion_handler);
-
-    return init.result.get();
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
+    return lslboost::asio::async_initiate<ResolveHandler,
+      void (lslboost::system::error_code, results_type)>(
+        initiate_async_resolve(this), handler, q);
   }
 
   /// Asynchronously perform forward resolution of a query to a list of entries.
@@ -808,9 +834,9 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -826,12 +852,16 @@ public:
    * <tt>c:\\windows\\system32\\drivers\\etc\\services</tt>. Operating systems
    * may use additional locations when resolving service names.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(const protocol_type& protocol,
       BOOST_ASIO_STRING_VIEW_PARAM host, BOOST_ASIO_STRING_VIEW_PARAM service,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
     return async_resolve(protocol, host, service, resolver_base::flags(),
         BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
@@ -858,7 +888,8 @@ public:
    *
    * @param resolve_flags A set of flags that determine how name resolution
    * should be performed. The default flags are suitable for communication with
-   * remote hosts.
+   * remote hosts. See the @ref resolver_base documentation for the set of
+   * available flags.
    *
    * @param handler The handler to be called when the resolve operation
    * completes. Copies will be made of the handler as required. The function
@@ -868,9 +899,9 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
@@ -886,35 +917,25 @@ public:
    * <tt>c:\\windows\\system32\\drivers\\etc\\services</tt>. Operating systems
    * may use additional locations when resolving service names.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(const protocol_type& protocol,
       BOOST_ASIO_STRING_VIEW_PARAM host, BOOST_ASIO_STRING_VIEW_PARAM service,
       resolver_base::flags resolve_flags,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a ResolveHandler.
-    BOOST_ASIO_RESOLVE_HANDLER_CHECK(
-        ResolveHandler, handler, results_type) type_check;
-
     basic_resolver_query<protocol_type> q(
         protocol, static_cast<std::string>(host),
         static_cast<std::string>(service), resolve_flags);
 
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    return this->get_service().async_resolve(this->get_implementation(), q,
-        BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    lslboost::asio::async_completion<ResolveHandler,
-      void (lslboost::system::error_code, results_type)> init(handler);
-
-    this->get_service().async_resolve(
-        this->get_implementation(), q, init.completion_handler);
-
-    return init.result.get();
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
+    return lslboost::asio::async_initiate<ResolveHandler,
+      void (lslboost::system::error_code, results_type)>(
+        initiate_async_resolve(this), handler, q);
   }
 
   /// Perform reverse resolution of an endpoint to a list of entries.
@@ -934,8 +955,8 @@ public:
   results_type resolve(const endpoint_type& e)
   {
     lslboost::system::error_code ec;
-    results_type i = this->get_service().resolve(
-        this->get_implementation(), e, ec);
+    results_type i = impl_.get_service().resolve(
+        impl_.get_implementation(), e, ec);
     lslboost::asio::detail::throw_error(ec, "resolve");
     return i;
   }
@@ -956,7 +977,7 @@ public:
    */
   results_type resolve(const endpoint_type& e, lslboost::system::error_code& ec)
   {
-    return this->get_service().resolve(this->get_implementation(), e, ec);
+    return impl_.get_service().resolve(impl_.get_implementation(), e, ec);
   }
 
   /// Asynchronously perform reverse resolution of an endpoint to a list of
@@ -976,37 +997,76 @@ public:
    *   resolver::results_type results // Resolved endpoints as a range.
    * ); @endcode
    * Regardless of whether the asynchronous operation completes immediately or
-   * not, the handler will not be invoked from within this function. Invocation
-   * of the handler will be performed in a manner equivalent to using
-   * lslboost::asio::io_context::post().
+   * not, the handler will not be invoked from within this function. On
+   * immediate completion, invocation of the handler will be performed in a
+   * manner equivalent to using lslboost::asio::post().
    *
    * A successful resolve operation is guaranteed to pass a non-empty range to
    * the handler.
    */
-  template <typename ResolveHandler>
-  BOOST_ASIO_INITFN_RESULT_TYPE(ResolveHandler,
+  template <
+      BOOST_ASIO_COMPLETION_TOKEN_FOR(void (lslboost::system::error_code,
+        results_type)) ResolveHandler
+          BOOST_ASIO_DEFAULT_COMPLETION_TOKEN_TYPE(executor_type)>
+  BOOST_ASIO_INITFN_AUTO_RESULT_TYPE(ResolveHandler,
       void (lslboost::system::error_code, results_type))
   async_resolve(const endpoint_type& e,
-      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler)
+      BOOST_ASIO_MOVE_ARG(ResolveHandler) handler
+        BOOST_ASIO_DEFAULT_COMPLETION_TOKEN(executor_type))
   {
-    // If you get an error on the following line it means that your handler does
-    // not meet the documented type requirements for a ResolveHandler.
-    BOOST_ASIO_RESOLVE_HANDLER_CHECK(
-        ResolveHandler, handler, results_type) type_check;
-
-#if defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    return this->get_service().async_resolve(this->get_implementation(), e,
-        BOOST_ASIO_MOVE_CAST(ResolveHandler)(handler));
-#else // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-    lslboost::asio::async_completion<ResolveHandler,
-      void (lslboost::system::error_code, results_type)> init(handler);
-
-    this->get_service().async_resolve(
-        this->get_implementation(), e, init.completion_handler);
-
-    return init.result.get();
-#endif // defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
+    return lslboost::asio::async_initiate<ResolveHandler,
+      void (lslboost::system::error_code, results_type)>(
+        initiate_async_resolve(this), handler, e);
   }
+
+private:
+  // Disallow copying and assignment.
+  basic_resolver(const basic_resolver&) BOOST_ASIO_DELETED;
+  basic_resolver& operator=(const basic_resolver&) BOOST_ASIO_DELETED;
+
+  class initiate_async_resolve
+  {
+  public:
+    typedef Executor executor_type;
+
+    explicit initiate_async_resolve(basic_resolver* self)
+      : self_(self)
+    {
+    }
+
+    executor_type get_executor() const BOOST_ASIO_NOEXCEPT
+    {
+      return self_->get_executor();
+    }
+
+    template <typename ResolveHandler, typename Query>
+    void operator()(BOOST_ASIO_MOVE_ARG(ResolveHandler) handler,
+        const Query& q) const
+    {
+      // If you get an error on the following line it means that your handler
+      // does not meet the documented type requirements for a ResolveHandler.
+      BOOST_ASIO_RESOLVE_HANDLER_CHECK(
+          ResolveHandler, handler, results_type) type_check;
+
+      lslboost::asio::detail::non_const_lvalue<ResolveHandler> handler2(handler);
+      self_->impl_.get_service().async_resolve(
+          self_->impl_.get_implementation(), q,
+          handler2.value, self_->impl_.get_executor());
+    }
+
+  private:
+    basic_resolver* self_;
+  };
+
+# if defined(BOOST_ASIO_WINDOWS_RUNTIME)
+  lslboost::asio::detail::io_object_impl<
+    lslboost::asio::detail::winrt_resolver_service<InternetProtocol>,
+    Executor> impl_;
+# else
+  lslboost::asio::detail::io_object_impl<
+    lslboost::asio::detail::resolver_service<InternetProtocol>,
+    Executor> impl_;
+# endif
 };
 
 } // namespace ip
@@ -1014,9 +1074,5 @@ public:
 } // namespace lslboost
 
 #include <boost/asio/detail/pop_options.hpp>
-
-#if !defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
-# undef BOOST_ASIO_SVC_T
-#endif // !defined(BOOST_ASIO_ENABLE_OLD_SERVICES)
 
 #endif // BOOST_ASIO_IP_BASIC_RESOLVER_HPP

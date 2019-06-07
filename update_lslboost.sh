@@ -1,7 +1,7 @@
 # the absolute path to the extracted boost source archive (https://www.boost.org/users/download/)
 set -e
 set -x
-BOOSTPATH=/tmp/boost_1_69_0
+BOOSTPATH=/tmp/boost_1_75_0
 TMPPATH=/tmp/lslboost
 
 # copy all needed boost files and rename all mentions of boost to lslboost
@@ -13,7 +13,3 @@ find $TMPPATH -type d -and \( -name build -o -name test -o -name edg -o -name dm
 
 rsync -HAXavr --del $TMPPATH/{boost,libs} lslboost
 
-# apply patches to boost
-# remove minimum wait time
-patch -p3 < lslboost/boost-thread-windows.patch
-find lslboost -name '*.orig' -delete

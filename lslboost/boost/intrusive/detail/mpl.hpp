@@ -40,6 +40,7 @@ using lslboost::move_detail::remove_pointer;
 using lslboost::move_detail::add_pointer;
 using lslboost::move_detail::true_type;
 using lslboost::move_detail::false_type;
+using lslboost::move_detail::voider;
 using lslboost::move_detail::enable_if_c;
 using lslboost::move_detail::enable_if;
 using lslboost::move_detail::disable_if_c;

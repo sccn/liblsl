@@ -17,6 +17,7 @@
 #if BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN2K
 
 #include <boost/winapi/basic_types.hpp>
+#include <boost/winapi/detail/header.hpp>
 
 #if !defined( BOOST_USE_WINDOWS_H )
 extern "C" {
@@ -25,7 +26,7 @@ typedef lslboost::winapi::VOID_ (BOOST_WINAPI_NTAPI_CC *WAITORTIMERCALLBACKFUNC)
     (lslboost::winapi::PVOID_, lslboost::winapi::BOOLEAN_);
 typedef WAITORTIMERCALLBACKFUNC WAITORTIMERCALLBACK;
 
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 RegisterWaitForSingleObject(
     lslboost::winapi::PHANDLE_ phNewWaitObject,
     lslboost::winapi::HANDLE_ hObject,
@@ -41,12 +42,12 @@ RegisterWaitForSingleObject(
 #if !defined( BOOST_USE_WINDOWS_H ) || (defined(BOOST_WINAPI_IS_MINGW) && BOOST_USE_WINAPI_VERSION < BOOST_WINAPI_VERSION_WINXP)
 extern "C" {
 #if BOOST_WINAPI_PARTITION_DESKTOP
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 UnregisterWait(lslboost::winapi::HANDLE_ WaitHandle);
 #endif
 
 #if BOOST_WINAPI_PARTITION_DESKTOP || BOOST_WINAPI_PARTITION_SYSTEM
-BOOST_SYMBOL_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
+BOOST_WINAPI_IMPORT lslboost::winapi::BOOL_ BOOST_WINAPI_WINAPI_CC
 UnregisterWaitEx(
     lslboost::winapi::HANDLE_ WaitHandle,
     lslboost::winapi::HANDLE_ CompletionEvent);
@@ -124,6 +125,8 @@ BOOST_CONSTEXPR_OR_CONST ULONG_ wt_transfer_impersonation = WT_TRANSFER_IMPERSON
 
 }
 }
+
+#include <boost/winapi/detail/footer.hpp>
 
 #endif // BOOST_USE_WINAPI_VERSION >= BOOST_WINAPI_VERSION_WIN2K
 #endif // BOOST_WINAPI_THREAD_POOL_HPP_INCLUDED_

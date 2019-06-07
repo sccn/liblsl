@@ -58,7 +58,7 @@ namespace lslboost{
       BOOST_STATIC_ASSERT_MSG(lslboost::is_complete<T>::value, "Arguments to is_default_constructible must be complete types");
    };
 #else
-   template <class T> struct is_default_constructible : public integral_constant<bool, sizeof(detail::is_default_constructible_imp::test<T>(0)) == sizeof(lslboost::type_traits::yes_type)>
+   template <class T> struct is_default_constructible : public integral_constant<bool, sizeof(lslboost::detail::is_default_constructible_imp::test<T>(0)) == sizeof(lslboost::type_traits::yes_type)>
    {
       BOOST_STATIC_ASSERT_MSG(lslboost::is_complete<T>::value, "Arguments to is_default_constructible must be complete types");
    };

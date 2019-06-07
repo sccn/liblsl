@@ -12,7 +12,7 @@
 #define BOOST_STRING_TRIM_DETAIL_HPP
 
 #include <boost/algorithm/string/config.hpp>
-#include <boost/detail/iterator.hpp>
+#include <iterator>
 
 namespace lslboost {
     namespace algorithm {
@@ -80,8 +80,8 @@ namespace lslboost {
                 ForwardIteratorT InEnd, 
                 PredicateT IsSpace )
             {
-                typedef BOOST_STRING_TYPENAME lslboost::detail::
-                    iterator_traits<ForwardIteratorT>::iterator_category category;
+                typedef BOOST_STRING_TYPENAME
+                    std::iterator_traits<ForwardIteratorT>::iterator_category category;
 
                 return ::lslboost::algorithm::detail::trim_end_iter_select( InBegin, InEnd, IsSpace, category() );
             }
