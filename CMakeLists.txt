@@ -171,7 +171,7 @@ if(${LSL_BUILD_STATIC} OR ${LSL_UNITTESTS})
 	add_library(${target}-static ${sources} ${headers})
 	lsllib_properties(${target}-static)
 	# for LSL_CPP_API export header
-	target_compile_definitions(${target}-static PUBLIC_HEADER LIBLSL_STATIC)
+	target_compile_definitions(${target}-static PUBLIC LIBLSL_STATIC)
 	set_target_properties(${target}-static PROPERTIES
 		OUTPUT_NAME "${target}${lslplatform}-static")
 endif()
