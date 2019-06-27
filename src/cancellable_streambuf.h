@@ -42,9 +42,6 @@ namespace lsl {
 		/// Iostream streambuf for a socket.
 		class cancellable_streambuf: public std::streambuf, private lslboost::base_from_member<io_context>, public basic_socket<Protocol>, public lsl::cancellable_obj {
 		public:
-			/// The endpoint type.
-			typedef typename Protocol::endpoint endpoint_type;
-
 			/// Construct a cancellable_streambuf without establishing a connection.
 			cancellable_streambuf(): basic_socket<Protocol>(lslboost::base_from_member<lslboost::asio::io_context>::member), cancel_issued_(false), cancel_started_(false) {
 				init_buffers();
@@ -78,7 +75,7 @@ namespace lsl {
 			* @return \c this if a connection was successfully established, a null
 			* pointer otherwise.
 			*/
-			cancellable_streambuf* connect(const endpoint_type& endpoint) {
+			cancellable_streambuf* connect(const Protocol::endpoint& endpoint) {
 				{
 					lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
 					if (cancel_issued_)

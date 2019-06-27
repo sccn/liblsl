@@ -1,7 +1,7 @@
 # Conda build recipe for liblsl
 #
 {% set name = "liblsl" %}
-{% set version = "1.13.0.b3" %}
+{% set version = "1.13.0.b6" %}
 {% set _CONDA_PREFIX = "%CONDA_PREFIX%" %} # [win]
 {% set _CONDA_PREFIX = "${CONDA_PREFIX}" %} # [not win]
 
@@ -11,7 +11,7 @@ package:
 
 source:
   git_url: https://github.com/sccn/{{ name }}.git
-  git_rev: 1.13.0-b3
+  git_rev: 1.13.0-b6
 
 build:
   number: 3
