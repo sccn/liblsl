@@ -29,6 +29,7 @@ steps:
   - bash: if [ $(Agent.OS) = 'Windows_NT' ]; then cp build/testing/Release/* build/testing; fi
   - bash: build/testing/UnitTests --gtest_shuffle --gtest_output=xml:test_$(Agent.JobName).xml || true
     displayName: 'Run unit tests'
+    timeoutInMinutes: 5
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
