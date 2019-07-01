@@ -254,9 +254,11 @@ if(WIN32 AND MSVC)
 	elseif(MSVC_VERSION EQUAL 1900)
 		set(VCYEAR 2015)
 		set(_vs_ver 14.0)
-	elseif(MSVC_VERSION GREATER 1910 AND MSVC_VERSION LESS 1919)
+	elseif(MSVC_VERSION GREATER 1910 AND MSVC_VERSION LESS 1929)
 		set(VCYEAR 2017)
 		set(_vs_ver 14.1)
+		# Also VS 2019, but it's binary compatible with 2017 so Boost
+		# and Qt still use the 2017 binaries
 	else()
 		message(WARNING "You're using an untested Visual C++ compiler (MSVC_VERSION: ${MSVC_VERSION}).")
 	endif()
