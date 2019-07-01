@@ -1,6 +1,7 @@
 **/*
 !build/*.deb
-!build/**/*.tar.bz2
+!build/*.tar.bz2
 !build/*.dmg
 !build/*.7z
 !build/*.so
+!build/install/**

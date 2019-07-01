@@ -30,8 +30,11 @@ steps:
   - bash: build/testing/UnitTests --gtest_shuffle --gtest_output=xml:test_$(Agent.JobName).xml || true
     displayName: 'Run unit tests'
     timeoutInMinutes: 5
+    continueOnError: true
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
       testResultsFiles: 'test_*.xml'
-      failTaskOnFailedTests: true
+      failTaskOnFailedTests: false
+- publish: $(System.DefaultWorkingDirectory)
+  artifact: '$(Agent.JobName)_artifacts'
