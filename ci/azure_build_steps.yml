@@ -2,13 +2,14 @@ parameters:
   cpack: true
   conda: false # doesn't work on macOS/Windows for some reason
   run_tests: true
+  cmake_stepvars: ''
 steps:
 - task: CMake@1
   inputs:
     cmakeArgs: '--version'
 - task: CMake@1
   inputs:
-    cmakeArgs: '-DCMAKE_BUILD_TYPE=Release -DLSL_UNITTESTS=1 -DLSL_UNIXFOLDERS=1 ..'
+    cmakeArgs: '-DLSL_UNITTESTS=1 -DLSL_UNIXFOLDERS=1 ${{ parameters.cmake_stepvars }} $(cmakeargs) ..'
   displayName: 'Configure build'
 - task: CMake@1
   inputs:

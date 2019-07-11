@@ -1,5 +1,8 @@
 trigger:
 - master
+
+variables:
+  cmakeargs: '-DCMAKE_BUILD_TYPE=Release'
 jobs:
 - job: Linux
   pool:
@@ -20,6 +23,7 @@ jobs:
   - template: ci/azure_build_steps.yml
     parameters:
       run_tests: true # hangs for about half an hour an is cancelled
+      cmake_stepvars: '-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW'
 - job: manylinux
   pool:
     vmImage: 'ubuntu-16.04'
@@ -32,3 +36,4 @@ jobs:
   - template: ci/azure_build_steps.yml
     parameters:
       cpack: false
+      cmake_stepvars: '-DCMAKE_C_COMPILER=/usr/local/gcc-9.1.0/bin/gcc-9.1.0 -DCMAKE_CXX_COMPILER=/usr/local/gcc-9.1.0/bin/g++-9.1.0 -DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -G Ninja -S ..'
