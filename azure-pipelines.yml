@@ -23,7 +23,12 @@ jobs:
 - job: manylinux
   pool:
     vmImage: 'ubuntu-16.04'
-  container: tktechdocker/manylinux:gcc8.3.0
+  container: tstenner/manylinux:gcc9.1.0
   steps:
-  - script: bash build_manylinux.sh
-    displayName: 'install prerequisites, build liblsl'
+  - bash: |
+      /opt/python/cp37-cp37m/bin/python -m pip install --user --only-binary=:all: cmake ninja
+      echo "##vso[task.prependpath]$HOME/.local/bin"
+    displayName: 'Install build tools'
+  - template: ci/azure_build_steps.yml
+    parameters:
+      cpack: false
