@@ -1,7 +1,9 @@
 #ifndef LSL_C_H
 #define LSL_C_H
 
-#if defined(_MSC_VER) && _MSC_VER < 1600
+#if defined(LIBLSL_FFI)
+// Skip any typedefs that might confuse a FFI header parser, e.g. cffi
+#elif defined(_MSC_VER) && _MSC_VER < 1600
 typedef signed char int8_t;
 typedef signed short int16_t;
 typedef signed int int32_t;
@@ -31,7 +33,7 @@ typedef unsigned int uint32_t;
 * To use this library you need to link to either the liblsl32 or liblsl64 shared library that comes with
 * this header. Under Visual Studio the library is linked in automatically.
 */
-#ifdef LIBLSL_STATIC
+#if defined(LIBLSL_STATIC) || defined(LIBLSL_FFI)
     #define LIBLSL_C_API
 #elif defined _WIN32 || defined __CYGWIN__
     #if defined LIBLSL_EXPORTS
