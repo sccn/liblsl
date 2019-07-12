@@ -21,6 +21,9 @@ if (UNIX)
 	)
 	find_package(Threads REQUIRED)
 	target_link_libraries(lslboost PRIVATE Threads::Threads)
+	if(NOT APPLE)
+		target_link_libraries(lslboost PRIVATE rt)
+	endif()
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
 		libs/serialization/src/codecvt_null.cpp
