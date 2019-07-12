@@ -1,6 +1,6 @@
 parameters:
   cpack: true
-  conda: false # doesn't work on macOS/Windows for some reason
+  conda: true
   run_tests: true
   cmake_stepvars: ''
 steps:
