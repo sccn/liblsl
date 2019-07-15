@@ -15,7 +15,7 @@ build:
   number: 3
   script:
   - mkdir build
-  - 'cmake -DLSL_UNIXFOLDERS=1 -G "{{ environ.get("CMAKE_GENERATOR", "") }}" -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ environ.get("_CONDA_PREFIX") }}" -S . -B build'
+  - 'cmake -DLSL_UNIXFOLDERS=1 -G Ninja -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ environ.get("_CONDA_PREFIX") }}" -S . -B build'
   - 'cmake --build build -j --target install'
 
 requirements:
@@ -23,6 +23,7 @@ requirements:
     - cmake >=3.12
     - {{ compiler("cxx") }}
     - git
+    - ninja
 
 about:
   home: https://github.com/sccn/liblsl
