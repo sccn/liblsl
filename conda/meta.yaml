@@ -2,8 +2,6 @@
 #
 {% set name = "liblsl" %}
 {% set git_rev = "1.13.0-b7" %}
-{% set _CONDA_PREFIX = "%CONDA_PREFIX%" %} # [win]
-{% set _CONDA_PREFIX = "${CONDA_PREFIX}" %} # [not win]
 
 package:
   name: {{ name|lower }}
@@ -15,7 +13,10 @@ source:
 
 build:
   number: 3
-  script: 'mkdir build; cmake -DLSL_UNIXFOLDERS=1 -G "{{ CMAKE_GENERATOR }}" -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ _CONDA_PREFIX }}" -S . -B build && cmake --build build -j --target install; rm -rf build'
+  script:
+  - mkdir build
+  - 'cmake -DLSL_UNIXFOLDERS=1 -G "{{ environ.get("CMAKE_GENERATOR", "") }}" -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ environ.get("_CONDA_PREFIX") }}" -S . -B build'
+  - 'cmake --build build -j --target install'
 
 requirements:
   build:
