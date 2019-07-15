@@ -20,8 +20,10 @@ steps:
     inputs:
       packageSpecs: conda-build
     displayName: set up anaconda
-  - bash: conda build $(Build.SourcesDirectory) --output-folder $(Build.ArtifactStagingDirectory)/conda
+  - bash: conda build conda --output-folder condaoutput
     displayName: 'build conda package'
+  - publish: condaoutput
+    artifact: '$(Agent.JobName)_conda'
 - ${{ if eq(parameters.cpack, 'true') }}:
   - bash: cpack
     workingDirectory: 'build'
