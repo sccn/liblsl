@@ -1,25 +1,25 @@
 # Conda build recipe for liblsl
 #
 {% set name = "liblsl" %}
-{% set version = "1.13.0.b6" %}
+{% set git_rev = "1.13.0-b7" %}
 {% set _CONDA_PREFIX = "%CONDA_PREFIX%" %} # [win]
 {% set _CONDA_PREFIX = "${CONDA_PREFIX}" %} # [not win]
 
 package:
   name: {{ name|lower }}
-  version: {{ version }}
+  version: {{ git_rev | replace("-", ".") }}
 
 source:
   git_url: https://github.com/sccn/{{ name }}.git
-  git_rev: 1.13.0-b6
+  git_rev: {{ git_rev }}
 
 build:
   number: 3
-  script: 'cmake -DLSL_UNIXFOLDERS=1 -G "{{ CMAKE_GENERATOR }}" -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ _CONDA_PREFIX }}" && cmake --build . --target install'
+  script: 'mkdir build; cmake -DLSL_UNIXFOLDERS=1 -G "{{ CMAKE_GENERATOR }}" -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ _CONDA_PREFIX }}" -S . -B build && cmake --build build -j --target install; rm -rf build'
 
 requirements:
   build:
-    - cmake >=3.5
+    - cmake >=3.12
     - {{ compiler("cxx") }}
     - git
 
