@@ -3,15 +3,12 @@ trigger:
 
 variables:
   cmakeargs: '-DCMAKE_BUILD_TYPE=Release'
-  build_conda: 'false' # quite slow, has to be enable manually
 jobs:
 - job: Linux
   pool:
     vmImage: 'ubuntu-16.04'
   steps:
   - template: ci/azure_build_steps.yml
-    parameters:
-      conda: $[ build_conda ]
 - job: Windows
   pool:
     vmImage: 'vs2017-win2016'
@@ -19,16 +16,14 @@ jobs:
   - template: ci/azure_build_steps.yml
     parameters:
       cpack: false # cpack points to the wrong cpack
-      conda: $[ build_conda ]
 - job: macOS
   pool:
-    vmImage: 'macOS-10.14'
+    vmImage: 'macOS-10.13'
   steps:
   - template: ci/azure_build_steps.yml
     parameters:
       run_tests: true
       cmake_stepvars: '-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW'
-      conda: false # fails for some unknown reason
 - job: manylinux
   pool:
     vmImage: 'ubuntu-16.04'
@@ -41,7 +36,6 @@ jobs:
   - template: ci/azure_build_steps.yml
     parameters:
       cpack: false
-      conda: false
       cmake_stepvars: '-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -G Ninja'
   - publish: build/install/lib/liblsl64.so
     artifact: liblsl_manylinux2010_x64.so

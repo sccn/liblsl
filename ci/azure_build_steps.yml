@@ -1,6 +1,5 @@
 parameters:
   cpack: true
-  conda: true
   run_tests: true
   cmake_stepvars: ''
 steps:
@@ -15,15 +14,6 @@ steps:
   inputs:
     cmakeArgs: '--build . --config Release -j --target install'
   displayName: 'Build files'
-- ${{ if eq(parameters.conda, 'true') }}:
-  - task: CondaEnvironment@1
-    inputs:
-      packageSpecs: conda-build
-    displayName: set up anaconda
-  - bash: conda build conda --output-folder condaoutput
-    displayName: 'build conda package'
-  - publish: condaoutput
-    artifact: '$(Agent.JobName)_conda'
 - ${{ if eq(parameters.cpack, 'true') }}:
   - bash: cpack
     workingDirectory: 'build'
