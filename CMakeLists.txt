@@ -182,7 +182,10 @@ else()
 	set(LSLPREFIX "LSL/")
 endif()
 
-install(TARGETS lsl
+add_executable(lslver testing/lslver.c)
+target_link_libraries(lslver PRIVATE lsl)
+
+install(TARGETS lsl lslver
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
