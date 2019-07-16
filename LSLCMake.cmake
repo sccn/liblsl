@@ -33,11 +33,12 @@ endif()
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 # Set runtime path, i.e. where shared libs are searched relative to the exe
-if(APPLE AND NOT LSL_UNIXFOLDERS)
+if(APPLE)
 	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../LSL/lib")
+	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../lib")
 	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/")
-elseif(UNIX AND NOT LSL_UNIXFOLDERS)
-	list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../LSL/lib:\$ORIGIN")
+elseif(UNIX)
+	list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../LSL/lib:\$ORIGIN/../lib/:\$ORIGIN")
 endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
