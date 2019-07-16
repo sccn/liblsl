@@ -1,18 +1,17 @@
 # Conda build recipe for liblsl
 #
 {% set name = "liblsl" %}
-{% set git_rev = "1.13.0-b7" %}
 
 package:
   name: {{ name|lower }}
-  version: {{ git_rev | replace("-", ".") }}
+  version: {{ GIT_DESCRIBE_TAG | replace('-', '.') }}
 
 source:
-  git_url: https://github.com/sccn/{{ name }}.git
-  git_rev: {{ git_rev }}
+  git_url: ..
 
 build:
-  number: 3
+  number: {{ GIT_DESCRIBE_NUMBER }}
+  string: {{ GIT_BUILD_STR }}
   script:
   - mkdir build
   - 'cmake -DLSL_UNIXFOLDERS=1 -G Ninja -DCMAKE_INSTALL_PREFIX:PATH="{{ PREFIX }}" -DCMAKE_INSTALL_RPATH:PATH="{{ PREFIX }}/lib" -DCMAKE_PREFIX_PATH:PATH="{{ environ.get("_CONDA_PREFIX") }}" -S . -B build'
