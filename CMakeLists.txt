@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.5)
 project (LSL
 	VERSION 1.13.0
-	LANGUAGES CXX)
+	LANGUAGES C CXX)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_CXX_STANDARD 11)
