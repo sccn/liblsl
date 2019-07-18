@@ -12,7 +12,7 @@ steps:
   displayName: 'Configure build'
 - task: CMake@1
   inputs:
-    cmakeArgs: '--build . --config Release -j --target install'
+    cmakeArgs: '--build . -j --config Release --target install'
   displayName: 'Build files'
 - ${{ if eq(parameters.cpack, 'true') }}:
   - bash: cpack

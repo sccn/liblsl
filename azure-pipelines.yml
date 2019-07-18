@@ -9,14 +9,16 @@ jobs:
     vmImage: 'ubuntu-16.04'
   steps:
   - template: ci/azure_build_steps.yml
-- job: Windows
+- job: Win64
   pool:
     vmImage: 'vs2017-win2016'
   steps:
+  - bash: 'echo "##vso[task.prependpath]C:\\Program Files\\CMake\\bin\\"'
+    displayName: 'Fix PATH'
   - template: ci/azure_build_steps.yml
     parameters:
-      cpack: false # cpack points to the wrong cpack
-- job: macOS
+      cmake_stepvars: '-A x64'
+- job: MacOS
   pool:
     vmImage: 'macOS-10.13'
   steps:
