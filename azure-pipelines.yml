@@ -69,6 +69,8 @@ stages:
   - job: MacOS
     pool:
       vmImage: 'macOS-10.13'
+    variables:
+      MACOSX_DEPLOYMENT_TARGET: '10.9'
     steps:
     - template: ci/azure_build_steps.yml
       parameters:
