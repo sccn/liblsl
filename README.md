@@ -1,6 +1,6 @@
 [![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/y8l55sf4n1pfnsck/branch/master?svg=true)](https://ci.appveyor.com/project/cboulay/liblsl/branch/master)
 [![Travis Build Status](https://travis-ci.org/sccn/liblsl.svg?branch=master)](https://travis-ci.org/sccn/liblsl)
-[![Azure Pipelines Status](https://dev.azure.com/TristanStenner/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/TristanStenner/liblsl/_build/latest?definitionId=1&branchName=master)
+[![Azure Build Status](https://dev.azure.com/labstreaminglayer/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/labstreaminglayer/liblsl/_build/latest?definitionId=1&branchName=master)
 
 # Lab streaming layer library
 
