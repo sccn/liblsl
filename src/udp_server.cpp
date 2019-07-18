@@ -25,7 +25,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 	socket_->open(protocol);
 
 	// bind to a free port
-	int port = bind_port_in_range(*socket_,protocol);
+	uint16_t port = bind_port_in_range(*socket_,protocol);
 
 	// assign the service port field
 	if (protocol == udp::v4())
@@ -38,7 +38,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 * Create a new UDP server in multicast mode.
 * This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast local service discovery.
 */
-udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, int port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
+udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, uint16_t port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
@@ -47,9 +47,9 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 	if (listen_address.empty()) {
 		// pick the default endpoint
 		if (addr.is_v4())
-			listen_endpoint = udp::endpoint(udp::v4(), (uint16_t)port);
+			listen_endpoint = udp::endpoint(udp::v4(), port);
 		else
-			listen_endpoint = udp::endpoint(udp::v6(), (uint16_t)port);
+			listen_endpoint = udp::endpoint(udp::v6(), port);
 	}
 	else {
 		// choose an endpoint explicitly
@@ -130,12 +130,12 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					// shortinfo request: parse content query string
 					std::string query; getline(request_stream,query); lslboost::trim(query);
 					// parse return address, port, and query ID
-					int return_port; request_stream >> return_port;
+					uint16_t return_port; request_stream >> return_port;
 					std::string query_id; request_stream >> query_id;
 					// check query
 					if (info_->matches_query(query)) {
 						// query matches: send back reply
-						udp::endpoint return_endpoint(remote_endpoint_.address(),(uint16_t)return_port);
+						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 						string_p replymsg(new std::string((query_id += "\r\n") += shortinfo_msg_));
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
 							lslboost::bind(&udp_server::handle_send_outcome,shared_from_this(),replymsg,placeholders::error));

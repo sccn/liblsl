@@ -59,7 +59,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	std::string listen_address = cfg->listen_address();
 	std::vector<std::string> multicast_addrs = cfg->multicast_addresses();
 	int multicast_ttl = cfg->multicast_ttl();
-	int multicast_port = cfg->multicast_port();
+	uint16_t multicast_port = cfg->multicast_port();
 	// create TCP data server
 	ios_.push_back(io_context_p(new io_context()));
 	tcp_servers_.push_back(tcp_server_p(new tcp_server(info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_)));

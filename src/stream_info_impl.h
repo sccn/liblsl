@@ -189,15 +189,15 @@ namespace lsl {
 		* Get/Set the TCP data port where the stream is hosted (once assigned).
 		* This port is internally used to obtain data and meta-data from a stream.
 		*/
-		int v4data_port() const { return v4data_port_; }
-		void v4data_port(int v);
+		uint16_t v4data_port() const { return v4data_port_; }
+		void v4data_port(uint16_t v);
 
 		/**
 		* Get/Set the UDP service port where the stream is hosted (once assigned).
 		* This port is internally used to obtain time correction information for a stream.
 		*/
-		int v4service_port() const { return v4service_port_; }
-		void v4service_port(int v);
+		uint16_t v4service_port() const { return v4service_port_; }
+		void v4service_port(uint16_t v);
 
 		/**
 		* Get/Set the host name or IP address where the stream is hosted.
@@ -210,15 +210,15 @@ namespace lsl {
 		* Get/Set the TCP data port where the stream is hosted (once assigned).
 		* This port is internally used to obtain data and meta-data from a stream.
 		*/
-		int v6data_port() const { return v6data_port_; }
-		void v6data_port(int v);
+		uint16_t v6data_port() const { return v6data_port_; }
+		void v6data_port(uint16_t v);
 
 		/**
 		* Get/Set the UDP service port where the stream is hosted (once assigned).
 		* This port is internally used to obtain time correction information for a stream.
 		*/
-		int v6service_port() const { return v6service_port_; }
-		void v6service_port(int v);
+		uint16_t v6service_port() const { return v6service_port_; }
+		void v6service_port(uint16_t v);
 
 		/**
 		* Get the (editable) XML description of a stream.
@@ -250,11 +250,11 @@ namespace lsl {
 		// auto-generated network information
 		int version_;
 		std::string v4address_;
-		int v4data_port_;
-		int v4service_port_;
+		uint16_t v4data_port_;
+		uint16_t v4service_port_;
 		std::string v6address_;
-		int v6data_port_;
-		int v6service_port_;
+		uint16_t v6data_port_;
+		uint16_t v6service_port_;
 		std::string uid_;
 		double created_at_;
 		std::string session_id_;

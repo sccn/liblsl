@@ -13,7 +13,8 @@ namespace lsl {
 	}
 
     /// Bind a socket (or acceptor) to a free port in the configured port range or throw an error otherwise.
-	template<class Socket, class Protocol> int bind_port_in_range(Socket &sock, Protocol protocol) {
+	template <class Socket, class Protocol>
+	uint16_t bind_port_in_range(Socket &sock, Protocol protocol) {
 		for (int k=0,e=api_config::get_instance()->port_range(); k<e; k++) {
 			try {
 				sock.bind(typename Protocol::endpoint(protocol,(uint16_t)(k + api_config::get_instance()->base_port())));
@@ -31,9 +32,10 @@ namespace lsl {
 		} else
 			throw std::runtime_error("All local ports were found occupied. You may have more open outlets on this machine than your PortRange setting allows (see Network Connectivity in the LSL wiki) or you have a problem with your network configuration.");
 	}
-    
-    /// Bind to and listen at a socket (or acceptor) on a free port in the configured port range or throw an error otherwise.
-	template<class Socket, class Protocol> int bind_and_listen_to_port_in_range(Socket &sock, Protocol protocol, int backlog) {
+
+	/// Bind to and listen at a socket (or acceptor) on a free port in the configured port range or throw an error otherwise.
+	template <class Socket, class Protocol>
+	uint16_t bind_and_listen_to_port_in_range(Socket &sock, Protocol protocol, int backlog) {
 		for (int k=0,e=api_config::get_instance()->port_range(); k<e; k++) {
 			try {
 				sock.bind(typename Protocol::endpoint(protocol,(uint16_t)(k + api_config::get_instance()->base_port())));

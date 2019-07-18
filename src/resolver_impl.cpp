@@ -26,7 +26,7 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
 {
 	// parse the multicast addresses into endpoints and store them
 	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
-	int mcast_port = cfg_->multicast_port();
+	uint16_t mcast_port = cfg_->multicast_port();
 	for (std::size_t k=0;k<mcast_addrs.size();k++) {
 		try {
 			mcast_endpoints_.push_back(udp::endpoint(ip::make_address(mcast_addrs[k]),(uint16_t)mcast_port));

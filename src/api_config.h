@@ -5,6 +5,8 @@
 #include <vector>
 #include <boost/thread/once.hpp>
 
+#include "common.h"
+
 
 namespace lsl {
 	/**
@@ -40,7 +42,7 @@ namespace lsl {
 		* be opened in order to allow for return packets in response to stream 
 		* discovery queries.
 		*/
-		int base_port() const { return base_port_; }
+		uint16_t base_port() const { return base_port_; }
 
 		/**
 		* Number of ports available on a machine for serving streams.
@@ -48,7 +50,7 @@ namespace lsl {
 		* This limits the number of outlets that can coexist on a single machine to port_range; by increasing 
 		* this number this limit can be expanded. 
 		*/
-		int port_range() const { return port_range_; }
+		uint16_t port_range() const { return port_range_; }
 
 		/**
 		* Whether to allow binding to a randomly assigned port.
@@ -62,7 +64,7 @@ namespace lsl {
 		* between inlets and outlets. Note that according to the router configuration some 
 		* multicast address ranges or ports may be blocked.
 		*/
-		int multicast_port() const { return multicast_port_; }
+		uint16_t multicast_port() const { return multicast_port_; }
 
 		/**
 		 * How the IPv4 / IPv6 protocols should be handled.
@@ -191,10 +193,10 @@ namespace lsl {
 
 		// core parameters
 		bool allow_ipv6_, allow_ipv4_;
-		int base_port_;
-		int port_range_;
+		uint16_t base_port_;
+		uint16_t port_range_;
 		bool allow_random_ports_;
-		int multicast_port_;
+		uint16_t multicast_port_;
 		std::string resolve_scope_;
 		std::vector<std::string> multicast_addresses_;
 		int multicast_ttl_;

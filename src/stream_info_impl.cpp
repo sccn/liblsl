@@ -287,7 +287,7 @@ void stream_info_impl::v4address(const std::string &v) {
 * Set the TCP data port where the stream is hosted (once assigned).
 * This port is internally used to obtain data and meta-data from a stream.
 */
-void stream_info_impl::v4data_port(int v) { 
+void stream_info_impl::v4data_port(uint16_t v) {
 	v4data_port_ = v; 
 	doc_.child("info").child("v4data_port").first_child().text().set(v4data_port_);
 }
@@ -296,7 +296,7 @@ void stream_info_impl::v4data_port(int v) {
 * Set the UDP service port where the stream is hosted (once assigned).
 * This port is internally used to obtain time correction information for a stream.
 */
-void stream_info_impl::v4service_port(int v) { 
+void stream_info_impl::v4service_port(uint16_t v) {
 	v4service_port_ = v; 
 	doc_.child("info").child("v4service_port").first_child().text().set(v4service_port_);
 }
@@ -313,7 +313,7 @@ void stream_info_impl::v6address(const std::string &v) {
 * Set the TCP data port where the stream is hosted (once assigned).
 * This port is internally used to obtain data and meta-data from a stream.
 */
-void stream_info_impl::v6data_port(int v) { 
+void stream_info_impl::v6data_port(uint16_t v) {
 	v6data_port_ = v; 
 	doc_.child("info").child("v6data_port").first_child().text().set(v6data_port_);
 }
@@ -322,7 +322,7 @@ void stream_info_impl::v6data_port(int v) {
 * Set the UDP service port where the stream is hosted (once assigned).
 * This port is internally used to obtain time correction information for a stream.
 */
-void stream_info_impl::v6service_port(int v) { 
+void stream_info_impl::v6service_port(uint16_t v) {
 	v6service_port_ = v; 
 	doc_.child("info").child("v6service_port").first_child().text().set(v6service_port_);
 }
