@@ -22,22 +22,17 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 	const api_config *cfg = api_config::get_instance();
 
 	// instantiate IPv4 and/or IPv6 stacks (depending on settings)
-	if (cfg->ipv6() == "disable")
-		instantiate_stack(tcp::v4(),udp::v4());
-	if (cfg->ipv6() == "force")
-		instantiate_stack(tcp::v6(),udp::v6());
-	if (cfg->ipv6() == "allow") {
-		try {
-			instantiate_stack(tcp::v4(),udp::v4());
-		} catch(std::exception &e) {
+	if (cfg->allow_ipv4()) try {
+			instantiate_stack(tcp::v4(), udp::v4());
+		} catch (std::exception &e) {
 			std::cerr << "Could not instantiate IPv4 stack: " << e.what() << std::endl;
 		}
-		try {
-			instantiate_stack(tcp::v6(),udp::v6());
-		} catch(std::exception &e) {
+	if (cfg->allow_ipv6()) try {
+			instantiate_stack(tcp::v6(), udp::v6());
+		} catch (std::exception &e) {
 			std::cerr << "Could not instantiate IPv6 stack: " << e.what() << std::endl;
 		}
-	}
+
 	// fail if both stacks failed to instantiate
 	if (tcp_servers_.empty() || udp_servers_.empty())
 		throw std::runtime_error("Neither the IPv4 nor the IPv6 stack could be instantiated.");

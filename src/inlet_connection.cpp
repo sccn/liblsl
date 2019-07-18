@@ -31,7 +31,7 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover):
 			throw std::runtime_error((std::string("The received stream (")+=host_info_.name()) += ") uses a newer protocol version than this inlet. Please update.");
 
 		// select TCP/UDP protocol versions
-		if (api_config::get_instance()->ipv6() == "allow") {
+		if (api_config::get_instance()->allow_ipv6()) {
 			// if IPv6 is optionally allowed...
 			if (host_info_.v4address().empty() || !host_info_.v4data_port() || !host_info_.v4service_port()) {
 				// then use it but only iff there are problems with the IPv4 connection data
@@ -44,8 +44,8 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover):
 			}
 		} else {
 			// otherwise use the protocol type that is selected in the config
-			tcp_protocol_ = (api_config::get_instance()->ipv6() == "force") ? tcp::v6() : tcp::v4();
-			udp_protocol_ = (api_config::get_instance()->ipv6() == "force") ? udp::v6() : udp::v4();
+			tcp_protocol_ = api_config::get_instance()->allow_ipv4() ? tcp::v4() : tcp::v6();
+			udp_protocol_ = api_config::get_instance()->allow_ipv4() ? udp::v4() : udp::v6();
 		}
 
 		if (recovery_enabled_ && type_info_.source_id().empty()) {
@@ -65,8 +65,8 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover):
 			throw std::invalid_argument("When creating an inlet with a constructed (instead of resolved) stream_info, you must assign a channel format.");
 
 		// use the protocol that is specified in the config
-		tcp_protocol_ = (api_config::get_instance()->ipv6() == "force") ? tcp::v6() : tcp::v4();
-		udp_protocol_ = (api_config::get_instance()->ipv6() == "force") ? udp::v6() : udp::v4();
+		tcp_protocol_ = api_config::get_instance()->allow_ipv4() ? tcp::v4() : tcp::v6();
+		udp_protocol_ = api_config::get_instance()->allow_ipv4() ? udp::v4() : udp::v6();
 
 		// assign initial dummy endpoints
 		host_info_.v4address("127.0.0.1");

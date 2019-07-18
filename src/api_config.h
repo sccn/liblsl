@@ -7,7 +7,6 @@
 
 
 namespace lsl {
-
 	/**
 	* A configuration object: holds all the configurable settings of liblsl.
 	* These settings can be set via a configuration file that is automatically searched 
@@ -66,10 +65,12 @@ namespace lsl {
 		int multicast_port() const { return multicast_port_; }
 
 		/**
-		* How the IPv6 protocol should be handled.
-		* Can be "disable" (use only IPv4), "force" (use only IPv6), or "allow" (use both protocol stacks).
-		*/ 
-		const std::string &ipv6() const { return ipv6_; }
+		 * How the IPv4 / IPv6 protocols should be handled.
+		 * The option "ports.IPv6" can be "disable" (use only IPv4), "force" (use only IPv6),
+		 * or "allow" (use both protocol stacks).
+		 */
+		bool allow_ipv6() const { return allow_ipv6_; }
+		bool allow_ipv4() const { return allow_ipv4_; }
 
 		/*
 		* The range or scope of stream lookup when using multicast-based discovery; determines the output 
@@ -189,7 +190,7 @@ namespace lsl {
 		api_config &operator=(const api_config &rhs);
 
 		// core parameters
-		std::string ipv6_;
+		bool allow_ipv6_, allow_ipv4_;
 		int base_port_;
 		int port_range_;
 		bool allow_random_ports_;

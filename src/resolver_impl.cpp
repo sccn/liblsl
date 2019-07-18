@@ -53,11 +53,11 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
     }
 
 	// generate the list of protocols to use
-	if (cfg_->ipv6() == "force" || cfg_->ipv6() == "allow") {
+	if (cfg_->allow_ipv6()) {
 		udp_protocols_.push_back(udp::v6());
 		tcp_protocols_.push_back(tcp::v6());
 	}
-	if (cfg_->ipv6() == "disable" || cfg_->ipv6() == "allow") {
+	if (cfg_->allow_ipv4()) {
 		udp_protocols_.push_back(udp::v4());
 		tcp_protocols_.push_back(tcp::v4());
 	}

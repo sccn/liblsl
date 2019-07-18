@@ -92,19 +92,22 @@ void api_config::load_from_file(const std::string &filename) {
 		base_port_ = pt.get("ports.BasePort",16572);
 		port_range_ = pt.get("ports.PortRange",32);
 		allow_random_ports_ = pt.get("ports.AllowRandomPorts",true);
+		std::string ipv6_str = pt.get("ports.IPv6",
 #ifdef __APPLE__
-		ipv6_ = pt.get("ports.IPv6","disable"); // on Mac OS (10.7) there's a bug in the IPv6 implementation that breaks LSL when it tries to use both v4 and v6
+		"disable"); // on Mac OS (10.7) there's a bug in the IPv6 implementation that breaks LSL when it tries to use both v4 and v6
 #else
-		ipv6_ = pt.get("ports.IPv6","allow");
+		"allow");
 #endif
+		allow_ipv4_ = true;
+		allow_ipv6_ = true;
 		// fix some common mis-spellings
-		if (ipv6_ == "disabled")
-			ipv6_ = "disable";
-		if (ipv6_ == "allowed")
-			ipv6_ = "allow";
-		if (ipv6_ == "forced")
-			ipv6_ = "force";
-		if (ipv6_ != "disable" && ipv6_ != "allow" && ipv6_ != "force")
+		if (ipv6_str == "disabled" || ipv6_str == "disable")
+			allow_ipv6_ = false;
+		else if (ipv6_str == "allowed" || ipv6_str == "allow")
+			allow_ipv6_ = true;
+		else if (ipv6_str == "forced" || ipv6_str == "force")
+			allow_ipv4_ = false;
+		else
 			throw std::runtime_error("Unsupported setting for the IPv6 parameter.");
 
 		// read the [multicast] parameters
