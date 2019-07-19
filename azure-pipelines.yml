@@ -3,44 +3,6 @@ trigger:
 
 variables:
   cmakeargs: '-DCMAKE_BUILD_TYPE=Release'
-jobs:
-- job: Linux
-  pool:
-    vmImage: 'ubuntu-16.04'
-  steps:
-  - template: ci/azure_build_steps.yml
-- job: Win64
-  pool:
-    vmImage: 'vs2017-win2016'
-  steps:
-  - bash: 'echo "##vso[task.prependpath]C:\\Program Files\\CMake\\bin\\"'
-    displayName: 'Fix PATH'
-  - template: ci/azure_build_steps.yml
-    parameters:
-      cmake_stepvars: '-A x64'
-- job: MacOS
-  pool:
-    vmImage: 'macOS-10.13'
-  steps:
-  - template: ci/azure_build_steps.yml
-    parameters:
-      run_tests: true
-      cmake_stepvars: '-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW'
-- job: manylinux
-  pool:
-    vmImage: 'ubuntu-16.04'
-  container: quay.io/pypa/manylinux2010_x86_64:latest
-  steps:
-  - bash: |
-      /opt/python/cp37-cp37m/bin/python -m pip install --user --only-binary=:all: cmake ninja
-      echo "##vso[task.prependpath]$HOME/.local/bin"
-    displayName: 'Install build tools'
-  - template: ci/azure_build_steps.yml
-    parameters:
-      cpack: false
-      cmake_stepvars: '-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -G Ninja'
-  - publish: build/install/lib/liblsl64.so
-    artifact: liblsl_manylinux2010_x64.so
 stages:
 - stage: build
   jobs:
@@ -58,14 +20,6 @@ stages:
     - template: ci/azure_build_steps.yml
       parameters:
         cmake_stepvars: '-A x64'
-  - job: Win32
-    pool:
-      vmImage: 'vs2015-win2012r2'
-    steps:
-    - template: ci/azure_build_steps.yml
-      parameters:
-        cmake_stepvars: '-DLSL_UNITTESTS=0 -G "Visual Studio 10 2010" -A Win32'
-        run_tests: false
   - job: MacOS
     pool:
       vmImage: 'macOS-10.13'
