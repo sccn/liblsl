@@ -21,7 +21,7 @@ if (UNIX)
 	)
 	find_package(Threads REQUIRED)
 	target_link_libraries(lslboost PRIVATE Threads::Threads)
-	if(NOT APPLE)
+	if(NOT APPLE AND NOT CMAKE_ANDROID_ARCH_ABI)
 		target_link_libraries(lslboost PRIVATE rt)
 	endif()
 else ()  # WIN32
