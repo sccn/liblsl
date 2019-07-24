@@ -40,7 +40,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 */
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, int port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
-	bool is_broadcast = address=="255.255.255.255";
+	bool is_broadcast = addr == ip::address_v4::broadcast();
 
 	// set up the endpoint where we listen (note: this is not yet the multicast address)
 	udp::endpoint listen_endpoint;

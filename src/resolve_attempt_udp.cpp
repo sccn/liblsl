@@ -157,7 +157,10 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator i) {
 		// endpoint matches our active protocol?
 		if (ep.address().is_v4() == is_v4_) {
 			// select socket to use
-			udp::socket &sock = (ep.address().to_string() == "255.255.255.255") ? broadcast_socket_ : (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
+			udp::socket &sock =
+				(ep.address() == ip::address_v4::broadcast())
+					? broadcast_socket_
+					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 			// and send the query over it
 			sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
 				lslboost::bind(&resolve_attempt_udp::handle_send_outcome,shared_from_this(),++i,placeholders::error));
