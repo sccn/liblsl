@@ -167,7 +167,7 @@ set_target_properties(${target} PROPERTIES
 	OUTPUT_NAME "lib${target}${lslplatform}"
 )
 
-if(${LSL_BUILD_STATIC} OR ${LSL_UNITTESTS})
+if(${LSL_BUILD_STATIC})
 	add_library(${target}-static ${sources} ${headers})
 	lsllib_properties(${target}-static)
 	# for LSL_CPP_API export header
