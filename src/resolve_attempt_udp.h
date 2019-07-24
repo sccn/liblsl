@@ -106,8 +106,6 @@ namespace lsl {
 		// constant over the lifetime of this attempt
 		double cancel_after_;			// the timeout for giving up
 		bool cancelled_;				// whether the operation has been cancelled
-		bool is_v4_;					// whether we're on IPv4 or IPv6
-		udp protocol_;					// the protocol to use
 		std::vector<udp::endpoint> targets_;// list of endpoints that should receive the query
 		std::string query_;				// the query string
 		std::string query_msg_;			// the query message that we're sending

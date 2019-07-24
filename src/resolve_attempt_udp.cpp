@@ -32,10 +32,12 @@ using namespace lslboost::asio;
 * @param cancel_after The time duration after which the attempt is automatically cancelled, i.e. the receives are ended.
 * @param registry A registry where the attempt can register itself as active so it can be cancelled during shutdown.
 */
-resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry): 
-	io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after), cancelled_(false), is_v4_(protocol == udp::v4()), protocol_(protocol),
-	targets_(targets), unicast_socket_(io), broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), query_(query), cancel_timer_(io)
-{
+resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
+	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
+	lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry)
+	: io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after),
+	  cancelled_(false), targets_(targets), query_(query), unicast_socket_(io),
+	  broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), cancel_timer_(io) {
 	// open the sockets that we might need
 	recv_socket_.open(protocol);
 	try {
@@ -155,7 +157,7 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator i) {
 	if (i != targets_.end() && !cancelled_) {
 		udp::endpoint ep(*i);
 		// endpoint matches our active protocol?
-		if (ep.address().is_v4() == is_v4_) {
+		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
 			// select socket to use
 			udp::socket &sock =
 				(ep.address() == ip::address_v4::broadcast())
