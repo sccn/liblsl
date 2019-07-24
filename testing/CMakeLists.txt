@@ -24,16 +24,30 @@ add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/googletest-src
 	${CMAKE_CURRENT_BINARY_DIR}/googletest-build
 	EXCLUDE_FROM_ALL)
 
+set(LSL_TESTS lsl_test_exported)
+
 enable_testing()
-add_executable(UnitTests
+add_executable(lsl_test_exported
 	DataType.cpp
-	asiocancel.cpp
 	discovery.cpp
 	timesync.cpp
 )
-add_test(NAME UnitTests COMMAND UnitTests)
-target_link_libraries(UnitTests lsl-static lslboost gtest_main)
+target_link_libraries(lsl_test_exported PRIVATE lsl gtest_main)
 
-install(TARGETS UnitTests
+if(TARGET lsl-static)
+	add_executable(lsl_test_internal
+			asiocancel.cpp
+	)
+	target_link_libraries(lsl_test_internal PRIVATE lsl-static lslboost gtest_main)
+	list(APPEND LSL_TESTS lsl_test_internal)
+else()
+	message(WARNING "Skipping internal tests because the static library isn't build")
+endif()
+
+foreach(lsltest ${LSL_TESTS})
+	add_test(NAME ${lsltest} COMMAND ${lsltest})
+endforeach()
+
+install(TARGETS ${LSL_TESTS}
 	COMPONENT liblsl-tests
 	RUNTIME DESTINATION ${LSLPREFIX}bin)
