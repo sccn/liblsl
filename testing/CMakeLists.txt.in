@@ -1,5 +1,5 @@
 # See https://github.com/google/googletest/tree/master/googletest#incorporating-into-an-existing-cmake-project
-cmake_minimum_required(VERSION 2.8.2)
+cmake_minimum_required(VERSION 3.5)
 
 project(googletest-download NONE)
 
