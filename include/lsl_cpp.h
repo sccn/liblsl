@@ -275,14 +275,18 @@ namespace lsl {
         // === Miscellaneous Functions ===
         // ===============================
 
-        /**
-        * Retrieve the entire stream_info in XML format.
-        * This yields an XML document (in string form) whose top-level element is <info>. The info element contains
-        * one element for each field of the stream_info class, including:
-        *  a) the core elements <name>, <type>, <channel_count>, <nominal_srate>, <channel_format>, <source_id>
-        *  b) the misc elements <version>, <created_at>, <uid>, <session_id>, <v4address>, <v4data_port>, <v4service_port>, <v6address>, <v6data_port>, <v6service_port>
-        *  c) the extended description element <desc> with user-defined sub-elements.
-        */
+		/**
+		 * Retrieve the entire streaminfo in XML format.
+		 * This yields an XML document (in string form) whose top-level element is `<info>`. The info
+		 * element contains one element for each field of the streaminfo class, including:
+		 *
+		 *   - the core elements `<name>`, `<type>`, `<channel_count`, `<nominal_srate>`,
+		 *   `<channel_format>`, `<source_id>`
+		 *   - the misc elements `<version>`, `<created_at>`, `<uid>`, `<session_id>`,
+		 *   `<v4address>`, `<v4data_port>`, `<v4service_port>`, `<v6address>`, `<v6data_port>`,
+		 *   `<v6service_port>`
+		 *   - the extended description element `<desc>` with user-defined sub-elements.
+		 */
         std::string as_xml() const {
                 char *tmp = lsl_get_xml(obj);
                 std::string result(tmp);
@@ -401,15 +405,20 @@ namespace lsl {
             lsl_push_sample_buftp(obj,(&pointers[0]),&lengths[0],timestamp,pushthrough);
         }
 
-        /**
-        * Push a packed C struct (of numeric data) as one sample into the outlet (search for #pragma pack for information on packing structs appropriately).
-        * Overall size checking but no type checking or conversion are done. Dan not be used for variable-size / string-formatted data.
-        * @param sample The sample struct to push.
-        * @param timestamp Optionally the capture time of the sample, in agreement with local_clock(); if omitted, the current time is used.
-        * @param pushthrough Whether to push the sample through to the receivers instead of buffering it with subsequent samples.
-        *                    Note that the chunk_size, if specified at outlet construction, takes precedence over the pushthrough flag.
-        */
-        template<class T> void push_numeric_struct(const T &sample, double timestamp=0.0, bool pushthrough=true) {
+		/**
+		 * Push a packed C struct (of numeric data) as one sample into the outlet (search for
+		 * [`#pragma pack`](https://stackoverflow.com/a/3318475/73299) for information on packing
+		 * structs appropriately).<br>
+		 * Overall size checking but no type checking or conversion are done.<br>
+		 * Can not be used forvariable-size / string-formatted data.
+		 * @param sample The sample struct to push.
+		 * @param timestamp Optionally the capture time of the sample, in agreement with
+		 * local_clock(); if omitted, the current time is used.
+		 * @param pushthrough Whether to push the sample through to the receivers instead of
+		 * buffering it with subsequent samples. Note that the chunk_size, if specified at outlet
+		 * construction, takes precedence over the pushthrough flag.
+		 */
+		template<class T> void push_numeric_struct(const T &sample, double timestamp=0.0, bool pushthrough=true) {
             if (info().sample_bytes() != sizeof(T))
                 throw std::runtime_error("Provided object size does not match the stream's sample size.");
             push_numeric_raw((void*)&sample, timestamp,pushthrough);
@@ -502,12 +511,14 @@ namespace lsl {
 
         /**
         * Push a chunk of multiplexed data into the outlet.
+        * @name Push functions
         * @param buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param timestamp Optionally the capture time of the most recent sample, in agreement with local_clock(); if omitted, the current time is used.
         *                   The time stamps of other samples are automatically derived according to the sampling rate of the stream.
         * @param pushthrough Whether to push the chunk through to the receivers instead of buffering it with subsequent samples.
         *                    Note that the chunk_size, if specified at outlet construction, takes precedence over the pushthrough flag.
         */
+		///@{
         void push_chunk_multiplexed(const std::vector<float> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_ftp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<double> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_dtp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<long> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_ltp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
@@ -515,11 +526,12 @@ namespace lsl {
         void push_chunk_multiplexed(const std::vector<int16_t> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_stp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<char> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_ctp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<std::string> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) push_chunk_multiplexed(&buffer[0],(unsigned long)buffer.size(),timestamp,pushthrough); }
+		///@}
 
         /**
         * Push a chunk of multiplexed data into the outlet. One timestamp per sample is provided.
         * Allows to specify a separate time stamp for each sample (for irregular-rate streams).
-        * @param data_buffer A buffer of channel values holding the data for zero or more successive samples to send.
+        * @param buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param timestamps A buffer of timestamp values holding time stamps for each sample in the data buffer.
         * @param pushthrough Whether to push the chunk through to the receivers instead of buffering it with subsequent samples.
         *                    Note that the chunk_size, if specified at outlet construction, takes precedence over the pushthrough flag.
@@ -690,18 +702,22 @@ namespace lsl {
     */
     inline std::vector<stream_info> resolve_stream(const std::string &prop, const std::string &value, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_byprop(buffer,sizeof(buffer),(prop.c_str()),(value.c_str()),minimum,timeout)]); }
 
-    /**
-    * Resolve all streams that match a given predicate.
-    * Advanced query that allows to impose more conditions on the retrieved streams; the given string is an XPath 1.0 
-    * predicate for the <info> node (omitting the surrounding []'s), see also http://en.wikipedia.org/w/index.php?title=XPath_1.0&oldid=474981951.
-    * @param pred The predicate string, e.g. "name='BioSemi'" or "type='EEG' and starts-with(name,'BioSemi') and count(info/desc/channel)=32"
-    * @param minimum Return at least this number of streams.
-    * @param timeout Optionally a timeout of the operation, in seconds (default: no timeout).
-    *                 If the timeout expires, less than the desired number of streams (possibly none) will be returned.
-    * @return A vector of matching stream info objects (excluding their meta-data), any of 
-    *         which can subsequently be used to open an inlet.
-    */
-    inline std::vector<stream_info> resolve_stream(const std::string &pred, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_bypred(buffer,sizeof(buffer),(pred.c_str()),minimum,timeout)]); }
+	/**
+	 * Resolve all streams that match a given predicate.
+	 *
+	 * Advanced query that allows to impose more conditions on the retrieved streams; the given
+	 * string is an [XPath 1.0](http://en.wikipedia.org/w/index.php?title=XPath_1.0) predicate for
+	 * the `<info>` node (omitting the surrounding []'s)
+	 * @param pred The predicate string, e.g. `name='BioSemi'` or
+	 * `type='EEG' and starts-with(name,'BioSemi') and count(info/desc/channel)=32`
+	 * @param minimum Return at least this number of streams.
+	 * @param timeout Optionally a timeout of the operation, in seconds (default: no timeout).
+	 *                 If the timeout expires, less than the desired number of streams (possibly
+	 * none) will be returned.
+	 * @return A vector of matching stream info objects (excluding their meta-data), any of
+	 *         which can subsequently be used to open an inlet.
+	 */
+	inline std::vector<stream_info> resolve_stream(const std::string &pred, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_bypred(buffer,sizeof(buffer),(pred.c_str()),minimum,timeout)]); }
 
 
     // ======================
@@ -763,6 +779,7 @@ namespace lsl {
 
         /**
         * Drop the current data stream.
+        *
         * All samples that are still buffered or in flight will be dropped and transmission 
         * and buffering of data for this inlet will be stopped. If an application stops being 
         * interested in data from a source (temporarily or not) but keeps the outlet alive, 
@@ -773,6 +790,7 @@ namespace lsl {
 
         /**
         * Retrieve an estimated time correction offset for the given stream.
+        *
         * The first call to this function takes several milliseconds until a reliable first estimate is obtained.
         * Subsequent calls are instantaneous (and rely on periodic background updates).
 		* On a well-behaved network, the precision of these estimates should be below 1 ms (empirically it is within +/-0.2 ms).
@@ -781,8 +799,8 @@ namespace lsl {
 		*
 		* @param remote_time The current time of the remote computer that was used to generate this time_correction. 
 		*    If desired, the client can fit time_correction vs remote_time to improve the real-time time_correction further.
-		* @param uncertainty. The maximum uncertainty of the given time correction.
-        * @timeout Timeout to acquire the first time-correction estimate (default: no timeout).
+		* @param uncertainty The maximum uncertainty of the given time correction.
+        * @param timeout Timeout to acquire the first time-correction estimate (default: no timeout).
         * @return The time correction estimate. This is the number that needs to be added to a time stamp 
         *         that was remotely generated via lsl_local_clock() to map it into the local clock domain of this machine.
         * @throws timeout_error (if the timeout expires), or lost_error (if the stream source has been lost).
@@ -790,16 +808,21 @@ namespace lsl {
 		
         double time_correction(double timeout=FOREVER) { int32_t ec=0; double res = lsl_time_correction(obj,timeout,&ec); check_error(ec); return res; }
         double time_correction(double *remote_time, double *uncertainty, double timeout=FOREVER) { int32_t ec=0; double res = lsl_time_correction_ex(obj,remote_time, uncertainty, timeout,&ec); check_error(ec); return res; }
-        
-        /**
-        * Set post-processing flags to use. By default, the inlet performs NO post-processing and returns the 
-        * ground-truth time stamps, which can then be manually synchronized using time_correction(), and then 
-        * smoothed/dejittered if desired. This function allows automating these two and possibly more operations.
-        * Warning: when you enable this, you will no longer receive or be able to recover the original time stamps.
-        * @param flags An integer that is the result of bitwise OR'ing one or more options from processing_options_t 
-		*        together (e.g., post_clocksync|post_dejitter); the default is to enable all options.
-        */
-        void set_postprocessing(uint32_t flags=post_ALL) { check_error(lsl_set_postprocessing(obj,flags)); }
+
+		/**
+		 * Set post-processing flags to use.
+		 *
+		 * By default, the inlet performs NO post-processing and returns the ground-truth time
+		 * stamps, which can then be manually synchronized using .time_correction(), and then
+		 * smoothed/dejittered if desired.<br>
+		 * This function allows automating these two and possibly more operations.<br>
+		 * Warning: when you enable this, you will no longer receive or be able to recover the
+		 * original time stamps.
+		 * @param flags An integer that is the result of bitwise OR'ing one or more options from
+		 * processing_options_t together (e.g., `post_clocksync|post_dejitter`); the default is to
+		 * enable all options.
+		 */
+		void set_postprocessing(uint32_t flags=post_ALL) { check_error(lsl_set_postprocessing(obj,flags)); }
 
         // =======================================
         // === Pulling a sample from the inlet ===
@@ -865,22 +888,31 @@ namespace lsl {
                 throw std::runtime_error("Provided element count does not match the stream's channel count.");
         }
 
-        /**
-        * Pull a sample from the inlet and read it into a custom C-style struct. 
-        * Overall size checking but no type checking or conversion are done. Do not use for variable-size/string-formatted streams.
-        * @param sample The raw sample object to hold the data (packed C-style struct). Search for #pragma pack for information on how to pack structs correctly.
-        * @param timeout The timeout for this operation, if any. Use 0.0 to make the function non-blocking.
-        * @return The capture time of the sample on the remote machine, or 0.0 if no new sample was available. 
-        *          To remap this time stamp to the local clock, add the value returned by .time_correction() to it. 
-        * @throws lost_error (if the stream source has been lost).
-        */
-        template<class T> double pull_numeric_struct(T &sample, double timeout=FOREVER) { return pull_numeric_raw((void*)&sample, sizeof(T), timeout); }
+		/**
+		 * Pull a sample from the inlet and read it into a custom C-style struct.
+		 *
+		 * Overall size checking but no type checking or conversion are done.
+		 * Do not use for variable-size/string-formatted streams.
+		 * @param sample The raw sample object to hold the data (packed C-style struct).
+		 * Search for [`#pragma pack`](https://stackoverflow.com/a/3318475/73299) for information
+		 * on how to pack structs correctly.
+		 * @param timeout The timeout for this operation, if any. Use 0.0 to make the function
+		 * non-blocking.
+		 * @return The capture time of the sample on the remote machine, or 0.0 if no new sample was
+		 * available. To remap this time stamp to the local clock, add the value returned by
+		 * .time_correction() to it.
+		 * @throws lost_error (if the stream source has been lost).
+		 */
+		template<class T> double pull_numeric_struct(T &sample, double timeout=FOREVER) { return pull_numeric_raw((void*)&sample, sizeof(T), timeout); }
 
         /**
         * Pull a sample from the inlet and read it into a pointer to raw data. 
-        * No type checking or conversions are done (not recommended!). Do not use for variable-size/string-formatted streams.
-        * @param buffer A pointer to hold the resulting raw sample data.
-        * @param buffer_bytes The number of bytes allocated in the buffer. Note: it is the responsibility of the user to allocate enough memory.
+        *
+        * No type checking or conversions are done (not recommended!).<br>
+        * Do not use for variable-size/string-formatted streams.
+        * @param sample A pointer to hold the resulting raw sample data.
+        * @param buffer_bytes The number of bytes allocated in the buffer.<br>
+        * Note: it is the responsibility of the user to allocate enough memory.
         * @param timeout The timeout for this operation, if any. Use 0.0 to make the function non-blocking.
         * @return The capture time of the sample on the remote machine, or 0.0 if no new sample was available. 
         *          To remap this time stamp to the local clock, add the value returned by .time_correction() to it. 
