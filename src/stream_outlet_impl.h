@@ -250,7 +250,7 @@ namespace lsl {
 				throw std::range_error("The provided sample data has a different length than the stream's number of channels.");	
 		}
 
-		sample::factory_p sample_factory_;			// a factory for samples of appropriate type
+		factory_p sample_factory_;					// a factory for samples of appropriate type
 		int32_t chunk_size_;							// the preferred chunk size
 		stream_info_impl_p info_;					// stream_info shared between the various server instances
 		send_buffer_p send_buffer_;					// the single-producer, multiple-receiver send buffer

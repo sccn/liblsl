@@ -275,13 +275,13 @@ sample &sample::assign_test_pattern(int offset) {
 	return *this;
 }
 
-sample::factory::factory(channel_format_t fmt, int num_chans, int num_reserve)
-    : fmt_(fmt), num_chans_(num_chans),
-      sample_size_(
-          ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
-      storage_size_(sample_size_ * std::max(1, num_reserve)), storage_(new char[storage_size_]),
-      sentinel_(new_sample_unmanaged(fmt, num_chans, 0.0, false)), head_(sentinel_),
-      tail_(sentinel_) {
+factory::factory(channel_format_t fmt, int num_chans, int num_reserve)
+	: fmt_(fmt), num_chans_(num_chans),
+	  sample_size_(
+		  ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
+	  storage_size_(sample_size_ * std::max(1, num_reserve)), storage_(new char[storage_size_]),
+	  sentinel_(new_sample_unmanaged(fmt, num_chans, 0.0, false)), head_(sentinel_),
+	  tail_(sentinel_) {
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	sample* s = NULL;
 	for (char *p = storage_.get(), *e = p + storage_size_; p < e;) {
@@ -294,7 +294,7 @@ sample::factory::factory(channel_format_t fmt, int num_chans, int num_reserve)
 	sentinel_->next_ = (sample*)storage_.get();
 }
 
-sample_p sample::factory::new_sample(double timestamp, bool pushthrough) {
+sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	sample* result = pop_freelist();
 	if (!result)
 #pragma warning(suppress : 4291)
@@ -304,7 +304,7 @@ sample_p sample::factory::new_sample(double timestamp, bool pushthrough) {
 	return sample_p(result);
 }
 
-sample* sample::factory::new_sample_unmanaged(channel_format_t fmt, int num_chans, double timestamp,
+sample* factory::new_sample_unmanaged(channel_format_t fmt, int num_chans, double timestamp,
                                               bool pushthrough) {
 #pragma warning(suppress : 4291)
 	sample* result =
@@ -315,7 +315,7 @@ sample* sample::factory::new_sample_unmanaged(channel_format_t fmt, int num_chan
 	return result;
 }
 
-sample* sample::factory::pop_freelist() {
+sample* factory::pop_freelist() {
 	sample *tail = tail_, *next = tail->next_;
 	if (tail == sentinel_) {
 		if (!next) return NULL;
@@ -336,4 +336,17 @@ sample* sample::factory::pop_freelist() {
 		return tail;
 	}
 	return NULL;
+}
+
+factory::~factory() {
+	if (sample *cur = head_)
+		for (sample *next=cur->next_;next;cur=next,next=next->next_)
+			delete cur;
+	delete sentinel_;
+}
+
+void factory::reclaim_sample(sample* s) {
+	s->next_ = NULL;
+	sample *prev = head_.exchange(s);
+	prev->next_ = s;
 }

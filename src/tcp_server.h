@@ -60,7 +60,8 @@ namespace lsl {
 		* @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 		* @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 		*/
-		tcp_server(const stream_info_impl_p &info, const io_context_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size);
+		tcp_server(const stream_info_impl_p &info, const io_context_p &io,
+			const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size);
 
 		/// Begin serving TCP connections.
 		/// Should not be called before info_ has been fully initialized by all involved parties (tcp_server, udp_server)
@@ -186,7 +187,7 @@ namespace lsl {
 		// data shared with the outlet
 		stream_info_impl_p info_;				// shared stream_info object
 		io_context_p io_;						// shared ptr to IO service; ensures that the IO is still around by the time the acceptor needs to be destroyed
-		sample::factory_p factory_;				// reference to the sample factory (which owns the samples)
+		factory_p factory_;						// reference to the sample factory (which owns the samples)
 		send_buffer_p send_buffer_;				// the send buffer, shared with other TCP's and the outlet
 
 		// acceptor socket

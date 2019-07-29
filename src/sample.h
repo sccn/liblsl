@@ -56,14 +56,58 @@ namespace lsl {
  
 	/// smart pointer to a sample
 	typedef lslboost::intrusive_ptr<class sample> sample_p;
-	
+
+	/// A factory to create samples of a given format/size.
+	/// Must outlive all of its created samples.
+	class factory {
+	public:
+		/// Create a new factory and optionally pre-allocate samples.
+		factory(channel_format_t fmt, int num_chans, int num_reserve);
+
+		/// Destroy the factory and delete all of its samples.
+		~factory();
+
+		/// Create a new sample with a given timestamp and pushthrough flag.
+		/// Only one thread may call this function for a given factory object.
+		sample_p new_sample(double timestamp, bool pushthrough);
+
+		/// Reclaim a sample that's no longer used.
+		void reclaim_sample(sample *s);
+
+		/// Create a new sample whose memory is not managed by the factory.
+		static sample *new_sample_unmanaged(
+			channel_format_t fmt, int num_chans, double timestamp, bool pushthrough);
+
+	private:
+		/// ensure that a given value is a multiple of some base, round up if necessary
+		static uint32_t ensure_multiple(uint32_t v, unsigned base) {
+			return (v % base) ? v - (v % base) + base : v;
+		}
+
+		// Pop a sample from the freelist
+		// (multi-producer/single-consumer queue by Dmitry Vjukov)
+		sample *pop_freelist();
+
+		friend class sample;
+		channel_format_t fmt_;				   // the channel format to construct samples with
+		int num_chans_;						   // the number of channels to construct samples with
+		int sample_size_;					   // size of a sample, in bytes
+		int storage_size_;					   // size of the allocated storage, in bytes
+		lslboost::scoped_array<char> storage_; // a slab of storage for pre-allocated samples
+		sample *sentinel_;					   // a sentinel element for our freelist
+		lslboost::atomic<sample *> head_;	  // head of the freelist
+		sample *tail_;						   // tail of the freelist
+	};
+
+	typedef lslboost::shared_ptr<factory> factory_p;
+
 	/**
 	* The sample data type.
 	* Used to represent samples across the library's various buffers and can be serialized (e.g., over the network).
 	*/
 	class sample {
 	public:
-		class factory;					// samples can only be created by the factory
+		friend class factory;
 		double timestamp;				// time-stamp of the sample
 		bool pushthrough;				// whether the sample shall be buffered or pushed through
 
@@ -77,58 +121,6 @@ namespace lsl {
 
 	public:
 		// === Construction ===
-
-		// shared pointer to a sample factory
-		typedef lslboost::shared_ptr<factory> factory_p;
-
-		/// A factory to create samples of a given format/size.
-		/// Must outlive all of its created samples.
-		class factory {
-		public:
-			/// Create a new factory and optionally pre-allocate samples.
-			factory(channel_format_t fmt, int num_chans, int num_reserve);
-
-			/// Destroy the factory and delete all of its samples.
-			~factory() {
-				if (sample *cur = head_)
-					for (sample *next=cur->next_;next;cur=next,next=next->next_)
-						delete cur;
-				delete sentinel_;
-			}
-
-			/// Create a new sample with a given timestamp and pushthrough flag.
-			/// Only one thread may call this function for a given factory object.
-			sample_p new_sample(double timestamp, bool pushthrough);
-
-			/// Reclaim a sample that's no longer used.
-			void reclaim_sample(sample *s) { 
-				s->next_ = NULL;
-				sample *prev = head_.exchange(s);
-				prev->next_ = s;
-			}
-
-			/// Create a new sample whose memory is not managed by the factory.
-			static sample *new_sample_unmanaged(channel_format_t fmt, int num_chans, double timestamp, bool pushthrough);
-
-		private:
-			/// ensure that a given value is a multiple of some base, round up if necessary
-			static uint32_t ensure_multiple(uint32_t v, unsigned base) { return (v%base) ? v - (v%base) + base : v; }
-
-			// Pop a sample from the freelist
-			// (multi-producer/single-consumer queue by Dmitry Vjukov)
-			sample *pop_freelist();
-
-			friend class sample;
-			channel_format_t fmt_;					// the channel format to construct samples with
-			int num_chans_;							// the number of channels to construct samples with
-			int sample_size_;						// size of a sample, in bytes
-			int storage_size_;						// size of the allocated storage, in bytes
-			lslboost::scoped_array<char> storage_;		// a slab of storage for pre-allocated samples
-			sample *sentinel_;						// a sentinel element for our freelist
-			lslboost::atomic<sample*> head_;			// head of the freelist
-			sample *tail_;							// tail of the freelist
-		};
-
 
 		/// Destructor for a sample.
 		~sample() {

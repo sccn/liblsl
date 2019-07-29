@@ -37,7 +37,10 @@ using namespace lslboost::asio;
 * @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines the effective chunking.
 */
-tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io, const send_buffer_p &sendbuf, const sample::factory_p &factory, tcp protocol, int chunk_size): chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory), send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
+tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
+	const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size)
+	: chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory),
+	  send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -371,7 +374,8 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 			}
 
 			// send test pattern samples
-			lslboost::scoped_ptr<sample> temp(sample::factory::new_sample_unmanaged(serv_->info_->channel_format(),serv_->info_->channel_count(),0.0,false));
+			lslboost::scoped_ptr<sample> temp(factory::new_sample_unmanaged(
+				serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
 			temp->assign_test_pattern(4);
 			if (data_protocol_version_ >= 110)
 				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());

@@ -28,7 +28,7 @@ using namespace lslboost::algorithm;
 *					  Recording applications can use a generous size here (leaving it to the network how to pack things), while real-time applications may want a finer (perhaps 1-sample) granularity.
 */
 data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chunklen): conn_(conn), check_thread_start_(true), closing_stream_(false), connected_(false), sample_queue_(max_buflen), 
-	sample_factory_(new sample::factory(conn.type_info().channel_format(),conn.type_info().channel_count(),conn.type_info().nominal_srate()?conn.type_info().nominal_srate()*api_config::get_instance()->inlet_buffer_reserve_ms()/1000:api_config::get_instance()->inlet_buffer_reserve_samples())), max_buflen_(max_buflen), max_chunklen_(max_chunklen) 
+	sample_factory_(new factory(conn.type_info().channel_format(),conn.type_info().channel_count(),conn.type_info().nominal_srate()?conn.type_info().nominal_srate()*api_config::get_instance()->inlet_buffer_reserve_ms()/1000:api_config::get_instance()->inlet_buffer_reserve_samples())), max_buflen_(max_buflen), max_chunklen_(max_chunklen)
 {
 	if (max_buflen < 0)
 		throw std::invalid_argument("The max_buflen argument must not be smaller than 0.");
@@ -133,7 +133,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 void data_receiver::data_thread() {
 	conn_.acquire_watchdog();
 	// ensure that the sample factory persists for the lifetime of this thread
-	sample::factory_p factory(sample_factory_);
+	factory_p factory(sample_factory_);
 	try {
 		while (!conn_.lost() && !conn_.shutdown() && !closing_stream_) {
 			try {
@@ -243,7 +243,7 @@ void data_receiver::data_thread() {
 				{
 					// receive and parse two subsequent test-pattern samples and check if they are formatted as expected
 					lslboost::scoped_ptr<sample> temp[4]; 
-					for (int k=0; k<4; temp[k++].reset(sample::factory::new_sample_unmanaged(conn_.type_info().channel_format(),conn_.type_info().channel_count(),0.0,false)));
+					for (int k=0; k<4; temp[k++].reset(factory::new_sample_unmanaged(conn_.type_info().channel_format(),conn_.type_info().channel_count(),0.0,false)));
 					temp[0]->assign_test_pattern(4);
 					if (data_protocol_version >= 110)
 						temp[1]->load_streambuf(buffer, data_protocol_version, use_byte_order, suppress_subnormals);
