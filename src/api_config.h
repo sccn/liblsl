@@ -3,10 +3,9 @@
 
 #include <string>
 #include <vector>
-#include <boost/thread/once.hpp>
 
 #include "common.h"
-
+namespace lslboost { struct once_flag; }
 
 namespace lsl {
 	/**

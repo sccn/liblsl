@@ -3,19 +3,16 @@
 
 #pragma warning (disable:4800)	// (inefficiently converting int to bool in portable_oarchive instantiation...)
 
-#include "stream_info_impl.h"
 #include <set>
-#include <iostream>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/scoped_ptr.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include "common.h"
 
-#include "send_buffer.h"
 #include "api_config.h"
 
 using lslboost::asio::ip::tcp;

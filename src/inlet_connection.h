@@ -7,10 +7,10 @@
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread_only.hpp>
 #include <boost/function.hpp>
-#include "common.h"
 #include "resolver_impl.h"
 #include "cancellation.h"
 
+namespace lslboost { template<class Fn> class function; }
 
 using lslboost::asio::ip::tcp;
 using lslboost::asio::ip::udp;

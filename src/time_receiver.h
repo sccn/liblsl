@@ -6,13 +6,16 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/thread/mutex.hpp>
-#include <boost/random.hpp>
-#include "inlet_connection.h"
+#include <boost/thread/thread_only.hpp>
+#include <boost/random/mersenne_twister.hpp>
 
 using lslboost::asio::ip::udp;
 using lslboost::asio::steady_timer;
+using lslboost::system::error_code;
 
 namespace lsl {
+	class inlet_connection;
+	class api_config;
 
 	/// list of time estimates with error bounds
 	typedef std::vector<std::pair<double,double> > estimate_list;
@@ -82,7 +85,7 @@ namespace lsl {
 		void result_aggregation_scheduled(error_code err);
 
 		/// Function polled by the condition variable
-		bool timeoffset_available() { return (timeoffset_ != std::numeric_limits<double>::max()) || conn_.lost(); }
+		bool timeoffset_available();
 
 		/// Ensures that the time-offset is reset when the underlying connection is recovered (e.g., switches to another host)
 		void reset_timeoffset_on_recovery();

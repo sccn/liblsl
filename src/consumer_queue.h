@@ -2,13 +2,16 @@
 #define CONSUMER_QUEUE_H
 
 #include <boost/lockfree/spsc_queue.hpp>
-#include "sample.h"
+#include <boost/smart_ptr/shared_ptr.hpp>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
+#include "common.h"
 
 namespace lsl {
 	/// shared pointer to a consumer queue
 	typedef lslboost::shared_ptr<class consumer_queue> consumer_queue_p;
 	/// shared pointer to a send buffer
 	typedef lslboost::shared_ptr<class send_buffer> send_buffer_p;
+	typedef lslboost::intrusive_ptr<class sample> sample_p;
 
 	/**
 	* A thread-safe producer-consumer queue of unread samples.

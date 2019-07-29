@@ -1,8 +1,9 @@
 #include "common.h"
-#include "api_config.h"
+#include <boost/chrono/duration.hpp>
 #include <boost/chrono/system_clocks.hpp>
 
 #ifdef _WIN32
+#include "api_config.h"
 #include <windows.h>
 #pragma comment (lib,"winmm.lib")
 #endif

@@ -1,24 +1,18 @@
 #ifndef RESOLVE_ATTEMPT_UDP_H
 #define RESOLVE_ATTEMPT_UDP_H
 
-#include "common.h"
 #include "stream_info_impl.h"
 #include "cancellation.h"
 #include <map>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/enable_shared_from_this.hpp>
-#include <boost/thread/mutex.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
+
+namespace lslboost { class mutex; }
+namespace lslboost { namespace system { class error_code; } }
 
 using lslboost::asio::ip::udp;
-using lslboost::asio::ip::tcp;
-using lslboost::system::error_code;
-
-
-using lslboost::asio::ip::udp;
-using lslboost::asio::ip::tcp;
 using lslboost::system::error_code;
 
 namespace lsl {

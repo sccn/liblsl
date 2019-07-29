@@ -1,14 +1,12 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
-#include <vector>
-#include <string>
-#include <streambuf>
-#include <boost/smart_ptr.hpp>
-#include <boost/intrusive_ptr.hpp>
+#include <boost/smart_ptr/scoped_array.hpp>
+#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/atomic.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/endian/conversion.hpp>
+#include <iosfwd>
 #include "cast.h"
 #include "common.h"
 

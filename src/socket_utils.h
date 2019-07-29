@@ -1,9 +1,7 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
-#include "common.h"
 #include "api_config.h"
-#include <boost/cstdint.hpp>
 #include <boost/system/system_error.hpp>
 #include <boost/asio/detail/chrono.hpp>
 

@@ -1,6 +1,4 @@
-#include <sstream>
 #include <boost/thread/lock_guard.hpp>
-#include <boost/thread/mutex.hpp>
 #include "cast.h"
 #include "stream_info_impl.h"
 #include "api_config.h"

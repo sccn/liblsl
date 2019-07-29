@@ -1,9 +1,8 @@
 #ifndef SEND_BUFFER_H
 #define SEND_BUFFER_H
 
-#include <set>
 #include <boost/container/flat_set.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include "consumer_queue.h"

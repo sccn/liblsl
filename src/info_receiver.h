@@ -1,12 +1,14 @@
 #ifndef INFO_RECEIVER_H
 #define INFO_RECEIVER_H
 
-#include "inlet_connection.h"
 #include <boost/thread/thread_only.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
+#include "common.h"
 
 namespace lsl {
+	class inlet_connection;
+	typedef lslboost::shared_ptr<class stream_info_impl> stream_info_impl_p;
 
 	/// Internal class of an inlet that is responsible for retrieving the info of the inlet.
 	/// The actual communication runs in an internal background thread, while the public function (info()) waits for the thread to finish.
@@ -32,7 +34,7 @@ namespace lsl {
 		void info_thread();
 		
 		/// function polled by the condition variable
-		bool info_ready() { return fullinfo_ || conn_.lost(); }
+		bool info_ready();
 
 
 		// the underlying connection

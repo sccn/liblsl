@@ -5,11 +5,10 @@
 #include "api_config.h"
 #include "stream_info_impl.h"
 #include "cancellation.h"
-#include "resolve_attempt_udp.h"
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/shared_ptr.hpp>
+#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
@@ -19,11 +18,15 @@ using lslboost::asio::ip::tcp;
 using lslboost::system::error_code;
 
 namespace lsl {
+	class api_config;
 
 	/// Pointer to a steady timer
 	typedef lslboost::shared_ptr<lslboost::asio::steady_timer> steady_timer_p;
 	/// Pointer to an io_context
 	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
+
+	/// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
+	typedef std::map<std::string,std::pair<stream_info_impl,double> > result_container;
 
 	/**
 	* A stream resolver object.

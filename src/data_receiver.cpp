@@ -1,8 +1,11 @@
 #include <iostream>
 #include <boost/serialization/string.hpp>
 #include <boost/bind.hpp>
-#include <boost/scoped_ptr.hpp>
-#include <boost/algorithm/string.hpp>
+#include <boost/smart_ptr/scoped_ptr.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/predicate.hpp>
 #include "cancellable_streambuf.h"
 #include "data_receiver.h"
 #include "socket_utils.h"

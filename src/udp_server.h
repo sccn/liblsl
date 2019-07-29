@@ -1,11 +1,9 @@
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
-#include "common.h"
-#include "stream_info_impl.h"
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/enable_shared_from_this.hpp>
+#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include "common.h"
 
 using lslboost::asio::ip::udp;
 using lslboost::system::error_code;
@@ -18,6 +16,7 @@ namespace lsl {
 	typedef lslboost::shared_ptr<class udp_server> udp_server_p;
 	/// shared pointer to a socket
 	typedef lslboost::shared_ptr<udp::socket> udp_socket_p;
+	typedef lslboost::shared_ptr<class stream_info_impl> stream_info_impl_p;
 
 	/*
 	* A lightweight UDP responder service.

@@ -1,11 +1,11 @@
-#include <sstream>
 #include <iostream>
-#include <istream>
-#include <boost/asio/ip/multicast.hpp>
+#include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
-#include <boost/functional/hash.hpp>
+#include <boost/thread/thread_only.hpp>
+#include "api_config.h"
 #include "cast.h"
+#include "resolve_attempt_udp.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
 

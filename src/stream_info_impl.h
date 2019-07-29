@@ -2,7 +2,6 @@
 #define STREAM_INFO_IMPL_H
 
 #include "common.h"
-#include <boost/cstdint.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/bimap.hpp>
 #include <boost/thread/mutex.hpp>
