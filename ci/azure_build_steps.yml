@@ -2,6 +2,7 @@ parameters:
   cpack: true
   run_tests: true
   cmake_stepvars: ''
+  lslcfgs: ['default', 'ipv4only', 'ipv6only', 'ipv4_lsl100', 'ipv6_lsl100']
 steps:
 - task: CMake@1
   inputs:
@@ -19,14 +20,19 @@ steps:
     workingDirectory: 'build'
     displayName: 'create cpack packages'
 - ${{ if eq(parameters.run_tests, 'true') }}:
-  - bash: build/install/bin/lsl_test_exported --gtest_shuffle --gtest_output=xml:test_exported_$(Agent.JobName).xml
-    displayName: 'Run public API unit tests'
-    timeoutInMinutes: 5
-    continueOnError: true
-#  - bash: build/testing/lsl_test_internal --gtest_shuffle --gtest_output=xml:test_internal_$(Agent.JobName).xml || true
-#    displayName: 'Run internal unit tests'
-#    timeoutInMinutes: 5
-#    continueOnError: true
+  - ${{ each lslcfg in parameters.lslcfgs }}:
+    - bash: build/install/bin/lsl_test_exported --gtest_shuffle --gtest_output=xml:test_exported_$(Agent.JobName)_${{lslcfg}}.xml
+      displayName: 'Run public API unit tests'
+      timeoutInMinutes: 5
+      continueOnError: true
+      env:
+        LSLAPICFG: testing/lslcfgs/${{lslcfg}}.cfg
+    - bash: build/testing/lsl_test_internal --gtest_shuffle --gtest_output=xml:test_internal_$(Agent.JobName)_${{lslcfg}}.xml || true
+      displayName: 'Run internal unit tests'
+      timeoutInMinutes: 5
+      continueOnError: true
+      env:
+        LSLAPICFG: testing/lslcfgs/${{lslcfg}}.cfg
   - task: PublishTestResults@2
     inputs:
       testResultsFormat: 'JUnit'
