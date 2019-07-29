@@ -210,7 +210,7 @@ namespace eos {
 			case FP_NAN: bits = traits::exponent | traits::significand; break;
 			case FP_INFINITE: bits = traits::exponent | (t<0) * traits::sign; break;
 			case FP_SUBNORMAL: assert(std::numeric_limits<T>::has_denorm); // pass
-			case FP_ZERO: // note that floats can be Â±0.0
+			case FP_ZERO: // note that floats can be ±0.0
 			case FP_NORMAL: traits::get_bits(t, bits); break;
 			default: throw portable_archive_exception(t);
 			}

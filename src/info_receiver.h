@@ -5,10 +5,10 @@
 #include <boost/thread/condition_variable.hpp>
 #include <boost/thread/mutex.hpp>
 #include "common.h"
+#include "forward.h"
 
 namespace lsl {
 	class inlet_connection;
-	typedef lslboost::shared_ptr<class stream_info_impl> stream_info_impl_p;
 
 	/// Internal class of an inlet that is responsible for retrieving the info of the inlet.
 	/// The actual communication runs in an internal background thread, while the public function (info()) waits for the thread to finish.

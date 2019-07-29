@@ -9,11 +9,7 @@
 #include <iosfwd>
 #include "cast.h"
 #include "common.h"
-
-namespace eos {
-class portable_iarchive;
-class portable_oarchive;
-}
+#include "forward.h"
 
 // Boost.Endian has no functions to reverse floats, so we pretend they're ints
 // of the same size.
@@ -52,9 +48,6 @@ namespace lsl {
 	const bool format_integral[] = {false,false,false,false,true,true,true,true}; 
 	const bool format_float[] = {false,true,true,false,false,false,false,false}; 
  
-	/// smart pointer to a sample
-	typedef lslboost::intrusive_ptr<class sample> sample_p;
-
 	/// A factory to create samples of a given format/size.
 	/// Must outlive all of its created samples.
 	class factory {
@@ -96,8 +89,6 @@ namespace lsl {
 		lslboost::atomic<sample *> head_;	  // head of the freelist
 		sample *tail_;						   // tail of the freelist
 	};
-
-	typedef lslboost::shared_ptr<factory> factory_p;
 
 	/**
 	* The sample data type.

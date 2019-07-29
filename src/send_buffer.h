@@ -5,7 +5,8 @@
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
-#include "consumer_queue.h"
+#include "common.h"
+#include "forward.h"
 
 namespace lsl {
 

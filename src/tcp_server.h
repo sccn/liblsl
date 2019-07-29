@@ -12,8 +12,7 @@
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/recursive_mutex.hpp>
 #include "common.h"
-
-#include "api_config.h"
+#include "forward.h"
 
 using lslboost::asio::ip::tcp;
 using lslboost::system::error_code;
@@ -26,10 +25,6 @@ namespace lsl {
 	typedef lslboost::shared_ptr<tcp::socket> tcp_socket_p;
 	/// shared pointer to an acceptor socket
 	typedef lslboost::shared_ptr<tcp::acceptor> tcp_acceptor_p;
-	/// shared pointer to a TCP socket
-	typedef lslboost::shared_ptr<class tcp_server> tcp_server_p;
-	/// pointer to an io_context
-	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
 
 	/**
 	* The TCP data server.

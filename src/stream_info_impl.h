@@ -2,15 +2,11 @@
 #define STREAM_INFO_IMPL_H
 
 #include "common.h"
-#include <boost/shared_ptr.hpp>
 #include <boost/bimap.hpp>
 #include <boost/thread/mutex.hpp>
 #include "pugixml/pugixml.hpp"
 
 namespace lsl {
-
-	/// shared pointer to a stream_info_impl
-	typedef lslboost::shared_ptr<class stream_info_impl> stream_info_impl_p;
 
 	/**
 	* Actual implementation of the stream_info class.
@@ -124,10 +120,7 @@ namespace lsl {
 		/**
 		* Get the number of bytes per channel (returns 0 for string-typed channels).
 		*/
-		int channel_bytes() const {
-			const int channel_format_sizes[] = {0,sizeof(float),sizeof(double),sizeof(std::string),sizeof(int32_t),sizeof(int16_t),sizeof(int8_t),8};
-			return channel_format_sizes[channel_format_];
-		}
+		int channel_bytes() const;
 
 		/**
 		* Get the number of bytes per sample (returns 0 for string-typed channels).

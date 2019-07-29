@@ -1,5 +1,4 @@
 #include <iostream>
-#include <istream>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>

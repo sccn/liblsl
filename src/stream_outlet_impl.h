@@ -2,9 +2,7 @@
 #define STREAM_OUTLET_IMPL_H
 
 #include <iostream>
-#include <boost/thread/thread_only.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
+#include "forward.h"
 #include "send_buffer.h"
 #include "stream_info_impl.h"
 #include "common.h"
@@ -18,10 +16,6 @@ namespace lsl {
 
 	/// pointer to a thread
 	typedef lslboost::shared_ptr<lslboost::thread> thread_p;
-	/// pointer to an io_context
-	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
-	typedef lslboost::shared_ptr<class tcp_server> tcp_server_p;
-	typedef lslboost::shared_ptr<class udp_server> udp_server_p;
 
 	/**
 	* A stream outlet.

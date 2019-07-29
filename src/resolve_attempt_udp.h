@@ -5,7 +5,6 @@
 #include "cancellation.h"
 #include <map>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/smart_ptr/enable_shared_from_this.hpp>
 
@@ -19,14 +18,6 @@ namespace lsl {
 
 	/// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
 	typedef std::map<std::string,std::pair<stream_info_impl,double> > result_container;
-
-	/// Pointer to a UDP resolve attempt.
-	typedef lslboost::shared_ptr<class resolve_attempt_udp> resolve_attempt_udp_p;
-	/// Pointer to a steady timer
-	typedef lslboost::shared_ptr<lslboost::asio::steady_timer> steady_timer_p;
-	/// Pointer to an io_context
-	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
-
 
 	/**
 	* An asynchronous resolve attempt for a single query targeted at a set of endpoints, via UDP.
