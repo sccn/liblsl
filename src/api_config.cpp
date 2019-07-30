@@ -115,46 +115,58 @@ void api_config::load_from_file(const std::string &filename) {
 		// read the [multicast] parameters
 		resolve_scope_ = pt.get("multicast.ResolveScope","site");
 		listen_address_ = pt.get("multicast.ListenAddress","");
-		std::vector<std::string> machine_group = parse_set(pt.get("multicast.MachineAddresses","{127.0.0.1, ::1}"));
-		std::vector<std::string> link_group = parse_set(pt.get("multicast.LinkAddresses","{255.255.255.255}"));
-		std::vector<std::string> site_group = parse_set(pt.get("multicast.SiteAddresses","{}"));
+		// Note about multicast addresses: IPv6 multicast addresses should be
+		// FF0x::1 (see RFC2373, RFC1884) or a predefined multicast group
+		std::string ipv6_multicast_group = pt.get("multicast.IPv6MulticastGroup", "113D:6FDD:2C17:A643:FFE2:1BD1:3CD2");
+		std::vector<std::string> machine_group = parse_set(pt.get("multicast.MachineAddresses","{127.0.0.1}"));
+		// 224.0.0.1 is the group for all directly connected hosts (RFC1112)
+		std::vector<std::string> link_group = parse_set(pt.get("multicast.LinkAddresses","{255.255.255.255, 224.0.0.1, 224.0.0.183}"));
+		// Multicast groups defined by the organization (and therefore subject
+		// to filtering / forwarding are in the 239.192.0.0/14 subnet (RFC2365)
+		std::vector<std::string> site_group = parse_set(pt.get("multicast.SiteAddresses","{239.255.172.215}"));
+		// Organization groups use the same broadcast addresses (IPv4), but
+		// have a larger TTL. On the network site, it requires the routers
+		// to forward the broadcast packets (both IGMP and UDP)
 		std::vector<std::string> organization_group = parse_set(pt.get("multicast.OrganizationAddresses","{}"));
 		std::vector<std::string> global_group = parse_set(pt.get("multicast.GlobalAddresses","{}"));
-
-		multicast_ttl_ = -1;
+		enum {
+			machine = 0,
+			link,
+			site,
+			organization,
+			global
+		} scope;
 		// construct list of addresses & TTL according to the ResolveScope.
-		if (resolve_scope_ == "machine") {
-			multicast_addresses_ = machine_group;
-			multicast_ttl_ = 0;
-		}
-		if (resolve_scope_ == "link") {
-			multicast_addresses_ = machine_group;
+		if (resolve_scope_ == "machine") scope = machine;
+		else if(resolve_scope_ == "link") scope = link;
+		else if(resolve_scope_ == "site") scope = site;
+		else if(resolve_scope_ == "organization") scope = organization;
+		else if(resolve_scope_ == "global") scope = global;
+		else throw std::runtime_error("This ResolveScope setting is unsupported.");
+
+		multicast_addresses_.insert(multicast_addresses_.end(), machine_group.begin(), machine_group.end());
+		multicast_ttl_ = 0;
+
+		if(scope >= link) {
 			multicast_addresses_.insert(multicast_addresses_.end(),link_group.begin(),link_group.end());
+			multicast_addresses_.push_back("FF02:" + ipv6_multicast_group);
 			multicast_ttl_ = 1;
 		}
-		if (resolve_scope_ == "site") {
-			multicast_addresses_ = machine_group;
-			multicast_addresses_.insert(multicast_addresses_.end(),link_group.begin(),link_group.end());
+		if(scope >= site) {
 			multicast_addresses_.insert(multicast_addresses_.end(),site_group.begin(),site_group.end());
+			multicast_addresses_.push_back("FF05:" + ipv6_multicast_group);
 			multicast_ttl_ = 24;
 		}
-		if (resolve_scope_ == "organization") {
-			multicast_addresses_ = machine_group;
-			multicast_addresses_.insert(multicast_addresses_.end(),link_group.begin(),link_group.end());
-			multicast_addresses_.insert(multicast_addresses_.end(),site_group.begin(),site_group.end());
+		if(scope >= organization) {
 			multicast_addresses_.insert(multicast_addresses_.end(),organization_group.begin(),organization_group.end());
+			multicast_addresses_.push_back("FF08:" + ipv6_multicast_group);
 			multicast_ttl_ = 32;
 		}
-		if (resolve_scope_ == "global") {
-			multicast_addresses_ = machine_group;
-			multicast_addresses_.insert(multicast_addresses_.end(),link_group.begin(),link_group.end());
-			multicast_addresses_.insert(multicast_addresses_.end(),site_group.begin(),site_group.end());
-			multicast_addresses_.insert(multicast_addresses_.end(),organization_group.begin(),organization_group.end());
+		if(scope >= global) {
 			multicast_addresses_.insert(multicast_addresses_.end(),global_group.begin(),global_group.end());
+			multicast_addresses_.push_back("FF0E:" + ipv6_multicast_group);
 			multicast_ttl_ = 255;
 		}
-		if (multicast_ttl_ == -1)
-			throw std::runtime_error("This ResolveScope setting is unsupported.");
 
 		// apply overrides, if any
 		int ttl_override = pt.get("multicast.TTLOverride",-1);
