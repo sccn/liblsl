@@ -58,7 +58,13 @@ bool file_is_readable(const std::string& filename) {
 api_config::api_config() {
 	// for each config file location under consideration...
 	std::vector<std::string> filenames;
-	if(getenv("LSLAPICFG")) filenames.insert(filenames.begin(), getenv("LSLAPICFG"));
+	if(getenv("LSLAPICFG")) {
+		std::string envcfg(getenv("LSLAPICFG"));
+		if (!file_is_readable(envcfg))
+			std::cerr << "LSLAPICFG file " << envcfg << " not found" << std::endl;
+		else
+			filenames.insert(filenames.begin(), envcfg);
+	}
 	filenames.push_back("lsl_api.cfg");
 	filenames.push_back(expand_tilde("~/lsl_api/lsl_api.cfg"));
 	filenames.push_back("/etc/lsl_api/lsl_api.cfg");
