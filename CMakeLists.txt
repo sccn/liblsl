@@ -195,6 +195,7 @@ if(LSL_BUILD_STATIC)
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
 	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
+	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)
