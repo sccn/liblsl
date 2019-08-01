@@ -185,7 +185,12 @@ endif()
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
-install(TARGETS lsl lslver
+set(EXPORTED_TARGETS lsl lslver)
+if(${LSL_BUILD_STATIC})
+	list(APPEND EXPORTED_TARGETS lslboost ${target}-static)
+endif()
+
+install(TARGETS ${EXPORTED_TARGETS}
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
