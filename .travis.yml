@@ -22,8 +22,8 @@ script:
 - cmake --version
 - cmake -DCMAKE_BUILD_TYPE=Release -DLSL_UNIXFOLDERS=1 ${CMakeArgs} -DLSL_UNITTESTS=1 ../
 - cmake --build . --config Release --target install
-- testing/lsl_test_internal
-- testing/lsl_test_exported || true
+- testing/lsl_test_internal || true
+- testing/lsl_test_exported
 - cpack
 - cd ..
 deploy:
