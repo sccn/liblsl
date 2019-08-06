@@ -46,7 +46,7 @@ public:
 	 * This server will listen on a multicast address and responds only to LSL:shortinfo requests.
 	 * This is for multicast/broadcast (and optionally unicast) local service discovery.
 	 */
-	udp_server(stream_info_impl_p info, asio::io_context &io, const std::string &address,
+	udp_server(stream_info_impl_p info, asio::io_context &io, asio::ip::address addr,
 		uint16_t port, int ttl, const std::string &listen_address);
 
 

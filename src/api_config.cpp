@@ -149,32 +149,29 @@ void api_config::load_from_file(const std::string &filename) {
 		else
 			throw std::runtime_error("This ResolveScope setting is unsupported.");
 
-		multicast_addresses_.insert(
-			multicast_addresses_.end(), machine_group.begin(), machine_group.end());
+		std::vector<std::string> mcasttmp;
+
+		mcasttmp.insert(mcasttmp.end(), machine_group.begin(), machine_group.end());
 		multicast_ttl_ = 0;
 
 		if (scope >= link) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), link_group.begin(), link_group.end());
-			multicast_addresses_.push_back("FF02:" + ipv6_multicast_group);
+			mcasttmp.insert(mcasttmp.end(), link_group.begin(), link_group.end());
+			mcasttmp.push_back("FF02:" + ipv6_multicast_group);
 			multicast_ttl_ = 1;
 		}
 		if (scope >= site) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), site_group.begin(), site_group.end());
-			multicast_addresses_.push_back("FF05:" + ipv6_multicast_group);
+			mcasttmp.insert(mcasttmp.end(), site_group.begin(), site_group.end());
+			mcasttmp.push_back("FF05:" + ipv6_multicast_group);
 			multicast_ttl_ = 24;
 		}
 		if (scope >= organization) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), organization_group.begin(), organization_group.end());
-			multicast_addresses_.push_back("FF08:" + ipv6_multicast_group);
+			mcasttmp.insert(mcasttmp.end(), organization_group.begin(), organization_group.end());
+			mcasttmp.push_back("FF08:" + ipv6_multicast_group);
 			multicast_ttl_ = 32;
 		}
 		if (scope >= global) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), global_group.begin(), global_group.end());
-			multicast_addresses_.push_back("FF0E:" + ipv6_multicast_group);
+			mcasttmp.insert(mcasttmp.end(), global_group.begin(), global_group.end());
+			mcasttmp.push_back("FF0E:" + ipv6_multicast_group);
 			multicast_ttl_ = 255;
 		}
 
@@ -183,7 +180,14 @@ void api_config::load_from_file(const std::string &filename) {
 		std::vector<std::string> address_override =
 			parse_set(pt.get("multicast.AddressesOverride", "{}"));
 		if (ttl_override >= 0) multicast_ttl_ = ttl_override;
-		if (!address_override.empty()) multicast_addresses_ = address_override;
+		if (!address_override.empty()) mcasttmp = address_override;
+
+		// Parse, validate and store multicast addresses
+		for (std::vector<std::string>::iterator it = mcasttmp.begin(); it != mcasttmp.end(); ++it) {
+			ip::address addr = ip::make_address(*it);
+			if ((addr.is_v4() && allow_ipv4_) || (addr.is_v6() && allow_ipv6_))
+				multicast_addresses_.push_back(addr);
+		}
 
 		// The network stack requires the source interfaces for multicast packets to be
 		// specified as IPv4 address or an IPv6 interface index

@@ -1,4 +1,5 @@
 #include "udp_server.h"
+#include "api_config.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
 #include "util/strfuns.hpp"
@@ -34,11 +35,10 @@ udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, udp protoc
 		(void *)this);
 }
 
-udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, const std::string &address,
+udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, ip::address addr,
 	uint16_t port, int ttl, const std::string &listen_address)
 	: info_(std::move(info)), io_(io), socket_(std::make_shared<udp_socket>(io)),
 	  time_services_enabled_(false) {
-	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
 	// set up the endpoint where we listen (note: this is not yet the multicast address)
@@ -65,16 +65,28 @@ udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, const std:
 	// bind to the listen endpoint
 	socket_->bind(listen_endpoint);
 
-	// join the multicast group, if any
+	// join the multicast groups
 	if (addr.is_multicast() && !is_broadcast) {
-		if (addr.is_v4())
-			socket_->set_option(
-				ip::multicast::join_group(addr.to_v4(), listen_endpoint.address().to_v4()));
-		else
-			socket_->set_option(ip::multicast::join_group(addr));
+		bool joined_anywhere = false;
+		asio::error_code err;
+		for (auto &if_ : api_config::get_instance()->multicast_interfaces) {
+			DLOG_F(
+				INFO, "Joining %s to %s", if_.addr.to_string().c_str(), addr.to_string().c_str());
+			if (addr.is_v4() && if_.addr.is_v4())
+				socket_->set_option(ip::multicast::join_group(addr.to_v4(), if_.addr.to_v4()), err);
+			else if (addr.is_v6() && if_.addr.is_v6())
+				socket_->set_option(
+					ip::multicast::join_group(addr.to_v6(), if_.addr.to_v6().scope_id()), err);
+			if (err)
+				LOG_F(WARNING, "Could not bind multicast responder for %s to interface %s (%s)",
+					addr.to_string().c_str(), if_.addr.to_string().c_str(), err.message().c_str());
+			else
+				joined_anywhere = true;
+		}
+		if (!joined_anywhere) throw std::runtime_error("Could not join any multicast group");
 	}
 	LOG_F(2, "%s: Started multicast udp server at %s port %d (addr %p)",
-		this->info_->name().c_str(), address.c_str(), port, (void *)this);
+		this->info_->name().c_str(), addr.to_string().c_str(), port, (void *)this);
 }
 
 // === externally issued asynchronous commands ===
