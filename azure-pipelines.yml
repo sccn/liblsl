@@ -1,5 +1,9 @@
 trigger:
 - master
+- 1.* # version branches
+pr:
+- master
+- 1.*
 
 variables:
   cmakeargs: '-DCMAKE_BUILD_TYPE=Release'
