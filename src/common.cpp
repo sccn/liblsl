@@ -5,6 +5,7 @@
 #ifdef _WIN32
 #include "api_config.h"
 #include <windows.h>
+#include <mmsystem.h>
 #pragma comment (lib,"winmm.lib")
 #endif
 
