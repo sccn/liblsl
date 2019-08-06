@@ -7,6 +7,8 @@
 #include <string>
 #include <vector>
 
+namespace ip = asio::ip;
+
 namespace lsl {
 /**
  * A configuration object: holds all the configurable settings of liblsl.
@@ -83,7 +85,7 @@ public:
 	const std::string &resolve_scope() const { return resolve_scope_; }
 
 	/**
-	 * @brief List of multicast addresses on which inlets / outlets advertise/discover streams.
+	 * List of multicast addresses on which inlets / outlets advertise/discover streams.
 	 *
 	 * This is merged from several other config file entries
 	 * (LocalAddresses,SiteAddresses,OrganizationAddresses, GlobalAddresses)
@@ -98,7 +100,7 @@ public:
 	 * department) or organization (e.g., the campus), or at larger scope, multicast addresses
 	 * with the according scope need to be included.
 	 */
-	const std::vector<std::string> &multicast_addresses() const { return multicast_addresses_; }
+	const std::vector<ip::address> &multicast_addresses() const { return multicast_addresses_; }
 
 	/**
 	 * @brief The address of the local interface on which to listen to multicast traffic.
@@ -226,7 +228,7 @@ private:
 	bool allow_random_ports_;
 	uint16_t multicast_port_;
 	std::string resolve_scope_;
-	std::vector<std::string> multicast_addresses_;
+	std::vector<ip::address> multicast_addresses_;
 	int multicast_ttl_;
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;

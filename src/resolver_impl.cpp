@@ -26,7 +26,7 @@ resolver_impl::resolver_impl()
 	uint16_t mcast_port = cfg_->multicast_port();
 	for (const auto &mcast_addr : cfg_->multicast_addresses()) {
 		try {
-			mcast_endpoints_.emplace_back(asio::ip::make_address(mcast_addr), mcast_port);
+			mcast_endpoints_.emplace_back(mcast_addr, mcast_port);
 		} catch (std::exception &) {}
 	}
 
