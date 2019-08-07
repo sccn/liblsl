@@ -23,14 +23,17 @@ You might also be interested in
 [apps to connect recording equipment](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/Apps)
 and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
 
-Please stay put while we figure out how to best offer precompiled packages.
+Precompiled packages are uploaded
+
+- to the [https://github.com/sccn/liblsl/releases](Release page)
+- the [Anaconda cloud](https://anaconda.org/tstenner/liblsl)
 
 ## Boost
 
 liblsl uses boost (mainly Boost.ASIO and Boost.Thread) extensively.
 Because Windows has timing problems with newer Boost versions and embedding liblsl
 in an application that links to an other Boost version (notably Matlab) causes runtime
-errors, we bundle two subset of boost, the older, tested Boost in `external` and the new
+errors, we bundle a subset of boost in
 `lslboost` (with patches to fix the timing behavior on Windows).
 
 To update the included lslboost, install Boost bcp and use the `update_lslboost.sh` script.
@@ -55,9 +58,9 @@ d) The library should be fully featured. It should cover the relevant streaming 
 e) Network and processor overhead should be reasonably low to not get in the way.
 
 Package overview:
-* The API headers are in the include/ directory.
-* The library source code is in the src/ directory.
-* External dependencies needed to build the library are in the external/ directory.
+* The API headers are in the [`include/`](include/) directory.
+* The library source code is in the [`src/`](src/) directory.
+* Unit tests are in the [`testing/`](testing/) directory
 
 To connect an application to the lab streaming layer:
 * Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h for C++`)
