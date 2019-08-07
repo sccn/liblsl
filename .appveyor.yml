@@ -3,12 +3,22 @@ pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
 environment:
-  APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+  matrix:
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    LSLARCH: Win32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    LSLARCH: x64
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1604
 build_script:
-- cmd: cmake -S . -B build -T v100
+- cmd: cmake -S . -B build -T v140,host=x86 -A %LSLARCH%
+- sh: cmake -S . -B build
 - cmake --build build --config Release -j --target package
+- sh: cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON build
+- sh: sudo dpkg -i build/*.deb
+- sh: cmake --build build --target package
 artifacts:
 - path: 'build/*.zip'
+- path: 'build/*.deb'
 deploy:
   provider: GitHub
   auth_token:

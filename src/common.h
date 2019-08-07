@@ -14,18 +14,6 @@
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4275 )
-#if _MSC_VER <= 1600
-#include <boost/cstdint.hpp>
-using lslboost::int8_t;
-using lslboost::int16_t;
-using lslboost::int32_t;
-using lslboost::int64_t;
-using lslboost::uint8_t;
-using lslboost::uint16_t;
-using lslboost::uint32_t;
-using lslboost::uint64_t;
-#define __func__ "An unknown function"
-#endif
 #endif
 
 #ifndef BOOST_CSTDINT_HPP
