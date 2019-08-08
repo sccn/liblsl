@@ -13,6 +13,9 @@ audio, and so on.
 To compile the library yourself from source please follow the instructions in
 the [main build documentation](https://github.com/labstreaminglayer/labstreaminglayer/tree/master/doc/BUILD.md).
 
+For single board computers running linux, you can also try
+`standalone_compilation_linux.sh`.
+
 To build language bindings (e.g. for
 [Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
 [Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
