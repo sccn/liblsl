@@ -39,15 +39,8 @@ stages:
       vmImage: 'ubuntu-16.04'
     container: quay.io/pypa/manylinux2010_x86_64:latest
     steps:
-    - bash: |
-        /opt/python/cp37-cp37m/bin/python -m pip install --user --only-binary=:all: cmake ninja
-        echo "##vso[task.prependpath]$HOME/.local/bin"
-      displayName: 'Install build tools'
-    - template: ci/azure_build_steps.yml
-      parameters:
-        cpack: false
-        cmake_stepvars: '-DCMAKE_SHARED_LINKER_FLAGS=-static-libstdc++ -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW -G Ninja'
-    - publish: build/install/lib/liblsl64.so
+    - bash: CFLAGS="-flto -static-libstdc++ -std=c++14" ./standalone_compilation_linux.sh
+    - publish: liblsl.so
       artifact: manylinux2010
 - stage: Upload
   jobs:
@@ -59,7 +52,7 @@ stages:
     - task: DownloadPipelineArtifact@2
       inputs:
         targetPath: upload
-    - bash: mv upload/manylinux2010/liblsl64.so upload/liblsl-manylinux2010-liblsl64.so
+    - bash: mv upload/manylinux2010/liblsl.so upload/liblsl-manylinux2010-liblsl64.so
     - task: GithubRelease@0
       inputs:
         githubConnection: upload
