@@ -117,7 +117,7 @@ typedef struct lsl_xml_ptr_struct_* lsl_xml_ptr;
 typedef struct lsl_continuous_resolver_* lsl_continuous_resolver;
 
 
-/** @section Free functions provided by the lab streaming layer */
+/** # Free functions provided by the lab streaming layer */
 
 /** LSL version the binary was compiled against
  * Used either to check if the same version is used
@@ -257,15 +257,19 @@ extern LIBLSL_C_API void lsl_destroy_string(char *s);
 * Construct a new streaminfo object.
 *
 * Core stream information is specified here. Any remaining meta-data can be added later.
-* @param name Name of the stream. Describes the device (or product series) that this stream makes available 
+* @param name Name of the stream.<br>
+* Describes the device (or product series) that this stream makes available
 *             (for use by programs, experimenters or data analysts). Cannot be empty.
 * @param type Content type of the stream. Please see https://github.com/sccn/xdf/wiki/Meta-Data (or web search for:
 *             XDF meta-data) for pre-defined content-type names, but you can also make up your own.
 *             The content type is the preferred way to find streams (as opposed to searching by name).
 * @param channel_count Number of channels per sample. This stays constant for the lifetime of the stream.
-* @param nominal_srate The sampling rate (in Hz) as advertised by the data source, if regular (otherwise set to IRREGULAR_RATE).
-* @param channel_format Format/type of each channel. If your channels have different formats, consider supplying 
-*                       multiple streams or use the largest type that can hold them all (such as cft_double64). A good default is cft_float32.
+* @param nominal_srate The sampling rate (in Hz) as advertised by the
+* datasource, if regular (otherwise set to #LSL_IRREGULAR_RATE).
+* @param channel_format Format/type of each channel.<br>
+* If your channels have different formats, consider supplying multiple streams
+* or use the largest type that can hold them all (such as #cft_double64).<br>
+* A good default is #cft_float32.
 * @param source_id Unique identifier of the source or device, if available (such as the serial number). 
 *                  Allows recipients to recover from failure even after the serving app or device crashes.
 *                  May in some cases also be constructed from device settings.
@@ -684,9 +688,10 @@ extern LIBLSL_C_API double lsl_time_correction_ex(lsl_inlet in, double *remote_t
 * smoothed/dejittered if desired. This function allows automating these two and possibly more operations.
 * Warning: when you enable this, you will no longer receive or be able to recover the original time stamps.
 * @param in The lsl_inlet object to act on.
-* @param flags An integer that is the result of bitwise OR'ing one or more options from processing_options_t 
-*        together (e.g., post_clocksync|post_dejitter); a good setting is to use post_ALL.
-* @return The error code: if nonzero, can be lsl_argument_error if an unknown flag was passed in.
+* @param flags An integer that is the result of bitwise OR'ing one or more options from
+* #processing_options_t together (e.g., #post_clocksync|#post_dejitter);
+* a good setting is to use post_ALL.
+* @return The error code: if nonzero, can be #lsl_argument_error if an unknown flag was passed in.
 */
 extern LIBLSL_C_API int32_t lsl_set_postprocessing(lsl_inlet in, uint32_t flags);
 
@@ -694,19 +699,24 @@ extern LIBLSL_C_API int32_t lsl_set_postprocessing(lsl_inlet in, uint32_t flags)
 /* === Pulling a sample from the inlet === */
 
 /**
-* Pull a sample from the inlet and read it into a pointer to values.
-* Handles type checking & conversion.
-* @param in The lsl_inlet object to act on.
-* @param buffer A pointer to hold the resulting values. 
-* @param buffer_elements The number of samples allocated in the buffer. Note: it is the responsibility of the user to allocate enough memory.
-* @param timeout The timeout for this operation, if any. Use LSL_FOREVER to effectively disable it. It is also permitted to use
-*                0.0 here; in this case a sample is only returned if one is currently buffered.
-* @param ec Error code: can be either no error or lsl_lost_error (if the stream source has been lost).
-*           Note: if the timeout expires before a new sample was received the function returns 0.0; 
-*                 ec is *not* set to lsl_timeout_error (because this case is not considered an error condition).
-* @return The capture time of the sample on the remote machine, or 0.0 if no new sample was available. 
-*         To remap this time stamp to the local clock, add the value returned by lsl_time_correction() to it. 
-*/
+ * Pull a sample from the inlet and read it into a pointer to values.
+ * Handles type checking & conversion.
+ * @param in The #lsl_inlet object to act on.
+ * @param buffer A pointer to hold the resulting values.
+ * @param buffer_elements The number of samples allocated in the buffer. Note: it is the
+ * responsibility of the user to allocate enough memory.
+ * @param timeout The timeout for this operation, if any.
+ * Use #LSL_FOREVER to effectively disable it. It is also permitted to use 0.0 here;
+ * in this case a sample is only returned if one is currently buffered.
+ * @param ec Error code: can be either no error or #lsl_lost_error
+ * (if the stream source has been lost).<br>
+ * Note: if the timeout expires before a new sample was received the function returns 0.0;
+ * ec is *not* set to #lsl_timeout_error (because this case is not considered an error condition).
+ * @return The capture time of the sample on the remote machine, or 0.0 if no new sample was
+ * available. To remap this time stamp to the local clock, add the value returned by
+ * lsl_time_correction() to it.
+ * @{
+ */
 extern LIBLSL_C_API double lsl_pull_sample_f(lsl_inlet in, float *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_d(lsl_inlet in, double *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_l(lsl_inlet in, long *buffer, int buffer_elements, double timeout, int *ec);
@@ -714,52 +724,33 @@ extern LIBLSL_C_API double lsl_pull_sample_i(lsl_inlet in, int32_t *buffer, int3
 extern LIBLSL_C_API double lsl_pull_sample_s(lsl_inlet in, int16_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_c(lsl_inlet in, char *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buffer_elements, double timeout, int32_t *ec);
+//!@}
 
-/**
-* Pull a sample from the inlet and read it into an array of binary strings.
-*
-* These strings may contains 0's, therefore the lengths are read into the buffer_lengths array.
-* Handles type checking & conversion.
-* @param in The lsl_inlet object to act on.
-* @param buffer A pointer to hold the resulting data. 
-* @param buffer_lengths A pointer to an array that holds the resulting lengths for each returned binary string.
-* @param buffer_elements The number of samples allocated in the buffer and buffer_lengths variables. 
-*                        Note: it is the responsibility of the user to allocate enough memory.
-* @param timeout The timeout for this operation, if any. Use LSL_FOREVER to effectively disable it. It is also permitted to use
-*                0.0 here; in this case a sample is only returned if one is currently buffered.
-* @param ec Error code: can be either no error or lsl_lost_error (if the stream source has been lost).
-*           Note: if the timeout expires before a new sample was received the function returns 0.0; 
-*                 ec is *not* set to lsl_timeout_error (because this case is not considered an error condition).
-* @return The capture time of the sample on the remote machine, or 0.0 if no new sample was available. 
-*         To remap this time stamp to the local clock, add the value returned by lsl_time_correction() to it. 
-*/
+/** @copydoc lsl_pull_sample_f
+ * These strings may contains 0's, therefore the lengths are read into the buffer_lengths array.
+ * @param buffer_lengths
+ * A pointer to an array that holds the resulting lengths for each returned binary string.*/
 extern LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer,
 	uint32_t *buffer_lengths, int32_t buffer_elements, double timeout, int32_t *ec);
 
 /**
  * Pull a sample from the inlet and read it into a custom struct or buffer.
  *
- * Overall size checking but no type checking or conversion are done. Do not use for
- * variable-size/string-formatted streams.
- * @param in The lsl_inlet object to act on.
- * @param buffer Pointer to hold the sample data.<br>
- *        Search for [`#pragma pack`](https://stackoverflow.com/a/3318475/73299)
- *        for information on how to pack structs appropriately.
+ * Overall size checking but no type checking or conversion are done.
+ * Do not use for variable-size/string-formatted streams.
+ * @param in The #lsl_inlet object to act on.
+ * @param buffer A pointer to hold the resulting values.
  * @param buffer_bytes Length of the array held by buffer in bytes, not items
  * @param timeout The timeout for this operation, if any.
- *        Aside from LSL_FOREVER it is also permitted to use 0.0 here;
- *        in this case a sample is only returned if one is currently buffered.
- * @param ec Error code: can be either no error or `lsl_lost_error`
- *        (if the stream source has been lost).
- *
- *        Note: if the timeout expires before a new sample was received the function returns 0.0;
- *        ec is *not* set to lsl_timeout_error() (because this case is not considered an error
- *        condition).
+ * Use #LSL_FOREVER to effectively disable it. It is also permitted to use 0.0 here;
+ * in this case a sample is only returned if one is currently buffered.
+ * @param ec Error code: can be either no error or #lsl_lost_error
+ * (if the stream source has been lost).<br>
+ * Note: if the timeout expires before a new sample was received the function returns 0.0;
+ * ec is *not* set to #lsl_timeout_error (because this case is not considered an error condition).
  * @return The capture time of the sample on the remote machine, or 0.0 if no new sample was
- *         available.
- *
- * To remap this time stamp to the local clock, add the value returned by lsl_time_correction() to
- * it.
+ * available. To remap this time stamp to the local clock, add the value returned by
+ * lsl_time_correction() to it.
  */
 extern LIBLSL_C_API double lsl_pull_sample_v(lsl_inlet in, void *buffer, int32_t buffer_bytes, double timeout, int32_t *ec);
 
@@ -783,6 +774,7 @@ extern LIBLSL_C_API double lsl_pull_sample_v(lsl_inlet in, void *buffer, int32_t
 *           Note: if the timeout expires before a new sample was received the function returns 0.0; 
 *                 ec is *not* set to lsl_timeout_error (because this case is not considered an error condition).
 * @return data_elements_written Number of channel data elements written to the data buffer.
+* @{
 */
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_f(lsl_inlet in, float *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_d(lsl_inlet in, double *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
@@ -791,6 +783,8 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_i(lsl_inlet in, int32_t *data_b
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_s(lsl_inlet in, int16_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_c(lsl_inlet in, char *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
+
+///@}
 
 /**
 * Pull a chunk of data from the inlet and read it into an array of binary strings. 

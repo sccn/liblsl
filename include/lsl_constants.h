@@ -1,8 +1,7 @@
 #pragma once
 
-/* =========================== */
-/* ==== Defined constants ==== */
-/* =========================== */
+/** @file lsl_constants.h
+ * @brief Global constants for liblsl */
 
 //! Constant to indicate that a stream has variable sampling rate.
 #define LSL_IRREGULAR_RATE 0.0
