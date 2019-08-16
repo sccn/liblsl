@@ -166,7 +166,7 @@ void data_receiver::data_thread() {
 					// transmit request parameters
 					server_stream << "Native-Byte-Order: " << BOOST_BYTE_ORDER << "\r\n";
 					server_stream << "Endian-Performance: " << std::floor(measure_endian_performance()) << "\r\n";
-					server_stream << "Has-IEEE754-Floats: " << (format_ieee754[cf_float32] && format_ieee754[cf_double64]) << "\r\n";
+					server_stream << "Has-IEEE754-Floats: " << (format_ieee754[cft_float32] && format_ieee754[cft_double64]) << "\r\n";
 					server_stream << "Supports-Subnormals: " << format_subnormal[conn_.type_info().channel_format()] << "\r\n";
 					server_stream << "Value-Size: " << conn_.type_info().channel_bytes() << "\r\n"; // 0 for strings
 					server_stream << "Data-Protocol-Version: " << proposed_protocol_version << "\r\n";

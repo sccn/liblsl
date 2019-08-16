@@ -203,9 +203,9 @@ namespace lsl {
 		* smoothed/dejittered if desired. This function allows automating these two and possibly more operations.
 		* Warning: when you enable this, you will no longer receive or be able to recover the original time stamps.
 		* @param flags An integer that is the result of bitwise OR'ing one or more options from processing_options_t 
-		*        together (e.g., post_clocksync|post_dejitter); the default is to enable all options.
+		*        together (e.g., proc_clocksync|proc_dejitter); the default is to enable all options.
 		*/
-		void set_postprocessing(uint32_t flags=post_ALL) { postprocessor_.set_options(flags); }
+		void set_postprocessing(uint32_t flags=proc_ALL) { postprocessor_.set_options(flags); }
 
 		/**
 		* Open a new data stream.

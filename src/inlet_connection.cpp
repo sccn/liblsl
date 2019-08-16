@@ -61,7 +61,7 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover):
 			throw std::invalid_argument("When creating an inlet with a constructed (instead of resolved) stream_info, you must assign at least the name, type or source_id of the desired stream.");
 		if (type_info_.channel_count() == 0)
 			throw std::invalid_argument("When creating an inlet with a constructed (instead of resolved) stream_info, you must assign a nonzero channel count.");
-		if (type_info_.channel_format() == cf_undefined)
+		if (type_info_.channel_format() == cft_undefined)
 			throw std::invalid_argument("When creating an inlet with a constructed (instead of resolved) stream_info, you must assign a channel format.");
 
 		// use the protocol that is specified in the config

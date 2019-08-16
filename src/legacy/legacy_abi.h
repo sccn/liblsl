@@ -76,13 +76,13 @@ namespace lsl {
 		* @param channel_count Number of channels per sample. This stays constant for the lifetime of the stream.
 		* @param nominal_srate The sampling rate (in Hz) as advertised by the data source, if regular (otherwise set to IRREGULAR_RATE).
 		* @param channel_format Format/type of each channel. If your channels have different formats, consider supplying 
-		*                       multiple streams or use the largest type that can hold them all (such as cf_double64).
+		*                       multiple streams or use the largest type that can hold them all (such as cft_double64).
 		* @param source_id Unique identifier of the device or source of the data, if available (such as the serial number). 
 		*                  This is critical for system robustness since it allows recipients to recover from failure even after the 
 		*				   serving app, device or computer crashes (just by finding a stream with the same source id on the network again).
 		*				   Therefore, it is highly recommended to always try to provide whatever information can uniquely identify the data source itself.
 		*/
-		stream_info(const std::string &name, const std::string &type, int channel_count=1, double nominal_srate=IRREGULAR_RATE, channel_format_t channel_format=cf_float32, const std::string &source_id=std::string());
+		stream_info(const std::string &name, const std::string &type, int channel_count=1, double nominal_srate=IRREGULAR_RATE, lsl_channel_format_t channel_format=cft_float32, const std::string &source_id=std::string());
 
 		// ========================
 		// === Core Information ===
@@ -128,7 +128,7 @@ namespace lsl {
 		* All channels in a stream have the same format. However, a device might offer multiple time-synched streams 
 		* each with its own format.
 		*/
-		channel_format_t channel_format() const;
+		lsl_channel_format_t channel_format() const;
 
 		/**
 		* Unique identifier of the stream's source, if available.

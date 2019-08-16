@@ -11,13 +11,13 @@ using namespace pugi;
 using std::string;
 
 /// Default Constructor.
-stream_info_impl::stream_info_impl(): channel_count_(0), nominal_srate_(0), channel_format_(cf_undefined), version_(0), v4data_port_(0), v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
+stream_info_impl::stream_info_impl(): channel_count_(0), nominal_srate_(0), channel_format_(cft_undefined), version_(0), v4data_port_(0), v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
 	// initialize XML document
 	write_xml(doc_);
 }
 
 /// Constructor.
-stream_info_impl::stream_info_impl(const string &name, const string &type, int channel_count, double nominal_srate, channel_format_t channel_format, const string &source_id):
+stream_info_impl::stream_info_impl(const string &name, const string &type, int channel_count, double nominal_srate, lsl_channel_format_t channel_format, const string &source_id):
 	name_(name), type_(type), channel_count_(channel_count), nominal_srate_(nominal_srate), channel_format_(channel_format), source_id_(source_id), version_(api_config::get_instance()->use_protocol_version()),
 	v4data_port_(0), v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
 	if (name.empty())
@@ -86,22 +86,22 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		if (nominal_srate_ < 0.0)
 			throw std::runtime_error("The sampling rate of the given stream info is negative.");
 		// channel_format
-		channel_format_ = cf_undefined;
+		channel_format_ = cft_undefined;
 		string fmt(info.child_value("channel_format"));
 		if (fmt == "float32")
-			channel_format_ = cf_float32;
+			channel_format_ = cft_float32;
 		if (fmt == "double64")
-			channel_format_ = cf_double64;
+			channel_format_ = cft_double64;
 		if (fmt == "string")
-			channel_format_ = cf_string;
+			channel_format_ = cft_string;
 		if (fmt == "int32")
-			channel_format_ = cf_int32;
+			channel_format_ = cft_int32;
 		if (fmt == "int16")
-			channel_format_ = cf_int16;
+			channel_format_ = cft_int16;
 		if (fmt == "int8")
-			channel_format_ = cf_int8;
+			channel_format_ = cft_int8;
 		if (fmt == "int64")
-			channel_format_ = cf_int64;
+			channel_format_ = cft_int64;
 		// source_id
 		source_id_ = info.child_value("source_id");
 		// version

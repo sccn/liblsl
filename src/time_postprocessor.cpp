@@ -11,7 +11,7 @@ using namespace lsl;
 
 /// Construct a new time post-processor.
 time_postprocessor::time_postprocessor(const postproc_callback_t &query_correction, const postproc_callback_t &query_srate, const reset_callback_t &query_reset): 
-	samples_seen_(0.0), query_srate_(query_srate), options_(post_none), halftime_(api_config::get_instance()->smoothing_halftime()),
+	samples_seen_(0.0), query_srate_(query_srate), options_(proc_none), halftime_(api_config::get_instance()->smoothing_halftime()),
     query_correction_(query_correction), query_reset_(query_reset), next_query_time_(0.0), last_offset_(0.0), 
 	smoothing_initialized_(false), last_value_(-std::numeric_limits<double>::infinity())
 {
@@ -20,7 +20,7 @@ time_postprocessor::time_postprocessor(const postproc_callback_t &query_correcti
 /// Post-process the given time-stamp and return the new time-stamp.
 
 double time_postprocessor::process_timestamp(double value) {
-	if (options_ & post_threadsafe) {
+	if (options_ & proc_threadsafe) {
 		lslboost::lock_guard<lslboost::mutex> lock(processing_mut_);
 		return process_internal(value);
 	} else
@@ -29,7 +29,7 @@ double time_postprocessor::process_timestamp(double value) {
 
 double time_postprocessor::process_internal(double value) {
 	// --- clock synchronization ---
-	if (options_ & post_clocksync) {
+	if (options_ & proc_clocksync) {
 		// update last correction value if needed (we do this every 50 samples and at most twice per second)
 		if ((fmod(samples_seen_,50.0) == 0.0) && lsl_clock() > next_query_time_) {
 			last_offset_ = query_correction_();
@@ -48,7 +48,7 @@ double time_postprocessor::process_internal(double value) {
 	}
 
 	// --- jitter removal ---
-	if (options_ & post_dejitter) {
+	if (options_ & proc_dejitter) {
 		// initialize the smoothing state if not yet done so
 		if (!smoothing_initialized_) {
 			double srate = query_srate_();
@@ -89,7 +89,7 @@ double time_postprocessor::process_internal(double value) {
 	}
 
 	// --- force monotonic timestamps ---
-	if (options_ & post_monotonize) {
+	if (options_ & proc_monotonize) {
 		if (value < last_value_)
 			value = last_value_;
 	}

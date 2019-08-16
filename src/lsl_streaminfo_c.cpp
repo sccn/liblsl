@@ -14,7 +14,7 @@ LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *
 	try {
 		if (!source_id)
 			source_id = "";
-		return (lsl_streaminfo)new stream_info_impl(name,type,channel_count,nominal_srate,(channel_format_t)channel_format,source_id); 
+		return (lsl_streaminfo)new stream_info_impl(name,type,channel_count,nominal_srate,(lsl_channel_format_t)channel_format,source_id); 
 	} catch(std::exception &e) {
 		std::cerr << "Unexpected error during streaminfo construction: " << e.what() << std::endl;
 		return NULL;
@@ -42,7 +42,7 @@ LIBLSL_C_API const char *lsl_get_type(lsl_streaminfo info) { return ((stream_inf
 LIBLSL_C_API const char *lsl_get_name(lsl_streaminfo info) { return ((stream_info_impl*)info)->name().c_str(); }
 LIBLSL_C_API int32_t lsl_get_channel_count(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_count(); }
 LIBLSL_C_API double lsl_get_nominal_srate(lsl_streaminfo info) { return ((stream_info_impl*)info)->nominal_srate(); }
-LIBLSL_C_API lsl_channel_format_t lsl_get_channel_format(lsl_streaminfo info) { return (lsl_channel_format_t)((stream_info_impl*)info)->channel_format(); }
+LIBLSL_C_API lsl_channel_format_t lsl_get_channel_format(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_format(); }
 LIBLSL_C_API const char *lsl_get_source_id(lsl_streaminfo info) { return ((stream_info_impl*)info)->source_id().c_str(); }
 LIBLSL_C_API int32_t lsl_get_version(lsl_streaminfo info) { return ((stream_info_impl*)info)->version(); }
 LIBLSL_C_API double lsl_get_created_at(lsl_streaminfo info) { return ((stream_info_impl*)info)->created_at(); }

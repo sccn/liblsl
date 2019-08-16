@@ -297,7 +297,7 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 				bool client_supports_subnormals = true;	// the client supports subnormal numbers
 				int client_protocol_version = request_protocol_version;	// assume that the client wants to use the same version for data transmission
 				int client_value_size = serv_->info_->channel_bytes();	// assume that the client has a standard size for the relevant data type
-				channel_format_t format = serv_->info_->channel_format();
+				lsl_channel_format_t format = serv_->info_->channel_format();
 
 				// read feed parameters
 				char buf[16384] = {0};
@@ -338,7 +338,7 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 				// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is involved
 				if (serv_->info_->channel_bytes() != client_value_size)
 					data_protocol_version_ = 100;
-				if (!format_ieee754[cf_double64] || (format==cf_float32 && !format_ieee754[cf_float32]) || !client_has_ieee754_floats)
+				if (!format_ieee754[cft_double64] || (format==cft_float32 && !format_ieee754[cft_float32]) || !client_has_ieee754_floats)
 					data_protocol_version_ = 100;
 				if (data_protocol_version_ >= 110) {
 					// decide on the byte order if conflicting

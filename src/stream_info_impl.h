@@ -32,7 +32,7 @@ namespace lsl {
 		* @param channel_format Format/type of each channel. If your channels have different formats, use the largest type that can hold them all (e.g., double) or consider supplying multiple streams.
 		* @param source_id Unique identifier of the source or device if available (e.g., serial number). Allows for advanced failure recovery.
 		*/
-		stream_info_impl(const std::string &name, const std::string &type, int channel_count, double nominal_srate, channel_format_t channel_format, const std::string &source_id);
+		stream_info_impl(const std::string &name, const std::string &type, int channel_count, double nominal_srate, lsl_channel_format_t channel_format, const std::string &source_id);
 
 		/**
 		* Copy constructor.
@@ -110,7 +110,7 @@ namespace lsl {
 		/**
 		* Get the channel format of a stream.
 		*/
-		channel_format_t channel_format() const { return channel_format_; }
+		lsl_channel_format_t channel_format() const { return channel_format_; }
 
 		/**
 		* Get the unique source identifier of a stream, if any.
@@ -237,7 +237,7 @@ namespace lsl {
 		std::string type_;
 		int channel_count_;
 		double nominal_srate_;
-		channel_format_t channel_format_;
+		lsl_channel_format_t channel_format_;
 		std::string source_id_;
 		// auto-generated network information
 		int version_;

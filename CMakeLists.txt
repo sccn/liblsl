@@ -97,6 +97,7 @@ endif()
 
 set(headers
 	include/lsl_c.h
+	include/lsl_constants.h
 	include/lsl_cpp.h
 )
 

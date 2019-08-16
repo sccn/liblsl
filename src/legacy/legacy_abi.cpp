@@ -17,7 +17,7 @@ using namespace pugi;
 // boilerplate code calling the private implementation
 stream_info::stream_info(): impl_(new stream_info_impl())  {  }
 stream_info::stream_info(const stream_info &rhs): impl_(new stream_info_impl(*rhs.impl_)) {  }
-stream_info::stream_info(const std::string &name, const std::string &type, int channel_count, double nominal_srate, channel_format_t channel_format, const std::string &source_id): impl_(new stream_info_impl(name,type,channel_count,nominal_srate,channel_format,source_id)) { }
+stream_info::stream_info(const std::string &name, const std::string &type, int channel_count, double nominal_srate, lsl_channel_format_t channel_format, const std::string &source_id): impl_(new stream_info_impl(name,type,channel_count,nominal_srate,channel_format,source_id)) { }
 stream_info::stream_info(const stream_info_impl *impl): impl_(new stream_info_impl(*impl)) { }
 stream_info::stream_info(const stream_info_impl &impl): impl_(new stream_info_impl(impl)) { }
 stream_info::~stream_info() { delete impl_; }
@@ -25,7 +25,7 @@ const std::string &stream_info::name() const { return impl_->name(); }
 const std::string &stream_info::type() const { return impl_->type(); }
 int stream_info::channel_count() const { return impl_->channel_count(); }
 double stream_info::nominal_srate() const { return impl_->nominal_srate(); }
-channel_format_t stream_info::channel_format() const { return impl_->channel_format(); }
+lsl_channel_format_t stream_info::channel_format() const { return impl_->channel_format(); }
 const std::string &stream_info::source_id() const { return impl_->source_id(); }
 int stream_info::version() const { return impl_->version(); }
 const std::string &stream_info::uid() const { return impl_->uid(); }

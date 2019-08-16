@@ -12,7 +12,7 @@ using namespace lsl;
 bool sample::operator==(const sample &rhs) const BOOST_NOEXCEPT {
 	if ((timestamp != rhs.timestamp) || (format_ != rhs.format_) || (num_channels_ != rhs.num_channels_))
 		return false;
-	if (format_ != cf_string)
+	if (format_ != cft_string)
 		return memcmp(&(rhs.data_),&data_,format_sizes[format_]*num_channels_) == 0;
 	else {
 		std::string *data = (std::string*)&data_;
@@ -27,14 +27,14 @@ bool sample::operator==(const sample &rhs) const BOOST_NOEXCEPT {
 /// Assign an array of string values to the sample.
 sample &sample::assign_typed(const std::string *s) { 
 	switch (format_) {
-		case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = *s++); break; 
-		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = from_string<float>(*s++)); break;
-		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = from_string<double>(*s++)); break;
-		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = from_string<int8_t>(*s++)); break;
-		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int16_t>(*s++)); break;
-		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int32_t>(*s++)); break;
+		case cft_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = *s++); break; 
+		case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = from_string<float>(*s++)); break;
+		case cft_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = from_string<double>(*s++)); break;
+		case cft_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = from_string<int8_t>(*s++)); break;
+		case cft_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int16_t>(*s++)); break;
+		case cft_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int32_t>(*s++)); break;
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int64_t>(*s++)); break;
+		case cft_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = from_string<int64_t>(*s++)); break;
 #endif
 		default: throw std::invalid_argument("Unsupported channel format.");
 	}
@@ -44,14 +44,14 @@ sample &sample::assign_typed(const std::string *s) {
 /// Retrieve an array of string values from the sample.
 sample &sample::retrieve_typed(std::string *d) {
 	switch (format_) {
-		case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = *p++); break; 
-		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
-		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
-		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
-		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
-		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = *p++); break; 
+		case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
+		case cft_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = to_string(*p++)); break;
 #endif
 		default: throw std::invalid_argument("Unsupported channel format.");
 	}
@@ -67,7 +67,7 @@ void sample::save_streambuf(std::streambuf& sb, int protocol_version, int use_by
 		save_value(sb,timestamp,use_byte_order);
 	}
 	// write channel data
-	if (format_ == cf_string) {
+	if (format_ == cft_string) {
 		for (std::string *p=(std::string*)&data_,*e=p+num_channels_; p<e; p++) {
 			// write string length as variable-length integer
 			if (p->size() <= 0xFF) {
@@ -116,7 +116,7 @@ void sample::load_streambuf(std::streambuf& sb, int protocol_version, int use_by
 		load_value(sb, timestamp, use_byte_order);
 	}
 	// read channel data
-	if (format_ == cf_string) {
+	if (format_ == cft_string) {
 		for (std::string *p = (std::string*)&data_, *e = p + num_channels_; p < e; p++) {
 			// read string length as variable-length integer
 			std::size_t len = 0;
@@ -159,7 +159,7 @@ void sample::load_streambuf(std::streambuf& sb, int protocol_version, int use_by
 		load_raw(sb, &data_, format_sizes[format_] * num_channels_);
 		if (use_byte_order != BOOST_BYTE_ORDER && format_sizes[format_] > 1) convert_endian(&data_);
 		if (suppress_subnormals && format_float[format_]) {
-			if (format_ == cf_float32) {
+			if (format_ == cft_float32) {
 				for (uint32_t *p = (uint32_t*)&data_, *e = p + num_channels_;
 				     p < e; p++)
 					if (*p && ((*p & UINT32_C(0x7fffffff)) <= UINT32_C(0x007fffff)))
@@ -180,14 +180,14 @@ template<class Archive>
 void sample::serialize_channels(Archive& ar, const uint32_t archive_version)
 {
 	switch (format_) {
-		case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; ar & *p++); break;
-		case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; ar & *p++); break;
-		case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; ar & *p++); break;
-		case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; ar & *p++); break;
-		case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
-		case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
+		case cft_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; ar & *p++); break;
 #endif
 		default: throw std::runtime_error("Unsupported channel format.");
 	}
@@ -224,44 +224,44 @@ sample &sample::assign_test_pattern(int offset) {
 	timestamp = 123456.789; 
 
 	switch (format_) {
-		case cf_float32: {
+		case cft_float32: {
 			float *data = (float*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = ((float)k + (float)offset) * (k%2==0 ? 1 : -1);			
 			break;
 						 }
-		case cf_double64: {
+		case cft_double64: {
 			double *data = (double*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = (k + offset + 16777217) * (k%2==0 ? 1 : -1);
 			break;
 						  }
-		case cf_string:{
+		case cft_string:{
 			std::string *data = (std::string*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = to_string((k + 10) * (k%2==0 ? 1 : -1));
 			break;
 					   }
-		case cf_int32: {
+		case cft_int32: {
 			int32_t *data = (int32_t*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = ((k + offset + 65537)%2147483647) * (k%2==0 ? 1 : -1);
 			break;
 					   }
-		case cf_int16: {
+		case cft_int16: {
 			int16_t *data = (int16_t*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = (int16_t)(((k + offset + 257)%32767) * (k%2==0 ? 1 : -1));
 			break;
 					   }
-		case cf_int8: {
+		case cft_int8: {
 			int8_t *data = (int8_t*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = (int8_t)(((k + offset + 1)%127) * (k%2==0 ? 1 : -1));
 			break;
 					  }
 #ifndef BOOST_NO_INT64_T
-		case cf_int64:{
+		case cft_int64:{
 			int64_t *data = (int64_t*)&data_;
 			for (int k=0; k<num_channels_; k++)
 				data[k] = ((2 + k + (int64_t)offset + 2147483647)) * (int64_t)(k%2==0 ? 1 : -1);
@@ -275,7 +275,7 @@ sample &sample::assign_test_pattern(int offset) {
 	return *this;
 }
 
-factory::factory(channel_format_t fmt, int num_chans, int num_reserve)
+factory::factory(lsl_channel_format_t fmt, int num_chans, int num_reserve)
 	: fmt_(fmt), num_chans_(num_chans),
 	  sample_size_(
 		  ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
@@ -304,7 +304,7 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	return sample_p(result);
 }
 
-sample* factory::new_sample_unmanaged(channel_format_t fmt, int num_chans, double timestamp,
+sample* factory::new_sample_unmanaged(lsl_channel_format_t fmt, int num_chans, double timestamp,
                                               bool pushthrough) {
 #pragma warning(suppress : 4291)
 	sample* result =

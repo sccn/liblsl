@@ -1,6 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "../include/lsl_constants.h"
 #include <stdexcept>
 #include <boost/version.hpp>
 #include <string>
@@ -54,53 +55,6 @@ namespace lsl {
 
 	/// Ensure that LSL is initialized.
 	void ensure_lsl_initialized();
-
-	/// Data format of a channel (each transmitted sample holds an array of channels).
-	enum channel_format_t {
-		cf_float32 = 1,		// For up to 24-bit precision measurements in the appropriate physical unit 
-							// (e.g., microvolts). Integers from -16777216 to 16777216 are represented accurately.
-		cf_double64 = 2,	// For universal numeric data as long as permitted by network & disk budget. 
-							// The largest representable integer is 53-bit.
-		cf_string = 3,		// For variable-length ASCII strings or data blobs, such as video frames,
-							// complex event descriptions, etc.
-		cf_int32 = 4,		// For high-rate digitized formats that require 32-bit precision. Depends critically on 
-							// meta-data to represent meaningful units. Useful for application event codes or other coded data.
-		cf_int16 = 5,		// For very high rate signals (40Khz+) or consumer-grade audio
-							// (for professional audio float is recommended).
-		cf_int8 = 6,		// For binary signals or other coded data. 
-							// Not recommended for encoding string data.
-		cf_int64 = 7,		// For now only for future compatibility. Support for this type is not yet exposed in all languages. 
-							// Also, some builds of liblsl will not be able to send or receive data of this type.
-		cf_undefined = 0	// Can not be transmitted.
-	};
-
-	
-	/// Processing options for the time_postprocessor. 
-	enum processing_options_t {
-		post_none = 0,			// No automatic post-processing; return the ground-truth time stamps for manual post-processing
-								// (this is the default behavior of the inlet).
-		post_clocksync = 1,		// Perform automatic clock synchronization; equivalent to manually adding the time_correction() value
-								// to the received time stamps.
-		post_dejitter = 2,		// Remove jitter from time stamps. This will apply a smoothing algorithm to the received time stamps;
-								// the smoothing needs to see a minimum number of samples (30-120 seconds worst-case) until the remaining 
-								// jitter is consistently below 1ms.
-		post_monotonize = 4,	// Force the time-stamps to be monotonically ascending (only makes sense if timestamps are dejittered).
-		post_threadsafe = 8,    // Post-processing is thread-safe (same inlet can be read from by multiple threads); uses somewhat more CPU.
-		post_ALL = 1|2|4|8		// The combination of all possible post-processing options.
-	};
-
-#ifndef LSL_C_H
-	/**
-	* Possible error codes.
-	*/
-	typedef enum {
-	    lsl_no_error = 0,           /* No error occurred */
-	    lsl_timeout_error = -1,     /* The operation failed due to a timeout. */
-	    lsl_lost_error = -2,        /* The stream has been lost. */
-	    lsl_argument_error = -3,    /* An argument was incorrectly specified (e.g., wrong format or wrong length). */
-	    lsl_internal_error = -4     /* Some other internal error has happened. */
-	} lsl_error_code_t;
-#endif
 
 	/// Exception class that indicates that a stream inlet's source has been irrecoverably lost.
 	class LIBLSL_CPP_API lost_error: public std::runtime_error {

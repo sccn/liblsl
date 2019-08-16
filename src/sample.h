@@ -53,7 +53,7 @@ namespace lsl {
 	class factory {
 	public:
 		/// Create a new factory and optionally pre-allocate samples.
-		factory(channel_format_t fmt, int num_chans, int num_reserve);
+		factory(lsl_channel_format_t fmt, int num_chans, int num_reserve);
 
 		/// Destroy the factory and delete all of its samples.
 		~factory();
@@ -67,7 +67,7 @@ namespace lsl {
 
 		/// Create a new sample whose memory is not managed by the factory.
 		static sample *new_sample_unmanaged(
-			channel_format_t fmt, int num_chans, double timestamp, bool pushthrough);
+			lsl_channel_format_t fmt, int num_chans, double timestamp, bool pushthrough);
 
 	private:
 		/// ensure that a given value is a multiple of some base, round up if necessary
@@ -80,7 +80,7 @@ namespace lsl {
 		sample *pop_freelist();
 
 		friend class sample;
-		channel_format_t fmt_;				   // the channel format to construct samples with
+		lsl_channel_format_t fmt_;				   // the channel format to construct samples with
 		int num_chans_;						   // the number of channels to construct samples with
 		int sample_size_;					   // size of a sample, in bytes
 		int storage_size_;					   // size of the allocated storage, in bytes
@@ -101,7 +101,7 @@ namespace lsl {
 		bool pushthrough;				// whether the sample shall be buffered or pushed through
 
 	private:
-		channel_format_t format_;		// the channel format
+		lsl_channel_format_t format_;		// the channel format
 		int num_channels_;				// number of channels
 		lslboost::atomic<int> refcount_;	// reference count used by sample_p
 		lslboost::atomic<sample*> next_;	// linked list of samples, for use in a freelist
@@ -113,7 +113,7 @@ namespace lsl {
 
 		/// Destructor for a sample.
 		~sample() {
-			if (format_ == cf_string)
+			if (format_ == cft_string)
 				for (std::string *p=(std::string*)&data_,*e=p+num_channels_; p<e; (p++)->~basic_string<char>());
 		}
 
@@ -136,15 +136,15 @@ namespace lsl {
 				memcpy(&data_,s,format_sizes[format_]*num_channels_);
 			} else {
 				switch (format_) {
-					case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = (float)*s++); break;
-					case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = (double)*s++); break;
-					case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = (int8_t)*s++); break;
-					case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int16_t)*s++); break;
-					case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int32_t)*s++); break;
+					case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = (float)*s++); break;
+					case cft_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *p++ = (double)*s++); break;
+					case cft_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *p++ = (int8_t)*s++); break;
+					case cft_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int16_t)*s++); break;
+					case cft_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int32_t)*s++); break;
 #ifndef BOOST_NO_INT64_T
-					case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int64_t)*s++); break;
+					case cft_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *p++ = (int64_t)*s++); break;
 #endif
-					case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = to_string(*s++)); break;
+					case cft_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *p++ = to_string(*s++)); break;
 					default: throw std::invalid_argument("Unsupported channel format.");
 				}
 			}
@@ -157,15 +157,15 @@ namespace lsl {
 				memcpy(d,&data_,format_sizes[format_]*num_channels_);
 			} else {
 				switch (format_) {
-					case cf_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break; 
-					case cf_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break; 
-					case cf_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
-					case cf_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
-					case cf_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_double64: for (double         *p=(double*)        &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_int8:     for (int8_t  *p=(int8_t*) &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_int16:    for (int16_t *p=(int16_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_int32:    for (int32_t *p=(int32_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
 #ifndef BOOST_NO_INT64_T
-					case cf_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
+					case cft_int64:    for (int64_t *p=(int64_t*)&data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
 #endif
-				case cf_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = from_string<T>(*p++)); break;
+				case cft_string:   for (std::string    *p=(std::string*)   &data_,*e=p+num_channels_; p<e; *d++ = from_string<T>(*p++)); break;
 					default: throw std::invalid_argument("Unsupported channel format.");
 				}
 			}
@@ -182,7 +182,7 @@ namespace lsl {
 
 		/// Assign numeric data to the sample.
 		sample &assign_untyped(const void *newdata) {
-			if (format_ != cf_string)
+			if (format_ != cft_string)
 				memcpy(&data_,newdata,format_sizes[format_]*num_channels_);
 			else
 				throw std::invalid_argument("Cannot assign untyped data to a string-formatted sample.");
@@ -191,7 +191,7 @@ namespace lsl {
 
 		/// Retrieve numeric data from the sample.
 		sample &retrieve_untyped(void *newdata) { 
-			if (format_ != cf_string)
+			if (format_ != cft_string)
 				memcpy(newdata,&data_,format_sizes[format_]*num_channels_);
 			else
 				throw std::invalid_argument("Cannot retrieve untyped data from a string-formatted sample.");
@@ -265,8 +265,8 @@ namespace lsl {
 
 	private:
 		/// Construct a new sample for a given channel format/count combination.
-		sample(channel_format_t fmt, int num_channels, factory *fact): format_(fmt), num_channels_(num_channels), refcount_(0), next_(NULL), factory_(fact) { 
-			if (format_ == cf_string)
+		sample(lsl_channel_format_t fmt, int num_channels, factory *fact): format_(fmt), num_channels_(num_channels), refcount_(0), next_(NULL), factory_(fact) {
+			if (format_ == cft_string)
 				for (std::string *p=(std::string*)&data_,*e=p+num_channels_; p<e; new(p++)std::string());
 		}
 
