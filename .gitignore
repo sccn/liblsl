@@ -2,6 +2,6 @@
 /CMakeLists.txt.user
 /CMakeLists.json
 /CMakeSettings.json
-/doc/liblsl_*
+/docs/liblsl_*
+/docs/_build
 /.vs/
-/doc/_build
