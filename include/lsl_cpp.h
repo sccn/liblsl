@@ -23,7 +23,9 @@
 #include <stdexcept>
 
 namespace lsl {
+#ifndef DOXYGEN_SHOULD_SKIP_THIS
    #include "lsl_c.h"
+#endif
 
     /**
     * Constant to indicate that a stream has variable sampling rate.
