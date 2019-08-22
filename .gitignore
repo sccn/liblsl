@@ -4,3 +4,4 @@
 /CMakeSettings.json
 /doc/liblsl_*
 /.vs/
+/doc/_build
