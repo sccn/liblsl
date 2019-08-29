@@ -10,7 +10,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 if(NOT CMAKE_DEBUG_POSTFIX)
 	set(CMAKE_DEBUG_POSTFIX -debug)
 endif()
-option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" Off)
+option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI" OFF)
 

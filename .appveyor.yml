@@ -1,3 +1,4 @@
+
 version: 1.13.{build}
 pull_requests:
   do_not_increment_build_number: true
@@ -9,17 +10,16 @@ environment:
   ARCH: x86
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip -FileName ninja.zip
-- cmd: 7z x ninja.zip -oC:\projects\deps\ninja > nul
-- cmd: set PATH=C:\projects\deps\ninja;%PATH%
+- cmd: 7z x ninja.zip
+- cmd: set PATH=%cd%;%PATH%
 - cmd: ninja --version
 build_script:
 - cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
-- mkdir build
+- cmd: cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release %CMakeArgs%
+- sh: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release ${CMakeArgs}
 - cd build
-- cmd: cmake -G Ninja -DCMAKE_BUILD_TYPE=Release %CMakeArgs% ..
-- sh: cmake -DCMAKE_BUILD_TYPE=Release ${CMakeArgs} ..
 - cmake --build . --config Release --target install
-- cpack
+- cpack -C Release
 artifacts:
 - path: 'build/*.7z'
 deploy:

@@ -9,7 +9,7 @@ steps:
     cmakeArgs: '--version'
 - task: CMake@1
   inputs:
-    cmakeArgs: '-DLSL_UNITTESTS=1 -DLSL_UNIXFOLDERS=1 ${{ parameters.cmake_stepvars }} $(cmakeargs) ..'
+    cmakeArgs: '-DLSL_UNITTESTS=1 ${{ parameters.cmake_stepvars }} $(cmakeargs) ..'
   displayName: 'Configure build'
 - task: CMake@1
   inputs:
