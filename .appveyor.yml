@@ -5,9 +5,11 @@ pull_requests:
 shallow_clone: true
 environment:
   CMakeArgs: ""
-  APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-  VCVER: 9.0
-  ARCH: x86
+  matrix:
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
+    VCVER: 9.0
+    ARCH: x86
+  - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1804
 install:
 - cmd: appveyor DownloadFile https://github.com/ninja-build/ninja/releases/download/v1.9.0/ninja-win.zip -FileName ninja.zip
 - cmd: 7z x ninja.zip
@@ -21,6 +23,7 @@ build_script:
 - cmake --build . --config Release --target install
 - cpack -C Release
 artifacts:
+- path: 'build/*.deb'
 - path: 'build/*.7z'
 deploy:
   provider: GitHub
