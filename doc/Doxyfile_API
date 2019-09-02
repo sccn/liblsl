@@ -11,6 +11,7 @@ INLINE_SIMPLE_STRUCTS  = YES
 EXTRACT_ALL            = YES
 SHOW_NAMESPACES        = NO
 INPUT                  = ../include
+JAVADOC_AUTOBRIEF      = YES
 FILE_PATTERNS          = *.c \
                          *.cpp \
                         *.h

@@ -1,4 +1,3 @@
-#include "../include/lsl_c.h"
 #include "common.h"
 #include "resolver_impl.h"
 #include "api_config.h"
@@ -13,6 +12,7 @@ using std::string;
 using std::vector;
 
 extern "C" {
+#include "../include/lsl_c.h"
 /**
 * Get the protocol version.
 */

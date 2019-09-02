@@ -1,8 +1,8 @@
-#include "../include/lsl_c.h"
 #include "stream_outlet_impl.h"
 
 
 extern "C" {
+#include "../include/lsl_c.h"
 // === implementation of the lsl_outlet functions of the C API ===
 
 using namespace lsl;

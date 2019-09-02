@@ -1,7 +1,7 @@
-#include "../include/lsl_c.h"
 #include "stream_inlet_impl.h"
 
 extern "C" {
+#include "../include/lsl_c.h"
 // === implementation of the stream_inlet class ===
 
 using namespace lsl;

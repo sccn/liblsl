@@ -1,9 +1,9 @@
-#include "../include/lsl_c.h"
 #include "resolver_impl.h"
 #include "api_config.h"
 #include <iostream>
 
 extern "C" {
+#include "../include/lsl_c.h"
 // === implementation of the continuous_resolver class ===
 
 using namespace lsl;

@@ -1,8 +1,7 @@
 #ifndef LSL_CPP_H
 #define LSL_CPP_H
 
-/**
-* C++ API for the lab streaming layer.
+/** C++ API for the lab streaming layer.
 * 
 * The lab streaming layer provides a set of functions to make instrument data accessible 
 * in real time within a lab network. From there, streams can be picked up by recording programs, 
@@ -27,28 +26,22 @@ namespace lsl {
    #include "lsl_c.h"
 #endif
 
-    /**
-    * Constant to indicate that a stream has variable sampling rate.
-    */
+    /// Constant to indicate that a stream has variable sampling rate.
     const double IRREGULAR_RATE = 0.0; 
 
-    /**
-    * Constant to indicate that a sample has the next successive time stamp.
+    /** Constant to indicate that a sample has the next successive time stamp.
     * This is an optional optimization to transmit less data per sample.
     * The stamp is then deduced from the preceding one according to the stream's sampling rate 
     * (in the case of an irregular rate, the same time stamp as before will is assumed).
     */
     const double DEDUCED_TIMESTAMP = -1.0; 
 
-    /**
-    * A very large time duration (> 1 year) for timeout values.
+    /** A very large time duration (> 1 year) for timeout values.
     * Note that significantly larger numbers can cause the timeout to be invalid on some operating systems (e.g., 32-bit UNIX).
     */
     const double FOREVER = 32000000.0;
 
-    /**
-    * Data format of a channel (each transmitted sample holds an array of channels).
-    */
+    /// Data format of a channel (each transmitted sample holds an array of channels).
     enum channel_format_t {
         cf_float32 = 1,     // For up to 24-bit precision measurements in the appropriate physical unit 
                             // (e.g., microvolts). Integers from -16777216 to 16777216 are represented accurately.
@@ -67,9 +60,7 @@ namespace lsl {
         cf_undefined = 0    // Can not be transmitted.
     };
 
-	/**
-	* Post-processing options for stream inlets. 
-	*/
+	/// Post-processing options for stream inlets. 
 	enum processing_options_t {
 		post_none = 0,			// No automatic post-processing; return the ground-truth time stamps for manual post-processing
 								// (this is the default behavior of the inlet).
@@ -83,8 +74,7 @@ namespace lsl {
 		post_ALL = 1|2|4|8		// The combination of all possible post-processing options.
 	};
 	
-    /**
-    * Protocol version.
+    /** Protocol version.
     * The major version is protocol_version() / 100;
     * The minor version is protocol_version() % 100;
     * Clients with different minor versions are protocol-compatible with each other 
@@ -92,21 +82,18 @@ namespace lsl {
     */
     inline int32_t protocol_version() { return lsl_protocol_version(); }
 
-    /**
-    * Version of the liblsl library.
+    /** Version of the liblsl library.
     * The major version is library_version() / 100;
     * The minor version is library_version() % 100;
     */
     inline int32_t library_version() { return lsl_library_version(); }
 
-	/**
-	* Get a string containing library information. The format of the string shouldn't be used
+	/** Get a string containing library information. The format of the string shouldn't be used
 	* for anything important except giving a a debugging person a good idea which exact library
 	* version is used. */
 	inline const char* library_info() { return lsl_library_info(); }
 
-    /**
-    * Obtain a local system time stamp in seconds. The resolution is better than a millisecond.
+    /** Obtain a local system time stamp in seconds. The resolution is better than a millisecond.
     * This reading can be used to assign time stamps to samples as they are being acquired. 
     * If the "age" of a sample is known at a particular time (e.g., from USB transmission 
     * delays), it can be used as an offset to local_clock() to obtain a better estimate of 
@@ -120,8 +107,7 @@ namespace lsl {
     // === Stream Declaration ===
     // ==========================
 
-    /**
-    * The stream_info object stores the declaration of a data stream.
+    /** The stream_info object stores the declaration of a data stream.
     * Represents the following information:
     *  a) stream data format (#channels, channel format)
     *  b) core information (stream name, content type, sampling rate)
@@ -136,8 +122,7 @@ namespace lsl {
 
     class stream_info {
     public:
-        /**
-        * Construct a new stream_info object.
+        /** Construct a new stream_info object.
         * Core stream information is specified here. Any remaining meta-data can be added later.
         * @param name Name of the stream. Describes the device (or product series) that this stream makes available 
         *             (for use by programs, experimenters or data analysts). Cannot be empty.
@@ -162,16 +147,14 @@ namespace lsl {
         // ========================
         // (these fields are assigned at construction)
 
-        /**
-        * Name of the stream.
+        /** Name of the stream.
         * This is a human-readable name. For streams offered by device modules, it refers to the type of device or product series 
         * that is generating the data of the stream. If the source is an application, the name may be a more generic or specific identifier.
         * Multiple streams with the same name can coexist, though potentially at the cost of ambiguity (for the recording app or experimenter).
         */
         std::string name() const { return lsl_get_name(obj); }
 
-        /**
-        * Content type of the stream.
+        /** Content type of the stream.
         * The content type is a short string such as "EEG", "Gaze" which describes the content carried by the channel (if known). 
         * If a stream contains mixed content this value need not be assigned but may instead be stored in the description of channel types.
         * To be useful to applications and automated processing systems using the recommended content types is preferred. 
@@ -179,14 +162,12 @@ namespace lsl {
         */
         std::string type() const { return lsl_get_type(obj); }
 
-        /**
-        * Number of channels of the stream.
+        /** Number of channels of the stream.
         * A stream has at least one channel; the channel count stays constant for all samples.
         */
         int32_t channel_count() const { return lsl_get_channel_count(obj); }
 
-        /**
-        * Sampling rate of the stream, according to the source (in Hz).
+        /** Sampling rate of the stream, according to the source (in Hz).
         * If a stream is irregularly sampled, this should be set to IRREGULAR_RATE.
         *
         * Note that no data will be lost even if this sampling rate is incorrect or if a device has temporary 
@@ -196,15 +177,13 @@ namespace lsl {
         */
         double nominal_srate() const { return lsl_get_nominal_srate(obj); }
 
-        /**
-        * Channel format of the stream.
+        /** Channel format of the stream.
         * All channels in a stream have the same format. However, a device might offer multiple time-synched streams 
         * each with its own format.
         */
         channel_format_t channel_format() const { return (channel_format_t)lsl_get_channel_format(obj); }
 
-        /**
-        * Unique identifier of the stream's source, if available.
+        /** Unique identifier of the stream's source, if available.
         * The unique source (or device) identifier is an optional piece of information that, if available, allows that
         * endpoints (such as the recording program) can re-acquire a stream automatically once it is back online.
         */
@@ -216,27 +195,22 @@ namespace lsl {
         // ======================================
         // (these fields are implicitly assigned once bound to an outlet/inlet)
 
-        /**
-        * Protocol version used to deliver the stream.
-        */
+        /// Protocol version used to deliver the stream.
         int32_t version() const { return lsl_get_version(obj); }
 
-        /**
-        * Creation time stamp of the stream.
+        /** Creation time stamp of the stream.
         * This is the time stamp when the stream was first created
-        * (as determined via local_clock() on the providing machine).
+        * (as determined via lsl::local_clock() on the providing machine).
         */
         double created_at() const { return lsl_get_created_at(obj); }
 
-        /**
-        * Unique ID of the stream outlet instance (once assigned).
+        /** Unique ID of the stream outlet instance (once assigned).
         * This is a unique identifier of the stream outlet, and is guaranteed to be different
         * across multiple instantiations of the same outlet (e.g., after a re-start).
         */
         std::string uid() const { return lsl_get_uid(obj); }
 
-        /**
-        * Session ID for the given stream.
+        /** Session ID for the given stream.
         * The session id is an optional human-assigned identifier of the recording session.
         * While it is rarely used, it can be used to prevent concurrent recording activitites 
         * on the same sub-network (e.g., in multiple experiment areas) from seeing each other's streams 
@@ -244,9 +218,7 @@ namespace lsl {
         */
         std::string session_id() const { return lsl_get_session_id(obj); }
 
-        /**
-        * Hostname of the providing machine.
-        */
+        /// Hostname of the providing machine.
         std::string hostname() const { return lsl_get_hostname(obj); }
 
 
@@ -254,8 +226,7 @@ namespace lsl {
         // === Data Description ===
         // ========================
 
-        /**
-        * Extended description of the stream.
+        /** Extended description of the stream.
         * It is highly recommended that at least the channel labels are described here. 
         * See code examples on the LSL wiki. Other information, such as amplifier settings, 
         * measurement units if deviating from defaults, setup information, subject information, etc., 
@@ -277,8 +248,7 @@ namespace lsl {
         // === Miscellaneous Functions ===
         // ===============================
 
-		/**
-		 * Retrieve the entire streaminfo in XML format.
+		/** Retrieve the entire streaminfo in XML format.
 		 * This yields an XML document (in string form) whose top-level element is `<info>`. The info
 		 * element contains one element for each field of the streaminfo class, including:
 		 *
@@ -335,14 +305,12 @@ namespace lsl {
     // ==== Stream Outlet ====
     // =======================
 
-    /**
-    * A stream outlet.
+    /** A stream outlet.
     * Outlets are used to make streaming data (and the meta-data) available on the lab network.
     */
     class stream_outlet {
     public:
-        /**
-        * Establish a new stream outlet. This makes the stream discoverable.
+        /** Establish a new stream outlet. This makes the stream discoverable.
         * @param info The stream information to use for creating this stream. Stays constant over the lifetime of the outlet.
         * @param chunk_size Optionally the desired chunk granularity (in samples) for transmission. If unspecified, 
         *                   each push operation yields one chunk. Inlets can override this setting.
@@ -356,18 +324,20 @@ namespace lsl {
         // === Pushing a sample into the outlet ===
         // ========================================
 
-        /**
-        * Push a C array of values as a sample into the outlet.
-        * Each entry in the array corresponds to one channel. The function handles type checking & conversion.
-        * @param data An array of values to push (one per channel).
-        * @param timestamp Optionally the capture time of the sample, in agreement with local_clock(); if omitted, the current time is used.
-        * @param pushthrough Whether to push the sample through to the receivers instead of buffering it with subsequent samples. 
-        *                    Note that the chunk_size, if specified at outlet construction, takes precedence over the pushthrough flag.
-        */
-        template<class T, int32_t N> void push_sample(const T data[N], double timestamp=0.0, bool pushthrough=true) { check_numchan(N); push_sample(&data[0],timestamp,pushthrough); }
+		/** Push a C array of values as a sample into the outlet.
+		 * Each entry in the array corresponds to one channel.
+		 * The function handles type checking & conversion.
+		 * @param data An array of values to push (one per channel).
+		 * @param timestamp Optionally the capture time of the sample, in agreement with
+		 * lsl::local_clock(); if omitted, the current time is used.
+		 * @param pushthrough Whether to push the sample through to the receivers instead of
+		 * buffering it with subsequent samples.
+		 * Note that the chunk_size, if specified at outlet construction, takes precedence over the
+		 * pushthrough flag.
+		 */
+		template<class T, int32_t N> void push_sample(const T data[N], double timestamp=0.0, bool pushthrough=true) { check_numchan(N); push_sample(&data[0],timestamp,pushthrough); }
 
-        /**
-        * Push a std vector of values as a sample into the outlet. 
+        /** Push a std vector of values as a sample into the outlet.
         * Each entry in the vector corresponds to one channel. The function handles type checking & conversion.
         * @param data A vector of values to push (one for each channel).
         * @param timestamp Optionally the capture time of the sample, in agreement with local_clock(); if omitted, the current time is used.
@@ -382,8 +352,7 @@ namespace lsl {
         void push_sample(const std::vector<char> &data, double timestamp=0.0, bool pushthrough=true) { check_numchan(data.size()); lsl_push_sample_ctp(obj,(&data[0]),timestamp,pushthrough); }
         void push_sample(const std::vector<std::string> &data, double timestamp=0.0, bool pushthrough=true) { check_numchan(data.size()); push_sample(&data[0],timestamp,pushthrough); }
 
-        /**
-        * Push a pointer to some values as a sample into the outlet.
+        /** Push a pointer to some values as a sample into the outlet.
         * This is a lower-level function for cases where data is available in some buffer.
         * Handles type checking & conversion.
         * @param data A pointer to values to push. The number of values pointed to must not be less than the number of channels in the sample.
@@ -407,9 +376,8 @@ namespace lsl {
             lsl_push_sample_buftp(obj,(&pointers[0]),&lengths[0],timestamp,pushthrough);
         }
 
-		/**
-		 * Push a packed C struct (of numeric data) as one sample into the outlet (search for
-		 * [`#pragma pack`](https://stackoverflow.com/a/3318475/73299) for information on packing
+		/** Push a packed C struct (of numeric data) as one sample into the outlet (search for
+		 * [`#``pragma pack`](https://stackoverflow.com/a/3318475/73299) for information on packing
 		 * structs appropriately).<br>
 		 * Overall size checking but no type checking or conversion are done.<br>
 		 * Can not be used forvariable-size / string-formatted data.
@@ -426,8 +394,7 @@ namespace lsl {
             push_numeric_raw((void*)&sample, timestamp,pushthrough);
         }
 
-        /**
-        * Push a pointer to raw numeric data as one sample into the outlet. 
+        /** Push a pointer to raw numeric data as one sample into the outlet. 
         * This is the lowest-level function; performns no checking whatsoever. Can not be used for variable-size / string-formatted channels.
         * @param sample A pointer to the raw sample data to push.
         * @param timestamp Optionally the capture time of the sample, in agreement with local_clock(); if omitted, the current time is used.
@@ -441,8 +408,7 @@ namespace lsl {
         // === Pushing an chunk of samples into the outlet ===
         // ===================================================
 
-        /**
-        * Push a chunk of samples (batched into an STL vector) into the outlet.
+        /** Push a chunk of samples (batched into an STL vector) into the outlet.
         * @param samples A vector of samples in some supported format (each sample can be a data pointer, data array, or std vector of data).
         * @param timestamp Optionally the capture time of the most recent sample, in agreement with local_clock(); if omitted, the current time is used.
         *                   The time stamps of other samples are automatically derived according to the sampling rate of the stream.
@@ -461,8 +427,7 @@ namespace lsl {
             }
         }
 
-        /**
-        * Push a chunk of samples (batched into an STL vector) into the outlet.
+        /** Push a chunk of samples (batched into an STL vector) into the outlet.
         * Allows to specify a separate time stamp for each sample (for irregular-rate streams).
         * @param samples A vector of samples in some supported format (each sample can be a data pointer, data array, or std vector of data).
         * @param timestamps A vector of capture times for each sample, in agreement with local_clock().
@@ -476,8 +441,7 @@ namespace lsl {
                 push_sample(samples.back(),timestamps.back(),pushthrough);
         }
 
-        /**
-        * Push a chunk of numeric data as C-style structs (batched into an STL vector) into the outlet.
+        /** Push a chunk of numeric data as C-style structs (batched into an STL vector) into the outlet.
         * This performs some size checking but no type checking. Can not be used for variable-size / string-formatted data.
         * @param samples A vector of samples, as C structs.
         * @param timestamp Optionally the capture time of the sample, in agreement with local_clock(); if omitted, the current time is used.
@@ -496,8 +460,7 @@ namespace lsl {
             }
         }
 
-        /**
-        * Push a chunk of numeric data from C-style structs (batched into an STL vector), into the outlet.
+        /** Push a chunk of numeric data from C-style structs (batched into an STL vector), into the outlet.
         * This performs some size checking but no type checking. Can not be used for variable-size / string-formatted data.
         * @param samples A vector of samples, as C structs.
         * @param timestamps A vector of capture times for each sample, in agreement with local_clock().
@@ -511,16 +474,15 @@ namespace lsl {
                 push_numeric_struct(samples.back(),timestamps.back(),pushthrough);
         }
 
-        /**
-        * Push a chunk of multiplexed data into the outlet.
+        /** Push a chunk of multiplexed data into the outlet.
         * @name Push functions
         * @param buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param timestamp Optionally the capture time of the most recent sample, in agreement with local_clock(); if omitted, the current time is used.
         *                   The time stamps of other samples are automatically derived according to the sampling rate of the stream.
         * @param pushthrough Whether to push the chunk through to the receivers instead of buffering it with subsequent samples.
         *                    Note that the chunk_size, if specified at outlet construction, takes precedence over the pushthrough flag.
-        */
-		///@{
+        * @{
+		*/
         void push_chunk_multiplexed(const std::vector<float> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_ftp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<double> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_dtp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
         void push_chunk_multiplexed(const std::vector<long> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) lsl_push_chunk_ltp(obj,(&buffer[0]),(unsigned long)buffer.size(),timestamp,pushthrough); }
@@ -530,8 +492,7 @@ namespace lsl {
         void push_chunk_multiplexed(const std::vector<std::string> &buffer, double timestamp=0.0, bool pushthrough=true) { if (!buffer.empty()) push_chunk_multiplexed(&buffer[0],(unsigned long)buffer.size(),timestamp,pushthrough); }
 		///@}
 
-        /**
-        * Push a chunk of multiplexed data into the outlet. One timestamp per sample is provided.
+        /** Push a chunk of multiplexed data into the outlet. One timestamp per sample is provided.
         * Allows to specify a separate time stamp for each sample (for irregular-rate streams).
         * @param buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param timestamps A buffer of timestamp values holding time stamps for each sample in the data buffer.
@@ -556,8 +517,7 @@ namespace lsl {
             } 
         }
 
-        /**
-        * Push a chunk of multiplexed samples into the outlet. Single timestamp provided.
+        /** Push a chunk of multiplexed samples into the outlet. Single timestamp provided.
         * IMPORTANT: Note that the provided buffer size is measured in channel values (e.g., floats) rather than in samples.
         * @param buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param buffer_elements The number of channel values (of type T) in the buffer. Must be a multiple of the channel count.
@@ -584,8 +544,7 @@ namespace lsl {
             } 
         }
 
-        /**
-        * Push a chunk of multiplexed samples into the outlet. One timestamp per sample is provided.
+        /** Push a chunk of multiplexed samples into the outlet. One timestamp per sample is provided.
         * IMPORTANT: Note that the provided buffer size is measured in channel values (e.g., floats) rather than in samples.
         * @param data_buffer A buffer of channel values holding the data for zero or more successive samples to send.
         * @param timestamp_buffer A buffer of timestamp values holding time stamps for each sample in the data buffer.
@@ -616,33 +575,28 @@ namespace lsl {
         // === Miscellaneous Functions ===
         // ===============================
 
-        /**
-        * Check whether consumers are currently registered.
+        /** Check whether consumers are currently registered.
         * While it does not hurt, there is technically no reason to push samples if there is no consumer.
         */
         bool have_consumers() { return lsl_have_consumers(obj) != 0; }
 
-        /**
-        * Wait until some consumer shows up (without wasting resources).
+        /** Wait until some consumer shows up (without wasting resources).
         * @return True if the wait was successful, false if the timeout expired.
         */
         bool wait_for_consumers(double timeout) { return lsl_wait_for_consumers(obj,timeout) != 0; }
 
-        /**
-        * Retrieve the stream info provided by this outlet.
+        /** Retrieve the stream info provided by this outlet.
         * This is what was used to create the stream (and also has the Additional Network Information fields assigned).
         */ 
         stream_info info() const { return stream_info(lsl_get_info(obj)); }
 
-        /**
-        * Destructor.
+        /** Destructor.
         * The stream will no longer be discoverable after destruction and all paired inlets will stop delivering data.
         */
 		~stream_outlet() { if(obj) lsl_destroy_outlet(obj); }
 
 #if __cplusplus > 199711L || _MSC_VER >= 1900
-		/**
-		 * @brief stream_outlet Move constructor
+		/** @brief stream_outlet Move constructor
 		 * @param rhs Outlet to move from. Using it afterwards will dereference
 		 * a null pointer and crash your application.
 		 */
@@ -675,8 +629,7 @@ namespace lsl {
     // ==== Resolve Functions ====
     // ===========================
 
-    /**
-    * Resolve all streams on the network.
+    /** Resolve all streams on the network.
     * This function returns all currently available streams from any outlet on the network.
     * The network is usually the subnet specified at the local router, but may also include 
     * a multicast group of machines (given that the network supports it), or list of hostnames.
@@ -691,8 +644,7 @@ namespace lsl {
     */
     inline std::vector<stream_info> resolve_streams(double wait_time=1.0) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_all(buffer,sizeof(buffer),wait_time)]); }
 
-    /**
-    * Resolve all streams with a specific value for a given property.
+    /** Resolve all streams with a specific value for a given property.
     * If the goal is to resolve a specific stream, this method is preferred over resolving all streams and then selecting the desired one.
     * @param prop The stream_info property that should have a specific value (e.g., "name", "type", "source_id", or "desc/manufaturer").
     * @param value The string value that the property should have (e.g., "EEG" as the type property).
@@ -704,8 +656,7 @@ namespace lsl {
     */
     inline std::vector<stream_info> resolve_stream(const std::string &prop, const std::string &value, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_byprop(buffer,sizeof(buffer),(prop.c_str()),(value.c_str()),minimum,timeout)]); }
 
-	/**
-	 * Resolve all streams that match a given predicate.
+	/** Resolve all streams that match a given predicate.
 	 *
 	 * Advanced query that allows to impose more conditions on the retrieved streams; the given
 	 * string is an [XPath 1.0](http://en.wikipedia.org/w/index.php?title=XPath_1.0) predicate for
@@ -726,15 +677,13 @@ namespace lsl {
     // ==== Stream Inlet ====
     // ======================
 
-    /**
-    * A stream inlet.
+    /** A stream inlet.
     * Inlets are used to receive streaming data (and meta-data) from the lab network.
     */  
     void check_error(int32_t ec);
     class stream_inlet {
     public:
-        /**
-        * Construct a new stream inlet from a resolved stream info.
+        /** Construct a new stream inlet from a resolved stream info.
         * @param info A resolved stream info object (as coming from one of the resolver functions).
         *             Note: the stream_inlet may also be constructed with a fully-specified stream_info, 
         *                   if the desired channel format and count is already known up-front, but this is 
@@ -761,16 +710,14 @@ namespace lsl {
         */
         ~stream_inlet() { lsl_destroy_inlet(obj); }
 
-        /**
-        * Retrieve the complete information of the given stream, including the extended description.
+        /** Retrieve the complete information of the given stream, including the extended description.
         * Can be invoked at any time of the stream's lifetime.
         * @param timeout Timeout of the operation (default: no timeout).
         * @throws timeout_error (if the timeout expires), or lost_error (if the stream source has been lost).
         */
         stream_info info(double timeout=FOREVER) { int32_t ec=0; lsl_streaminfo res = lsl_get_fullinfo(obj,timeout,&ec); check_error(ec); return stream_info(res); }
 
-        /**
-        * Subscribe to the data stream.
+        /** Subscribe to the data stream.
         * All samples pushed in at the other end from this moment onwards will be queued and 
         * eventually be delivered in response to pull_sample() or pull_chunk() calls. 
         * Pulling a sample without some preceding open_stream is permitted (the stream will then be opened implicitly).
@@ -779,8 +726,7 @@ namespace lsl {
         */
         void open_stream(double timeout=FOREVER) { int32_t ec=0; lsl_open_stream(obj,timeout,&ec); check_error(ec); }
 
-        /**
-        * Drop the current data stream.
+        /** Drop the current data stream.
         *
         * All samples that are still buffered or in flight will be dropped and transmission 
         * and buffering of data for this inlet will be stopped. If an application stops being 
@@ -790,29 +736,38 @@ namespace lsl {
         */
         void close_stream() { lsl_close_stream(obj); }
 
-        /**
-        * Retrieve an estimated time correction offset for the given stream.
-        *
-        * The first call to this function takes several milliseconds until a reliable first estimate is obtained.
-        * Subsequent calls are instantaneous (and rely on periodic background updates).
-		* On a well-behaved network, the precision of these estimates should be below 1 ms (empirically it is within +/-0.2 ms).
-		* To get a measure of whether the network is well-behaved, use the extended prototype and check uncertainty (which maps to round-trip-time).
-		* 0.2 ms is typical of wired networks. 2 ms is typical of wireless networks. The number can be much higher on poor networks.
-		*
-		* @param remote_time The current time of the remote computer that was used to generate this time_correction. 
-		*    If desired, the client can fit time_correction vs remote_time to improve the real-time time_correction further.
-		* @param uncertainty The maximum uncertainty of the given time correction.
-        * @param timeout Timeout to acquire the first time-correction estimate (default: no timeout).
-        * @return The time correction estimate. This is the number that needs to be added to a time stamp 
-        *         that was remotely generated via lsl_local_clock() to map it into the local clock domain of this machine.
-        * @throws timeout_error (if the timeout expires), or lost_error (if the stream source has been lost).
-        */
-		
-        double time_correction(double timeout=FOREVER) { int32_t ec=0; double res = lsl_time_correction(obj,timeout,&ec); check_error(ec); return res; }
+		/** Retrieve an estimated time correction offset for the given stream.
+		 *
+		 * The first call to this function takes several milliseconds until a reliable first
+		 * estimate is obtained. Subsequent calls are instantaneous (and rely on periodic background
+		 * updates). On a well-behaved network, the precision of these estimates should be below 1
+		 * ms (empirically it is within +/-0.2 ms).
+		 * To get a measure of whether the network is well-behaved, use the extended version
+		 * time_correction(double*,double*,double)
+		 * and check uncertainty (which maps to round-trip-time).
+		 *
+		 * 0.2 ms is typical of wired networks. 2 ms is typical of wireless networks.
+		 * The number can be much higher on poor networks.
+		 *
+		 * @param timeout Timeout to acquire the first time-correction estimate (default: no
+		 * timeout).
+		 * @return The time correction estimate. This is the number that needs to be added to a time
+		 * stamp that was remotely generated via lsl_local_clock() to map it into the local clock
+		 * domain of this machine.
+		 * @throws #lsl::timeout_error (if the timeout expires), or #lsl::lost_error (if the stream source has
+		 * been lost).
+		 */
+
+		double time_correction(double timeout=FOREVER) { int32_t ec=0; double res = lsl_time_correction(obj,timeout,&ec); check_error(ec); return res; }
+		/** @copydoc time_correction(double)
+		 * @param remote_time The current time of the remote computer that was used to generate this
+		 * time_correction. If desired, the client can fit time_correction vs remote_time to improve
+		 * the real-time time_correction further.
+		 * @param uncertainty The maximum uncertainty of the given time correction.
+		 */
         double time_correction(double *remote_time, double *uncertainty, double timeout=FOREVER) { int32_t ec=0; double res = lsl_time_correction_ex(obj,remote_time, uncertainty, timeout,&ec); check_error(ec); return res; }
 
-		/**
-		 * Set post-processing flags to use.
+		/** Set post-processing flags to use.
 		 *
 		 * By default, the inlet performs NO post-processing and returns the ground-truth time
 		 * stamps, which can then be manually synchronized using .time_correction(), and then
@@ -830,8 +785,7 @@ namespace lsl {
         // === Pulling a sample from the inlet ===
         // =======================================
 
-        /**
-        * Pull a sample from the inlet and read it into an array of values.
+        /** Pull a sample from the inlet and read it into an array of values.
         * Handles type checking & conversion.
         * @param sample An array to hold the resulting values.
         * @param timeout The timeout for this operation, if any.  Use 0.0 to make the function non-blocking.
@@ -841,8 +795,7 @@ namespace lsl {
         */
         template<class T, int N> double pull_sample(T sample[N], double timeout=FOREVER) { return pull_sample(&sample[0],N,timeout); }
 
-        /**
-        * Pull a sample from the inlet and read it into a std vector of values.
+        /** Pull a sample from the inlet and read it into a std vector of values.
         * Handles type checking & conversion and allocates the necessary memory in the vector if necessary.
         * @param sample An STL vector to hold the resulting values.
         * @param timeout The timeout for this operation, if any.  Use 0.0 to make the function non-blocking.
@@ -858,8 +811,7 @@ namespace lsl {
         double pull_sample(std::vector<char> &sample, double timeout=FOREVER) { sample.resize(channel_count); return pull_sample(&sample[0],(int32_t)sample.size(),timeout); }
         double pull_sample(std::vector<std::string> &sample, double timeout=FOREVER) { sample.resize(channel_count); return pull_sample(&sample[0],(int32_t)sample.size(),timeout); }
 
-        /**
-        * Pull a sample from the inlet and read it into a pointer to values.
+        /** Pull a sample from the inlet and read it into a pointer to values.
         * Handles type checking & conversion.
         * @param buffer A pointer to hold the resulting values. 
         * @param buffer_elements The number of samples allocated in the buffer. Note: it is the responsibility of the user to allocate enough memory.
@@ -890,13 +842,12 @@ namespace lsl {
                 throw std::runtime_error("Provided element count does not match the stream's channel count.");
         }
 
-		/**
-		 * Pull a sample from the inlet and read it into a custom C-style struct.
+		/** Pull a sample from the inlet and read it into a custom C-style struct.
 		 *
 		 * Overall size checking but no type checking or conversion are done.
 		 * Do not use for variable-size/string-formatted streams.
 		 * @param sample The raw sample object to hold the data (packed C-style struct).
-		 * Search for [`#pragma pack`](https://stackoverflow.com/a/3318475/73299) for information
+		 * Search for [`#``pragma pack`](https://stackoverflow.com/a/3318475/73299) for information
 		 * on how to pack structs correctly.
 		 * @param timeout The timeout for this operation, if any. Use 0.0 to make the function
 		 * non-blocking.
@@ -907,8 +858,7 @@ namespace lsl {
 		 */
 		template<class T> double pull_numeric_struct(T &sample, double timeout=FOREVER) { return pull_numeric_raw((void*)&sample, sizeof(T), timeout); }
 
-        /**
-        * Pull a sample from the inlet and read it into a pointer to raw data. 
+        /** Pull a sample from the inlet and read it into a pointer to raw data. 
         *
         * No type checking or conversions are done (not recommended!).<br>
         * Do not use for variable-size/string-formatted streams.
@@ -927,8 +877,7 @@ namespace lsl {
         // === Pulling a chunk of samples from the inlet ===
         // =================================================
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This is the most complete version, returning both the data and a timestamp for each sample.
         * @param chunk A vector of vectors to hold the samples.
         * @param timestamps A vector to hold the time stamps.
@@ -946,8 +895,7 @@ namespace lsl {
             return !chunk.empty();
         }
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This version returns only the most recent sample's time stamp.
         * @param chunk A vector of vectors to hold the samples.
         * @return The time when the most recent sample was captured 
@@ -965,8 +913,7 @@ namespace lsl {
             return timestamp;
         }
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This function does not return time stamps for the samples. Invoked as: mychunk = pull_chunk<float>();
         * @return A vector of vectors containing the obtained samples; may be empty.
         * @throws lost_error (if the stream source has been lost)
@@ -979,8 +926,7 @@ namespace lsl {
             return result;
         }
 
-        /**
-        * Pull a chunk of data from the inlet into a pre-allocated buffer.
+        /** Pull a chunk of data from the inlet into a pre-allocated buffer.
         * This is a high-performance function that performs no memory allocations 
         * (useful for very high data rates or on low-powered devices).
         * IMPORTANT: Note that the provided data buffer size is measured in channel values (e.g., floats) rather than in samples.
@@ -1019,8 +965,7 @@ namespace lsl {
             return 0;
         }
 
-		/**
-		 * @brief pull_chunk_multiplexed Pull a multiplexed chunk of samples
+		/** @brief pull_chunk_multiplexed Pull a multiplexed chunk of samples
 		 * and optionally the sample timestamps from the inlet.
 		 * @param chunk A vector to hold the multiplexed (Sample 1 Channel 1,
 		 * S1C2, S2C1, S2C2, S3C1, S3C2, ...) samples
@@ -1061,8 +1006,7 @@ namespace lsl {
 			return true;
 		}
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This is the most complete version, returning both the data and a timestamp for each sample.
         * @param chunk A vector of C-style structs to hold the samples.
         * @param timestamps A vector to hold the time stamps.
@@ -1080,8 +1024,7 @@ namespace lsl {
             return !chunk.empty();
         }
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This version returns only the most recent sample's time stamp.
         * @param chunk A vector of C-style structs to hold the samples.
         * @return The time when the most recent sample was captured 
@@ -1099,8 +1042,7 @@ namespace lsl {
             return timestamp;
         }
 
-        /**
-        * Pull a chunk of samples from the inlet.
+        /** Pull a chunk of samples from the inlet.
         * This function does not return time stamps. Invoked as: mychunk = pull_chunk<mystruct>();
         * @return A vector of C-style structs containing the obtained samples; may be empty.
         * @throws lost_error (if the stream source has been lost)
@@ -1113,8 +1055,7 @@ namespace lsl {
             return result;
         }
 
-        /**
-        * Query whether samples are currently available for immediate pickup.
+        /** Query whether samples are currently available for immediate pickup.
         * Note that it is not a good idea to use samples_available() to determine whether 
         * a pull_*() call would block: to be sure, set the pull timeout to 0.0 or an acceptably
         * low value. If the underlying implementation supports it, the value will be the number of 
@@ -1122,16 +1063,14 @@ namespace lsl {
         */
         std::size_t samples_available() { return lsl_samples_available(obj); }
 
-        /**
-        * Query whether the clock was potentially reset since the last call to was_clock_reset().
+        /** Query whether the clock was potentially reset since the last call to was_clock_reset().
         * This is a rarely-used function that is only useful to applications that combine multiple time_correction 
         * values to estimate precise clock drift; it allows to tolerate cases where the source machine was 
         * hot-swapped or restarted in between two measurements.
         */
         bool was_clock_reset() { return lsl_was_clock_reset(obj) != 0; }
 
-		/**
-		* Override the half-time (forget factor) of the time-stamp smoothing.
+		/** Override the half-time (forget factor) of the time-stamp smoothing.
 		* The default is 90 seconds unless a different value is set in the config file.
 		* Using a longer window will yield lower jitter in the time stamps, but longer 
 		* windows will have trouble tracking changes in the clock rate (usually due to 
@@ -1155,8 +1094,7 @@ namespace lsl {
     // ==== XML Element ====
     // =====================
 
-    /**
-    * A lightweight XML element tree; models the .desc() field of stream_info.
+    /** A lightweight XML element tree; models the .desc() field of stream_info.
     * Has a name and can have multiple named children or have text content as value; attributes are omitted.
     * Insider note: The interface is modeled after a subset of pugixml's node type and is compatible with it.
     * See also http://pugixml.googlecode.com/svn/tags/latest/docs/manual/access.html for additional documentation.
@@ -1220,29 +1158,21 @@ namespace lsl {
 
         // === Modification ===
 
-        /**
-        * Append a child node with a given name, which has a (nameless) plain-text child with the given text value.
-        */
+        /// Append a child node with a given name, which has a (nameless) plain-text child with the given text value.
         xml_element append_child_value(const std::string &name, const std::string &value) { return lsl_append_child_value(obj,(name.c_str()),(value.c_str())); }
 
-        /**
-        * Prepend a child node with a given name, which has a (nameless) plain-text child with the given text value.
-        */
+        /// Prepend a child node with a given name, which has a (nameless) plain-text child with the given text value.
         xml_element prepend_child_value(const std::string &name, const std::string &value) { return lsl_prepend_child_value(obj,(name.c_str()),(value.c_str())); }
 
-        /**
-        * Set the text value of the (nameless) plain-text child of a named child node.
-        */
+        /// Set the text value of the (nameless) plain-text child of a named child node.
         bool set_child_value(const std::string &name, const std::string &value) { return lsl_set_child_value(obj,(name.c_str()),(value.c_str())) != 0; }
 
-        /**
-        * Set the element's name.
+        /** Set the element's name.
         * @return False if the node is empty (or if out of memory).
         */
         bool set_name(const std::string &rhs) { return lsl_set_name(obj,(rhs.c_str())) != 0; }
 
-        /**
-        * Set the element's value.
+        /** Set the element's value.
         * @return False if the node is empty (or if out of memory).
         */
         bool set_value(const std::string &rhs) { return lsl_set_value(obj,(rhs.c_str())) != 0; }
@@ -1282,16 +1212,14 @@ namespace lsl {
     */
     class continuous_resolver {
     public:
-        /**
-        * Construct a new continuous_resolver that resolves all streams on the network. 
+        /** Construct a new continuous_resolver that resolves all streams on the network. 
         * This is analogous to the functionality offered by the free function resolve_streams().
         * @param forget_after When a stream is no longer visible on the network (e.g., because it was shut down),
         *                     this is the time in seconds after which it is no longer reported by the resolver.
         */
         continuous_resolver(double forget_after=5.0): obj(lsl_create_continuous_resolver(forget_after)) {} 
 
-        /**
-        * Construct a new continuous_resolver that resolves all streams with a specific value for a given property.
+        /** Construct a new continuous_resolver that resolves all streams with a specific value for a given property.
         * This is analogous to the functionality provided by the free function resolve_stream(prop,value).
         * @param prop The stream_info property that should have a specific value (e.g., "name", "type", "source_id", or "desc/manufaturer").
         * @param value The string value that the property should have (e.g., "EEG" as the type property).
@@ -1300,8 +1228,7 @@ namespace lsl {
         */
         continuous_resolver(const std::string &prop, const std::string &value, double forget_after=5.0): obj(lsl_create_continuous_resolver_byprop((prop.c_str()),(value.c_str()),forget_after)) {}
 
-        /**
-        * Construct a new continuous_resolver that resolves all streams that match a given XPath 1.0 predicate.
+        /** Construct a new continuous_resolver that resolves all streams that match a given XPath 1.0 predicate.
         * This is analogous to the functionality provided by the free function resolve_stream(pred).
         * @param pred The predicate string, e.g. "name='BioSemi'" or "type='EEG' and starts-with(name,'BioSemi') and count(info/desc/channel)=32"
         * @param forget_after When a stream is no longer visible on the network (e.g., because it was shut down),
@@ -1309,8 +1236,7 @@ namespace lsl {
         */
         continuous_resolver(const std::string &pred, double forget_after=5.0): obj(lsl_create_continuous_resolver_bypred((pred.c_str()),forget_after)) {}
 
-        /**
-        * Obtain the set of currently present streams on the network (i.e. resolve result).
+        /** Obtain the set of currently present streams on the network (i.e. resolve result).
         * @return A vector of matching stream info objects (excluding their meta-data), any of 
         *         which can subsequently be used to open an inlet.
         */
