@@ -62,7 +62,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	std::vector<std::string> multicast_addrs = cfg->multicast_addresses();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
-	LOG_F(2, "Trying to listen at address '%s'", listen_address.c_str());
+	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
 	// create TCP data server
 	ios_.push_back(io_context_p(new io_context()));
 	tcp_servers_.push_back(tcp_server_p(new tcp_server(info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_)));
@@ -115,6 +115,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 
 // Run an IO service.
 void stream_outlet_impl::run_io(io_context_p &ios) {
+	loguru::set_thread_name((std::string("IO_") += info().name().substr(0, 11)).c_str());
 	while (true) {
 		try {
 			ios->run();

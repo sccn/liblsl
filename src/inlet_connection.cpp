@@ -257,6 +257,7 @@ void inlet_connection::try_recover() {
 
 /// A thread that periodically re-resolves the stream and checks if it has changed its location
 void inlet_connection::watchdog_thread() {
+	loguru::set_thread_name((std::string("W_") += type_info().name().substr(0, 12)).c_str());
 	while(!lost_ && !shutdown_) {
 		try {
 			// we only try to recover if a) there are active transmissions and b) we haven't seen new data for some time

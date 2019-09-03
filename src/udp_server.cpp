@@ -33,7 +33,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 		info_->v4service_port(port);
 	else
 		info_->v6service_port(port);
-	DLOG_F(1, "%p Started unicast udp server at port %d", this, port);
+	LOG_F(2, "%s: Started unicast udp server %p at port %d", info_->name().c_str(), this, port);
 }
 
 /*
@@ -41,7 +41,6 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 * This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast local service discovery.
 */
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, uint16_t port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
-	DLOG_F(1, "%p Started multicast udp server at address %s", this, address.c_str());
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
@@ -77,7 +76,9 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 			socket_->set_option(ip::multicast::join_group(addr.to_v4(),listen_endpoint.address().to_v4()));
 		else
 			socket_->set_option(ip::multicast::join_group(addr));
-    }
+	}
+	LOG_F(2, "%s: Started multicast udp server at %s port %d", this->info_->name().c_str(),
+		address.c_str(), port);
 }
 
 

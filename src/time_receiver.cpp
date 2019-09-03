@@ -90,6 +90,8 @@ bool time_receiver::was_reset() {
 /// The time reader & updater thread.
 void time_receiver::time_thread() {
 	conn_.acquire_watchdog();
+	loguru::set_thread_name((std::string("T_") += conn_.type_info().name()).c_str());
+	DLOG_F(2, "Started time receiver thread");
 	try {
 		// start an async time estimation
 		start_time_estimation();

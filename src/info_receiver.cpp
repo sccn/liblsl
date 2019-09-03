@@ -48,6 +48,7 @@ const stream_info_impl &info_receiver::info(double timeout) {
 /// The info reader thread.
 void info_receiver::info_thread() {
 	conn_.acquire_watchdog();
+	loguru::set_thread_name((std::string("I_")+=conn_.type_info().name().substr(0,12)).c_str());
 	try {
 		while (!conn_.lost() && !conn_.shutdown()) {
 			try {
