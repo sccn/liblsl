@@ -17,6 +17,7 @@ ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} -Ilslboost \
 	lslboost/libs/serialization/src/*.cpp \
 	lslboost/libs/thread/src/pthread/once.cpp \
 	lslboost/libs/thread/src/pthread/thread.cpp \
+	${LDFLAGS} \
 	-shared -o liblsl.so -lpthread -lrt
-${CC:-gcc} -O2 ${FLAGS} -Iinclude testing/lslver.c -o lslver -L. -llsl
+${CC:-gcc} -O2 ${CFLAGS} -Iinclude testing/lslver.c -o lslver -L. -llsl
 LD_LIBRARY_PATH=. ./lslver
