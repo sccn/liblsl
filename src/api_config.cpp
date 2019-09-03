@@ -209,6 +209,19 @@ void api_config::load_from_file(const std::string &filename) {
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime",90.0f);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
+		// read the [log] settings
+		int log_level = pt.get("log.level", -1);
+		if(log_level < -3 || log_level > 9)
+			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
+
+		std::string log_file = pt.get("log.file", "");
+		if(!log_file.empty()) {
+			loguru::add_file(log_file.c_str(), loguru::Append, log_level);
+			// don't duplicate log to stderr
+			loguru::g_stderr_verbosity = -9;
+		} else
+			loguru::g_stderr_verbosity = log_level;
+
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
 			filename.c_str(), e.what());
