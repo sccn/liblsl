@@ -28,7 +28,7 @@ and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
 
 Precompiled packages are uploaded
 
-- to the [https://github.com/sccn/liblsl/releases](Release page)
+- to the [Release page](https://github.com/sccn/liblsl/releases)
 - the [Anaconda cloud](https://anaconda.org/tstenner/liblsl)
 
 ## Boost
