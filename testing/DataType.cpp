@@ -1,19 +1,18 @@
 #include "catch.hpp"
+#include "helpers.h"
+#include <cstdint>
 #include <lsl_cpp.h>
+
 
 namespace {
 template <typename T> void test_DataType(const char *name, lsl::channel_format_t cf) {
 	const int numBounces = sizeof(T) * 8;
 	double timestamps[numBounces][2];
 
-	lsl::stream_outlet outlet(
-		lsl::stream_info(name, "Bounce", 1, lsl::IRREGULAR_RATE, cf, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", name, 1, 5.0);
-
-	REQUIRE(found_stream_info.size() > 0);
-	lsl::stream_info si = found_stream_info[0];
-
-	lsl::stream_inlet inlet(si);
+	Streampair sp(create_streampair(
+		lsl::stream_info(name, "Bounce", 1, lsl::IRREGULAR_RATE, cf, "streamid")));
+	lsl::stream_inlet &inlet = sp.in_;
+	lsl::stream_outlet &outlet = sp.out_;
 
 	inlet.open_stream(2);
 	outlet.wait_for_consumers(2);
@@ -40,17 +39,10 @@ TEST_CASE("data type int32", "[datatransfer][basic]") { test_DataType<int32_t>("
 template <typename T> void test_DataTypeMulti(const char *name, lsl::channel_format_t cf) {
 	const int numChannels = sizeof(T) * 8;
 
-	lsl::stream_outlet outlet(
-		lsl::stream_info(name, "Bounce", numChannels, lsl::IRREGULAR_RATE, cf, "streamid"));
-	auto found_stream_info = lsl::resolve_stream("name", name, 1, 5.0);
-
-	REQUIRE(found_stream_info.size() > 0);
-	lsl::stream_info si = found_stream_info[0];
-
-	lsl::stream_inlet inlet(si);
-
-	inlet.open_stream(2);
-	outlet.wait_for_consumers(2);
+	Streampair sp(create_streampair(
+		lsl::stream_info(name, "Bounce", numChannels, lsl::IRREGULAR_RATE, cf, "streamid")));
+	lsl::stream_inlet &inlet = sp.in_;
+	lsl::stream_outlet &outlet = sp.out_;
 
 	std::vector<T> sent_data(numChannels);
 	T data = 0x1LL;
@@ -95,6 +87,21 @@ TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 	CHECK(received_data[0] == sent_data[0]);
 	if(received_data[1] != sent_data[1])
 		FAIL("Sent large string data doesn't match received data");
+}
+
+TEST_CASE("data typeconversion", "[datatransfer][types][basic]") {
+	Streampair sp{
+		create_streampair(lsl::stream_info("TypeConversion", "int2str2int", 1, 1, lsl::cf_string))};
+	sp.in_.open_stream(2);
+	const int num_bounces = 31;
+	std::vector<int32_t> data;
+	for (int i = 0; i < num_bounces; ++i) data.push_back(1 << i);
+	sp.out_.push_chunk_multiplexed(data);
+	for (int i = 0; i < num_bounces; ++i) {
+		int32_t result;
+		sp.in_.pull_sample(&result, 1, 1.);
+		CHECK(result == 1 << i);
+	}
 }
 
 } // namespace
