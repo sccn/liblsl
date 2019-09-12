@@ -60,6 +60,7 @@ stages:
             mv upload/manylinux2010/liblsl.so upload/liblsl-manylinux2010-liblsl64.so
             mv upload/manylinux1/liblsl.so upload/liblsl-manylinux1-liblsl64.so
     - task: GithubRelease@0
+      condition: startsWith(variables['Build.SourceBranch'], 'refs/tags/')
       inputs:
         action: edit
         tag: $(Build.SourceBranchName)
