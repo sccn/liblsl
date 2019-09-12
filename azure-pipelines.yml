@@ -31,7 +31,7 @@ stages:
       parameters:
         run_tests: true
         cmake_stepvars: '-DCMAKE_INTERPROCEDURAL_OPTIMIZATION=1 -DCMAKE_POLICY_DEFAULT_CMP0069=NEW'
-  - job: manylinux
+  - job: manylinux2010
     pool: { vmImage: 'ubuntu-16.04' }
     container: quay.io/pypa/manylinux2010_x86_64:latest
     steps:
@@ -39,6 +39,14 @@ stages:
     - bash: strip --strip-unneeded liblsl.so
     - publish: liblsl.so
       artifact: manylinux2010
+  - job: manylinux1
+    pool: { vmImage: 'ubuntu-16.04' }
+    container: quay.io/pypa/manylinux1_x86_64:latest
+    steps:
+    - bash: CFLAGS="-flto -static-libstdc++ -std=c++11" ./standalone_compilation_linux.sh
+    - bash: strip --strip-unneeded liblsl.so
+    - publish: liblsl.so
+      artifact: manylinux1
 - stage: Upload
   jobs:
   - job: Upload
@@ -48,7 +56,9 @@ stages:
     - task: DownloadPipelineArtifact@2
       inputs:
         targetPath: upload
-    - bash: mv upload/manylinux2010/liblsl.so upload/liblsl-manylinux2010-liblsl64.so
+    - bash: |
+            mv upload/manylinux2010/liblsl.so upload/liblsl-manylinux2010-liblsl64.so
+            mv upload/manylinux1/liblsl.so upload/liblsl-manylinux1-liblsl64.so
     - task: GithubRelease@0
       inputs:
         action: edit
