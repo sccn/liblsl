@@ -89,10 +89,10 @@ TEST(DataType, cf_string) {
 	std::vector<std::string> sent_data, received_data(numChannels);
 	const char nullstr[] = "\0Test\0string\0with\0nulls";
 	sent_data.emplace_back(nullstr, sizeof(nullstr));
-	sent_data.emplace_back(1 << 25, 'x');
+	sent_data.emplace_back(1 << 20, 'x');
 
 	outlet.push_sample(sent_data);
-	EXPECT_NE(inlet.pull_sample(received_data, 0.5), 0.0);
+	EXPECT_NE(inlet.pull_sample(received_data, 5.), 0.0);
 	EXPECT_EQ(received_data[0], sent_data[0]);
 	EXPECT_EQ(received_data[1], sent_data[1]);
 }
