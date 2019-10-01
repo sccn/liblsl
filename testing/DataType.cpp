@@ -71,4 +71,30 @@ TEST(DataType, cf_int16_multichannel) { test_DataTypeMulti<int16_t>("cf_int16", 
 TEST(DataType, cf_int32_multichannel) { test_DataTypeMulti<int32_t>("cf_int32", lsl::cf_int32); }
 // TEST(DataType, cf_int64_multichannel) { test_DataTypeMulti<int64_t>("cf_int64", lsl::cf_int64); }
 
+TEST(DataType, cf_string) {
+	const std::size_t numChannels = 2;
+
+	lsl::stream_outlet outlet(
+		lsl::stream_info("cf_string", "DataType", numChannels, lsl::IRREGULAR_RATE, lsl::cf_string, "streamid"));
+	auto found_stream_info = lsl::resolve_stream("name", "cf_string", 1, 5.0);
+
+	ASSERT_GT(found_stream_info.size(), 0);
+	lsl::stream_info si = found_stream_info[0];
+
+	lsl::stream_inlet inlet(si);
+
+	inlet.open_stream(2);
+	outlet.wait_for_consumers(2);
+
+	std::vector<std::string> sent_data, received_data(numChannels);
+	const char nullstr[] = "\0Test\0string\0with\0nulls";
+	sent_data.emplace_back(nullstr, sizeof(nullstr));
+	sent_data.emplace_back(1 << 25, 'x');
+
+	outlet.push_sample(sent_data);
+	EXPECT_NE(inlet.pull_sample(received_data, 0.5), 0.0);
+	EXPECT_EQ(received_data[0], sent_data[0]);
+	EXPECT_EQ(received_data[1], sent_data[1]);
+}
+
 } // namespace
