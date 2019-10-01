@@ -31,6 +31,13 @@ else ()  # WIN32
 		libs/thread/src/win32/tss_dll.cpp
 		libs/thread/src/win32/tss_pe.cpp
 	)
+	target_link_libraries(lslboost PRIVATE bcrypt)
+	target_compile_definitions(lslboost
+	PUBLIC
+		_WIN32_WINNT=${LSL_WINVER}
+	PRIVATE
+		BOOST_THREAD_BUILD_DLL
+	)
 	if(MINGW)
 		target_link_libraries(lslboost PRIVATE wsock32 ws2_32 winmm)
 	endif()
@@ -39,10 +46,6 @@ endif ()
 target_compile_definitions(lslboost PUBLIC
 	BOOST_ALL_NO_LIB
 	BOOST_ASIO_SEPARATE_COMPILATION
-	_WIN32_WINNT=${LSL_WINVER}
-	BOOST_UUID_RANDOM_PROVIDER_FORCE_WINCRYPT
-	PRIVATE
-	BOOST_THREAD_BUILD_DLL
 )
 
 target_include_directories(lslboost SYSTEM PUBLIC
