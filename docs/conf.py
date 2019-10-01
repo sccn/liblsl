@@ -1,4 +1,5 @@
 # Configuration file for the Sphinx documentation builder.
+import subprocess, os
 
 # -- Path setup --------------------------------------------------------------
 
@@ -65,3 +66,7 @@ intersphinx_mapping = {
     }
 
 
+
+read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
+if read_the_docs_build:
+    subprocess.call(['doxygen', 'Doxyfile_API'])
