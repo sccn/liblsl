@@ -13,6 +13,7 @@ endif()
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI" OFF)
+option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
 
 # lsl uses boost, but several other projects (e.g. Matlab) also use boost.
 # To prevent clashes with different boost versions, lsl ships a subset of
@@ -217,6 +218,10 @@ include(LSLCMake)
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
+endif()
+
+if(LSL_BUILD_EXAMPLES)
+	add_subdirectory(examples)
 endif()
 
 LSLGenerateCPackConfig()
