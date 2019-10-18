@@ -199,7 +199,7 @@ set_target_properties(lsl PROPERTIES
 	OUTPUT_NAME "liblsl${lslplatform}"
 )
 
-if(${LSL_UNITTESTS})
+if(LSL_UNITTESTS OR LSL_BUILD_STATIC)
 	add_library(lsl-static STATIC)
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
@@ -215,7 +215,12 @@ endif()
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
-install(TARGETS lsl lslobj lslboost lslver
+set(LSL_EXPORT_TARGETS "lsl;lslobj;lslboost;lslver")
+if(LSL_BUILD_STATIC)
+	list(APPEND LSL_EXPORT_TARGETS "lsl-static")
+endif()
+
+install(TARGETS ${LSL_EXPORT_TARGETS}
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
