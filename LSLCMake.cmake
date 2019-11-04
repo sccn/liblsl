@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 9")
+message(STATUS "Included LSL CMake helpers, rev. 10")
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -225,7 +225,6 @@ endfunction()
 
 # default paths, versions and magic to guess it on windows
 # guess default paths for Windows / VC
-set(LATEST_QT_VERSION "5.11.2")
 
 # Boost autoconfig:
 # Original author: Ryan Pavlik <ryan@sensics.com> <ryan.pavlik@gmail.com
@@ -265,10 +264,19 @@ if(WIN32 AND MSVC)
 	endif()
 
 	if(NOT Qt5_DIR)
-		set(Qt5_DIR "C:/Qt/${LATEST_QT_VERSION}/msvc${VCYEAR}_${lslplatform}/lib/cmake/Qt5")
-		message(STATUS "You didn't specify a Qt5_DIR. I'm guessing it's ${Qt5_DIR}.")
-		message(STATUS "If you are building Apps that require Qt and if this is wrong then please add the correct dir:")
-		message(STATUS "  -DQt5_DIR=/path/to/Qt5/5.x.y/msvc_20xy_z/lib/cmake/Qt5")
+		message(STATUS "You didn't specify a Qt5_DIR.")
+		file(GLOB_RECURSE Qt5ConfGlobbed
+			LIST_DIRECTORIES true
+			"C:/Qt/5.1*/msvc${VCYEAR}_${lslplatform}/lib/cmake/Qt5/")
+		list(FILTER Qt5ConfGlobbed INCLUDE REGEX "Qt5$")
+		if(Qt5ConfGlobbed)
+			message(STATUS "Found Qt directories: ${Qt5ConfGlobbed}")
+			list(SORT Qt5ConfGlobbed)
+			list(GET Qt5ConfGlobbed -1 Qt5_DIR)
+			message(STATUS "You didn't specify a Qt5_DIR. I'm guessing it's ${Qt5_DIR}.")
+		endif()
+		message(STATUS "If you are building Apps that require Qt, please add the correct dir:")
+		message(STATUS "  -DQt5_DIR=/path/to/Qt5/5.x.y/msvc_${VCYEAR}_${lslplatform}/lib/cmake/Qt5")
 	endif()
 
 	if((NOT BOOST_ROOT) AND (NOT Boost_INCLUDE_DIR) AND (NOT Boost_LIBRARY_DIR))
