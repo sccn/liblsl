@@ -24,7 +24,7 @@ LIBLSL_C_API int32_t lsl_protocol_version() { return api_config::get_instance()-
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
 /** Get a string containing library information */
-LIBLSL_C_API const char* lsl_library_info() {
+LIBLSL_C_API const char *lsl_library_info() {
 #ifdef LSL_LIBRARY_INFO_STR
 	return LSL_LIBRARY_INFO_STR;
 #else
@@ -94,7 +94,7 @@ LIBLSL_C_API int32_t lsl_resolve_all(lsl_streaminfo *buffer, uint32_t buffer_ele
 * @return The number of results written into the buffer (never more than the provided # of slots) or a negative number if an
 *		  error has occurred (values corresponding to lsl_error_code_t).
 */
-LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *prop, const char *value, int minimum, double timeout) {
+LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *prop, const char *value, int32_t minimum, double timeout) {
 	try {
 		// create a new resolver
 		resolver_impl resolver;
@@ -128,7 +128,7 @@ LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_
 * @return The number of results written into the buffer (never more than the provided # of slots) or a negative number if an
 *		  error has occurred (values corresponding to lsl_error_code_t).
 */
-LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *pred, int minimum, double timeout) {
+LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *pred, int32_t minimum, double timeout) {
 	try {
 		// create a new resolver
 		resolver_impl resolver;

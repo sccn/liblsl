@@ -87,19 +87,19 @@ extern "C" {
  * can query the stream info; it is also written to disk when recording the stream (playing a
  * similar role as a file header).
  */
-typedef struct lsl_streaminfo_struct_* lsl_streaminfo;
+typedef struct lsl_streaminfo_struct_ *lsl_streaminfo;
 
 /**
  * A stream outlet handle.
  * Outlets are used to make streaming data (and the meta-data) available on the lab network.
  */
-typedef struct lsl_outlet_struct_* lsl_outlet;
+typedef struct lsl_outlet_struct_ *lsl_outlet;
 
 /**
  * A stream inlet handle.
  * Inlets are used to receive streaming data (and meta-data) from the lab network.
  */
-typedef struct lsl_inlet_struct_* lsl_inlet;
+typedef struct lsl_inlet_struct_ *lsl_inlet;
 
 /**
  * A lightweight XML element tree handle; models the description of a streaminfo object.
@@ -160,7 +160,7 @@ extern LIBLSL_C_API int32_t lsl_library_version();
  *
  * The format of the string shouldn't be used for anything important except giving a debugging
  * person a good idea which exact library version is used. */
-extern LIBLSL_C_API const char* lsl_library_info();
+extern LIBLSL_C_API const char *lsl_library_info();
 
 /**
 * Obtain a local system time stamp in seconds.
@@ -448,7 +448,7 @@ extern LIBLSL_C_API int32_t lsl_get_sample_bytes(lsl_streaminfo info);
  * name='ExampleStream'
  * @endcode
  */
-extern LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const char* query);
+extern LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const char *query);
 
 /// Create a streaminfo object from an XML representation
 extern LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml);
@@ -510,6 +510,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_l(lsl_outlet out, const long *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_i(lsl_outlet out, const int32_t *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_s(lsl_outlet out, const int16_t *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const char *data);
+extern LIBLSL_C_API int32_t lsl_push_sample_str(lsl_outlet out, const char **data);
 extern LIBLSL_C_API int32_t lsl_push_sample_v(lsl_outlet out, const void *data);
 /// @}
 /** @copydoc lsl_push_sample_f
@@ -522,6 +523,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_lt(lsl_outlet out, const long *data,
 extern LIBLSL_C_API int32_t lsl_push_sample_it(lsl_outlet out, const int32_t *data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_st(lsl_outlet out, const int16_t *data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const char *data, double timestamp);
+extern LIBLSL_C_API int32_t lsl_push_sample_strt(lsl_outlet out, const char **data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_vt(lsl_outlet out, const void *data, double timestamp);
 /// @}
 /** @copydoc lsl_push_sample_ft
@@ -574,6 +576,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_l(lsl_outlet out, const long *data, u
 extern LIBLSL_C_API int32_t lsl_push_chunk_i(lsl_outlet out, const int32_t *data, unsigned long data_elements);
 extern LIBLSL_C_API int32_t lsl_push_chunk_s(lsl_outlet out, const int16_t *data, unsigned long data_elements);
 extern LIBLSL_C_API int32_t lsl_push_chunk_c(lsl_outlet out, const char *data, unsigned long data_elements);
+extern LIBLSL_C_API int32_t lsl_push_chunk_str(lsl_outlet out, const char **data, unsigned long data_elements);
 /// @}
 
 /** @copydoc lsl_push_chunk_f
@@ -643,7 +646,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_strtnp(lsl_outlet out, const char **d
  * @param data_elements The number of data values in the data buffer.
  * Must be a multiple of the channel count.
  */
-extern LIBLSL_C_API int32_t lsl_push_chunk_buf(lsl_outlet out, const char **data, const uint32_t*lengths, unsigned long data_elements);
+extern LIBLSL_C_API int32_t lsl_push_chunk_buf(lsl_outlet out, const char **data, const uint32_t *lengths, unsigned long data_elements);
 
 /** @copydoc lsl_push_chunk_buf @sa lsl_push_chunk_ftp @sa lsl_push_chunk_buf
  * @param timestamp Optionally the capture time of the most recent sample, in agreement with
@@ -858,8 +861,7 @@ extern LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int3
  * These strings may contains 0's, therefore the lengths are read into the buffer_lengths array.
  * @param buffer_lengths
  * A pointer to an array that holds the resulting lengths for each returned binary string.*/
-extern LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer,
-	uint32_t *buffer_lengths, int32_t buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *buffer_lengths, int32_t buffer_elements, double timeout, int32_t *ec);
 
 /**
  * Pull a sample from the inlet and read it into a custom struct or buffer.
@@ -1037,10 +1039,10 @@ extern LIBLSL_C_API const char *lsl_name(lsl_xml_ptr e);
 extern LIBLSL_C_API const char *lsl_value(lsl_xml_ptr e);
 
 /** Get child value (value of the first child that is text). */
-extern LIBLSL_C_API const char* lsl_child_value(lsl_xml_ptr e);
+extern LIBLSL_C_API const char *lsl_child_value(lsl_xml_ptr e);
 
 /** Get child value of a child with a specified name. */
-extern LIBLSL_C_API const char* lsl_child_value_n(lsl_xml_ptr e, const char *name);
+extern LIBLSL_C_API const char *lsl_child_value_n(lsl_xml_ptr e, const char *name);
 
 
 // Data Modification

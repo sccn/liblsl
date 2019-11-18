@@ -10,7 +10,7 @@ extern "C" {
 using namespace lsl;
 
 // boilerplate wrapper code
-LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type, int channel_count, double nominal_srate, lsl_channel_format_t channel_format, const char *source_id) {
+LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type, int32_t channel_count, double nominal_srate, lsl_channel_format_t channel_format, const char *source_id) {
 	try {
 		if (!source_id)
 			source_id = "";
@@ -65,7 +65,7 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 LIBLSL_C_API int32_t lsl_get_channel_bytes(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_bytes(); }
 LIBLSL_C_API int32_t lsl_get_sample_bytes(lsl_streaminfo info) { return ((stream_info_impl*)info)->sample_bytes(); }
 
-LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const char* query) {
+LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const char *query) {
 	return ((stream_info_impl*)info)->matches_query(query);
 }
 
