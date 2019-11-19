@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5)
 project(Examples
 	LANGUAGES C CXX
 	VERSION 0.2.0)
+list(INSERT LSL_INSTALL_ROOT 0 "${CMAKE_CURRENT_LIST_DIR}/../build/install/")
+include(Findliblsl.cmake)
 
 # convenience function to add an example file
 # this creates a target, links the necessary libraries and
