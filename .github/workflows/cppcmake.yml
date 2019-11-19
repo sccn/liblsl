@@ -1,0 +1,40 @@
+name: C/C++ CI
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+    branches:
+    - master
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os:
+        - ubuntu-latest
+        - windows-latest
+        - macOS-latest
+      fail-fast: false
+    steps:
+    - uses: actions/checkout@v1
+    - name: CMake version
+      run: cmake --version
+    - name: Configure CMake
+      shell: bash
+      run: |
+           cmake --version
+           cmake -E make_directory build
+           cd build
+           cmake -DLSL_UNITTESTS=1 ..
+    - name: make
+      run: cmake --build build --config Release -j --target install
+      #    - name: pack everything up
+      #      shell: bash
+      #      run: cd build; mkdir upload; cpack -C Release -R $PWD/upload; rm -rf upload/_CPack_Packages/;
+    - uses: actions/upload-artifact@master
+      with:
+        name: pkg-${{ matrix.os }}
+        path: build/install
