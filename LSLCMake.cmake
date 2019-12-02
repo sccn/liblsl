@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 10")
+message(STATUS "Included LSL CMake helpers, rev. 11")
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -42,13 +42,6 @@ elseif(UNIX)
 endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
-
-# Qt5
-set(CMAKE_INCLUDE_CURRENT_DIR ON) # Because the ui_mainwindow.h file.
-# Enable automatic compilation of .cpp->.moc, xy.ui->ui_xy.h and resource files
-set(CMAKE_AUTOMOC ON)
-set(CMAKE_AUTOUIC ON)
-set(CMAKE_AUTORCC ON)
 
 # Boost
 #SET(Boost_DEBUG OFF) #Switch this and next to ON for help debugging Boost problems.
