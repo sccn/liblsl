@@ -3,6 +3,8 @@ Stream Inlets
 
 Another text here
 
+:term:`lsl:Stream Inlet`
+
 Doxygen output
 --------------
 
