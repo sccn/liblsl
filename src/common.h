@@ -14,7 +14,7 @@
 
 #ifdef _MSC_VER
 #pragma warning( disable : 4275 )
-#if _MSC_VER < 1600
+#if _MSC_VER <= 1600
 #include <boost/cstdint.hpp>
 using lslboost::int8_t;
 using lslboost::int16_t;

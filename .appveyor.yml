@@ -3,14 +3,9 @@ pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
 environment:
-  CMakeArgs: ""
-  matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    VCVER: 9.0
-    ARCH: x86
+  APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
 build_script:
-- cmd: call "C:\Program Files (x86)\Microsoft Visual Studio %VCVER%\VC\vcvarsall.bat" %ARCH%
-- cmd: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release %CMakeArgs%
+- cmd: cmake -S . -B build -T v100
 - cmake --build build --config Release -j --target package
 artifacts:
 - path: 'build/*.7z'
