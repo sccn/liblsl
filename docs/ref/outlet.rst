@@ -3,6 +3,8 @@ Stream Outlets
 
 Text here
 
+:term:`lsl:Stream Outlet`
+
 Doxygen output
 --------------
 
