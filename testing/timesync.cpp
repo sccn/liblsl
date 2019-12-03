@@ -1,22 +1,23 @@
-#include "gtest/gtest.h"
+#include "catch.hpp"
 #include <lsl_cpp.h>
+#include <iostream>
 
 namespace {
 
-TEST(timesync, simple) {
+TEST_CASE("simple timesync", "[timesync][basic]") {
 	lsl::stream_outlet outlet(lsl::stream_info("timesync", "Test"));
 	auto si = lsl::resolve_stream("name", "timesync", 1, 2.0);
-	ASSERT_EQ(si.size(), 1);
+	REQUIRE(si.size() == 1);
 	lsl::stream_inlet inlet(si[0]);
-	double offset = inlet.time_correction(5.);
-	ASSERT_LE(offset, 0.001);
-	std::cout << "\tOffset (ms): " << (offset*1000) << '\n';
+	double offset = inlet.time_correction(5.) * 1000;
+	CHECK(offset < 1);
+	CAPTURE(offset);
 
 	double remote_time, uncertainty;
-	offset = inlet.time_correction(&remote_time, &uncertainty, 5.);
-	ASSERT_LE(offset, 0.001);
-	ASSERT_LE(remote_time, lsl::local_clock());
-	std::cout << "\tOffset (ms): " << (offset * 1000) << "±" << (uncertainty * 1000) << '\n';
+	offset = inlet.time_correction(&remote_time, &uncertainty, 5.) * 1000;
+	CHECK(offset < 1);
+	CHECK(uncertainty * 1000 < 1);
+	CHECK(remote_time < lsl::local_clock());
 }
 
 } // namespace
