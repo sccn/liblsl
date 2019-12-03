@@ -1,7 +1,9 @@
 cmake_minimum_required (VERSION 3.12)
 project (LSL
 	VERSION 1.13.0
-	LANGUAGES C CXX)
+	LANGUAGES C CXX
+	DESCRIPTION "Labstreaminglayer C/C++ library"
+	)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_POSITION_INDEPENDENT_CODE On)

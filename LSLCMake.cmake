@@ -76,7 +76,6 @@ endfunction()
 # OS X (homebrew) and Conda the libraries are installed
 # separately to save space, ease upgrading and distribution
 function(installLSLApp target)
-	set(CPACK_COMPONENT_${PROJECT_NAME}_DEPENDS liblsl PARENT_SCOPE)
 	if(LSL_UNIXFOLDERS)
 		install(TARGETS ${target}
 			COMPONENT "${PROJECT_NAME}"
@@ -86,6 +85,10 @@ function(installLSLApp target)
 	else()
 		installLSLAppSingleFolder(${target})
 	endif()
+	set_property(GLOBAL APPEND PROPERTY
+		LSLMENU "${target}" "${target}")
+	set_property(GLOBAL APPEND PROPERTY
+		"LSLDEPENDS_${PROJECT_NAME}" liblsl)
 endfunction()
 
 macro(findQtInstallationTool qtdeploytoolname)
@@ -172,9 +175,6 @@ function(installLSLAppSingleFolder target)
 					#	${QT_DEPLOYQT_FLAGS}
 					#	\"$<TARGET_FILE:${target}>\")
 			endif()
-			set_property(GLOBAL APPEND PROPERTY
-				LSLMENU "${PROJECT_NAME}/${target}.exe" "${target}")
-			message(STATUS "MENU appended: ${target}")
 		elseif(APPLE)
 			# It should be enough to call fixup_bundle (see below),
 			# but this fails to install qt plugins (cocoa).
@@ -299,23 +299,22 @@ if(WIN32 AND MSVC)
 	endif()
 endif()
 
-
-# CPack configuration
-include(CPackComponent)
-cpack_add_component(${PROJECT_NAME}
-	DISPLAY_NAME ${PROJECT_NAME}
-	DESCRIPTION "${PROJECT_NAME} ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
-
 macro(LSLGenerateCPackConfig)
+	# CPack configuration
+	string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
+	if(NOT PROJECT_DESCRIPTION)
+		set(PROJECT_DESCRIPTION "${PROJECT_NAME} ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+	endif()
+	set("CPACK_COMPONENT_${PROJECT_NAME_UPPER}_DESCRIPTION" "${PROJECT_DESCRIPTION}" CACHE INTERNAL "CPack Description")
+
 	# top level CMakeLists.txt?
 	if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
 		# CPack configuration
-		set(CPACK_PACKAGE_VERSION_MAJOR ${PROJECT_VERSION_MAJOR})
-		set(CPACK_PACKAGE_VERSION_MINOR ${PROJECT_VERSION_MINOR})
-		set(CPACK_PACKAGE_VERSION_PATCH ${PROJECT_VERSION_PATCH})
+		set(CPACK_PACKAGE_INSTALL_DIRECTORY "lsl")
 		set(CPACK_STRIP_FILES ON)
 		set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 		set(CPACK_PACKAGE_NAME lsl)
+		get_property(CPACK_PACKAGE_EXECUTABLES GLOBAL PROPERTY LSLMENU)
 		if(APPLE)
 			set(CPACK_GENERATOR "TBZ2")
             if(DEFINED ENV{OSXVER})
@@ -327,9 +326,9 @@ macro(LSLGenerateCPackConfig)
 		elseif(WIN32)
 			set(CPACK_GENERATOR "7Z") # you can create NSIS packages by calling 'cpack -G NSIS'
 			set(CPACK_NSIS_MODIFY_PATH ON)
+			set(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ON)
+			set(CPACK_WIX_UPGRADE_GUID "ee28a351-3b27-4c2b-8b48-259c87d1b1b4")
 			set(LSL_OS "Win${lslplatform}")
-			get_property(CPACK_NSIS_MENU_LINKS GLOBAL PROPERTY LSLMENU)
-			message(STATUS "MENU: ${CPACK_NSIS_MENU_LINKS}")
 		elseif(UNIX)
 			set(CPACK_GENERATOR DEB)
 			set(CPACK_SET_DESTDIR 1)
@@ -348,13 +347,18 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_DEBIAN_PACKAGE_RELEASE ${LSB_RELEASE_CODENAME})
 			set(LSL_OS "Linux${lslplatform}-${LSB_RELEASE_CODENAME}")
 		endif()
-
 		get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
 		foreach(component ${CPACK_COMPONENTS_ALL})
 			string(TOUPPER ${component} COMPONENT)
 			message(STATUS "Setting packages name for ${COMPONENT}")
 			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${LSL_OS}")
 			message(STATUS "File name: ${LSL_CPACK_FILENAME}")
+			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
+			if(LSLDEPENDS)
+				list(REMOVE_DUPLICATES LSLDEPENDS)
+				set("CPACK_COMPONENT_${COMPONENT}_DEPENDS" ${LSLDEPENDS})
+			endif()
+
 			set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
 			set("CPACK_ARCHIVE_${COMPONENT}_FILE_NAME" ${LSL_CPACK_FILENAME})
 			#set(CPACK_DEBIAN_${component}_FILE_NAME "${FILENAME}.deb")
