@@ -7,6 +7,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include "cancellable_streambuf.h"
 #include "data_receiver.h"
+#include "sample.h"
 #include "socket_utils.h"
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
@@ -29,7 +30,7 @@ using namespace lslboost::algorithm;
 * @param max_chunklen Optionally the maximum size, in samples, at which chunks are transmitted (the default corresponds to the chunk sizes used by the sender).
 *					  Recording applications can use a generous size here (leaving it to the network how to pack things), while real-time applications may want a finer (perhaps 1-sample) granularity.
 */
-data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chunklen): conn_(conn), check_thread_start_(true), closing_stream_(false), connected_(false), sample_queue_(max_buflen), 
+data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chunklen): conn_(conn), check_thread_start_(true), closing_stream_(false), connected_(false), sample_queue_(max_buflen),
 	sample_factory_(new factory(conn.type_info().channel_format(),conn.type_info().channel_count(),conn.type_info().nominal_srate()?conn.type_info().nominal_srate()*api_config::get_instance()->inlet_buffer_reserve_ms()/1000:api_config::get_instance()->inlet_buffer_reserve_samples())), max_buflen_(max_buflen), max_chunklen_(max_chunklen)
 {
 	if (max_buflen < 0)
@@ -96,6 +97,35 @@ void data_receiver::close_stream() {
 	closing_stream_ = true;
 	cancel_all_registered();
 }
+
+template<class T> double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double timeout) {
+	if (conn_.lost())
+		throw lost_error("The stream read by this outlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");
+	// start data thread implicitly if necessary
+	if (check_thread_start_ && !data_thread_.joinable()) {
+		data_thread_ = lslboost::thread(&data_receiver::data_thread,this);
+		check_thread_start_ = false;
+	}
+	// get the sample with timeout
+	if (sample_p s = sample_queue_.pop_sample(timeout)) {
+		if (buffer_elements != conn_.type_info().channel_count())
+			throw std::range_error("The number of buffer elements provided does not match the number of channels in the sample.");
+		s->retrieve_typed(buffer);
+		return s->timestamp;
+	} else {
+		if (conn_.lost())
+			throw lost_error("The stream read by this inlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");
+		return 0.0;
+	}
+}
+
+template double data_receiver::pull_sample_typed<char>(char *, int, double);
+template double data_receiver::pull_sample_typed<int16_t>(int16_t *, int, double);
+template double data_receiver::pull_sample_typed<int32_t>(int32_t *, int, double);
+template double data_receiver::pull_sample_typed<int64_t>(int64_t *, int, double);
+template double data_receiver::pull_sample_typed<float>(float *, int, double);
+template double data_receiver::pull_sample_typed<double>(double *, int, double);
+template double data_receiver::pull_sample_typed<std::string>(std::string *, int, double);
 
 /**
 * Pull a sample from the inlet and read it into a pointer to raw data.
