@@ -126,6 +126,9 @@ template double data_receiver::pull_sample_typed<int64_t>(int64_t *, int, double
 template double data_receiver::pull_sample_typed<float>(float *, int, double);
 template double data_receiver::pull_sample_typed<double>(double *, int, double);
 template double data_receiver::pull_sample_typed<std::string>(std::string *, int, double);
+#ifdef WIN32
+template double data_receiver::pull_sample_typed<long>(long *, int, double);
+#endif
 
 /**
 * Pull a sample from the inlet and read it into a pointer to raw data.
