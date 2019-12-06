@@ -1,7 +1,7 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "../include/lsl_constants.h"
+#include "../include/lsl/constants.h"
 #include <stdexcept>
 #include <boost/version.hpp>
 #include <string>

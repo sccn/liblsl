@@ -81,8 +81,8 @@ add_library(lslobj OBJECT
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
 	# headers
 	include/lsl_c.h
-	include/lsl_constants.h
 	include/lsl_cpp.h
+	include/lsl/constants.h
 )
 
 # try to find out which revision is currently checked out

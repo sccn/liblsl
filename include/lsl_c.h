@@ -67,7 +67,7 @@ extern "C" {
 #endif
 
 // Defined constants
-#include "lsl_constants.h"
+#include "lsl/constants.h"
 
 /* ===================================================== */
 /* ==== Objects provided by the lab streaming layer ==== */
