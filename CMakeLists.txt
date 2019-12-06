@@ -7,12 +7,11 @@ project (LSL
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_POSITION_INDEPENDENT_CODE On)
-set(CMAKE_CXX_STANDARD 11)
+if(NOT MSVC_VERSION VERSION_LESS 1700)
+	set(CMAKE_CXX_STANDARD 14)
+endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-if(NOT CMAKE_DEBUG_POSTFIX)
-	set(CMAKE_DEBUG_POSTFIX -debug)
-endif()
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
@@ -79,28 +78,12 @@ add_library(lslobj OBJECT
 	src/time_receiver.h
 	src/udp_server.cpp
 	src/udp_server.h
+	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
+	# headers
+	include/lsl_c.h
+	include/lsl_constants.h
+	include/lsl_cpp.h
 )
-if(LSL_LEGACY_CPP_ABI)
-	list(APPEND sources src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h)
-endif()
-
-set(headers
-	${CMAKE_CURRENT_LIST_DIR}/include/lsl_c.h
-	${CMAKE_CURRENT_LIST_DIR}/include/lsl_constants.h
-	${CMAKE_CURRENT_LIST_DIR}/include/lsl_cpp.h
-)
-target_sources(lslobj PRIVATE ${headers})
-
-if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-	set(lslplatform 64)
-else()
-	set(lslplatform 32)
-endif()
-
-if(LSL_NO_FANCY_LIBNAME)
-	set(lslplatform "")
-	set(CMAKE_DEBUG_POSTFIX "")
-endif()
 
 # try to find out which revision is currently checked out
 find_package(Git)
@@ -158,25 +141,22 @@ else ()  # WIN32
 		lslboost/libs/thread/src/win32/tss_dll.cpp
 		lslboost/libs/thread/src/win32/tss_pe.cpp
 	)
-        target_link_libraries(lslboost PRIVATE bcrypt)
-        target_compile_definitions(lslboost
-        PUBLIC
-                _WIN32_WINNT=${LSL_WINVER}
-        PRIVATE
-                BOOST_THREAD_BUILD_DLL
-        )
-	if(MINGW)
-		target_link_libraries(lslboost PUBLIC wsock32 ws2_32 winmm)
-	endif()
+	target_link_libraries(lslboost PRIVATE
+		bcrypt
+		$<$<BOOL:${MINGW}>:wsock32 ws2_32 winmm>
+	)
 endif ()
 
-target_compile_definitions(lslboost PUBLIC
-	BOOST_ALL_NO_LIB
-	BOOST_ASIO_SEPARATE_COMPILATION
+target_compile_definitions(lslboost
+	PUBLIC
+		BOOST_ALL_NO_LIB
+		BOOST_ASIO_SEPARATE_COMPILATION
+		$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
+	PRIVATE
+		$<$<PLATFORM_ID:Windows>:BOOST_THREAD_BUILD_DLL>
 )
 target_include_directories(lslboost PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
-
 
 
 target_link_libraries(lslobj PRIVATE lslboost)
@@ -184,50 +164,49 @@ target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
 target_compile_definitions(lslobj
-	PRIVATE LIBLSL_EXPORTS _SCL_SECURE_NO_WARNINGS _CRT_SECURE_NO_WARNINGS
-	PRIVATE $<TARGET_PROPERTY:lslboost,INTERFACE_COMPILE_DEFINITIONS>
+	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
 	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 )
-if(NOT MSVC_VERSION VERSION_LESS 1700)
-	target_compile_features(lslobj PUBLIC cxx_auto_type)
-endif()
 
 # shared library
 add_library(lsl SHARED)
 target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
 set_target_properties(lsl PROPERTIES
 	VERSION ${LSL_VERSION_MAJOR}.${LSL_VERSION_MINOR}.${LSL_VERSION_PATCH}
-	PREFIX ""
-	OUTPUT_NAME "liblsl${lslplatform}"
 )
 
-if(LSL_UNITTESTS OR LSL_BUILD_STATIC)
+set(LSL_EXPORT_TARGETS lsl lslobj lslboost lslver)
+if(LSL_BUILD_STATIC)
 	add_library(lsl-static STATIC)
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
-	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
+	target_compile_definitions(lsl-static INTERFACE LIBLSL_STATIC)
+	add_executable(lslver-static testing/lslver.c)
+	target_link_libraries(lslver-static PRIVATE lsl-static)
+	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 endif()
 
-if(LSL_UNIXFOLDERS)
-	set(LSLPREFIX "")
-else()
+if(NOT LSL_NO_FANCY_LIBNAME)
+	set(CMAKE_DEBUG_POSTFIX "-debug")
+	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
+	set_target_properties(lsl PROPERTIES
+		PREFIX ""
+		OUTPUT_NAME "liblsl${lslplatform}"
+		)
+endif()
+
+if(NOT LSL_UNIXFOLDERS)
 	set(LSLPREFIX "LSL/")
 endif()
 
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
-set(LSL_EXPORT_TARGETS "lsl;lslobj;lslboost;lslver")
-if(LSL_BUILD_STATIC)
-	list(APPEND LSL_EXPORT_TARGETS "lsl-static")
-endif()
-
 install(TARGETS ${LSL_EXPORT_TARGETS}
 	COMPONENT liblsl
 	EXPORT "${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
 	LIBRARY DESTINATION ${LSLPREFIX}lib
-	INCLUDES DESTINATION ${LSLPREFIX}include
 	ARCHIVE DESTINATION ${LSLPREFIX}lib
 )
 
@@ -237,17 +216,16 @@ install(EXPORT "${PROJECT_NAME}Config"
 	DESTINATION "${LSLPREFIX}share/LSL")
 
 # install headers
-install(FILES ${headers}
+install(DIRECTORY include
+	DESTINATION "./${LSLPREFIX}"
 	COMPONENT liblsl
-	DESTINATION "${LSLPREFIX}include"
 )
 
 install(FILES LSLCMake.cmake
 	COMPONENT liblsl
 	DESTINATION "${LSLPREFIX}share/LSL")
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR})
-include(LSLCMake)
+include(LSLCMake.cmake)
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
