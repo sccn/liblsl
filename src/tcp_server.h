@@ -101,7 +101,7 @@ namespace lsl {
 		* - So memory is generally owned by the code (functors and stack frames) that needs to refer to it for the duration of the execution.
 		*/
 		class client_session: public lslboost::enable_shared_from_this<client_session> {
-			typedef lslboost::shared_ptr<lslboost::asio::executor_work_guard<lslboost::asio::io_context::executor_type>> work_p;
+			typedef lslboost::shared_ptr<lslboost::asio::executor_work_guard<lslboost::asio::io_context::executor_type> > work_p;
 		public:
 			/// Instantiate a new session & its socket.
 			client_session(const tcp_server_p &serv);
