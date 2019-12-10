@@ -125,12 +125,6 @@ double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double t
 	}
 }
 
-typedef lslboost::conditional<sizeof(long) == 8, int64_t, int32_t>::type long_type;
-template <>
-double data_receiver::pull_sample_typed(long *buffer, int buffer_elements, double timeout) {
-	return pull_sample_typed((long_type *)buffer, buffer_elements, timeout);
-}
-
 template double data_receiver::pull_sample_typed<char>(char *, int, double);
 template double data_receiver::pull_sample_typed<int16_t>(int16_t *, int, double);
 template double data_receiver::pull_sample_typed<int32_t>(int32_t *, int, double);
