@@ -5,6 +5,7 @@
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
+#include <boost/type_traits/conditional.hpp>
 #include "cancellable_streambuf.h"
 #include "data_receiver.h"
 #include "sample.h"
@@ -19,8 +20,9 @@
 
 // === implementation of the data_receiver class ===
 
-using namespace lsl;
 using namespace lslboost::algorithm;
+
+namespace lsl {
 
 /**
 * Construct a new data receiver from an info connection.
@@ -98,25 +100,35 @@ void data_receiver::close_stream() {
 	cancel_all_registered();
 }
 
-template<class T> double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double timeout) {
+template <class T>
+double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double timeout) {
 	if (conn_.lost())
-		throw lost_error("The stream read by this outlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");
+		throw lost_error("The stream read by this outlet has been lost. To recover, you need to "
+						 "re-resolve the source and re-create the inlet.");
 	// start data thread implicitly if necessary
 	if (check_thread_start_ && !data_thread_.joinable()) {
-		data_thread_ = lslboost::thread(&data_receiver::data_thread,this);
+		data_thread_ = lslboost::thread(&data_receiver::data_thread, this);
 		check_thread_start_ = false;
 	}
 	// get the sample with timeout
 	if (sample_p s = sample_queue_.pop_sample(timeout)) {
 		if (buffer_elements != conn_.type_info().channel_count())
-			throw std::range_error("The number of buffer elements provided does not match the number of channels in the sample.");
+			throw std::range_error("The number of buffer elements provided does not match the "
+								   "number of channels in the sample.");
 		s->retrieve_typed(buffer);
 		return s->timestamp;
 	} else {
 		if (conn_.lost())
-			throw lost_error("The stream read by this inlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");
+			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
+							 "re-resolve the source and re-create the inlet.");
 		return 0.0;
 	}
+}
+
+typedef lslboost::conditional<sizeof(long) == 8, int64_t, int32_t>::type long_type;
+template <>
+double data_receiver::pull_sample_typed(long *buffer, int buffer_elements, double timeout) {
+	return pull_sample_typed((long_type *)buffer, buffer_elements, timeout);
 }
 
 template double data_receiver::pull_sample_typed<char>(char *, int, double);
@@ -126,9 +138,6 @@ template double data_receiver::pull_sample_typed<int64_t>(int64_t *, int, double
 template double data_receiver::pull_sample_typed<float>(float *, int, double);
 template double data_receiver::pull_sample_typed<double>(double *, int, double);
 template double data_receiver::pull_sample_typed<std::string>(std::string *, int, double);
-#ifdef WIN32
-template double data_receiver::pull_sample_typed<long>(long *, int, double);
-#endif
 
 /**
 * Pull a sample from the inlet and read it into a pointer to raw data.
@@ -353,3 +362,4 @@ void data_receiver::data_thread() {
 	conn_.release_watchdog();
 }
 
+} // namespace lsl
