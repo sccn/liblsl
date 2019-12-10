@@ -28,6 +28,10 @@ using lslboost::uint64_t;
 #endif
 #endif
 
+#ifndef BOOST_CSTDINT_HPP
+#include <cstdint>
+#endif
+
 #if BOOST_VERSION < 104500
 	#error "Please do not compile this with a lslboost version older than 1.45 because the library would otherwise not be protocol-compatible with builds using other versions."
 #endif
