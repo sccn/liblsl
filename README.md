@@ -2,16 +2,19 @@
 [![Travis Build Status](https://travis-ci.org/sccn/liblsl.svg?branch=master)](https://travis-ci.org/sccn/liblsl)
 [![Azure Build Status](https://dev.azure.com/labstreaminglayer/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/labstreaminglayer/liblsl/_build/latest?definitionId=1&branchName=master)
 
-# Lab streaming layer library
+# Lab Streaming Layer library
 
 The lab streaming layer is a simple all-in-one approach to streaming experiment
 data between applications in a lab, e.g. instrument time series, event markers,
-audio, and so on.
+audio, and so on. For more information, please read the online documentation:
+
+https://labstreaminglayer.readthedocs.io
 
 ## Building liblsl
 
-To compile the library yourself from source please follow the instructions in
-the [main build documentation](https://github.com/sccn/labstreaminglayer/tree/master/doc/BUILD.md).
+To compile the library yourself from source please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
+NOTE: The documentation is in the middle of migrating to this location. If it's not there yet, also check [here](https://labstreaminglayer.readthedocs.io/dev/build.html),
+and [Matthew's instructions here](https://github.com/sccn/liblsl/blob/master/BUILD.md).
 
 For single board computers running linux, you can also try
 `standalone_compilation_linux.sh`.
@@ -19,11 +22,10 @@ For single board computers running linux, you can also try
 To build language bindings (e.g. for
 [Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
 [Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
-the [corresponding directory](https://github.com/sccn/labstreaminglayer/tree/master/LSL)
-in the [main repository](https://github.com/sccn/labstreaminglayer).
+the [corresponding directory in the main repository](https://github.com/sccn/labstreaminglayer/tree/master/LSL).
 
 You might also be interested in
-[apps to connect recording equipment](https://github.com/sccn/labstreaminglayer/tree/master/Apps)
+[apps to connect recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
 and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
 
 Precompiled packages are uploaded
