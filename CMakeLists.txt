@@ -1,8 +1,9 @@
 cmake_minimum_required (VERSION 3.12)
-project (LSL
+project (liblsl
 	VERSION 1.13.0
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
+	HOMEPAGE_URL "https://github.com/sccn/liblsl"
 	)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)

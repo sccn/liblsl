@@ -86,8 +86,6 @@ function(installLSLApp target)
 		installLSLAppSingleFolder(${target})
 	endif()
 	set_property(GLOBAL APPEND PROPERTY
-		LSLMENU "${target}" "${target}")
-	set_property(GLOBAL APPEND PROPERTY
 		"LSLDEPENDS_${PROJECT_NAME}" liblsl)
 endfunction()
 
@@ -125,6 +123,8 @@ function(installLSLAppSingleFolder target)
 	# Copy anyway, and fixup_bundle can deal with the dylib already being present.
 	if(WIN32 OR APPLE)
 		installLSLAuxFiles(${target} $<TARGET_FILE:LSL::lsl>)
+		set_property(INSTALL "${PROJECT_NAME}/$<TARGET_FILE_NAME:${target}>" PROPERTY
+			CPACK_START_MENU_SHORTCUTS "${target}")
 	endif()
 
 	# do we need to install with Qt5?
@@ -314,7 +314,7 @@ macro(LSLGenerateCPackConfig)
 		set(CPACK_STRIP_FILES ON)
 		set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 		set(CPACK_PACKAGE_NAME lsl)
-		get_property(CPACK_PACKAGE_EXECUTABLES GLOBAL PROPERTY LSLMENU)
+		set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
 		if(APPLE)
 			set(CPACK_GENERATOR "TBZ2")
             if(DEFINED ENV{OSXVER})
@@ -328,6 +328,8 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_NSIS_MODIFY_PATH ON)
 			set(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ON)
 			set(CPACK_WIX_UPGRADE_GUID "ee28a351-3b27-4c2b-8b48-259c87d1b1b4")
+			set(CPACK_WIX_PROPERTY_ARPHELPLINK
+				"https://labstreaminglayer.readthedocs.io/info/getting_started.html#getting-help")
 			set(LSL_OS "Win${lslplatform}")
 		elseif(UNIX)
 			set(CPACK_GENERATOR DEB)
