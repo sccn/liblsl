@@ -43,6 +43,9 @@ endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
 
+# Qt5
+set(CMAKE_INCLUDE_CURRENT_DIR ON) # Because the ui_mainwindow.h file.
+
 # Boost
 #SET(Boost_DEBUG OFF) #Switch this and next to ON for help debugging Boost problems.
 #SET(Boost_DETAILED_FAILURE_MSG ON)
@@ -76,6 +79,16 @@ endfunction()
 # OS X (homebrew) and Conda the libraries are installed
 # separately to save space, ease upgrading and distribution
 function(installLSLApp target)
+	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
+	string(REGEX MATCH ";Qt5::" qtapp ";${TARGET_LIBRARIES}")
+	if(qtapp)
+		# Enable automatic compilation of .cpp->.moc, xy.ui->ui_xy.h and resource files
+		set_target_properties(${target} PROPERTIES
+			AUTOMOC ON
+			AUTOUIC ON
+			AUTORCC ON
+		)
+	endif()
 	if(LSL_UNIXFOLDERS)
 		install(TARGETS ${target}
 			COMPONENT "${PROJECT_NAME}"
@@ -83,33 +96,33 @@ function(installLSLApp target)
 			LIBRARY DESTINATION lib
 		)
 	else()
-		installLSLAppSingleFolder(${target})
+		installLSLAppSingleFolder(${target} "${qtapp}")
 	endif()
 	set_property(GLOBAL APPEND PROPERTY
 		"LSLDEPENDS_${PROJECT_NAME}" liblsl)
 endfunction()
 
-macro(findQtInstallationTool qtdeploytoolname)
-	if(QT_QMAKE_EXE AND EXISTS ${QT_QMAKE_EXE})
-		message(STATUS "Qt deploy tool found at ${QT_QMAKE_EXE}")
+function(findQtInstallationTool qtdeploytoolname)
+	if(QT_DEPLOYQT_EXECUTABLE)
 		return()
 	endif()
 	get_target_property(QT_QMAKE_EXE Qt5::qmake IMPORTED_LOCATION)
-	execute_process(COMMAND ${QT_QMAKE_EXE} -query QT_VERSION OUTPUT_VARIABLE QT_VERSION)
 	get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXE}" DIRECTORY)
 	find_program (QT_DEPLOYQT_EXECUTABLE ${qtdeploytoolname} HINTS "${QT_BIN_DIR}")
-	if (NOT QT_DEPLOYQT_EXECUTABLE)
+	if (QT_DEPLOYQT_EXECUTABLE)
+		message(STATUS "Qt deploy tool found at ${QT_DEPLOYQT_EXECUTABLE}")
+	else()
 		message(WARNING "Windeployqt wasn't found, installing ${PROJECT_NAME} will fail!")
 		return()
 	endif()
-endmacro()
+endfunction()
 
 # installLSLAppSingleFolder: installs the app its folder and copies needed libraries
 #
 # when calling make install / ninja install the executable is installed to
 # CMAKE_INSTALL_PREFIX/PROJECT_NAME/TARGET_NAME
 # e.g. C:/LSL/BrainAmpSeries/BrainAmpSeries.exe
-function(installLSLAppSingleFolder target)
+function(installLSLAppSingleFolder target deployqt)
 	install(TARGETS ${target}
 		COMPONENT "${PROJECT_NAME}"
 		BUNDLE DESTINATION ${PROJECT_NAME}
@@ -128,8 +141,7 @@ function(installLSLAppSingleFolder target)
 	endif()
 
 	# do we need to install with Qt5?
-	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
-	if(";${TARGET_LIBRARIES}" MATCHES ";Qt5::")
+	if(deployqt)
 		if(WIN32)
 			findQtInstallationTool("windeployqt")
 			if (QT_DEPLOYQT_EXECUTABLE)
@@ -165,7 +177,7 @@ function(installLSLAppSingleFolder target)
 						list(GET _files 1 _dest)
 						execute_process(
 							COMMAND \"${CMAKE_COMMAND}\" -E
-								copy \${_src} \"\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/$\{_dest}\"
+								copy_if_different \${_src} \"\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/$\{_dest}\"
 						)
 						list(REMOVE_AT _files 0 1)
 					endwhile()
@@ -266,9 +278,9 @@ if(WIN32 AND MSVC)
 			message(STATUS "Found Qt directories: ${Qt5ConfGlobbed}")
 			list(SORT Qt5ConfGlobbed)
 			list(GET Qt5ConfGlobbed -1 Qt5_DIR)
-			message(STATUS "You didn't specify a Qt5_DIR. I'm guessing it's ${Qt5_DIR}.")
+			set(Qt5_DIR ${Qt5_DIR} CACHE PATH "Qt5 dir")
 		endif()
-		message(STATUS "If you are building Apps that require Qt, please add the correct dir:")
+		message(STATUS "If this is wrong and you are building Apps that require Qt, please add the correct dir:")
 		message(STATUS "  -DQt5_DIR=/path/to/Qt5/5.x.y/msvc_${VCYEAR}_${lslplatform}/lib/cmake/Qt5")
 	endif()
 
