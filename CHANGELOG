@@ -1,5 +1,7 @@
 Changes for liblsl 1.13
 
+* fix: avoid an infinite loop if no port can be bound to (Tristan Stenner, discovered by Maximilian Kraus)
+* add: unit tests to test basic operations on CI systems (Tristan Stenner, Matthew Grivich)
 * fix: Fix for the sometimes appearing "no clock offsets found"-bug
 * add: the path to the lsl_api.cfg can now be specified via the environment variable LSLAPICFG
 * fix: updates to the included Boost, fixing Android compilation and reducing the number of warnings (Tristan Stenner)
