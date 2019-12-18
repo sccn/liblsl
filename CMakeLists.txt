@@ -174,7 +174,7 @@ target_compile_definitions(lslobj
 add_library(lsl SHARED)
 target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
 set_target_properties(lsl PROPERTIES
-	VERSION ${LSL_VERSION_MAJOR}.${LSL_VERSION_MINOR}.${LSL_VERSION_PATCH}
+	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
 
 set(LSL_EXPORT_TARGETS lsl lslobj lslboost lslver)
