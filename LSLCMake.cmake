@@ -93,6 +93,7 @@ function(installLSLApp target)
 		install(TARGETS ${target}
 			COMPONENT "${PROJECT_NAME}"
 			RUNTIME DESTINATION bin
+			BUNDLE  DESTINATION bin
 			LIBRARY DESTINATION lib
 		)
 	else()
