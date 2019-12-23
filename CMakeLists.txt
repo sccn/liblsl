@@ -24,7 +24,7 @@ set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
 # Add an object library so all files are only compiled once
-add_library(lslobj OBJECT
+set(lslobj_sources
 	src/api_config.cpp
 	src/api_config.h
 	src/cancellable_streambuf.h
@@ -85,6 +85,7 @@ add_library(lslobj OBJECT
 	include/lsl_cpp.h
 	include/lsl/constants.h
 )
+add_library(lslobj OBJECT ${lslobj_sources})
 
 # try to find out which revision is currently checked out
 find_package(Git)
@@ -171,8 +172,22 @@ target_compile_definitions(lslobj
 )
 
 # shared library
-add_library(lsl SHARED)
-target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
+if (CMAKE_GENERATOR MATCHES "Xcode")
+    # Xcode is rather annoying in that it doesn't build SHARED libs unless they have source files.
+    # So we need to build from source, and then add all the other settings missing due to lack of lslobj
+    add_library(lsl SHARED ${lslobj_sources})
+    target_link_libraries(lsl PRIVATE lslboost)
+    target_include_directories(lsl
+	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
+    target_compile_definitions(lsl
+	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
+	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
+    )
+else()
+    add_library(lsl SHARED)
+    target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
+endif()
+
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
