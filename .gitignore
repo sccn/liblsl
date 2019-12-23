@@ -6,3 +6,4 @@
 /docs/_build
 /.vs/
 .DS_Store
+/out/
