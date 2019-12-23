@@ -5,3 +5,4 @@
 /docs/liblsl_*
 /docs/_build
 /.vs/
+.DS_Store
