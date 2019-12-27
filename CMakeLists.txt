@@ -177,16 +177,21 @@ if (CMAKE_GENERATOR MATCHES "Xcode")
     # So we need to build from source, and then add all the other settings missing due to lack of lslobj
     add_library(lsl SHARED ${lslobj_sources})
     target_link_libraries(lsl PRIVATE lslboost)
-    target_include_directories(lsl
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>)
-    target_compile_definitions(lsl
-	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
-	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-    )
 else()
     add_library(lsl SHARED)
-    target_link_libraries(lsl PUBLIC lslobj PRIVATE lslboost)
+    target_link_libraries(lsl
+		PUBLIC lslobj
+		PRIVATE lslboost)
 endif()
+target_include_directories(lsl
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+)
+target_compile_definitions(lsl
+	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
+	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
+)
 
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
@@ -221,13 +226,13 @@ target_link_libraries(lslver PRIVATE lsl)
 
 install(TARGETS ${LSL_EXPORT_TARGETS}
 	COMPONENT liblsl
-	EXPORT "${PROJECT_NAME}Config"
+	EXPORT LSLConfig  #"${PROJECT_NAME}Config"
 	RUNTIME DESTINATION ${LSLPREFIX}bin
 	LIBRARY DESTINATION ${LSLPREFIX}lib
 	ARCHIVE DESTINATION ${LSLPREFIX}lib
 )
 
-install(EXPORT "${PROJECT_NAME}Config"
+install(EXPORT LSLConfig  #"${PROJECT_NAME}Config"
 	COMPONENT liblsl
 	NAMESPACE "LSL::"
 	DESTINATION "${LSLPREFIX}share/LSL")
