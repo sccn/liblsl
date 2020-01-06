@@ -134,7 +134,7 @@ typedef struct lsl_continuous_resolver_* lsl_continuous_resolver;
  * #endif
  * ```
  * */
-#define LIBLSL_COMPILE_HEADER_VERSION = 113;
+#define LIBLSL_COMPILE_HEADER_VERSION 113
 
 /**
  * Protocol version.
