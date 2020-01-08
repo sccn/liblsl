@@ -143,14 +143,14 @@ function(installLSLApp target)
 		install(CODE "
 			message (STATUS \"Running windeployqt on $<TARGET_FILE:${target}>\")
 			execute_process(
-				COMMAND ${QT_DEPLOYQT_EXECUTABLE} --no-translations
+				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\" --no-translations
 				--no-system-d3d-compiler --no-opengl-sw --no-virtualkeyboard
 				--no-compiler-runtime --dry-run --list mapping
-				$<TARGET_FILE:${target}>
+				\"$<TARGET_FILE:${target}>\"
 				OUTPUT_VARIABLE output
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 			)
-			file(TO_CMAKE_PATH \${output} output) # convert slashes
+			file(TO_CMAKE_PATH \"\${output}\" output) # convert slashes
 			separate_arguments(_files WINDOWS_COMMAND \${output})
 			while(_files)
 				list(POP_FRONT _files _src)
