@@ -1,6 +1,7 @@
 # Common functions and settings for LSL
 
 message(STATUS "Included LSL CMake helpers, rev. 11")
+option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
 # set build type and default install dir if not done already
 if(NOT CMAKE_BUILD_TYPE)
@@ -71,13 +72,8 @@ function(installLSLAuxFiles target)
 	endif()
 endfunction()
 
-# installLSLApp: adds the specified target to the install list
-#
-# there are two install types for different use cases
-# Windows users mostly want a folder per app that contains
-# everything needed to run the app, whereas on Linux,
-# OS X (homebrew) and Conda the libraries are installed
-# separately to save space, ease upgrading and distribution
+# installLSLApp: adds the specified target to the install list and
+# add some quality-of-life improvements for Qt executables
 function(installLSLApp target)
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
 	string(REGEX MATCH ";Qt5::" qtapp ";${TARGET_LIBRARIES}")
@@ -89,18 +85,98 @@ function(installLSLApp target)
 			AUTORCC ON
 		)
 	endif()
+	# add start menu shortcut if supported by installer
+	set_property(INSTALL "${PROJECT_NAME}/$<TARGET_FILE_NAME:${target}>" PROPERTY
+		CPACK_START_MENU_SHORTCUTS "${target}")
+
 	if(LSL_UNIXFOLDERS)
-		install(TARGETS ${target}
-			COMPONENT "${PROJECT_NAME}"
-			RUNTIME DESTINATION bin
-			BUNDLE  DESTINATION bin
-			LIBRARY DESTINATION lib
-		)
+		include(GNUInstallDirs)
+		set(lsldir "\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
 	else()
-		installLSLAppSingleFolder(${target} "${qtapp}")
+		set(CMAKE_INSTALL_BINDIR ${PROJECT_NAME})
+		set(CMAKE_INSTALL_LIBDIR ${PROJECT_NAME})
+		set(lsldir "\${CMAKE_INSTALL_PREFIX}/LSL")
 	endif()
 	set_property(GLOBAL APPEND PROPERTY
 		"LSLDEPENDS_${PROJECT_NAME}" liblsl)
+	install(TARGETS ${target} COMPONENT ${PROJECT_NAME}
+		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+		BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR})
+	# skip copying libraries if disabled or on Linux
+	if(NOT LSL_DEPLOYAPPLIBS OR UNIX AND NOT APPLE)
+		return()
+	endif()
+
+	# skip exe deployment for libraries
+	get_target_property(target_type ${target} TYPE)
+	if(NOT target_type STREQUAL "EXECUTABLE")
+		return()
+	endif()
+
+	# Copy lsl library for WIN32 or MacOS.
+	# On Mac, dylib is only needed for macdeployqt and for non bundles when not using system liblsl.
+	# Copy anyway, and fixup_bundle can deal with the dylib already being present.
+	installLSLAuxFiles(${target} $<TARGET_FILE:LSL::lsl>)
+	if(APPLE AND NOT qtapp)
+		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
+		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
+		if(target_is_bundle)
+			install(CODE "
+				include(BundleUtilities)
+				set(BU_CHMOD_BUNDLE_ITEMS ON)
+				fixup_bundle(\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${target}.app \"\" \"${lsldir}\")
+				"
+				COMPONENT ${PROJECT_NAME}
+			)
+		endif()
+	endif()
+
+	# skip the rest if qt doesn't need to be deployed
+	if(NOT qtapp)
+		return()
+	endif()
+
+	cmake_minimum_required(VERSION 3.15) # generator expressions in install(CODE)
+	if(WIN32)
+		findQtInstallationTool("windeployqt")
+		install(CODE "
+			message (STATUS \"Running windeployqt on $<TARGET_FILE:${target}>\")
+			execute_process(
+				COMMAND ${QT_DEPLOYQT_EXECUTABLE} --no-translations
+				--no-system-d3d-compiler --no-opengl-sw --no-virtualkeyboard
+				--no-compiler-runtime --dry-run --list mapping
+				$<TARGET_FILE:${target}>
+				OUTPUT_VARIABLE output
+				OUTPUT_STRIP_TRAILING_WHITESPACE
+			)
+			file(TO_CMAKE_PATH \${output} output) # convert slashes
+			separate_arguments(_files WINDOWS_COMMAND \${output})
+			while(_files)
+				list(POP_FRONT _files _src)
+				list(POP_FRONT _files _dest)
+				get_filename_component(_dest \${_dest} DIRECTORY RELATIVE)
+				file(COPY \${_src} DESTINATION \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/\${_dest})
+			endwhile()"
+			COMPONENT ${target})
+	elseif(APPLE)
+		# It should be enough to call fixup_bundle (see below),
+		# but this fails to install qt plugins (cocoa).
+		# Use macdeployqt instead (but this is bad at grabbing lsl dylib, so we did that above)
+		findQtInstallationTool("macdeployqt")
+		install(CODE "
+			if(\${CMAKE_INSTALL_CONFIG_NAME} STREQUAL Debug)
+				set(debug 1)
+			endif()
+			message(STATUS \"Running Qt Deploy Tool for $<TARGET_FILE:${target}>...\")
+			execute_process(COMMAND
+				echo \"${QT_DEPLOYQT_EXECUTABLE}\"
+				$<TARGET_FILE:${target}>
+				-verbose=1
+				$<$<BOOL:\${debug}>:--use-debug-libs>
+			)
+		")
+	endif()
 endfunction()
 
 function(findQtInstallationTool qtdeploytoolname)
@@ -113,121 +189,10 @@ function(findQtInstallationTool qtdeploytoolname)
 	if (QT_DEPLOYQT_EXECUTABLE)
 		message(STATUS "Qt deploy tool found at ${QT_DEPLOYQT_EXECUTABLE}")
 	else()
-		message(WARNING "Windeployqt wasn't found, installing ${PROJECT_NAME} will fail!")
+		message(WARNING "Qt deploy tool wasn't found, installing ${PROJECT_NAME} will fail!")
 		return()
 	endif()
 endfunction()
-
-# installLSLAppSingleFolder: installs the app its folder and copies needed libraries
-#
-# when calling make install / ninja install the executable is installed to
-# CMAKE_INSTALL_PREFIX/PROJECT_NAME/TARGET_NAME
-# e.g. C:/LSL/BrainAmpSeries/BrainAmpSeries.exe
-function(installLSLAppSingleFolder target deployqt)
-	install(TARGETS ${target}
-		COMPONENT "${PROJECT_NAME}"
-		BUNDLE DESTINATION ${PROJECT_NAME}
-		RUNTIME DESTINATION ${PROJECT_NAME}
-		LIBRARY DESTINATION ${PROJECT_NAME}/lib
-	)
-	set(appbin "${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/${target}${CMAKE_EXECUTABLE_SUFFIX}")
-
-	# Copy lsl library for WIN32 or MacOS.
-	# On Mac, dylib is only needed for macdeployqt and for non bundles when not using system liblsl.
-	# Copy anyway, and fixup_bundle can deal with the dylib already being present.
-	if(WIN32 OR APPLE)
-		installLSLAuxFiles(${target} $<TARGET_FILE:LSL::lsl>)
-		set_property(INSTALL "${PROJECT_NAME}/$<TARGET_FILE_NAME:${target}>" PROPERTY
-			CPACK_START_MENU_SHORTCUTS "${target}")
-	endif()
-
-	# do we need to install with Qt5?
-	if(deployqt)
-		if(WIN32)
-			findQtInstallationTool("windeployqt")
-			if (QT_DEPLOYQT_EXECUTABLE)
-				file (TO_NATIVE_PATH "${QT_BIN_DIR}" QT_BIN_DIR_NATIVE)
-				# It's safer to use `\` separators in the Path, but we need to escape them
-				string (REPLACE "\\" "\\\\" QT_BIN_DIR_NATIVE "${QT_BIN_DIR_NATIVE}")
-				set(QT_DEPLOYQT_FLAGS --no-translations --no-system-d3d-compiler --no-opengl-sw --no-compiler-runtime)
-				file(GENERATE OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${target}_$<CONFIG>_path"
-					CONTENT "$<TARGET_FILE:${target}>"  # Full path to .exe file
-				)
-				get_filename_component(appdir ${appbin} DIRECTORY CACHE)
-				install (CODE "
-					file(READ \"${CMAKE_CURRENT_BINARY_DIR}/${target}_${CMAKE_BUILD_TYPE}_path\" _file)
-					message (STATUS \"Running Qt Deploy Tool for \${_file}\")
-					if (CMAKE_INSTALL_CONFIG_NAME STREQUAL \"Debug\")
-						set(QT_DEPLOYQT_FLAGS \"\${QT_DEPLOYQT_FLAGS} --debug\")
-					else ()
-						set(QT_DEPLOYQT_FLAGS \"\${QT_DEPLOYQT_FLAGS} --release\")
-					endif ()
-					execute_process(COMMAND
-						\"${CMAKE_COMMAND}\" -E env
-						\"Path=${QT_BIN_DIR_NATIVE};\$ENV{SystemRoot}\\\\System32;\$ENV{SystemRoot}\"
-						\"${QT_DEPLOYQT_EXECUTABLE}\"
-						${QT_DEPLOYQT_FLAGS} --dry-run --list mapping
-						\"${appbin}\"
-						OUTPUT_VARIABLE output
-						OUTPUT_STRIP_TRAILING_WHITESPACE
-					)
-					string(REPLACE \"\\\\\" \"/\" _output \${output})
-					separate_arguments(_files WINDOWS_COMMAND \${_output})
-					while(_files)
-						list(GET _files 0 _src)
-						list(GET _files 1 _dest)
-						execute_process(
-							COMMAND \"${CMAKE_COMMAND}\" -E
-								copy_if_different \${_src} \"\${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}/$\{_dest}\"
-						)
-						list(REMOVE_AT _files 0 1)
-					endwhile()
-					" COMPONENT ${target})
-					#add_custom_command(TARGET ${target} POST_BUILD
-					#	COMMAND "${CMAKE_COMMAND}" -E env PATH="${QT_BIN_DIR}" "${QT_DEPLOYQT_EXECUTABLE}"
-					#	${QT_DEPLOYQT_FLAGS}
-					#	\"$<TARGET_FILE:${target}>\")
-			endif()
-		elseif(APPLE)
-			# It should be enough to call fixup_bundle (see below),
-			# but this fails to install qt plugins (cocoa).
-			# Use macdeployqt instead (but this is bad at grabbing lsl dylib, so we did that above)
-			findQtInstallationTool("macdeployqt")
-			if(QT_DEPLOYQT_EXECUTABLE)
-				set(QT_DEPLOYQT_FLAGS "-verbose=1")  # Adding -libpath=${CMAKE_INSTALL_PREFIX}/LSL/lib seems to do nothing, maybe deprecated
-				install(CODE "
-					message(STATUS \"Running Qt Deploy Tool...\")
-					#list(APPEND QT_DEPLOYQT_FLAGS -dmg)
-					if(CMAKE_INSTALL_CONFIG_NAME STREQUAL \"Debug\")
-					    list(APPEND QT_DEPLOYQT_FLAGS -use-debug-libs)
-					endif()
-					execute_process(COMMAND
-						\"${QT_DEPLOYQT_EXECUTABLE}\"
-						\"${appbin}.app\"
-						${QT_DEPLOYQT_FLAGS}
-					)
-				")
-			endif()
-		endif()
-	elseif(APPLE)
-		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
-		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
-		if(target_is_bundle)
-			install(CODE "
-				include(BundleUtilities)
-				set(BU_CHMOD_BUNDLE_ITEMS ON)
-				fixup_bundle(
-					${appbin}.app
-					\"\"
-					\"${CMAKE_INSTALL_PREFIX}/LSL/lib\"
-				)
-				"
-				COMPONENT ${PROJECT_NAME}
-			)
-		endif()
-	endif()
-endfunction()
-
 
 # default paths, versions and magic to guess it on windows
 # guess default paths for Windows / VC
@@ -330,12 +295,12 @@ macro(LSLGenerateCPackConfig)
 		set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
 		if(APPLE)
 			set(CPACK_GENERATOR "TBZ2")
-            if(DEFINED ENV{OSXVER})
-                # Configured by Travis-CI for multi-osx builds.
-                set(LSL_OS "$ENV{OSXVER}")
-            else()
-                set(LSL_OS "OSX${lslplatform}")
-            endif(DEFINED ENV{OSXVER})
+			if(DEFINED ENV{OSXVER})
+				# Configured by Travis-CI for multi-osx builds.
+				set(LSL_OS "$ENV{OSXVER}")
+			else()
+				set(LSL_OS "OSX${lslplatform}")
+			endif(DEFINED ENV{OSXVER})
 		elseif(WIN32)
 			set(CPACK_GENERATOR "7Z") # you can create NSIS packages by calling 'cpack -G NSIS'
 			set(CPACK_NSIS_MODIFY_PATH ON)
@@ -365,9 +330,7 @@ macro(LSLGenerateCPackConfig)
 		get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
 		foreach(component ${CPACK_COMPONENTS_ALL})
 			string(TOUPPER ${component} COMPONENT)
-			message(STATUS "Setting packages name for ${COMPONENT}")
 			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${LSL_OS}")
-			message(STATUS "File name: ${LSL_CPACK_FILENAME}")
 			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
 			if(LSLDEPENDS)
 				list(REMOVE_DUPLICATES LSLDEPENDS)
