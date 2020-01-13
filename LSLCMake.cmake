@@ -317,6 +317,8 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS 1)
 			set(CPACK_DEB_COMPONENT_INSTALL ON)
 			set(CPACK_DEBIAN_PACKAGE_PRIORITY optional)
+			set(CPACK_DEBIAN_LIBLSL_PACKAGE_SHLIBDEPS ON)
+			set(CPACK_DEBIAN_PACKAGE_GENERATE_SHLIBS ON)
 
 			# include distribution name (e.g. trusty or xenial) in the file name
 			find_program(LSB_RELEASE lsb_release)
@@ -337,6 +339,7 @@ macro(LSLGenerateCPackConfig)
 				set("CPACK_COMPONENT_${COMPONENT}_DEPENDS" ${LSLDEPENDS})
 			endif()
 
+			set("CPACK_DEBIAN_${COMPONENT}_PACKAGE_NAME" ${component})
 			set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
 			set("CPACK_ARCHIVE_${COMPONENT}_FILE_NAME" ${LSL_CPACK_FILENAME})
 			#set(CPACK_DEBIAN_${component}_FILE_NAME "${FILENAME}.deb")
