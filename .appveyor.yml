@@ -8,7 +8,7 @@ build_script:
 - cmd: cmake -S . -B build -T v100
 - cmake --build build --config Release -j --target package
 artifacts:
-- path: 'build/*.7z'
+- path: 'build/*.zip'
 deploy:
   provider: GitHub
   auth_token:

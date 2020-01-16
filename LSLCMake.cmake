@@ -337,7 +337,7 @@ macro(LSLGenerateCPackConfig)
                 set(LSL_OS "OSX${lslplatform}")
             endif(DEFINED ENV{OSXVER})
 		elseif(WIN32)
-			set(CPACK_GENERATOR "7Z") # you can create NSIS packages by calling 'cpack -G NSIS'
+			set(CPACK_GENERATOR ZIP) # you can create NSIS packages by calling 'cpack -G NSIS'
 			set(CPACK_NSIS_MODIFY_PATH ON)
 			set(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ON)
 			set(CPACK_WIX_UPGRADE_GUID "ee28a351-3b27-4c2b-8b48-259c87d1b1b4")
