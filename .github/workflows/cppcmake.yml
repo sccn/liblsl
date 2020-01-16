@@ -41,4 +41,5 @@ jobs:
     - name: unit tests (internal functions)
       run: build/install/bin/lsl_test_internal --order rand --durations yes
     - name: unit tests (exported functions)
+      shell: bash
       run: build/install/bin/lsl_test_exported --order rand --durations yes || [ "${{ matrix.os }}" = "macOS-latest" ]
