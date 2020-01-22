@@ -2,11 +2,13 @@ name: C/C++ CI
 
 on:
   push:
-    branches:
-    - master
+    branches: ['*']
+    tags: ['*']
   pull_request:
-    branches:
-    - master
+  release:
+    types: ['created', 'edited']
+  create:
+    tags: ['*']
 
 jobs:
   build:
@@ -28,16 +30,27 @@ jobs:
            cmake --version
            cmake -E make_directory build
            cd build
-           cmake -DLSL_UNITTESTS=1 ..
+           cmake -DLSL_UNITTESTS=1 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package ..
     - name: make
-      run: cmake --build build --config Release -j --target install
-      #    - name: pack everything up
-      #      shell: bash
-      #      run: cd build; mkdir upload; cpack -C Release -R $PWD/upload; rm -rf upload/_CPack_Packages/;
-    - uses: actions/upload-artifact@master
+      shell: bash
+      run: |
+           cmake --build build --config Release -j --target install
+           echo $GITHUB_REF
+           if [ $GITHUB_REF != "refs/heads"* ]; then
+             cmake --build build --config Release -j --target package
+             cmake -E remove_directory build/uploadpkgs/_CPack_Packages
+           fi
+    - name: upload install dir
+      uses: actions/upload-artifact@master
+      with:
+        name: build-${{ matrix.os }}
+        path: build/install
+    - name: upload package
+      uses: actions/upload-artifact@master
+      if: "!startsWith(github.ref, 'refs/heads')"
       with:
         name: pkg-${{ matrix.os }}
-        path: build/install
+        path: build/package
     - name: unit tests (internal functions)
       run: build/install/bin/lsl_test_internal --order rand --durations yes
     - name: unit tests (exported functions)
