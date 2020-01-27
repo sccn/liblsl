@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-message(STATUS "Included LSL CMake helpers, rev. 11")
+message(STATUS "Included LSL CMake helpers, rev. 12, ${CMAKE_CURRENT_LIST_DIR}")
 option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
 # set build type and default install dir if not done already
@@ -13,21 +13,6 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
 	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}")
-endif()
-
-# Try to find the labstreaminglayer library and enable
-# the imported target LSL::lsl
-#
-# Use it with
-# target_link_libraries(your_target_app PRIVATE LSL::lsl)
-
-if(TARGET lsl)
-	add_library(LSL::lsl ALIAS lsl)
-	message(STATUS "Found target lsl in current build tree")
-else()
-	message(STATUS "Trying to find package LSL")
-	list(APPEND CMAKE_PREFIX_PATH ${CMAKE_CURRENT_LIST_DIR})
-	find_package(LSL REQUIRED)
 endif()
 
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
