@@ -113,11 +113,21 @@ function(installLSLApp target)
 	if(NOT target_type STREQUAL "EXECUTABLE")
 		return()
 	endif()
+	
+	# Some Windows installers have problems with several components having the same file,
+	# so libs shared between targets are copied into the SHAREDLIBCOMPONENT component if set
+	if(NOT SHAREDLIBCOMPONENT)
+		set(SHAREDLIBCOMPONENT ${target})
+	endif()
 
 	# Copy lsl library for WIN32 or MacOS.
 	# On Mac, dylib is only needed for macdeployqt and for non bundles when not using system liblsl.
 	# Copy anyway, and fixup_bundle can deal with the dylib already being present.
-	installLSLAuxFiles(${target} $<TARGET_FILE:LSL::lsl>)
+	if(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
+		install(FILES $<TARGET_FILE:LSL::lsl>
+			DESTINATION ${CMAKE_INSTALL_BINDIR}
+			COMPONENT ${SHAREDLIBCOMPONENT})
+	endif()
 	if(APPLE AND NOT qtapp)
 		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
 		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
@@ -158,7 +168,7 @@ function(installLSLApp target)
 				get_filename_component(_dest \${_dest} DIRECTORY RELATIVE)
 				file(COPY \${_src} DESTINATION \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/\${_dest})
 			endwhile()"
-			COMPONENT ${target})
+			COMPONENT ${SHAREDLIBCOMPONENT})
 	elseif(APPLE)
 		# It should be enough to call fixup_bundle (see below),
 		# but this fails to install qt plugins (cocoa).
