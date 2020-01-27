@@ -229,19 +229,36 @@ endif()
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 
+include(CMakePackageConfigHelpers)
+write_basic_package_version_file(
+	"${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake"
+	VERSION "${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}"
+	COMPATIBILITY AnyNewerVersion
+)
+
 install(TARGETS ${LSL_EXPORT_TARGETS}
-	EXPORT LSLConfig 
+	EXPORT LSLTargets
 	COMPONENT liblsl
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 	LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 	ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+	INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 
-install(EXPORT LSLConfig  #"${PROJECT_NAME}Config"
+export(EXPORT LSLTargets
+	FILE "${CMAKE_CURRENT_BINARY_DIR}/LSLTargets.cmake"
+	NAMESPACE LSL::
+)
+
+install(EXPORT LSLTargets
+	FILE LSLTargets.cmake
 	COMPONENT liblsl
 	NAMESPACE "LSL::"
 	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/LSL
 )
+configure_file(cmake/LSLConfig.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake" COPYONLY)
+configure_file(cmake/LSLCMake.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLCMake.cmake" COPYONLY)
+
 
 # install headers
 install(DIRECTORY include/
@@ -249,12 +266,12 @@ install(DIRECTORY include/
 	COMPONENT liblsl
 )
 
-install(FILES LSLCMake.cmake
+install(FILES cmake/LSLCMake.cmake ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
 	COMPONENT liblsl
 	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/LSL
 )
 
-include(LSLCMake.cmake)
+include(cmake/LSLCMake.cmake)
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
