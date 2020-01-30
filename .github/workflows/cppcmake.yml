@@ -3,7 +3,7 @@ name: C/C++ CI
 on:
   push:
     branches: ['*']
-    tags: ['*']
+    tags: 
   pull_request:
   release:
     types: ['created', 'edited']
@@ -32,19 +32,29 @@ jobs:
            cd build
            cmake -DLSL_UNITTESTS=1 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package ..
     - name: make
+      run: cmake --build build --config Release -j --target install
+    - name: package
       shell: bash
+      if: "!startsWith(github.ref, 'refs/heads')"
       run: |
-           cmake --build build --config Release -j --target install
            echo $GITHUB_REF
-           if [ $GITHUB_REF != "refs/heads"* ]; then
-             cmake --build build --config Release -j --target package
-             cmake -E remove_directory build/uploadpkgs/_CPack_Packages
+           cmake --build build --config Release -j --target package
+           # On Debian / Ubuntu the dependencies can only be resolved for
+           # already installed packages. Therefore, we have built all
+           # packages without dependencies in the previous step,
+           # install them and rebuild them with dependency discovery enabled
+           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+              cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
+              sudo dpkg -i build/package/*.deb
+              cmake --build build --config Release -j --target package
            fi
+           cmake -E remove_directory build/uploadpkgs/_CPack_Packages
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
         name: build-${{ matrix.os }}
         path: build/install
+
     - name: upload package
       uses: actions/upload-artifact@master
       if: "!startsWith(github.ref, 'refs/heads')"
