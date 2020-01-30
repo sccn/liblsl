@@ -1,5 +1,11 @@
 # Common functions and settings for LSL
 
+# Dummy function that should be called after find_package(LSL)
+# Does nothing at the moment, but the entire code below should be within this
+# function so it's not executed by accident
+macro(LSLAPP_Setup_Boilerplate)
+endmacro()
+
 message(STATUS "Included LSL CMake helpers, rev. 12, ${CMAKE_CURRENT_LIST_DIR}")
 option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
@@ -276,7 +282,7 @@ macro(LSLGenerateCPackConfig)
 	# CPack configuration
 	string(TOUPPER "${PROJECT_NAME}" PROJECT_NAME_UPPER)
 	if(NOT PROJECT_DESCRIPTION)
-		set(PROJECT_DESCRIPTION "${PROJECT_NAME} ${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}")
+		set(PROJECT_DESCRIPTION "${PROJECT_NAME} ${PROJECT_VERSION}")
 	endif()
 	set("CPACK_COMPONENT_${PROJECT_NAME_UPPER}_DESCRIPTION" "${PROJECT_DESCRIPTION}" CACHE INTERNAL "CPack Description")
 
@@ -309,7 +315,7 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_SET_DESTDIR 1)
 			set(CPACK_INSTALL_PREFIX "/usr")
 			set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tristan Stenner <ttstenner@gmail.com>")
-			set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS 1)
+			set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS ON)
 			set(CPACK_DEB_COMPONENT_INSTALL ON)
 			set(CPACK_DEBIAN_PACKAGE_PRIORITY optional)
 			set(CPACK_DEBIAN_LIBLSL_PACKAGE_SHLIBDEPS ON)
@@ -331,7 +337,7 @@ macro(LSLGenerateCPackConfig)
 		get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
 		foreach(component ${CPACK_COMPONENTS_ALL})
 			string(TOUPPER ${component} COMPONENT)
-			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION_MAJOR}.${PROJECT_VERSION_MINOR}.${PROJECT_VERSION_PATCH}-${LSL_OS}")
+			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION}-${LSL_OS}")
 			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
 			if(LSLDEPENDS)
 				list(REMOVE_DUPLICATES LSLDEPENDS)
