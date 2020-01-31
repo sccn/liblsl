@@ -35,7 +35,7 @@ template <typename T> void test_DataType(const char *name, lsl::channel_format_t
 TEST_CASE("data type int8", "[datatransfer][basic]") { test_DataType<char>("cf_int8", lsl::cf_int8); }
 TEST_CASE("data type int16", "[datatransfer][basic]") { test_DataType<int16_t>("cf_int16", lsl::cf_int16); }
 TEST_CASE("data type int32", "[datatransfer][basic]") { test_DataType<int32_t>("cf_int32", lsl::cf_int32); }
-// TEST(DataType, cf_int64) { test_DataType<int64_t>("cf_int64", lsl::cf_int64); }
+TEST_CASE("data type int64", "[datatransfer][basic]") { test_DataType<int64_t>("cf_int64", lsl::cf_int64); }
 
 template <typename T> void test_DataTypeMulti(const char *name, lsl::channel_format_t cf) {
 	const int numChannels = sizeof(T) * 8;
@@ -68,7 +68,7 @@ template <typename T> void test_DataTypeMulti(const char *name, lsl::channel_for
 TEST_CASE("data type int8 multi", "[datatransfer][multi]") { test_DataTypeMulti<char>("cf_int8", lsl::cf_int8); }
 TEST_CASE("data type int16 multi", "[datatransfer][multi]") { test_DataTypeMulti<int16_t>("cf_int16", lsl::cf_int16); }
 TEST_CASE("data type int32 multi", "[datatransfer][multi]") { test_DataTypeMulti<int32_t>("cf_int32", lsl::cf_int32); }
-// TEST(DataType, cf_int64_multi) { test_DataTypeMulti<int64_t>("cf_int64", lsl::cf_int64); }
+TEST_CASE("data type int64 multi", "[datatransfer][multi]") { test_DataTypeMulti<int64_t>("cf_int64", lsl::cf_int64); }
 
 TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 	const std::size_t numChannels = 2;
