@@ -50,11 +50,8 @@ data_receiver::~data_receiver() {
 			data_thread_.join();
 	}
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during destruction of a data_receiver: " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during data receiver shutdown." << std::endl;
-	}
+		LOG_F(ERROR, "Unexpected error during destruction of a data_receiver: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during data receiver shutdown."); }
 }
 
 
@@ -170,6 +167,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 /// The data reader thread.
 void data_receiver::data_thread() {
 	conn_.acquire_watchdog();
+	loguru::set_thread_name((std::string("R_")+=conn_.type_info().name().substr(0,12)).c_str());
 	// ensure that the sample factory persists for the lifetime of this thread
 	factory_p factory(sample_factory_);
 	try {
@@ -341,7 +339,7 @@ void data_receiver::data_thread() {
 			catch(std::exception &e) {
 				// some perhaps more serious transmission or parsing error (could be indicative of a protocol issue)
 				if (!conn_.shutdown())
-					std::cerr << "Stream transmission broke off (" << e.what() << "); re-connecting..." << std::endl;
+					LOG_F(ERROR, "Stream transmission broke off (%s); re-connecting...", e.what());
 				conn_.try_recover_from_error();
 			}
 			// wait for a few msec so as to not spam the provider with reconnects

@@ -13,6 +13,7 @@ if(NOT MSVC_VERSION VERSION_LESS 1700)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" OFF)
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)" ON)
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
@@ -43,6 +44,8 @@ set(lslobj_sources
 	src/info_receiver.h
 	src/inlet_connection.cpp
 	src/inlet_connection.h
+	src/loguru/loguru.hpp
+	src/loguru/loguru.cpp
 	src/lsl_continuous_resolver_c.cpp
 	src/lsl_freefuncs_c.cpp
 	src/lsl_inlet_c.cpp
@@ -168,6 +171,8 @@ target_include_directories(lslobj
 )
 target_compile_definitions(lslobj
 	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
+		LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+		LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>
 	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 )
 

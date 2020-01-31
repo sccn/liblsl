@@ -27,12 +27,12 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 	if (cfg->allow_ipv4()) try {
 			instantiate_stack(tcp::v4(), udp::v4());
 		} catch (std::exception &e) {
-			std::cerr << "Could not instantiate IPv4 stack: " << e.what() << std::endl;
+			LOG_F(WARNING, "Could not instantiate IPv4 stack: %s", e.what());
 		}
 	if (cfg->allow_ipv6()) try {
 			instantiate_stack(tcp::v6(), udp::v6());
 		} catch (std::exception &e) {
-			std::cerr << "Could not instantiate IPv6 stack: " << e.what() << std::endl;
+			LOG_F(WARNING, "Could not instantiate IPv6 stack: %s", e.what());
 		}
 
 	// fail if both stacks failed to instantiate
@@ -62,6 +62,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	std::vector<std::string> multicast_addrs = cfg->multicast_addresses();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
+	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
 	// create TCP data server
 	ios_.push_back(io_context_p(new io_context()));
 	tcp_servers_.push_back(tcp_server_p(new tcp_server(info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_)));
@@ -75,8 +76,8 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 			ip::address address(ip::make_address(*i));
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
 				responders_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), *i, multicast_port, multicast_ttl, listen_address)));
-		} catch(std::exception &e) {
-			std::clog << "Note (minor): could not create multicast responder for address " << *i << " (failed with: " << e.what() << ")" << std::endl;
+		} catch (std::exception &e) {
+			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", i->c_str(), e.what());
 		}
 	}
 }
@@ -98,30 +99,29 @@ stream_outlet_impl::~stream_outlet_impl() {
 		for (std::size_t k=0;k<io_threads_.size();k++)
 			if (!io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000))) {
  				// .. using force, if necessary (should only ever happen if the CPU is maxed out)
-				std::cerr << "Tearing down stream_outlet of thread " << io_threads_[k]->get_id() << " (in id: " << lslboost::this_thread::get_id() << "): " << std::endl;
+				std::ostringstream os;
+				os << io_threads_[k]->get_id();
+				LOG_F(ERROR, "Tearing down stream_outlet of thread %s", os.str().c_str());
 				ios_[k]->stop();
 				for (int attempt=1; !io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000)); attempt++) {
-					std::cerr << "Trying to kill stream_outlet (attempt #" << attempt << ")..." << std::endl;
+					LOG_F(ERROR, "Thread %s didn't complete.", os.str().c_str());
 					io_threads_[k]->interrupt();
 				}
 			}
-	}
-	catch(std::exception &e) {
-		std::cerr << "Unexpected error during destruction of a stream outlet (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during stream outlet shutdown." << std::endl;
-	}
+	} catch (std::exception &e) {
+		LOG_F(WARNING, "Unexpected error during destruction of a stream outlet: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
 }
 
 // Run an IO service.
 void stream_outlet_impl::run_io(io_context_p &ios) {
+	loguru::set_thread_name((std::string("IO_") += info().name().substr(0, 11)).c_str());
 	while (true) {
 		try {
 			ios->run();
 			return;
 		} catch(std::exception &e) {
-			std::cerr << "Error during io_context processing (id: " << lslboost::this_thread::get_id() << "): " << e.what() << std::endl;
+			LOG_F(ERROR, "Error during io_context processing: %s", e.what());
 		}
 	}
 }

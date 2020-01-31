@@ -1,6 +1,5 @@
 #include "stream_info_impl.h"
 #include <string>
-#include <iostream>
 
 extern "C" {
 #include "../include/lsl_c.h"
@@ -16,7 +15,7 @@ LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *
 			source_id = "";
 		return (lsl_streaminfo)new stream_info_impl(name,type,channel_count,nominal_srate,(lsl_channel_format_t)channel_format,source_id); 
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error during streaminfo construction: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return NULL;
 	}
 }
@@ -25,7 +24,7 @@ LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
 	try {
 		return (lsl_streaminfo)new stream_info_impl(*(stream_info_impl*)info); 
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while copying a streaminfo: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while copying a streaminfo: %s", e.what());
 		return NULL;
 	}
 }
@@ -34,7 +33,7 @@ LIBLSL_C_API void lsl_destroy_streaminfo(lsl_streaminfo info) {
 	try {
 		delete (stream_info_impl*)info;
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error while destroying a streaminfo: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error while destroying a streaminfo: %s", e.what());
 	}
 }
 
@@ -58,7 +57,7 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 		strcpy(result,tmp.c_str());
 		return result;
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error in lsl_get_xml: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error in lsl_get_xml: %s", e.what());
 		return NULL;
 	}
 }
@@ -75,7 +74,7 @@ LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml) {
 		impl->from_fullinfo_message(xml);
 		return (lsl_streaminfo)impl;
 	} catch(std::exception &e) {
-		std::cerr << "Unexpected error during streaminfo construction: " << e.what() << std::endl;
+		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return NULL;
 	}
 }

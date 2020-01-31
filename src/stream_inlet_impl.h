@@ -2,7 +2,6 @@
 #define STREAM_INLET_IMPL_H
 
 #include <boost/bind.hpp>
-#include <iostream>
 #include "data_receiver.h"
 #include "time_receiver.h"
 #include "common.h"
@@ -51,11 +50,8 @@ namespace lsl {
 				conn_.disengage(); 
 			}
 			catch(std::exception &e) {
-				std::cerr << "Unexpected error during inlet shutdown: " << e.what() << std::endl;
-			}
-			catch(...) {
-				std::cerr << "Severe error during stream inlet shutdown." << std::endl;
-			}
+				LOG_F(WARNING, "Unexpected error during inlet shutdown: %s", e.what());
+			} catch (...) { LOG_F(ERROR, "Severe error during stream inlet shutdown."); }
 		}
 
 		/**
@@ -107,7 +103,7 @@ namespace lsl {
 			catch (std::invalid_argument&) { *ec = lsl_argument_error; }
 			catch (std::range_error&) { *ec = lsl_argument_error; }
 			catch (std::exception& e) {
-				std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+				LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 				*ec = lsl_internal_error;
 			}
 			return 0.0;
@@ -170,7 +166,7 @@ namespace lsl {
 			catch (std::invalid_argument&) { *ec = lsl_argument_error; }
 			catch (std::range_error&) { *ec = lsl_argument_error; }
 			catch (std::exception& e) {
-				std::cerr << "Unexpected error in " << __func__ << ": " << e.what() << std::endl;
+				LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
 				*ec = lsl_internal_error;
 			}
 			return 0;

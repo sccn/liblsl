@@ -1,4 +1,3 @@
-#include <iostream>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
@@ -173,7 +172,10 @@ void resolver_impl::udp_multicast_burst() {
 				attempt->begin();
 			} catch(std::exception &e) {
 				if (++failures == udp_protocols_.size())
-					std::cerr << "Could not start a multicast resolve attempt for any of the allowed protocol stacks: " << e.what() << std::endl;
+					LOG_F(ERROR,
+						"Could not start a multicast resolve attempt for any of the allowed "
+						"protocol stacks: %s",
+						e.what());
 			}
 		}
 
@@ -189,7 +191,10 @@ void resolver_impl::udp_unicast_burst(error_code err) {
 				attempt->begin();
 			} catch(std::exception &e) {
 				if (++failures == udp_protocols_.size())
-					std::cerr << "Could not start a unicast resolve attempt for any of the allowed protocol stacks: " << e.what() << std::endl;
+					LOG_F(WARNING,
+						"Could not start a unicast resolve attempt for any of the allowed protocol "
+						"stacks: %s",
+						e.what());
 			}
 		}
 	}
@@ -240,10 +245,7 @@ resolver_impl::~resolver_impl() {
 		}
 	} 
 	catch(std::exception &e) {
-		std::cerr << "Error during destruction of a resolver_impl: " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during destruction of a resolver_impl." << std::endl;
-	}
+		LOG_F(WARNING, "Error during destruction of a resolver_impl: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during destruction of a resolver_impl."); }
 }
 

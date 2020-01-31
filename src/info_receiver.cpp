@@ -22,11 +22,8 @@ info_receiver::~info_receiver() {
 			info_thread_.join();
 	} 
 	catch(std::exception &e) {
-		std::cerr << "Unexpected error during destruction of an info_receiver: " << e.what() << std::endl;
-	}
-	catch(...) {
-		std::cerr << "Severe error during info receiver shutdown." << std::endl;
-	}
+		LOG_F(ERROR, "Unexpected error during destruction of an info_receiver: %s", e.what());
+	} catch (...) { LOG_F(ERROR, "Severe error during info receiver shutdown."); }
 }
 
 /// Retrieve the complete information of the given stream, including the extended description.
@@ -51,6 +48,7 @@ const stream_info_impl &info_receiver::info(double timeout) {
 /// The info reader thread.
 void info_receiver::info_thread() {
 	conn_.acquire_watchdog();
+	loguru::set_thread_name((std::string("I_")+=conn_.type_info().name().substr(0,12)).c_str());
 	try {
 		while (!conn_.lost() && !conn_.shutdown()) {
 			try {
@@ -84,7 +82,7 @@ void info_receiver::info_thread() {
 			}
 			catch(std::exception &e) {
 				// parsing-level error: intermittent disconnect or invalid protocol
-				std::cerr << "Error while receiving the stream info (" << e.what() << "); retrying..." << std::endl;
+				LOG_F(ERROR, "Error while receiving the stream info (%s); retrying...", e.what());
 				conn_.try_recover_from_error();
 			}
 		}

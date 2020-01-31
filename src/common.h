@@ -2,9 +2,11 @@
 #define COMMON_H
 
 #include "../include/lsl/constants.h"
-#include <stdexcept>
+#include "loguru/loguru.hpp"
 #include <boost/version.hpp>
+#include <stdexcept>
 #include <string>
+#include <vector>
 
 #ifdef _WIN32
 #define LIBLSL_CPP_API __declspec(dllexport)

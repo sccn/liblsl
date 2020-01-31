@@ -1,4 +1,3 @@
-#include <iostream>
 #include <boost/bind.hpp>
 #include "cast.h"
 #include "inlet_connection.h"
@@ -50,7 +49,10 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover):
 
 		if (recovery_enabled_ && type_info_.source_id().empty()) {
 			// we cannot correctly recover streams which don't have a unique source id
-			std::clog << "Note: The stream named '" << host_info_.name() << "' could not be recovered automatically if its provider crashed because it does not specify a unique data source ID." << std::endl;
+			LOG_F(WARNING,
+				"The stream named '%s' can't be recovered automatically if its provider crashes "
+				"because it doesn't have a unique source ID",
+				host_info_.name().c_str());
 			recovery_enabled_ = false;
 		}
 
@@ -236,7 +238,10 @@ void inlet_connection::try_recover() {
 						// this is because we don't want to randomly connect to the wrong source without the user knowing about it;
 						// the correct action (if this stream shall indeed have multiple instances) is to change the user code and 
 						// make its source_id unique, or remove the source_id altogether if that's not possible (therefore disabling the ability to recover)
-						std::clog << "Found multiple streams with name='" << host_info_.name() << "' and source_id='" << host_info_.source_id() << "'. Cannot recover unless all but one are closed." << std::endl;
+						LOG_F(WARNING,
+							"Found multiple streams with name='%s' and source_id='%s'. "
+							"Cannot recover unless all but one are closed.",
+							host_info_.name().c_str(), host_info_.source_id().c_str());
 						continue;
 					}
 				} else {
@@ -245,13 +250,14 @@ void inlet_connection::try_recover() {
 				break;
 			}
 		} catch(std::exception &e) {
-			std::cerr << "A recovery attempt encountered an unexpected error: " << e.what() << std::endl;
+			LOG_F(ERROR, "A recovery attempt encountered an unexpected error: %s", e.what());
 		}
 	}
 }
 
 /// A thread that periodically re-resolves the stream and checks if it has changed its location
 void inlet_connection::watchdog_thread() {
+	loguru::set_thread_name((std::string("W_") += type_info().name().substr(0, 12)).c_str());
 	while(!lost_ && !shutdown_) {
 		try {
 			// we only try to recover if a) there are active transmissions and b) we haven't seen new data for some time
@@ -269,7 +275,7 @@ void inlet_connection::watchdog_thread() {
 				shutdown_cond_.wait_for(lock,lslboost::chrono::duration<double>(api_config::get_instance()->watchdog_check_interval()), lslboost::bind(&inlet_connection::shutdown,this));
 			}
 		} catch(std::exception &e) {
-			std::cerr << "Unexpected hiccup in the watchdog thread: " << e.what() << std::endl;
+			LOG_F(ERROR, "Unexpected hiccup in the watchdog thread: %s", e.what());
 		}
 	}
 }
@@ -286,7 +292,9 @@ void inlet_connection::try_recover_from_error() {
 				for(std::map<void*,lslboost::condition_variable*>::iterator i=onlost_.begin(),e=onlost_.end();i!=e;i++)
 					i->second->notify_all();
 			} catch(std::exception &e) {
-				std::cerr << "Unexpected problem while trying to issue a connection loss notification: " << e.what() << std::endl;
+				LOG_F(ERROR,
+					"Unexpected problem while trying to issue a connection loss notification: %s",
+					e.what());
 			}
 			throw lost_error("The stream read by this inlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");
 		} else

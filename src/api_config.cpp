@@ -1,6 +1,5 @@
 #include "api_config.h"
 #include "common.h"
-#include <iostream>
 #include <boost/property_tree/ptree.hpp>
 #include <boost/property_tree/ini_parser.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -23,7 +22,8 @@ std::string expand_tilde(const std::string &filename) {
 		else if (getenv("HOMEDRIVE") && getenv("HOMEPATH"))
 			homedir = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
 		else {
-			std::cerr << "Cannot determine the user's home directory; config files in the home directory will not be discovered." << std::endl;
+			LOG_F(WARNING, "Cannot determine the user's home directory; config files in the home "
+						   "directory will not be discovered.");
 			return filename;
 		}
 		return homedir + filename.substr(1);
@@ -61,7 +61,7 @@ api_config::api_config() {
 	if(getenv("LSLAPICFG")) {
 		std::string envcfg(getenv("LSLAPICFG"));
 		if (!file_is_readable(envcfg))
-			std::cerr << "LSLAPICFG file " << envcfg << " not found" << std::endl;
+			LOG_F(ERROR, "LSLAPICFG file %s not found", envcfg.c_str());
 		else
 			filenames.insert(filenames.begin(), envcfg);
 	}
@@ -77,7 +77,7 @@ api_config::api_config() {
 				return;
 			}
 		} catch(std::exception &e) {
-			std::cerr << "Error trying to load config file " << filenames[k] << ": " << e.what() << std::endl;
+			LOG_F(ERROR, "Error trying to load config file %s: %s", filenames[k].c_str(), e.what());
 		}
 	}
 	// unsuccessful: load default settings
@@ -209,8 +209,22 @@ void api_config::load_from_file(const std::string &filename) {
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime",90.0f);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
+		// read the [log] settings
+		int log_level = pt.get("log.level", -1);
+		if(log_level < -3 || log_level > 9)
+			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
+
+		std::string log_file = pt.get("log.file", "");
+		if(!log_file.empty()) {
+			loguru::add_file(log_file.c_str(), loguru::Append, log_level);
+			// don't duplicate log to stderr
+			loguru::g_stderr_verbosity = -9;
+		} else
+			loguru::g_stderr_verbosity = log_level;
+
 	} catch(std::exception &e) {
-		std::cerr << "Error parsing config file " << filename << " (" << e.what() << "). Rolling back to defaults." << std::endl;
+		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
+			filename.c_str(), e.what());
 		// any error: assign defaults
 		load_from_file();
 		// and rethrow
