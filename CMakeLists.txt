@@ -14,7 +14,7 @@ endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
-option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)")
+option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)" ON)
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
 option(LSL_BUILD_STATIC "Also build static LSL library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
