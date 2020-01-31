@@ -1,4 +1,8 @@
-Changes for liblsl 1.13
+# Changes for liblsl 1.14
+
+* change: liblsl requires a compiler with C++11 support, MSVC 2015 on Windows
+
+# Changes for liblsl 1.13 (released 2020-01-30)
 
 * fix: avoid an infinite loop if no port can be bound to (Tristan Stenner, discovered by Maximilian Kraus)
 * add: unit tests to test basic operations on CI systems (Tristan Stenner, Matthew Grivich)

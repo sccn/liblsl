@@ -2,7 +2,7 @@
 
 DOXYFILE_ENCODING      = UTF-8
 PROJECT_NAME           = liblsl_api
-PROJECT_NUMBER         = 1.13
+PROJECT_NUMBER         = 1.14
 PROJECT_BRIEF          = "Multi-modal time-synched data transmission over local network"
 OUTPUT_DIRECTORY       = liblsl_api
 FULL_PATH_NAMES        = NO

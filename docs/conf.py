@@ -12,7 +12,7 @@ try:
     gitver = subprocess.run(['git', 'describe', '--tags', 'HEAD'], capture_output=True)
     release = gitver.stdout.strip().decode()
 except:
-    release = '1.13'
+    release = '1.14'
 
 # -- General configuration ---------------------------------------------------
 
