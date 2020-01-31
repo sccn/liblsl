@@ -11,6 +11,7 @@ target_compile_features(catch_main PUBLIC cxx_std_11)
 add_executable(lsl_test_exported
 	DataType.cpp
 	discovery.cpp
+	move.cpp
 	timesync.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)

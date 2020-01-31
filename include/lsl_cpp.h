@@ -285,9 +285,14 @@ namespace lsl {
         stream_info &operator=(const stream_info &rhs) { if (this != &rhs) obj = lsl_copy_streaminfo(rhs.obj); return *this; }
 
 #if  __cplusplus > 199711L || _MSC_VER>=1900
-		stream_info(stream_info&& rhs) noexcept {
-			this->obj = rhs.obj;
+		stream_info(stream_info&& rhs) noexcept : obj(rhs.obj) {
 			rhs.obj = nullptr;
+		}
+
+		stream_info& operator=(stream_info&& rhs) noexcept {
+			obj = rhs.obj;
+			rhs.obj = nullptr;
+			return *this;
 		}
 #endif
 
@@ -318,7 +323,6 @@ namespace lsl {
         *                     sampling rate, otherwise x100 in samples). The default is 6 minutes of data. 
         */
         stream_outlet(const stream_info &info, int32_t chunk_size=0, int32_t max_buffered=360): channel_count(info.channel_count()), obj(lsl_create_outlet(info.handle(),chunk_size,max_buffered)) {}
-
 
         // ========================================
         // === Pushing a sample into the outlet ===
@@ -596,14 +600,17 @@ namespace lsl {
 		~stream_outlet() { if(obj) lsl_destroy_outlet(obj); }
 
 #if __cplusplus > 199711L || _MSC_VER >= 1900
-		/** @brief stream_outlet Move constructor
-		 * @param rhs Outlet to move from. Using it afterwards will dereference
-		 * a null pointer and crash your application.
-		 */
-		stream_outlet(stream_outlet&& rhs) noexcept {
-			this->obj = rhs.obj;
+		/// stream_outlet move constructor
+		stream_outlet(stream_outlet &&res) noexcept
+			: channel_count(res.channel_count), obj(res.obj) {
+			res.obj = nullptr;
+		}
+
+		stream_outlet& operator=(stream_outlet&& rhs) noexcept {
+			channel_count = rhs.channel_count;
+			obj = rhs.obj;
 			rhs.obj = nullptr;
-			this->channel_count = rhs.channel_count;
+			return *this;
 		}
 #endif
 
@@ -708,7 +715,21 @@ namespace lsl {
         * Destructor.
         * The inlet will automatically disconnect if destroyed.
         */
-        ~stream_inlet() { lsl_destroy_inlet(obj); }
+        ~stream_inlet() { if(obj) lsl_destroy_inlet(obj); }
+
+#if __cplusplus > 199711L || _MSC_VER >= 1900
+		/// Move constructor for stream_inlet
+		stream_inlet(stream_inlet &&rhs) noexcept
+			: channel_count(rhs.channel_count), obj(rhs.obj) {
+			rhs.obj = nullptr;
+		}
+		stream_inlet &operator=(stream_inlet &&rhs) noexcept {
+			channel_count = rhs.channel_count;
+			obj = rhs.obj;
+			rhs.obj = nullptr;
+			return *this;
+		}
+#endif
 
         /** Retrieve the complete information of the given stream, including the extended description.
         * Can be invoked at any time of the stream's lifetime.
@@ -1245,7 +1266,20 @@ namespace lsl {
         /** 
         * Destructor.
         */
-        ~continuous_resolver() { lsl_destroy_continuous_resolver(obj); }
+        ~continuous_resolver() { if(obj) lsl_destroy_continuous_resolver(obj); }
+
+#if __cplusplus > 199711L || _MSC_VER >= 1900
+		/// Move constructor for stream_inlet
+		continuous_resolver(continuous_resolver &&rhs) noexcept : obj(rhs.obj) {
+			rhs.obj = nullptr;
+		}
+		continuous_resolver &operator=(continuous_resolver &&rhs) noexcept {
+			obj = rhs.obj;
+			rhs.obj = nullptr;
+			return *this;
+		}
+#endif
+
 
     private:
         lsl_continuous_resolver obj;
