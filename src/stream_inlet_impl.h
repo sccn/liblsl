@@ -90,8 +90,9 @@ namespace lsl {
 		double pull_sample(char *buffer, int32_t buffer_elements, double timeout=FOREVER) { return postprocess(data_receiver_.pull_sample_typed(buffer,buffer_elements,timeout)); }
 		double pull_sample(std::string *buffer, int32_t buffer_elements, double timeout=FOREVER) { return postprocess(data_receiver_.pull_sample_typed(buffer,buffer_elements,timeout)); }
 
-		template<typename T>
-		double pull_sample_noexcept(T* buffer, int32_t buffer_elements, double timeout=FOREVER, lsl_error_code_t* ec=NULL) BOOST_NOEXCEPT {
+		template <typename T>
+		double pull_sample_noexcept(T *buffer, int32_t buffer_elements, double timeout = FOREVER,
+			lsl_error_code_t *ec = nullptr) BOOST_NOEXCEPT {
 			lsl_error_code_t dummy;
 			if (!ec) ec = &dummy;
 			*ec = lsl_no_error;
@@ -107,7 +108,7 @@ namespace lsl {
 				*ec = lsl_internal_error;
 			}
 			return 0.0;
-	    }
+		}
 
 		/**
 		* Pull a sample from the inlet and read it into a pointer to raw data.
@@ -154,7 +155,10 @@ namespace lsl {
 			return samples_written*num_chans;
 		}
 
-		template<class T> std::size_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer, std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements, double timeout=0.0, lsl_error_code_t* ec=NULL) BOOST_NOEXCEPT {
+		template <class T>
+		std::size_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer,
+			std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
+			double timeout = 0.0, lsl_error_code_t *ec = nullptr) BOOST_NOEXCEPT {
 			lsl_error_code_t dummy;
 			if(!ec) ec = &dummy;
 			*ec = lsl_no_error;

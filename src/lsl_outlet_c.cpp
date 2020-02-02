@@ -15,7 +15,7 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_siz
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during construction of stream outlet: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -464,7 +464,7 @@ LIBLSL_C_API lsl_streaminfo lsl_get_info(lsl_outlet out) {
 	}
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_info: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 

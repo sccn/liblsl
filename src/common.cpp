@@ -27,7 +27,7 @@ void lsl::ensure_lsl_initialized() {
 #ifdef LOGURU_DEBUG_LOGGING
 		// Initialize loguru, mainly to print stacktraces on segmentation faults
 		int argc = 1;
-		const char *argv[] = {"liblsl", 0};
+		const char *argv[] = {"liblsl", nullptr};
 		loguru::init(argc, const_cast<char **>(argv));
 #else
 #endif

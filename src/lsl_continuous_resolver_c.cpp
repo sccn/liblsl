@@ -24,7 +24,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forge
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -47,7 +47,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -69,7 +69,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const
 		return (lsl_continuous_resolver)resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 

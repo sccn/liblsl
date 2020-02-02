@@ -44,7 +44,10 @@ namespace lsl {
 		* @param cancel_after The time duration after which the attempt is automatically cancelled, i.e. the receives are ended.
 		* @param registry A registry where the attempt can register itself as active so it can be cancelled during shutdown.
 		*/
-		resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after=5.0, cancellable_registry *registry=NULL);
+		resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol,
+			const std::vector<udp::endpoint> &targets, const std::string &query,
+			result_container &results, lslboost::mutex &results_mut, double cancel_after = 5.0,
+			cancellable_registry *registry = nullptr);
 
 		/// Destructor
 		~resolve_attempt_udp();

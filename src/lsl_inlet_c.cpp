@@ -29,11 +29,11 @@ LIBLSL_C_API lsl_inlet lsl_create_inlet(lsl_streaminfo info, int32_t max_buflen,
 	} 
 	catch(std::invalid_argument &e) {
 		LOG_F(WARNING, "Error during construction of a stream_inlet: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 	catch(std::exception &e) {
 		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -72,7 +72,7 @@ LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout, int32
 		if (ec)
 			*ec = lsl_internal_error; 
 	}
-	return NULL;
+	return nullptr;
 }
 
 /**
@@ -234,7 +234,7 @@ LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buf
 		// allocate memory and copy over into buffer
 		for (std::size_t k=0;k<tmp.size();k++) {
 			buffer[k] = (char*)malloc(tmp[k].size()+1);
-			if (buffer[k] == NULL) {
+			if (buffer[k] == nullptr) {
 				for (std::size_t k2=0;k2<k;k2++)
 					free(buffer[k2]);
 				if (ec) *ec = lsl_internal_error;
@@ -280,7 +280,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 		// allocate memory and copy over into buffer
 		for (std::size_t k=0;k<tmp.size();k++) {
 			buffer[k] = (char*)malloc(tmp[k].size());
-			if (buffer[k] == NULL) {
+			if (buffer[k] == nullptr) {
 				for (std::size_t k2=0;k2<k;k++)
 					free(buffer[k2]);
 				if (ec) *ec = lsl_internal_error;
@@ -390,7 +390,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, 
 			// allocate memory and copy over into buffer
 			for (std::size_t k=0;k<tmp.size();k++) {
 				data_buffer[k] = (char*)malloc(tmp[k].size()+1);
-				if (data_buffer[k] == NULL) {
+				if (data_buffer[k] == nullptr) {
 					for (std::size_t k2=0;k2<k;k2++)
 						free(data_buffer[k2]);
 					if (ec) *ec = lsl_internal_error;
@@ -437,7 +437,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer, 
 			// allocate memory and copy over into buffer
 			for (uint32_t k=0;k<tmp.size();k++) {
 				data_buffer[k] = (char*)malloc(tmp[k].size()+1);
-				if (data_buffer[k] == NULL) {
+				if (data_buffer[k] == nullptr) {
 					for (uint32_t k2=0;k2<k;k++)
 						free(data_buffer[k2]);
 					if (ec) *ec = lsl_internal_error;
