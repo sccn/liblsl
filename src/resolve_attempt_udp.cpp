@@ -1,7 +1,6 @@
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include "api_config.h"
 #include "cast.h"
 #include "resolve_attempt_udp.h"
@@ -115,7 +114,7 @@ void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len
 			try {
 				// first parse & check the query id
 				std::istringstream is(std::string(resultbuf_,len));
-				std::string returned_id; getline(is,returned_id); lslboost::trim(returned_id);
+				std::string returned_id; getline(is,returned_id); returned_id = trim(returned_id);
 				if (returned_id == query_id_) {
 					// parse the rest of the query into a stream_info
 					stream_info_impl info;

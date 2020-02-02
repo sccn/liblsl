@@ -5,10 +5,6 @@
 #include "send_buffer.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/ip/tcp.hpp>
@@ -211,7 +207,7 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 	try {
 		if (!err) {
 			// parse request method
-			std::string method; getline(requeststream_,method); lslboost::trim(method);
+			std::string method; getline(requeststream_,method); method = trim(method);
 			if (method == "LSL:shortinfo")
 				// shortinfo request: read the content query string
 				async_read_until(*sock_, requestbuf_, "\r\n",
@@ -224,11 +220,10 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 				// streamfeed request (1.00): read feed parameters
 				async_read_until(*sock_, requestbuf_, "\r\n",
 					lslboost::bind(&client_session::handle_read_feedparams,shared_from_this(),100,"",placeholders::error));
-			if (lslboost::algorithm::starts_with(method,"LSL:streamfeed/")) {
+			if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
 				// streamfeed request with version: read feed parameters
-				std::vector<std::string> parts; lslboost::algorithm::split(parts,method,lslboost::algorithm::is_any_of(" \t"));
-				int request_protocol_version =
-					from_string<int>(parts[0].substr(parts[0].find_first_of('/') + 1));
+				std::vector<std::string> parts = splitandtrim(method, ' ', true);
+				int request_protocol_version = std::stoi(parts[0].substr(15));
 				std::string request_uid = (parts.size()>1) ? parts[1] : "";
 				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
 					lslboost::bind(&client_session::handle_read_feedparams,shared_from_this(),request_protocol_version,request_uid,placeholders::error));
@@ -244,7 +239,7 @@ void tcp_server::client_session::handle_read_query_outcome(error_code err) {
 	try {
 		if (!err) {
 			// read the query line
-			std::string query; getline(requeststream_,query); lslboost::trim(query);
+			std::string query; getline(requeststream_,query); query = trim(query);
 			if (serv_->info_->matches_query(query))
 				// matches: reply (otherwise just close the stream)
 				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
@@ -276,7 +271,6 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 		if (!err) {
 			DLOG_F(3, "%p got a streamfeed request", this);
 			// --- protocol negotiation ---
-			using namespace lslboost::algorithm;
 
 			// check request validity
 			if (request_protocol_version/100 > api_config::get_instance()->use_protocol_version()/100) {
@@ -308,12 +302,14 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 					std::string hdrline(buf);
 					std::size_t colon = hdrline.find_first_of(':');
 					if (colon != std::string::npos) {
-						// extract key & value
-						std::string type = to_lower_copy(trim_copy(hdrline.substr(0,colon))), rest = to_lower_copy(trim_copy(hdrline.substr(colon+1)));
 						// strip off comments
-						std::size_t semicolon = rest.find_first_of(';');
-						if (semicolon != std::string::npos)
-							rest = rest.substr(0,semicolon);
+						auto semicolon = hdrline.find_first_of(';');
+						if (semicolon != std::string::npos) hdrline.erase(semicolon);
+						// convert to lowercase
+						for (auto &c : hdrline) c = ::tolower(c);
+						// extract key & value
+						std::string type = trim(hdrline.substr(0, colon)),
+									rest = trim(hdrline.substr(colon + 1));
 						// get the header information
 						if (type == "native-byte-order")
 							client_byte_order = from_string<int>(rest);

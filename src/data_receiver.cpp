@@ -1,9 +1,5 @@
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/algorithm/string/predicate.hpp>
 #include <memory>
 #include "cancellable_streambuf.h"
 #include "data_receiver.h"
@@ -19,7 +15,7 @@
 
 // === implementation of the data_receiver class ===
 
-using namespace lslboost::algorithm;
+using lsl::splitandtrim;
 
 namespace lsl {
 
@@ -214,8 +210,8 @@ void data_receiver::data_thread() {
 					char buf[16384] = {0};
 					if (!server_stream.getline(buf,sizeof(buf)))
 						throw lost_error("Connection lost.");
-					std::vector<std::string> parts; split(parts,buf,is_any_of(" \t"));
-					if (parts.size() < 3 || !starts_with(parts[0],"LSL/"))
+					std::vector<std::string> parts = splitandtrim(buf, ' ', false);
+					if (parts.size() < 3 || parts[0].compare(0, 4, "LSL/") != 0)
 						throw std::runtime_error("Received a malformed response.");
 					if (from_string<int>(parts[0].substr(4))/100 > api_config::get_instance()->use_protocol_version()/100)
 						throw std::runtime_error("The other party's protocol version is too new for this client; please upgrade your LSL library.");
@@ -232,12 +228,14 @@ void data_receiver::data_thread() {
 						std::string hdrline(buf);
 						std::size_t colon = hdrline.find_first_of(':');
 						if (colon != std::string::npos) {
-							// extract key & value
-							std::string type = to_lower_copy(trim_copy(hdrline.substr(0,colon))), rest = to_lower_copy(trim_copy(hdrline.substr(colon+1)));
 							// strip off comments
-							std::size_t semicolon = rest.find_first_of(';');
-							if (semicolon != std::string::npos)
-								rest = rest.substr(0,semicolon);
+							auto semicolon = hdrline.find_first_of(';');
+							if (semicolon != std::string::npos) hdrline.erase(semicolon);
+							// convert to lowercase
+							for (auto &c : hdrline) c = ::tolower(c);
+							// extract key & value
+							std::string type = trim(hdrline.substr(0, colon)),
+										rest = trim(hdrline.substr(colon + 1));
 							// get the header information
 							if (type == "byte-order") {
 								use_byte_order = from_string<int>(rest);

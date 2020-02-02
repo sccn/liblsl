@@ -7,7 +7,6 @@
 // === implementation of the api_config class ===
 
 using namespace lsl;
-using namespace lslboost::algorithm;
 
 /// Helper function: Substitute the "~" character by the full home directory (according to environment variables).
 std::string expand_tilde(const std::string &filename) {
@@ -33,11 +32,7 @@ std::string expand_tilde(const std::string &filename) {
 static std::vector<std::string> parse_set(const std::string &setstr) {
 	std::vector<std::string> result;
 	if ((setstr.size() > 2) && setstr[0] == '{' && setstr[setstr.size()-1] == '}') {
-		// non-empty set: split by ","
-        std::string sub = setstr.substr(1,setstr.size()-2);
-        lslboost::algorithm::split(result,sub,lslboost::algorithm::is_any_of(","));
-		// remove leading and trailing whitespace from each element
-		for (auto &str : result) trim(str);
+		result = splitandtrim(setstr.substr(1,setstr.size()-2), ',', false);
 	}
 	return result;
 }
