@@ -8,7 +8,6 @@
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/noncopyable.hpp>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
@@ -122,7 +121,7 @@ namespace lsl {
 
 		// io objects
 		io_context_p io_;								// our IO service
-		lslboost::shared_ptr<lslboost::thread> background_io_;// a thread that runs background IO if we are performing a resolve_continuous
+		std::shared_ptr<lslboost::thread> background_io_;// a thread that runs background IO if we are performing a resolve_continuous
 		lslboost::asio::steady_timer resolve_timeout_expired_;	// the overall timeout for a query
 		lslboost::asio::steady_timer wave_timer_;		// a timer that fires when a new wave should be scheduled
 		lslboost::asio::steady_timer unicast_timer_;		// a timer that fires when the unicast wave should be scheduled

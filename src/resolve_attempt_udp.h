@@ -6,7 +6,6 @@
 #include <map>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 namespace lslboost { class mutex; }
 namespace lslboost { namespace system { class error_code; } }
@@ -26,7 +25,8 @@ namespace lsl {
 	* result packet receives. The operation will wait for return packets until either a particular 
 	* timeout has been reached or until it is cancelled via the cancel() method.
 	*/
-	class resolve_attempt_udp: public cancellable_obj, public lslboost::enable_shared_from_this<resolve_attempt_udp> {
+	class resolve_attempt_udp : public cancellable_obj,
+								public std::enable_shared_from_this<resolve_attempt_udp> {
 		typedef std::vector<udp::endpoint> endpoint_list;
 	public:
 		/**
@@ -110,7 +110,6 @@ namespace lsl {
 		udp::socket recv_socket_;		// socket to receive replies (always unicast)
 		lslboost::asio::steady_timer cancel_timer_;	// timer to schedule the cancel action
 	};
-
 }
 
 #endif

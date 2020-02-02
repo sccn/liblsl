@@ -183,6 +183,7 @@ tcp_server::client_session::~client_session() {
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in client_session destructor: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during client session shutdown."); }
+	if(scratch_) delete[] scratch_;
 }
 
 /// Get the socket of this session.
@@ -379,20 +380,19 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 				*outarch_ << serv_->shortinfo_msg_;
 			} else {
 				// allocate scratchpad memory for endian conversion, etc.
-				scratch_.reset(new char[format_sizes[serv_->info_->channel_format()]*serv_->info_->channel_count()]);
+				scratch_ = new char[format_sizes[serv_->info_->channel_format()]*serv_->info_->channel_count()];
 			}
 
 			// send test pattern samples
-			lslboost::scoped_ptr<sample> temp(factory::new_sample_unmanaged(
-				serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
+			std::unique_ptr<sample> temp(factory::new_sample_unmanaged(serv_->info_->channel_format(),serv_->info_->channel_count(),0.0,false));
 			temp->assign_test_pattern(4);
 			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 			else
 				*outarch_ << *temp;
 			temp->assign_test_pattern(2);
 			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 			else
 				*outarch_ << *temp;
 			// send off the newly created feedheader
@@ -446,7 +446,7 @@ void tcp_server::client_session::transfer_samples_thread(client_session_p) {
 						samp->pushthrough = (((++seqn) % (uint32_t)serv_->chunk_size_) == 0);
 				// serialize the sample into the stream
 				if (data_protocol_version_ >= 110)
-					samp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+					samp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 				else
 					*outarch_ << *samp;
 				// if the sample shall be pushed though...

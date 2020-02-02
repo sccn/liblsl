@@ -2,7 +2,7 @@
 #define SEND_BUFFER_H
 
 #include <boost/container/flat_set.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include <memory>
 #include <boost/thread/mutex.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include "common.h"
@@ -18,7 +18,7 @@ namespace lsl {
 	* queues (each of which can have its own capacity preferences). The ownership of the send_buffer is shared 
 	* between the consumer_queues and the owner of the send_buffer.
 	*/
-	class send_buffer: public lslboost::enable_shared_from_this<send_buffer> {
+	class send_buffer : public std::enable_shared_from_this<send_buffer> {
 		typedef lslboost::container::flat_set<consumer_queue*> consumer_set;
 	public:
 		/**
@@ -66,7 +66,6 @@ namespace lsl {
 		lslboost::mutex consumers_mut_;				// mutex to protect the integrity of consumers_
 		lslboost::condition_variable some_registered_;	// condition variable signaling that a consumer has registered
 	};
-
 }
 
 #endif

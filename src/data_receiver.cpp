@@ -1,11 +1,10 @@
 #include <iostream>
 #include <boost/bind.hpp>
-#include <boost/smart_ptr/scoped_ptr.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/type_traits/conditional.hpp>
+#include <memory>
 #include "cancellable_streambuf.h"
 #include "data_receiver.h"
 #include "sample.h"
@@ -180,7 +179,7 @@ void data_receiver::data_thread() {
 				buffer.register_at(&conn_);
 				buffer.register_at(this);
 				std::iostream server_stream(&buffer);
-				lslboost::scoped_ptr<eos::portable_iarchive> inarch;
+				std::unique_ptr<eos::portable_iarchive> inarch;
 				// connect to endpoint
 				buffer.connect(conn_.get_tcp_endpoint());
 				if (buffer.puberror())
@@ -278,7 +277,7 @@ void data_receiver::data_thread() {
 				// --- format validation ---
 				{
 					// receive and parse two subsequent test-pattern samples and check if they are formatted as expected
-					lslboost::scoped_ptr<sample> temp[4]; 
+					std::unique_ptr<sample> temp[4];
 					for (int k=0; k<4; temp[k++].reset(factory::new_sample_unmanaged(conn_.type_info().channel_format(),conn_.type_info().channel_count(),0.0,false)));
 					temp[0]->assign_test_pattern(4);
 					if (data_protocol_version >= 110)
