@@ -16,7 +16,6 @@ namespace lsl {
 	/// A registry for objects that can be cancelled.
 	class cancellable_registry {
 	public:
-		cancellable_registry(): shutdown_issued_(false) {}
 		virtual ~cancellable_registry();
 
 		/// Invoke cancel() on all currently registered objects.
@@ -41,7 +40,7 @@ namespace lsl {
 			cancellables_.erase(o);
 		}
 
-		bool shutdown_issued_;						// whether a shutdown has been issued
+		bool shutdown_issued_{false};				// whether a shutdown has been issued
 		std::set<cancellable_obj*> cancellables_;	// a set of objects that we have to cancel upon re-resolves & disengage
 		lslboost::recursive_mutex state_mut_;			// mutex to protect the registry's state
 	};
