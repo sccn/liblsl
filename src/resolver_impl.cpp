@@ -26,9 +26,10 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
 	// parse the multicast addresses into endpoints and store them
 	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
 	uint16_t mcast_port = cfg_->multicast_port();
-	for (std::size_t k=0;k<mcast_addrs.size();k++) {
+	for (const auto &mcast_addr : mcast_addrs) {
 		try {
-			mcast_endpoints_.push_back(udp::endpoint(ip::make_address(mcast_addrs[k]),(uint16_t)mcast_port));
+			mcast_endpoints_.push_back(
+				udp::endpoint(ip::make_address(mcast_addr), (uint16_t)mcast_port));
 		} 
 		catch(std::exception &) { }
 	}
@@ -37,19 +38,18 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
 	std::vector<std::string> peers = cfg_->known_peers();
 	udp::resolver udp_resolver(*io_);
 	// for each known peer...
-    for (std::size_t k=0;k<peers.size();k++) {
-        try {
+	for (const auto &peer : peers) {
+		try {
             // resolve the name
-			udp::resolver::results_type res = udp_resolver.resolve(peers[k], to_string(cfg_->base_port()));
-            // for each endpoint...
-			for (udp::resolver::results_type::iterator i=res.begin(); i != res.end(); i++) {
+			// for each endpoint...
+			for (auto &res: udp_resolver.resolve(peer, to_string(cfg_->base_port()))) {
                 // for each port in the range...
                 for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
                     // add a record
-                    ucast_endpoints_.push_back(udp::endpoint(i->endpoint().address(),p));
+                    ucast_endpoints_.push_back(udp::endpoint(res.endpoint().address(),p));
             }
         } catch(std::exception &) { }
-    }
+	}
 
 	// generate the list of protocols to use
 	if (cfg_->allow_ipv6()) {
@@ -94,8 +94,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 		io_->run();
 		// collect output
 		std::vector<stream_info_impl> output;
-		for(result_container::iterator i=results_.begin(); i!= results_.end();i++)
-			output.push_back(i->second.first);
+		for (auto &result : results_) output.push_back(result.second.first);
 		return output;
 	} else
 		return std::vector<stream_info_impl>();

@@ -34,8 +34,7 @@ consumer_queue_p send_buffer::new_consumer(int max_buffered) {
 */
 void send_buffer::push_sample(const sample_p &s) {
 	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
-	for (consumer_set::iterator i=consumers_.begin(); i != consumers_.end(); i++)
-		(*i)->push_sample(s);
+	for (auto &consumer : consumers_) consumer->push_sample(s);
 }
 
 

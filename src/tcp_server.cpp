@@ -155,8 +155,8 @@ template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock
 /// Post a close of all in-flight sockets.
 void tcp_server::close_inflight_sockets() {
 	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
-	for (std::set<tcp_socket_p>::iterator i=inflight_.begin(); i!=inflight_.end(); i++)
-		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, *i));
+	for (const auto &i : inflight_)
+		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, i));
 }
 
 

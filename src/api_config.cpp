@@ -39,8 +39,7 @@ static std::vector<std::string> parse_set(const std::string &setstr) {
         std::string sub = setstr.substr(1,setstr.size()-2);
         lslboost::algorithm::split(result,sub,lslboost::algorithm::is_any_of(","));
 		// remove leading and trailing whitespace from each element
-		for (std::vector<std::string>::iterator i=result.begin(); i!=result.end(); i++)
-			trim(*i);
+		for (auto &str : result) trim(str);
 	}
 	return result;
 }
@@ -68,16 +67,16 @@ api_config::api_config() {
 	filenames.push_back("lsl_api.cfg");
 	filenames.push_back(expand_tilde("~/lsl_api/lsl_api.cfg"));
 	filenames.push_back("/etc/lsl_api/lsl_api.cfg");
-	for (std::size_t k=0; k < filenames.size(); k++) {
+	for (auto &filename : filenames) {
 		try {
-			if (file_is_readable(filenames[k])) {
+			if (file_is_readable(filename)) {
 				// try to load it if the file exists
-				load_from_file(filenames[k]);
+				load_from_file(filename);
 				// successful: finished
 				return;
 			}
 		} catch(std::exception &e) {
-			LOG_F(ERROR, "Error trying to load config file %s: %s", filenames[k].c_str(), e.what());
+			LOG_F(ERROR, "Error trying to load config file %s: %s", filename.c_str(), e.what());
 		}
 	}
 	// unsuccessful: load default settings

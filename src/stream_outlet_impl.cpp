@@ -40,16 +40,14 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 		throw std::runtime_error("Neither the IPv4 nor the IPv6 stack could be instantiated.");
 
 	// get the async request chains set up
-	for (std::size_t k=0;k<tcp_servers_.size();k++)
-		tcp_servers_[k]->begin_serving();
-	for (std::size_t k = 0; k < udp_servers_.size(); k++)
-		udp_servers_[k]->begin_serving();
-	for (std::size_t k = 0; k < responders_.size(); k++)
-		responders_[k]->begin_serving();
+	for (auto &tcp_server : tcp_servers_) tcp_server->begin_serving();
+	for (auto &udp_server : udp_servers_) udp_server->begin_serving();
+	for (auto &responder : responders_) responder->begin_serving();
 
 	// and start the IO threads to handle them
-	for (std::size_t k = 0; k < ios_.size(); k++)
-		io_threads_.push_back(thread_p(new lslboost::thread(lslboost::bind(&stream_outlet_impl::run_io,this,ios_[k]))));
+	for (const auto &io : ios_)
+		io_threads_.push_back(
+			thread_p(new lslboost::thread(lslboost::bind(&stream_outlet_impl::run_io, this, io))));
 }
 
 /**
@@ -70,14 +68,14 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	ios_.push_back(io_context_p(new io_context()));
 	udp_servers_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), udp_protocol)));
 	// create UDP multicast responders
-	for (std::vector<std::string>::iterator i=multicast_addrs.begin(); i != multicast_addrs.end(); i++) {
+	for (const auto &mcastaddr : multicast_addrs) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
-			ip::address address(ip::make_address(*i));
+			ip::address address(ip::make_address(mcastaddr));
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
-				responders_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), *i, multicast_port, multicast_ttl, listen_address)));
+				responders_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address)));
 		} catch (std::exception &e) {
-			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", i->c_str(), e.what());
+			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", mcastaddr.c_str(), e.what());
 		}
 	}
 }
@@ -89,12 +87,9 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 stream_outlet_impl::~stream_outlet_impl() {
 	try {
 		// cancel all request chains
-		for (std::size_t k=0;k<tcp_servers_.size();k++)
-			tcp_servers_[k]->end_serving();
-		for (std::size_t k=0;k<udp_servers_.size();k++)
-			udp_servers_[k]->end_serving();
-		for (std::size_t k=0;k<responders_.size();k++)
-			responders_[k]->end_serving();
+		for (auto &tcp_server : tcp_servers_) tcp_server->end_serving();
+		for (auto &udp_server : udp_servers_) udp_server->end_serving();
+		for (auto &responder : responders_) responder->end_serving();
 		// join the IO threads
 		for (std::size_t k=0;k<io_threads_.size();k++)
 			if (!io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000))) {

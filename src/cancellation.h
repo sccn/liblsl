@@ -76,9 +76,8 @@ namespace lsl {
 	inline void cancellable_registry::cancel_all_registered() {
 		lslboost::lock_guard<lslboost::recursive_mutex> lock(state_mut_);
 		std::set<cancellable_obj*> copy(cancellables_);
-		for (std::set<cancellable_obj*>::iterator i=copy.begin(); i != copy.end(); i++)
-			if (cancellables_.find(*i) != cancellables_.end())
-				(*i)->cancel();
+		for (auto obj : copy)
+			if (cancellables_.find(obj) != cancellables_.end()) obj->cancel();
 	}
 
 	/// Cancel and prevent future object registrations.
