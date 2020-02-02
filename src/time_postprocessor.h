@@ -9,8 +9,8 @@
 namespace lsl {
 
 	/// A callback function that allows the post-processor to query some state from other objects when needed.
-	typedef lslboost::function<double()> postproc_callback_t;
-	typedef lslboost::function<bool()> reset_callback_t;
+using postproc_callback_t = lslboost::function<double()>;
+using reset_callback_t = lslboost::function<bool()>;
 
 
 	/// Internal class of an inlet that is responsible for post-processing time stamps.

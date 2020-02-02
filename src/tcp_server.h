@@ -19,11 +19,11 @@ using lslboost::system::error_code;
 namespace lsl {
 
 	/// shared pointer to a string
-	typedef std::shared_ptr<std::string> string_p;
-	/// shared pointer to a socket
-	typedef std::shared_ptr<tcp::socket> tcp_socket_p;
-	/// shared pointer to an acceptor socket
-	typedef std::shared_ptr<tcp::acceptor> tcp_acceptor_p;
+using string_p = std::shared_ptr<std::string>;
+/// shared pointer to a socket
+using tcp_socket_p = std::shared_ptr<tcp::socket>;
+/// shared pointer to an acceptor socket
+using tcp_acceptor_p = std::shared_ptr<tcp::acceptor>;
 
 	/**
 	* The TCP data server.

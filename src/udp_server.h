@@ -12,9 +12,9 @@ using lslboost::system::error_code;
 namespace lsl {
 
 	/// shared pointer to a string
-	typedef std::shared_ptr<std::string> string_p;
-	/// shared pointer to a socket
-	typedef std::shared_ptr<udp::socket> udp_socket_p;
+using string_p = std::shared_ptr<std::string>;
+/// shared pointer to a socket
+using udp_socket_p = std::shared_ptr<udp::socket>;
 
 	/*
 	* A lightweight UDP responder service.

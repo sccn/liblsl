@@ -27,7 +27,8 @@ namespace lsl {
 	*/
 	class resolve_attempt_udp : public cancellable_obj,
 								public std::enable_shared_from_this<resolve_attempt_udp> {
-		typedef std::vector<udp::endpoint> endpoint_list;
+		using endpoint_list = std::vector<udp::endpoint>;
+
 	public:
 		/**
 		* Instantiate and set up a new resolve attempt.

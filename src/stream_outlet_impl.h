@@ -14,7 +14,7 @@ using lslboost::asio::ip::udp;
 namespace lsl { 
 
 	/// pointer to a thread
-	typedef std::shared_ptr<lslboost::thread> thread_p;
+using thread_p = std::shared_ptr<lslboost::thread>;
 
 	/**
 	* A stream outlet.

@@ -19,7 +19,8 @@ namespace lsl {
 	* between the consumer_queues and the owner of the send_buffer.
 	*/
 	class send_buffer : public std::enable_shared_from_this<send_buffer> {
-		typedef lslboost::container::flat_set<consumer_queue*> consumer_set;
+		using consumer_set = lslboost::container::flat_set<consumer_queue *>;
+
 	public:
 		/**
 		* Create a new send buffer.

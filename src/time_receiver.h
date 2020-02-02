@@ -20,7 +20,7 @@ namespace lsl {
 	/// list of time estimates with error bounds
 	typedef std::vector<std::pair<double,double> > estimate_list;
 	/// pointer to a string
-	typedef std::shared_ptr<std::string> string_p;
+	using string_p = std::shared_ptr<std::string>;
 
 	/// internally used constant to represent an unassigned time offset
 	const double NOT_ASSIGNED = std::numeric_limits<double>::max();

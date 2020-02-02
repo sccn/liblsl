@@ -11,7 +11,8 @@ namespace lsl {
 	* Erases the oldest samples if max capacity is exceeded. Implemented as a circular buffer.
 	*/
 	class consumer_queue: private lslboost::noncopyable {
-		typedef lslboost::lockfree::spsc_queue<sample_p> buffer_type;
+		using buffer_type = lslboost::lockfree::spsc_queue<sample_p>;
+
 	public:
 		/**
 		* Create a new queue with a given capacity.
