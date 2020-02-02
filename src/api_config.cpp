@@ -64,9 +64,9 @@ api_config::api_config() {
 		else
 			filenames.insert(filenames.begin(), envcfg);
 	}
-	filenames.push_back("lsl_api.cfg");
+	filenames.emplace_back("lsl_api.cfg");
 	filenames.push_back(expand_tilde("~/lsl_api/lsl_api.cfg"));
-	filenames.push_back("/etc/lsl_api/lsl_api.cfg");
+	filenames.emplace_back("/etc/lsl_api/lsl_api.cfg");
 	for (auto &filename : filenames) {
 		try {
 			if (file_is_readable(filename)) {

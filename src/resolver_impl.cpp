@@ -30,8 +30,7 @@ resolver_impl::resolver_impl()
 	uint16_t mcast_port = cfg_->multicast_port();
 	for (const auto &mcast_addr : mcast_addrs) {
 		try {
-			mcast_endpoints_.push_back(
-				udp::endpoint(ip::make_address(mcast_addr), (uint16_t)mcast_port));
+			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
 		} 
 		catch(std::exception &) { }
 	}
@@ -48,8 +47,8 @@ resolver_impl::resolver_impl()
                 // for each port in the range...
                 for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
                     // add a record
-                    ucast_endpoints_.push_back(udp::endpoint(res.endpoint().address(),p));
-            }
+					ucast_endpoints_.emplace_back(res.endpoint().address(), p);
+			}
         } catch(std::exception &) { }
 	}
 
