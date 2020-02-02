@@ -1,23 +1,24 @@
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/host_name.hpp>
-#include <boost/asio/placeholders.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/write.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/thread/thread_only.hpp>
+#include "tcp_server.h"
 #include "cast.h"
 #include "consumer_queue.h"
 #include "sample.h"
 #include "send_buffer.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
-#include "tcp_server.h"
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/predicate.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/host_name.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/thread/thread_only.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <memory>
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads
@@ -167,9 +168,10 @@ void tcp_server::close_inflight_sockets() {
 
 
 /// Instantiate a new session & its socket.
-tcp_server::client_session::client_session(const tcp_server_p &serv):
-    registered_(false), io_(serv->io_), serv_(serv), sock_(tcp_socket_p(new tcp::socket(*serv->io_))),
-    requeststream_(&requestbuf_), use_byte_order_(0), data_protocol_version_(100) {	}
+tcp_server::client_session::client_session(const tcp_server_p &serv)
+	: registered_(false), io_(serv->io_), serv_(serv),
+	  sock_(std::make_shared<tcp::socket>(*serv->io_)), requeststream_(&requestbuf_),
+	  use_byte_order_(0), data_protocol_version_(100) {}
 
 /**
 * Destructor. Unregisters the socket from the server & closes it.

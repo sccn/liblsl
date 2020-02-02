@@ -1,12 +1,13 @@
+#include "resolver_impl.h"
+#include "api_config.h"
+#include "cast.h"
+#include "resolve_attempt_udp.h"
+#include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
-#include "api_config.h"
-#include "cast.h"
-#include "resolve_attempt_udp.h"
-#include "resolver_impl.h"
-#include "socket_utils.h"
+#include <memory>
 
 
 // === implementation of the resolver_impl class ===
@@ -20,9 +21,10 @@ using namespace lslboost::asio;
 * If KnownPeers is non-empty, a multicast wave an a unicast wave will be schedule in alternation. The spacing between waves will be no shorter than the respective minimum RTTs.
 * TCP resolves are currently not implemented (but may be at a later time); these are only necessary when UDP traffic is disabled on a particular router.
 */
-resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER), fast_mode_(true),  
-	io_(io_context_p(new io_context())), resolve_timeout_expired_(*io_), wave_timer_(*io_), unicast_timer_(*io_) 
-{
+resolver_impl::resolver_impl()
+	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
+	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
+	  wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
 	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
 	uint16_t mcast_port = cfg_->multicast_port();

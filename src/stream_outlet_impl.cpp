@@ -1,8 +1,9 @@
 #include "stream_outlet_impl.h"
-#include <boost/bind.hpp>
-#include <boost/thread/thread_only.hpp>
 #include "tcp_server.h"
 #include "udp_server.h"
+#include <boost/bind.hpp>
+#include <boost/thread/thread_only.hpp>
+#include <memory>
 
 // === implementation of the stream_outlet_impl class ===
 
@@ -46,8 +47,8 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 
 	// and start the IO threads to handle them
 	for (const auto &io : ios_)
-		io_threads_.push_back(
-			thread_p(new lslboost::thread(lslboost::bind(&stream_outlet_impl::run_io, this, io))));
+		io_threads_.push_back(std::make_shared<lslboost::thread>(
+			lslboost::bind(&stream_outlet_impl::run_io, this, io)));
 }
 
 /**
@@ -62,18 +63,20 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
 	// create TCP data server
-	ios_.push_back(io_context_p(new io_context()));
-	tcp_servers_.push_back(tcp_server_p(new tcp_server(info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_)));
+	ios_.push_back(std::make_shared<io_context>());
+	tcp_servers_.push_back(std::make_shared<tcp_server>(
+		info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_));
 	// create UDP time server
-	ios_.push_back(io_context_p(new io_context()));
-	udp_servers_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), udp_protocol)));
+	ios_.push_back(std::make_shared<io_context>());
+	udp_servers_.push_back(std::make_shared<udp_server>(info_, *ios_.back(), udp_protocol));
 	// create UDP multicast responders
 	for (const auto &mcastaddr : multicast_addrs) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
 			ip::address address(ip::make_address(mcastaddr));
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
-				responders_.push_back(udp_server_p(new udp_server(info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address)));
+				responders_.push_back(std::make_shared<udp_server>(
+					info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address));
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", mcastaddr.c_str(), e.what());
 		}
