@@ -15,7 +15,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" OFF)
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
-option(LSL_NO_FANCY_LIBNAME "Skip library name decorations (32/64/-debug)" ON)
+option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF)
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
 option(LSL_BUILD_STATIC "Also build static LSL library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
@@ -213,7 +213,7 @@ if(LSL_BUILD_STATIC)
 	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 endif()
 
-if(NOT LSL_NO_FANCY_LIBNAME)
+if(LSL_FORCE_FANCY_LIBNAME)
 	set(CMAKE_DEBUG_POSTFIX "-debug")
 	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
 	set_target_properties(lsl PROPERTIES
