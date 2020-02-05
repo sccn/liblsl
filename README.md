@@ -10,6 +10,10 @@ audio, and so on. For more information, please read the online documentation:
 
 https://labstreaminglayer.readthedocs.io
 
+## Getting and using liblsl
+
+The most up-to-date instructions are in the [online documentation](https://labstreaminglayer.readthedocs.io/dev/app_dev.html).
+
 ## Building liblsl
 
 To compile the library yourself from source please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
