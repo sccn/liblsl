@@ -14,9 +14,9 @@
 #include <boost/config.hpp>
 #include <boost/cstdint.hpp>
 #include <boost/limits.hpp>
-#include <boost/static_assert.hpp>
 #include <boost/move/core.hpp>
 #include <boost/move/utility_core.hpp>
+#include <boost/static_assert.hpp>
 #include <boost/type_traits/is_integral.hpp>
 #include <boost/type_traits/is_unsigned.hpp>
 #include <boost/uuid/entropy_error.hpp>
@@ -29,6 +29,12 @@
 #include <boost/uuid/detail/random_provider_detect_platform.hpp>
 #include <boost/uuid/detail/random_provider_include_platform.hpp>
 
+#ifdef _MSC_VER
+#if _MSC_VER < 1920
+#pragma comment(lib, "Bcrypt.lib")
+#endif
+#endif
+
 
 namespace lslboost {
 namespace uuids {
@@ -38,54 +44,47 @@ namespace detail {
 //! \note  random_provider_base is required to provide this method:
 //!        void get_random_bytes(void *buf, size_t siz);
 //! \note  noncopyable because of some base implementations so
-//!        this makes it uniform across platforms to avoid any  
+//!        this makes it uniform across platforms to avoid any
 //!        porting surprises
-class random_provider :
-    public detail::random_provider_base
-{
-    BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider)
+class random_provider : public detail::random_provider_base {
+	BOOST_MOVABLE_BUT_NOT_COPYABLE(random_provider)
 
 public:
-    BOOST_DEFAULTED_FUNCTION(random_provider(), {})
+	BOOST_DEFAULTED_FUNCTION(random_provider(), {})
 
-    random_provider(BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT :
-        detail::random_provider_base(lslboost::move(static_cast< detail::random_provider_base& >(that)))
-    {
-    }
+	random_provider(BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT
+		: detail::random_provider_base(
+			  lslboost::move(static_cast<detail::random_provider_base &>(that))) {}
 
-    random_provider& operator= (BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT
-    {
-        static_cast< detail::random_provider_base& >(*this) = lslboost::move(static_cast< detail::random_provider_base& >(that));
-        return *this;
-    }
+	random_provider &operator=(BOOST_RV_REF(random_provider) that) BOOST_NOEXCEPT {
+		static_cast<detail::random_provider_base &>(*this) =
+			lslboost::move(static_cast<detail::random_provider_base &>(that));
+		return *this;
+	}
 
-    //! Leverage the provider as a SeedSeq for
-    //! PseudoRandomNumberGeneration seeing.
-    //! \note: See Boost.Random documentation for more details
-    template<class Iter>
-    void generate(Iter first, Iter last)
-    {
-        typedef typename std::iterator_traits<Iter>::value_type value_type;
-        BOOST_STATIC_ASSERT(is_integral<value_type>::value);
-        BOOST_STATIC_ASSERT(is_unsigned<value_type>::value);
-        BOOST_STATIC_ASSERT(sizeof(value_type) * CHAR_BIT >= 32);
+	//! Leverage the provider as a SeedSeq for
+	//! PseudoRandomNumberGeneration seeing.
+	//! \note: See Boost.Random documentation for more details
+	template <class Iter> void generate(Iter first, Iter last) {
+		typedef typename std::iterator_traits<Iter>::value_type value_type;
+		BOOST_STATIC_ASSERT(is_integral<value_type>::value);
+		BOOST_STATIC_ASSERT(is_unsigned<value_type>::value);
+		BOOST_STATIC_ASSERT(sizeof(value_type) * CHAR_BIT >= 32);
 
-        for (; first != last; ++first)
-        {
-            get_random_bytes(&*first, sizeof(*first));
-            *first &= (std::numeric_limits<lslboost::uint32_t>::max)();
-        }
-    }
+		for (; first != last; ++first) {
+			get_random_bytes(&*first, sizeof(*first));
+			*first &= (std::numeric_limits<lslboost::uint32_t>::max)();
+		}
+	}
 
-    //! Return the name of the selected provider
-    const char * name() const
-    {
-        return BOOST_UUID_RANDOM_PROVIDER_STRINGIFY(BOOST_UUID_RANDOM_PROVIDER_NAME);
-    }
+	//! Return the name of the selected provider
+	const char *name() const {
+		return BOOST_UUID_RANDOM_PROVIDER_STRINGIFY(BOOST_UUID_RANDOM_PROVIDER_NAME);
+	}
 };
 
-} // detail
-} // uuids
-} // boost
+} // namespace detail
+} // namespace uuids
+} // namespace lslboost
 
 #endif // BOOST_UUID_DETAIL_RANDOM_PROVIDER_HPP
