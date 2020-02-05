@@ -230,7 +230,8 @@ namespace lsl {
 		void load_value(std::streambuf &sb, uint8_t &v, int use_byte_order) { load_raw(sb,&v,sizeof(v)); }
 
 		/// Serialize a sample to a stream buffer (protocol 1.10).
-		void save_streambuf(std::streambuf &sb, int protocol_version, int use_byte_order, void *scratchpad=NULL) const;
+		void save_streambuf(std::streambuf &sb, int protocol_version, int use_byte_order,
+			void *scratchpad = nullptr) const;
 
 		/// Deserialize a sample from a stream buffer (protocol 1.10).
 		void load_streambuf(std::streambuf &sb, int protocol_version, int use_byte_order, bool suppress_subnormals);
@@ -265,7 +266,9 @@ namespace lsl {
 
 	private:
 		/// Construct a new sample for a given channel format/count combination.
-		sample(lsl_channel_format_t fmt, int num_channels, factory *fact): format_(fmt), num_channels_(num_channels), refcount_(0), next_(NULL), factory_(fact) {
+		sample(lsl_channel_format_t fmt, int num_channels, factory *fact)
+			: format_(fmt), num_channels_(num_channels), refcount_(0), next_(nullptr),
+			  factory_(fact) {
 			if (format_ == cft_string)
 				for (std::string *p=(std::string*)&data_,*e=p+num_channels_; p<e; new(p++)std::string());
 		}

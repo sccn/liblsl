@@ -1,12 +1,13 @@
+#include "resolver_impl.h"
+#include "api_config.h"
+#include "cast.h"
+#include "resolve_attempt_udp.h"
+#include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
-#include "api_config.h"
-#include "cast.h"
-#include "resolve_attempt_udp.h"
-#include "resolver_impl.h"
-#include "socket_utils.h"
+#include <memory>
 
 
 // === implementation of the resolver_impl class ===
@@ -20,15 +21,16 @@ using namespace lslboost::asio;
 * If KnownPeers is non-empty, a multicast wave an a unicast wave will be schedule in alternation. The spacing between waves will be no shorter than the respective minimum RTTs.
 * TCP resolves are currently not implemented (but may be at a later time); these are only necessary when UDP traffic is disabled on a particular router.
 */
-resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER), fast_mode_(true),  
-	io_(io_context_p(new io_context())), resolve_timeout_expired_(*io_), wave_timer_(*io_), unicast_timer_(*io_) 
-{
+resolver_impl::resolver_impl()
+	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
+	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
+	  wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
 	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
 	uint16_t mcast_port = cfg_->multicast_port();
-	for (std::size_t k=0;k<mcast_addrs.size();k++) {
+	for (const auto &mcast_addr : mcast_addrs) {
 		try {
-			mcast_endpoints_.push_back(udp::endpoint(ip::make_address(mcast_addrs[k]),(uint16_t)mcast_port));
+			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
 		} 
 		catch(std::exception &) { }
 	}
@@ -37,19 +39,18 @@ resolver_impl::resolver_impl(): cfg_(api_config::get_instance()), cancelled_(fal
 	std::vector<std::string> peers = cfg_->known_peers();
 	udp::resolver udp_resolver(*io_);
 	// for each known peer...
-    for (std::size_t k=0;k<peers.size();k++) {
-        try {
+	for (const auto &peer : peers) {
+		try {
             // resolve the name
-			udp::resolver::results_type res = udp_resolver.resolve(peers[k], to_string(cfg_->base_port()));
-            // for each endpoint...
-			for (udp::resolver::results_type::iterator i=res.begin(); i != res.end(); i++) {
+			// for each endpoint...
+			for (auto &res: udp_resolver.resolve(peer, to_string(cfg_->base_port()))) {
                 // for each port in the range...
                 for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
                     // add a record
-                    ucast_endpoints_.push_back(udp::endpoint(i->endpoint().address(),p));
-            }
+					ucast_endpoints_.emplace_back(res.endpoint().address(), p);
+			}
         } catch(std::exception &) { }
-    }
+	}
 
 	// generate the list of protocols to use
 	if (cfg_->allow_ipv6()) {
@@ -94,8 +95,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 		io_->run();
 		// collect output
 		std::vector<stream_info_impl> output;
-		for(result_container::iterator i=results_.begin(); i!= results_.end();i++)
-			output.push_back(i->second.first);
+		for (auto &result : results_) output.push_back(result.second.first);
 		return output;
 	} else
 		return std::vector<stream_info_impl>();

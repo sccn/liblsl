@@ -18,6 +18,8 @@ target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)
 
 add_executable(lsl_test_internal
 	asiocancel.cpp
+	inireader.cpp
+	stringfuncs.cpp
 )
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
 

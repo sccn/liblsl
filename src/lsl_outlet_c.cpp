@@ -15,7 +15,7 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_siz
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during construction of stream outlet: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -169,7 +169,7 @@ LIBLSL_C_API int32_t lsl_push_sample_strtp(lsl_outlet out, const char **data, do
 		stream_outlet_impl* outimpl = (stream_outlet_impl*)out;
 		std::vector<std::string> tmp;
 		for (uint32_t k=0;k<(uint32_t)outimpl->info().channel_count();k++)
-			tmp.push_back(std::string(data[k]));
+			tmp.emplace_back(data[k]);
 		return outimpl->push_sample_noexcept(&tmp[0],timestamp,pushthrough!=0);
 	}
 	catch(std::exception &e) {
@@ -191,7 +191,7 @@ LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, co
 		stream_outlet_impl* outimpl = (stream_outlet_impl*)out;
 		std::vector<std::string> tmp;
 		for (uint32_t k=0;k<(uint32_t)outimpl->info().channel_count();k++)
-			tmp.push_back(std::string(data[k],lengths[k]));
+			tmp.emplace_back(data[k], lengths[k]);
 		return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
 	}
 	catch(std::exception &e) {
@@ -331,8 +331,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_strt(lsl_outlet out, const char **data, unsi
 LIBLSL_C_API int32_t lsl_push_chunk_strtp(lsl_outlet out, const char **data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
 	try {
 		std::vector<std::string> tmp;
-		for (unsigned long k=0;k<data_elements;k++)
-			tmp.push_back(std::string(data[k]));
+		for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k]);
 		if (data_elements)
 			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0], tmp.size(), timestamp, pushthrough);
 		return lsl_no_error;
@@ -359,8 +358,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtnp(lsl_outlet out, const char **data, un
 	try {
 		if (data_elements) {
 			std::vector<std::string> tmp;
-			for (unsigned long k=0;k<data_elements;k++)
-				tmp.push_back(std::string(data[k]));
+			for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k]);
 			((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(&tmp[0], timestamps, data_elements, pushthrough);
 		}
 		return lsl_no_error;
@@ -390,8 +388,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_buft(lsl_outlet out, const char **data, cons
 LIBLSL_C_API int32_t lsl_push_chunk_buftp(lsl_outlet out, const char **data, const uint32_t *lengths, unsigned long data_elements, double timestamp, int32_t pushthrough) {
 	try {
 		std::vector<std::string> tmp;
-		for (unsigned long k=0;k<data_elements;k++)
-			tmp.push_back(std::string(data[k],lengths[k]));
+		for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k], lengths[k]);
 		if (data_elements)
 			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0],tmp.size(),timestamp,pushthrough);
 		return lsl_no_error;
@@ -418,8 +415,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftnp(lsl_outlet out, const char **data, co
 	try {
 		if (data_elements) {
 			std::vector<std::string> tmp;
-			for (unsigned long k=0;k<data_elements;k++)
-				tmp.push_back(std::string(data[k],lengths[k]));
+			for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k], lengths[k]);
 			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0],timestamps,(std::size_t)data_elements,pushthrough);
 		}
 		return lsl_no_error;
@@ -464,7 +460,7 @@ LIBLSL_C_API lsl_streaminfo lsl_get_info(lsl_outlet out) {
 	}
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_info: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 

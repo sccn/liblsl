@@ -6,7 +6,6 @@
 #include <map>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
 
 namespace lslboost { class mutex; }
 namespace lslboost { namespace system { class error_code; } }
@@ -26,8 +25,10 @@ namespace lsl {
 	* result packet receives. The operation will wait for return packets until either a particular 
 	* timeout has been reached or until it is cancelled via the cancel() method.
 	*/
-	class resolve_attempt_udp: public cancellable_obj, public lslboost::enable_shared_from_this<resolve_attempt_udp> {
-		typedef std::vector<udp::endpoint> endpoint_list;
+	class resolve_attempt_udp : public cancellable_obj,
+								public std::enable_shared_from_this<resolve_attempt_udp> {
+		using endpoint_list = std::vector<udp::endpoint>;
+
 	public:
 		/**
 		* Instantiate and set up a new resolve attempt.
@@ -44,7 +45,10 @@ namespace lsl {
 		* @param cancel_after The time duration after which the attempt is automatically cancelled, i.e. the receives are ended.
 		* @param registry A registry where the attempt can register itself as active so it can be cancelled during shutdown.
 		*/
-		resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol, const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results, lslboost::mutex &results_mut, double cancel_after=5.0, cancellable_registry *registry=NULL);
+		resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol,
+			const std::vector<udp::endpoint> &targets, const std::string &query,
+			result_container &results, lslboost::mutex &results_mut, double cancel_after = 5.0,
+			cancellable_registry *registry = nullptr);
 
 		/// Destructor
 		~resolve_attempt_udp();
@@ -107,7 +111,6 @@ namespace lsl {
 		udp::socket recv_socket_;		// socket to receive replies (always unicast)
 		lslboost::asio::steady_timer cancel_timer_;	// timer to schedule the cancel action
 	};
-
 }
 
 #endif

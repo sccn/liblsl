@@ -91,7 +91,7 @@ namespace lsl {
 				ec_ = lslboost::asio::error::would_block;
 				do this->get_service().get_io_context().run_one();
 				while (!cancel_issued_ && ec_ == lslboost::asio::error::would_block);
-				return !ec_ ? this : 0;
+				return !ec_ ? this : nullptr;
 			}
 
 			/// Close the connection.
@@ -104,7 +104,7 @@ namespace lsl {
 				this->basic_socket<Protocol>::close(ec_);
 				if (!ec_)
 					init_buffers();
-				return !ec_ ? this : 0;
+				return !ec_ ? this : nullptr;
 			}
 
 			/// Get the last error associated with the stream buffer.
@@ -187,7 +187,7 @@ namespace lsl {
 
 			std::streambuf* setbuf(char_type*, std::streamsize) {
 				// this feature was stripped out...
-				return 0;
+				return nullptr;
 			}
 
 			/// Get the last error associated with the stream buffer.

@@ -1,23 +1,20 @@
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/host_name.hpp>
-#include <boost/asio/placeholders.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/write.hpp>
-#include <boost/algorithm/string/trim.hpp>
-#include <boost/algorithm/string/predicate.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/case_conv.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
-#include <boost/thread/thread_only.hpp>
+#include "tcp_server.h"
 #include "cast.h"
 #include "consumer_queue.h"
 #include "sample.h"
 #include "send_buffer.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
-#include "tcp_server.h"
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/host_name.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/placeholders.hpp>
+#include <boost/asio/read_until.hpp>
+#include <boost/asio/write.hpp>
+#include <boost/thread/thread_only.hpp>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+#include <memory>
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads
@@ -155,8 +152,8 @@ template<class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock
 /// Post a close of all in-flight sockets.
 void tcp_server::close_inflight_sockets() {
 	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
-	for (std::set<tcp_socket_p>::iterator i=inflight_.begin(); i!=inflight_.end(); i++)
-		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, *i));
+	for (const auto &i : inflight_)
+		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, i));
 }
 
 
@@ -167,9 +164,10 @@ void tcp_server::close_inflight_sockets() {
 
 
 /// Instantiate a new session & its socket.
-tcp_server::client_session::client_session(const tcp_server_p &serv):
-    registered_(false), io_(serv->io_), serv_(serv), sock_(tcp_socket_p(new tcp::socket(*serv->io_))),
-    requeststream_(&requestbuf_), use_byte_order_(0), data_protocol_version_(100) {	}
+tcp_server::client_session::client_session(const tcp_server_p &serv)
+	: registered_(false), io_(serv->io_), serv_(serv),
+	  sock_(std::make_shared<tcp::socket>(*serv->io_)), requeststream_(&requestbuf_),
+	  use_byte_order_(0), data_protocol_version_(100) {}
 
 /**
 * Destructor. Unregisters the socket from the server & closes it.
@@ -183,6 +181,7 @@ tcp_server::client_session::~client_session() {
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in client_session destructor: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during client session shutdown."); }
+	if(scratch_) delete[] scratch_;
 }
 
 /// Get the socket of this session.
@@ -208,7 +207,7 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 	try {
 		if (!err) {
 			// parse request method
-			std::string method; getline(requeststream_,method); lslboost::trim(method);
+			std::string method; getline(requeststream_,method); method = trim(method);
 			if (method == "LSL:shortinfo")
 				// shortinfo request: read the content query string
 				async_read_until(*sock_, requestbuf_, "\r\n",
@@ -221,11 +220,10 @@ void tcp_server::client_session::handle_read_command_outcome(error_code err) {
 				// streamfeed request (1.00): read feed parameters
 				async_read_until(*sock_, requestbuf_, "\r\n",
 					lslboost::bind(&client_session::handle_read_feedparams,shared_from_this(),100,"",placeholders::error));
-			if (lslboost::algorithm::starts_with(method,"LSL:streamfeed/")) {
+			if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
 				// streamfeed request with version: read feed parameters
-				std::vector<std::string> parts; lslboost::algorithm::split(parts,method,lslboost::algorithm::is_any_of(" \t"));
-				int request_protocol_version =
-					from_string<int>(parts[0].substr(parts[0].find_first_of('/') + 1));
+				std::vector<std::string> parts = splitandtrim(method, ' ', true);
+				int request_protocol_version = std::stoi(parts[0].substr(15));
 				std::string request_uid = (parts.size()>1) ? parts[1] : "";
 				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
 					lslboost::bind(&client_session::handle_read_feedparams,shared_from_this(),request_protocol_version,request_uid,placeholders::error));
@@ -241,7 +239,7 @@ void tcp_server::client_session::handle_read_query_outcome(error_code err) {
 	try {
 		if (!err) {
 			// read the query line
-			std::string query; getline(requeststream_,query); lslboost::trim(query);
+			std::string query; getline(requeststream_,query); query = trim(query);
 			if (serv_->info_->matches_query(query))
 				// matches: reply (otherwise just close the stream)
 				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
@@ -273,7 +271,6 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 		if (!err) {
 			DLOG_F(3, "%p got a streamfeed request", this);
 			// --- protocol negotiation ---
-			using namespace lslboost::algorithm;
 
 			// check request validity
 			if (request_protocol_version/100 > api_config::get_instance()->use_protocol_version()/100) {
@@ -305,12 +302,14 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 					std::string hdrline(buf);
 					std::size_t colon = hdrline.find_first_of(':');
 					if (colon != std::string::npos) {
-						// extract key & value
-						std::string type = to_lower_copy(trim_copy(hdrline.substr(0,colon))), rest = to_lower_copy(trim_copy(hdrline.substr(colon+1)));
 						// strip off comments
-						std::size_t semicolon = rest.find_first_of(';');
-						if (semicolon != std::string::npos)
-							rest = rest.substr(0,semicolon);
+						auto semicolon = hdrline.find_first_of(';');
+						if (semicolon != std::string::npos) hdrline.erase(semicolon);
+						// convert to lowercase
+						for (auto &c : hdrline) c = ::tolower(c);
+						// extract key & value
+						std::string type = trim(hdrline.substr(0, colon)),
+									rest = trim(hdrline.substr(colon + 1));
 						// get the header information
 						if (type == "native-byte-order")
 							client_byte_order = from_string<int>(rest);
@@ -379,20 +378,19 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 				*outarch_ << serv_->shortinfo_msg_;
 			} else {
 				// allocate scratchpad memory for endian conversion, etc.
-				scratch_.reset(new char[format_sizes[serv_->info_->channel_format()]*serv_->info_->channel_count()]);
+				scratch_ = new char[format_sizes[serv_->info_->channel_format()]*serv_->info_->channel_count()];
 			}
 
 			// send test pattern samples
-			lslboost::scoped_ptr<sample> temp(factory::new_sample_unmanaged(
-				serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
+			std::unique_ptr<sample> temp(factory::new_sample_unmanaged(serv_->info_->channel_format(),serv_->info_->channel_count(),0.0,false));
 			temp->assign_test_pattern(4);
 			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 			else
 				*outarch_ << *temp;
 			temp->assign_test_pattern(2);
 			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+				temp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 			else
 				*outarch_ << *temp;
 			// send off the newly created feedheader
@@ -446,7 +444,7 @@ void tcp_server::client_session::transfer_samples_thread(client_session_p) {
 						samp->pushthrough = (((++seqn) % (uint32_t)serv_->chunk_size_) == 0);
 				// serialize the sample into the stream
 				if (data_protocol_version_ >= 110)
-					samp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_.get());
+					samp->save_streambuf(feedbuf_,data_protocol_version_,use_byte_order_,scratch_);
 				else
 					*outarch_ << *samp;
 				// if the sample shall be pushed though...

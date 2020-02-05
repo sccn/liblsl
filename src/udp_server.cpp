@@ -1,7 +1,6 @@
 #include "udp_server.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
-#include <boost/algorithm/string/trim.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/udp.hpp>
@@ -129,10 +128,10 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 
 				// wrap received packet into a request stream and parse the method from it
 				std::istringstream request_stream(std::string(buffer_,buffer_+len));
-				std::string method; getline(request_stream,method); lslboost::trim(method);
+				std::string method; getline(request_stream,method); method = trim(method);
 				if (method == "LSL:shortinfo") {
 					// shortinfo request: parse content query string
-					std::string query; getline(request_stream,query); lslboost::trim(query);
+					std::string query; getline(request_stream,query); query = trim(query);
 					// parse return address, port, and query ID
 					uint16_t return_port;
 					request_stream >> return_port;

@@ -283,13 +283,13 @@ factory::factory(lsl_channel_format_t fmt, int num_chans, int num_reserve)
 	  sentinel_(new_sample_unmanaged(fmt, num_chans, 0.0, false)), head_(sentinel_),
 	  tail_(sentinel_) {
 	// pre-construct an array of samples in the storage area and chain into a freelist
-	sample* s = NULL;
+	sample *s = nullptr;
 	for (char *p = storage_.get(), *e = p + storage_size_; p < e;) {
 #pragma warning(suppress : 4291)
 		s = new ((sample*)p) sample(fmt, num_chans, this);
 		s->next_ = (sample*)(p += sample_size_);
 	}
-	s->next_ = NULL;
+	s->next_ = nullptr;
 	head_.store(s);
 	sentinel_->next_ = (sample*)storage_.get();
 }
@@ -307,9 +307,9 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 sample* factory::new_sample_unmanaged(lsl_channel_format_t fmt, int num_chans, double timestamp,
                                               bool pushthrough) {
 #pragma warning(suppress : 4291)
-	sample* result =
-	    new (new char[ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans,
-	                                  16)]) sample(fmt, num_chans, NULL);
+	sample *result = new (new char[ensure_multiple(
+		sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)])
+		sample(fmt, num_chans, nullptr);
 	result->timestamp = timestamp;
 	result->pushthrough = pushthrough;
 	return result;
@@ -318,7 +318,7 @@ sample* factory::new_sample_unmanaged(lsl_channel_format_t fmt, int num_chans, d
 sample* factory::pop_freelist() {
 	sample *tail = tail_, *next = tail->next_;
 	if (tail == sentinel_) {
-		if (!next) return NULL;
+		if (!next) return nullptr;
 		tail_ = next;
 		tail = next;
 		next = next->next_;
@@ -328,14 +328,14 @@ sample* factory::pop_freelist() {
 		return tail;
 	}
 	sample* head = head_.load();
-	if (tail != head) return NULL;
+	if (tail != head) return nullptr;
 	reclaim_sample(sentinel_);
 	next = tail->next_;
 	if (next) {
 		tail_ = next;
 		return tail;
 	}
-	return NULL;
+	return nullptr;
 }
 
 factory::~factory() {
@@ -346,7 +346,7 @@ factory::~factory() {
 }
 
 void factory::reclaim_sample(sample* s) {
-	s->next_ = NULL;
+	s->next_ = nullptr;
 	sample *prev = head_.exchange(s);
 	prev->next_ = s;
 }

@@ -16,7 +16,7 @@ LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *
 		return (lsl_streaminfo)new stream_info_impl(name,type,channel_count,nominal_srate,(lsl_channel_format_t)channel_format,source_id); 
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -25,7 +25,7 @@ LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
 		return (lsl_streaminfo)new stream_info_impl(*(stream_info_impl*)info); 
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while copying a streaminfo: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 
@@ -58,7 +58,7 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_xml: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 LIBLSL_C_API int32_t lsl_get_channel_bytes(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_bytes(); }
@@ -75,7 +75,7 @@ LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml) {
 		return (lsl_streaminfo)impl;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
-		return NULL;
+		return nullptr;
 	}
 }
 

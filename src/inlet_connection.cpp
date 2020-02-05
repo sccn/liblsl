@@ -219,8 +219,8 @@ void inlet_connection::try_recover() {
 					// got a result
 					lslboost::unique_lock<lslboost::shared_mutex> lock(host_info_mut_);
 					// check if any of the returned streams is the one that we're currently connected to
-					for (std::size_t k=0;k<infos.size();k++)
-						if (infos[k].uid() == host_info_.uid())
+					for (auto &info : infos)
+						if (info.uid() == host_info_.uid())
 							return; // in this case there is no need to recover (we're still fine)
 					// otherwise our stream is gone and we indeed need to recover:
 					// ensure that the query result is unique (since someone might have used a non-unique stream ID)
@@ -231,8 +231,7 @@ void inlet_connection::try_recover() {
 						cancel_all_registered();
 						// invoke any callbacks associated with a connection recovery
 						lslboost::lock_guard<lslboost::mutex> lock(onrecover_mut_);
-						for(std::map<void*,lslboost::function<void()> >::iterator i=onrecover_.begin(),e=onrecover_.end();i!=e;i++)
-							(i->second)();
+						for (auto &pair : onrecover_) (pair.second)();
 					} else {
 						// there are multiple possible streams to connect to in a recovery attempt: we warn and re-try
 						// this is because we don't want to randomly connect to the wrong source without the user knowing about it;
@@ -289,8 +288,7 @@ void inlet_connection::try_recover_from_error() {
 			lost_ = true;
 			try {
 				lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
-				for(std::map<void*,lslboost::condition_variable*>::iterator i=onlost_.begin(),e=onlost_.end();i!=e;i++)
-					i->second->notify_all();
+				for (auto &pair : onlost_) pair.second->notify_all();
 			} catch(std::exception &e) {
 				LOG_F(ERROR,
 					"Unexpected problem while trying to issue a connection loss notification: %s",

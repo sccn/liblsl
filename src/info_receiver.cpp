@@ -1,8 +1,9 @@
 #include "info_receiver.h"
-#include "inlet_connection.h"
 #include "cancellable_streambuf.h"
-#include <iostream>
+#include "inlet_connection.h"
 #include <boost/bind.hpp>
+#include <iostream>
+#include <memory>
 
 
 // === implementation of the info_receiver class ===
@@ -71,7 +72,7 @@ void info_receiver::info_thread() {
 				// store the result for pickup & return
 				{
 					lslboost::lock_guard<lslboost::mutex> lock(fullinfo_mut_);
-					fullinfo_ = stream_info_impl_p(new stream_info_impl(info));
+					fullinfo_ = std::make_shared<stream_info_impl>(info);
 				}
 				fullinfo_upd_.notify_all();
 				break;

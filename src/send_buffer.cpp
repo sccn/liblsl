@@ -1,6 +1,7 @@
-#include "consumer_queue.h"
 #include "send_buffer.h"
+#include "consumer_queue.h"
 #include <boost/bind.hpp>
+#include <memory>
 
 
 // === implementation of the send_buffer class ===
@@ -24,7 +25,7 @@ send_buffer::send_buffer(int max_capacity): max_capacity_(max_capacity) {}
 */
 consumer_queue_p send_buffer::new_consumer(int max_buffered) { 
 	max_buffered = max_buffered ? std::min(max_buffered,max_capacity_) : max_capacity_;
-	return consumer_queue_p(new consumer_queue(max_buffered, shared_from_this())); 
+	return std::make_shared<consumer_queue>(max_buffered, shared_from_this());
 }
 
 
@@ -34,8 +35,7 @@ consumer_queue_p send_buffer::new_consumer(int max_buffered) {
 */
 void send_buffer::push_sample(const sample_p &s) {
 	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
-	for (consumer_set::iterator i=consumers_.begin(); i != consumers_.end(); i++)
-		(*i)->push_sample(s);
+	for (auto &consumer : consumers_) consumer->push_sample(s);
 }
 
 

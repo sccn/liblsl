@@ -3,7 +3,7 @@
 
 #include "forward.h"
 #include <boost/asio/ip/udp.hpp>
-#include <boost/smart_ptr/enable_shared_from_this.hpp>
+#include <memory>
 #include "common.h"
 
 using lslboost::asio::ip::udp;
@@ -12,9 +12,9 @@ using lslboost::system::error_code;
 namespace lsl {
 
 	/// shared pointer to a string
-	typedef lslboost::shared_ptr<std::string> string_p;
-	/// shared pointer to a socket
-	typedef lslboost::shared_ptr<udp::socket> udp_socket_p;
+using string_p = std::shared_ptr<std::string>;
+/// shared pointer to a socket
+using udp_socket_p = std::shared_ptr<udp::socket>;
 
 	/*
 	* A lightweight UDP responder service.
@@ -22,7 +22,7 @@ namespace lsl {
 	*  * LSL:shortinfo. This is a request for the stream_info that comes with a query string (and a return address). A packet is returned only if the query matches.
 	*  * LSL:timedata.  This is a request for time synchronization info that comes with a time stamp (t0). The t0 stamp and two more time stamps (t1 and t2) are returned (similar to the NTP packet exchange).
 	*/
-	class udp_server: public lslboost::enable_shared_from_this<udp_server> {
+	class udp_server: public std::enable_shared_from_this<udp_server> {
 	public:
 		/*
 		* Create a UDP responder that listens "side by side" with a TCP server.

@@ -1,8 +1,8 @@
 #pragma once
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <boost/smart_ptr/shared_ptr.hpp>
 #include <boost/version.hpp>
+#include <memory>
 
 namespace lslboost {
 	class thread;
@@ -25,13 +25,13 @@ namespace eos {
 
 namespace lsl {
 	/// shared pointers to various classes
-	typedef lslboost::shared_ptr<class consumer_queue> consumer_queue_p;
-	typedef lslboost::shared_ptr<class factory> factory_p;
-	typedef lslboost::shared_ptr<class resolve_attempt_udp> resolve_attempt_udp_p;
-	typedef lslboost::intrusive_ptr<class sample> sample_p;
-	typedef lslboost::shared_ptr<class send_buffer> send_buffer_p;
-	typedef lslboost::shared_ptr<class stream_info_impl> stream_info_impl_p;
-	typedef lslboost::shared_ptr<lslboost::asio::io_context> io_context_p;
-	typedef lslboost::shared_ptr<class tcp_server> tcp_server_p;
-	typedef lslboost::shared_ptr<class udp_server> udp_server_p;
+using consumer_queue_p = std::shared_ptr<class consumer_queue>;
+using factory_p = std::shared_ptr<class factory>;
+using resolve_attempt_udp_p = std::shared_ptr<class resolve_attempt_udp>;
+using sample_p = lslboost::intrusive_ptr<class sample>;
+using send_buffer_p = std::shared_ptr<class send_buffer>;
+using stream_info_impl_p = std::shared_ptr<class stream_info_impl>;
+using io_context_p = std::shared_ptr<lslboost::asio::io_context>;
+using tcp_server_p = std::shared_ptr<class tcp_server>;
+using udp_server_p = std::shared_ptr<class udp_server>;
 } // namespace lsl

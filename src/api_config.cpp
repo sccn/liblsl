@@ -1,15 +1,12 @@
 #include "api_config.h"
 #include "common.h"
-#include <boost/property_tree/ptree.hpp>
-#include <boost/property_tree/ini_parser.hpp>
-#include <boost/algorithm/string/split.hpp>
-#include <boost/algorithm/string/trim.hpp>
+#include "inireader.h"
 #include <boost/thread/once.hpp>
+#include <fstream>
 
 // === implementation of the api_config class ===
 
 using namespace lsl;
-using namespace lslboost::algorithm;
 
 /// Helper function: Substitute the "~" character by the full home directory (according to environment variables).
 std::string expand_tilde(const std::string &filename) {
@@ -35,12 +32,7 @@ std::string expand_tilde(const std::string &filename) {
 static std::vector<std::string> parse_set(const std::string &setstr) {
 	std::vector<std::string> result;
 	if ((setstr.size() > 2) && setstr[0] == '{' && setstr[setstr.size()-1] == '}') {
-		// non-empty set: split by ","
-        std::string sub = setstr.substr(1,setstr.size()-2);
-        lslboost::algorithm::split(result,sub,lslboost::algorithm::is_any_of(","));
-		// remove leading and trailing whitespace from each element
-		for (std::vector<std::string>::iterator i=result.begin(); i!=result.end(); i++)
-			trim(*i);
+		result = splitandtrim(setstr.substr(1,setstr.size()-2), ',', false);
 	}
 	return result;
 }
@@ -65,19 +57,19 @@ api_config::api_config() {
 		else
 			filenames.insert(filenames.begin(), envcfg);
 	}
-	filenames.push_back("lsl_api.cfg");
+	filenames.emplace_back("lsl_api.cfg");
 	filenames.push_back(expand_tilde("~/lsl_api/lsl_api.cfg"));
-	filenames.push_back("/etc/lsl_api/lsl_api.cfg");
-	for (std::size_t k=0; k < filenames.size(); k++) {
+	filenames.emplace_back("/etc/lsl_api/lsl_api.cfg");
+	for (auto &filename : filenames) {
 		try {
-			if (file_is_readable(filenames[k])) {
+			if (file_is_readable(filename)) {
 				// try to load it if the file exists
-				load_from_file(filenames[k]);
+				load_from_file(filename);
 				// successful: finished
 				return;
 			}
 		} catch(std::exception &e) {
-			LOG_F(ERROR, "Error trying to load config file %s: %s", filenames[k].c_str(), e.what());
+			LOG_F(ERROR, "Error trying to load config file %s: %s", filename.c_str(), e.what());
 		}
 	}
 	// unsuccessful: load default settings
@@ -91,15 +83,18 @@ api_config::api_config() {
 */
 void api_config::load_from_file(const std::string &filename) {
 	try {
-		lslboost::property_tree::ptree pt;
-		if (!filename.empty())
-			read_ini(filename, pt);
+		INI pt;
+		if(!filename.empty()) {
+			std::ifstream infile(filename);
+			if(infile.good())
+				pt.load(infile);
+		}
 
 		// read out the [ports] parameters
 		multicast_port_ = pt.get("ports.MulticastPort",16571);
-		base_port_ = pt.get("ports.BasePort",16572);
-		port_range_ = pt.get("ports.PortRange",32);
-		allow_random_ports_ = pt.get("ports.AllowRandomPorts",true);
+		base_port_ = pt.get("ports.BasePort", 16572);
+		port_range_ = pt.get("ports.PortRange", 32);
+		allow_random_ports_ = pt.get("ports.AllowRandomPorts", true);
 		std::string ipv6_str = pt.get("ports.IPv6",
 #ifdef __APPLE__
 		"disable"); // on Mac OS (10.7) there's a bug in the IPv6 implementation that breaks LSL when it tries to use both v4 and v6
