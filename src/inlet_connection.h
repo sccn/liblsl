@@ -6,7 +6,6 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread_only.hpp>
-#include <boost/function.hpp>
 #include "resolver_impl.h"
 #include "cancellation.h"
 
@@ -103,7 +102,7 @@ namespace lsl {
 		void unregister_onlost(void *id);
 
 		/// Register a callback function that shall be called when a recovery has been performed
-		void register_onrecover(void *id, const lslboost::function<void()> &func);
+		void register_onrecover(void *id, const std::function<void()> &func);
 
 		/// Unregister a recovery callback function
 		void unregister_onrecover(void *id);
@@ -153,7 +152,7 @@ namespace lsl {
         
 		// client status info for recovery & notification purposes
 		std::map<void*,lslboost::condition_variable*> onlost_;		// a group of condition variables that should be notified when the connection is lost 
-		std::map<void*,lslboost::function<void()> > onrecover_;	// a group of callback functions that should be invoked once the connection has been recovered
+		std::map<void*,std::function<void()> > onrecover_;	// a group of callback functions that should be invoked once the connection has been recovered
 		double last_receive_time_;					// the last time when we received data from the server
 		int active_transmissions_;					// the number of currently active transmissions (data or info)
 		lslboost::mutex client_status_mut_;			// protects the client status info

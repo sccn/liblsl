@@ -1,4 +1,5 @@
 #include <boost/bind.hpp>
+#include <functional>
 #include "cast.h"
 #include "inlet_connection.h"
 #include "api_config.h"
@@ -334,7 +335,7 @@ void inlet_connection::unregister_onlost(void *id) {
 }
 
 /// Register a callback function that shall be called when a recovery has been performed
-void inlet_connection::register_onrecover(void *id, const lslboost::function<void()> &func) {
+void inlet_connection::register_onrecover(void *id, const std::function<void()> &func) {
 	lslboost::lock_guard<lslboost::mutex> lock(onrecover_mut_);
 	onrecover_[id] = func;
 }

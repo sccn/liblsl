@@ -1,7 +1,6 @@
 #ifndef TIME_POSTPROCESSOR_H
 #define TIME_POSTPROCESSOR_H
 
-#include <boost/function.hpp>
 #include <boost/thread/mutex.hpp>
 #include "common.h"
 
@@ -9,8 +8,8 @@
 namespace lsl {
 
 	/// A callback function that allows the post-processor to query some state from other objects when needed.
-using postproc_callback_t = lslboost::function<double()>;
-using reset_callback_t = lslboost::function<bool()>;
+using postproc_callback_t = std::function<double()>;
+using reset_callback_t = std::function<bool()>;
 
 
 	/// Internal class of an inlet that is responsible for post-processing time stamps.
