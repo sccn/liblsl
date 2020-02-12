@@ -1,7 +1,6 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
 #include <atomic>
-#include <boost/smart_ptr/scoped_array.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/serialization/split_member.hpp>
@@ -84,7 +83,7 @@ namespace lsl {
 		int num_chans_;						   // the number of channels to construct samples with
 		int sample_size_;					   // size of a sample, in bytes
 		int storage_size_;					   // size of the allocated storage, in bytes
-		lslboost::scoped_array<char> storage_; // a slab of storage for pre-allocated samples
+		char* storage_;					// a slab of storage for pre-allocated samples
 		sample *sentinel_;					   // a sentinel element for our freelist
 		std::atomic<sample *> head_;	// head of the freelist
 		sample *tail_;						   // tail of the freelist
@@ -121,7 +120,9 @@ namespace lsl {
 		void operator delete(void *x) {
 			// delete the underlying memory only if it wasn't allocated in the factory's storage area
 			sample *s = (sample*)x;
-			if (s && !(s->factory_ && (((char*)s) >= s->factory_->storage_.get() && ((char*)s) <= s->factory_->storage_.get()+s->factory_->storage_size_)))
+			if (s && !(s->factory_ &&
+						 (((char *)s) >= s->factory_->storage_ &&
+							 ((char *)s) <= s->factory_->storage_ + s->factory_->storage_size_)))
 				delete[] (char*)x;
 		}
 

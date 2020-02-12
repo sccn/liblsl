@@ -294,14 +294,14 @@ factory::factory(lsl_channel_format_t fmt, int num_chans, int num_reserve)
 	  tail_(sentinel_) {
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	sample *s = nullptr;
-	for (char *p = storage_.get(), *e = p + storage_size_; p < e;) {
+	for (char *p = storage_, *e = p + storage_size_; p < e;) {
 #pragma warning(suppress : 4291)
 		s = new ((sample*)p) sample(fmt, num_chans, this);
 		s->next_ = (sample*)(p += sample_size_);
 	}
 	s->next_ = nullptr;
 	head_.store(s);
-	sentinel_->next_ = (sample*)storage_.get();
+	sentinel_->next_ = (sample*)storage_;
 }
 
 sample_p factory::new_sample(double timestamp, bool pushthrough) {
@@ -353,6 +353,7 @@ factory::~factory() {
 		for (sample *next=cur->next_;next;cur=next,next=next->next_)
 			delete cur;
 	delete sentinel_;
+	delete[] storage_;
 }
 
 void factory::reclaim_sample(sample* s) {
