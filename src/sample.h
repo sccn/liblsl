@@ -1,8 +1,8 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
+#include <atomic>
 #include <boost/smart_ptr/scoped_array.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <boost/atomic.hpp>
 #include <boost/static_assert.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/endian/conversion.hpp>
@@ -86,7 +86,7 @@ namespace lsl {
 		int storage_size_;					   // size of the allocated storage, in bytes
 		lslboost::scoped_array<char> storage_; // a slab of storage for pre-allocated samples
 		sample *sentinel_;					   // a sentinel element for our freelist
-		lslboost::atomic<sample *> head_;	  // head of the freelist
+		std::atomic<sample *> head_;	// head of the freelist
 		sample *tail_;						   // tail of the freelist
 	};
 
@@ -103,8 +103,8 @@ namespace lsl {
 	private:
 		lsl_channel_format_t format_;		// the channel format
 		int num_channels_;				// number of channels
-		lslboost::atomic<int> refcount_;	// reference count used by sample_p
-		lslboost::atomic<sample*> next_;	// linked list of samples, for use in a freelist
+		std::atomic<int> refcount_;		// reference count used by sample_p
+		std::atomic<sample*> next_;		// linked list of samples, for use in a freelist
 		factory *factory_;				// the factory used to reclaim this sample, if any
 		BOOST_ALIGNMENT(8) char data_;	// the data payload begins here
 
@@ -273,13 +273,13 @@ namespace lsl {
 
 		/// Increment ref count.
 		friend void intrusive_ptr_add_ref(sample *s) {
-			s->refcount_.fetch_add(1,lslboost::memory_order_relaxed);
+			s->refcount_.fetch_add(1, std::memory_order_relaxed);
 		}
 
 		/// Decrement ref count and reclaim if unreferenced.
 		friend void intrusive_ptr_release(sample *s) {
-			if (s->refcount_.fetch_sub(1,lslboost::memory_order_release) == 1) {
-				lslboost::atomic_thread_fence(lslboost::memory_order_acquire);
+			if (s->refcount_.fetch_sub(1, std::memory_order_release) == 1) {
+				std::atomic_thread_fence(std::memory_order_acquire);
 				s->factory_->reclaim_sample(s);
 			}
 		}
