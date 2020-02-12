@@ -53,11 +53,7 @@ namespace lsl {
 		tcp::endpoint get_tcp_endpoint();
 		/// Get the current UDP endpoint from the info (according to our configured protocol).
 		udp::endpoint get_udp_endpoint();
-		/// Get the current hostname from the info.
-		std::string get_hostname();
 
-		/// Get the TCP protocol type.
-		tcp tcp_protocol() const { return tcp_protocol_; }
 		/// Get the UDP protocol type.
 		udp udp_protocol() const { return udp_protocol_; }
 

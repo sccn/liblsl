@@ -109,65 +109,40 @@ void inlet_connection::disengage() {
 
 // === external accessors for connection properties ===
 
+/// convert a IPv6 address or hostname into an non-link-local address
+ip::address resolve_v6_addr(const std::string& addr)
+{
+	// Try to parse the IPv6 address
+	lslboost::system::error_code ec;
+	auto v6addr = ip::make_address_v6(addr, ec);
+	if(!ec && !v6addr.is_link_local())
+		return v6addr;
+
+	// This more complicated procedure is required when the address is an ipv6 link-local address.
+	// Simplified from https://stackoverflow.com/a/10303761/73299
+	io_context io;
+	auto res = ip::tcp::resolver(io).resolve(addr, "");
+	if (res.empty()) throw lost_error("Unable to resolve tcp stream at address: " + addr);
+	return res.begin()->endpoint().address();
+}
+
 // get the TCP endpoint from the info (according to our configured protocol)
 tcp::endpoint inlet_connection::get_tcp_endpoint() {
 	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
-	
-	if(tcp_protocol_ == tcp::v4()) {
-        std::string address = host_info_.v4address();
-        uint16_t port = host_info_.v4data_port();
-        return tcp::endpoint(ip::make_address(address), port);
-        
-    //This more complicated procedure is required when the address is an ipv6 link-local address.
-    //Simplified from https://stackoverflow.com/questions/10286042/using-lslboost-to-accept-on-ipv6-link-scope-address
-	//It does not hurt when the address is not link-local.
-	} else {
-        std::string address = host_info_.v6address();
-		std::string port = to_string(host_info_.v6data_port());
-
-        io_context io; 
-        ip::tcp::resolver resolver(io);
-		ip::tcp::resolver::results_type res = resolver.resolve(address, port);
-		if(res.size() == 0) {
-            throw lost_error("Unable to resolve tcp stream at address: " + address + ", port: " + port);
-        }
-        //assuming first (typically only) element in list is valid.
-		return *res.begin();
-    }
+	if (tcp_protocol_ == tcp::v4())
+		return tcp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4data_port());
+	else
+		return tcp::endpoint(resolve_v6_addr(host_info_.v6address()), host_info_.v6data_port());
 }
 
 // get the UDP endpoint from the info (according to our configured protocol)
 udp::endpoint inlet_connection::get_udp_endpoint() {
 	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
 	
-	if(udp_protocol_ == udp::v4()) {
-		std::string address = host_info_.v4address();
-        uint16_t port = host_info_.v4service_port();
-        return udp::endpoint(ip::make_address(address), port);
-
-    //This more complicated procedure is required when the address is an ipv6 link-local address.
-    //Simplified from https://stackoverflow.com/questions/10286042/using-lslboost-to-accept-on-ipv6-link-scope-address
-	//It does not hurt when the address is not link-local.
-	} else {
-		std::string address = host_info_.v6address();
-		std::string port = to_string(host_info_.v6service_port());
-
-        io_context io; 
-        ip::udp::resolver resolver(io);
-		ip::udp::resolver::results_type res = resolver.resolve(address, port);
-
-		if(res.size() == 0) {
-             throw lost_error("Unable to resolve udp stream at address: " + address + ", port: " + port);
-        }
-        //assuming first (typically only) element in list is valid.
-		return *res.begin();
-    }
-}
-
-// get the hostname from the info
-std::string inlet_connection::get_hostname() {
-	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
-	return host_info_.hostname();
+	if(udp_protocol_ == udp::v4())
+		return udp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4service_port());
+	else
+		return udp::endpoint(resolve_v6_addr(host_info_.v6address()), host_info_.v6service_port());
 }
 
 /// get the current stream UID (may change between crashes/reconnects)
