@@ -312,7 +312,7 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 									rest = trim(hdrline.substr(colon + 1));
 						// get the header information
 						if (type == "native-byte-order")
-							client_byte_order = from_string<int>(rest);
+							client_byte_order = std::stoi(rest);
 						if (type == "endian-performance")
 							client_endian_performance = from_string<double>(rest);
 						if (type == "has-ieee754-floats")
@@ -320,11 +320,11 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 						if (type == "supports-subnormals")
 							client_supports_subnormals = from_string<bool>(rest);
 						if (type == "value-size")
-							client_value_size = from_string<int>(rest);
+							client_value_size = std::stoi(rest);
 						if (type == "max-buffer-length")
-							max_buffered_ = from_string<int>(rest);
+							max_buffered_ = std::stoi(rest);
 						if (type == "max-chunk-length")
-							chunk_granularity_ = from_string<int>(rest);
+							chunk_granularity_ = std::stoi(rest);
 						if (type == "protocol-version") client_protocol_version = std::stoi(rest);
 					} else {
 						DLOG_F(4, "%p Request line '%s' contained no key-value pair", this,

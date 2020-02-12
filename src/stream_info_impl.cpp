@@ -78,7 +78,7 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// type
 		type_ = info.child_value("type");
 		// channel_count
-		channel_count_ = from_string<int>(info.child_value("channel_count"));
+		channel_count_ = std::stoi(info.child_value("channel_count"));
 		if (channel_count_ < 0)
 			throw std::runtime_error("The channel count of the given stream info is smaller than 0.");
 		// nominal_srate
@@ -121,15 +121,15 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// address
 		v4address_ = info.child_value("v4address");
 		// data_port
-		v4data_port_ = from_string<int>(info.child_value("v4data_port"));
+		v4data_port_ = std::stoi(info.child_value("v4data_port"));
 		// service_port
-		v4service_port_ = from_string<int>(info.child_value("v4service_port"));
+		v4service_port_ = std::stoi(info.child_value("v4service_port"));
 		// address
 		v6address_ = info.child_value("v6address");
 		// data_port
-		v6data_port_ = from_string<int>(info.child_value("v6data_port"));
+		v6data_port_ = std::stoi(info.child_value("v6data_port"));
 		// service_port
-		v6service_port_ = from_string<int>(info.child_value("v6service_port"));
+		v6service_port_ = std::stoi(info.child_value("v6service_port"));
 	} catch(std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();

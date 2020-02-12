@@ -1,6 +1,5 @@
 #include "resolver_impl.h"
 #include "api_config.h"
-#include "cast.h"
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
@@ -43,13 +42,13 @@ resolver_impl::resolver_impl()
 		try {
             // resolve the name
 			// for each endpoint...
-			for (auto &res: udp_resolver.resolve(peer, to_string(cfg_->base_port()))) {
-                // for each port in the range...
+			for (auto &res : udp_resolver.resolve(peer, std::to_string(cfg_->base_port()))) {
+				// for each port in the range...
                 for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
                     // add a record
 					ucast_endpoints_.emplace_back(res.endpoint().address(), p);
 			}
-        } catch(std::exception &) { }
+		} catch(std::exception &) { }
 	}
 
 	// generate the list of protocols to use

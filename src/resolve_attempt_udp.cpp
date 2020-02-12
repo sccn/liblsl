@@ -2,7 +2,6 @@
 #include <boost/asio/placeholders.hpp>
 #include <boost/bind.hpp>
 #include "api_config.h"
-#include "cast.h"
 #include "resolve_attempt_udp.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
@@ -59,7 +58,7 @@ resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	}
 
 	// precalc the query id (hash of the query string, as string)
-	query_id_ = to_string(lslboost::hash<std::string>()(query));
+	query_id_ = std::to_string(std::hash<std::string>()(query));
 	// precalc the query message
 	std::ostringstream os; os.precision(16);
 	os << "LSL:shortinfo\r\n";

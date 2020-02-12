@@ -1,6 +1,5 @@
 #include <boost/bind.hpp>
 #include <functional>
-#include "cast.h"
 #include "inlet_connection.h"
 #include "api_config.h"
 
