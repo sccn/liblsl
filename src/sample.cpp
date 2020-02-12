@@ -58,6 +58,16 @@ sample &sample::retrieve_typed(std::string *d) {
 	return *this;
 }
 
+void sample::save_raw(std::streambuf& sb, const void* address, std::size_t count) {
+	if ((std::size_t)sb.sputn((const char*)address,(std::streamsize)count) != count)
+		throw std::runtime_error("Output stream error.");
+}
+
+void sample::load_raw(std::streambuf& sb, void* address, std::size_t count) {
+	if ((std::size_t)sb.sgetn((char*)address,(std::streamsize)count) != count)
+		throw std::runtime_error("Input stream error.");
+}
+
 void sample::save_streambuf(std::streambuf& sb, int protocol_version, int use_byte_order, void* scratchpad) const {
 	// write sample header
 	if (timestamp == DEDUCED_TIMESTAMP) {

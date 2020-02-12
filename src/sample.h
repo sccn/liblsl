@@ -131,9 +131,11 @@ namespace lsl {
 		// === type-safe accessors ===
 
 		/// Assign an array of numeric values (with type conversions).
-		template<class T> sample &assign_typed(const T *s) { 
-			if ((sizeof(T) == format_sizes[format_]) && ((lslboost::is_integral<T>::value && format_integral[format_]) || (lslboost::is_floating_point<T>::value && format_float[format_]))) {
-				memcpy(&data_,s,format_sizes[format_]*num_channels_);
+		template<class T> sample &assign_typed(const T *s) {
+			if ((sizeof(T) == format_sizes[format_]) &&
+				((std::is_integral<T>::value && format_integral[format_]) ||
+					(std::is_floating_point<T>::value && format_float[format_]))) {
+				memcpy(&data_, s, format_sizes[format_] * num_channels_);
 			} else {
 				switch (format_) {
 					case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *p++ = (float)*s++); break;
@@ -152,9 +154,11 @@ namespace lsl {
 		}
 
 		/// Retrieve an array of numeric values (with type conversions).
-		template<class T> sample &retrieve_typed(T *d) { 
-			if ((sizeof(T) == format_sizes[format_]) && ((lslboost::is_integral<T>::value && format_integral[format_]) || (lslboost::is_floating_point<T>::value && format_float[format_]))) {
-				memcpy(d,&data_,format_sizes[format_]*num_channels_);
+		template<class T> sample &retrieve_typed(T *d) {
+			if ((sizeof(T) == format_sizes[format_]) &&
+				((std::is_integral<T>::value && format_integral[format_]) ||
+					(std::is_floating_point<T>::value && format_float[format_]))) {
+				memcpy(d, &data_, format_sizes[format_] * num_channels_);
 			} else {
 				switch (format_) {
 					case cft_float32:  for (float          *p=(float*)         &data_,*e=p+num_channels_; p<e; *d++ = (T)*p++); break;
@@ -201,16 +205,10 @@ namespace lsl {
 		// === serialization functions ===
 
 		/// Helper function to save raw binary data to a stream buffer.
-		static void save_raw(std::streambuf &sb, const void *address, std::size_t count) {
-			if ((std::size_t)sb.sputn((const char*)address,(std::streamsize)count) != count)
-				throw std::runtime_error("Output stream error.");
-		}
+		static void save_raw(std::streambuf &sb, const void *address, std::size_t count);
 
 		/// Helper function to load raw binary data from a stream buffer.
-		static void load_raw(std::streambuf &sb, void *address, std::size_t count) {
-			if ((std::size_t)sb.sgetn((char*)address,(std::streamsize)count) != count)
-				throw std::runtime_error("Input stream error.");
-		}
+		static void load_raw(std::streambuf &sb, void *address, std::size_t count);
 
 		/// Save a value to a stream buffer with correct endian treatment.
 		template<typename T> static void save_value(std::streambuf &sb, T v, int use_byte_order) {
