@@ -23,7 +23,7 @@ steps:
 - ${{ if eq(parameters.run_tests, 'true') }}:
   - ${{ each lslcfg in parameters.lslcfgs }}:
     - ${{ each lsltest in parameters.tests }}:
-      - bash: build/install/bin/${{lsltest}} --order rand --durations yes -r junit -n ${{lsltest}}_$(Agent.JobName)_${{lslcfg}} -o ${{lsltest}}_$(Agent.JobName)_${{lslcfg}}.xml
+      - bash: build/install/bin/${{lsltest}} --order rand --wait-for-keypress never --durations yes -r junit -n ${{lsltest}}_$(Agent.JobName)_${{lslcfg}} -o ${{lsltest}}_$(Agent.JobName)_${{lslcfg}}.xml
         displayName: 'Run unit tests'
         timeoutInMinutes: 5
         continueOnError: true

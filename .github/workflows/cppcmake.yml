@@ -62,7 +62,7 @@ jobs:
         name: pkg-${{ matrix.os }}
         path: build/package
     - name: unit tests (internal functions)
-      run: build/install/bin/lsl_test_internal --order rand --durations yes
+      run: build/install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
     - name: unit tests (exported functions)
       shell: bash
-      run: build/install/bin/lsl_test_exported --order rand --durations yes || [ "${{ matrix.os }}" = "macOS-latest" ]
+      run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes || [ "${{ matrix.os }}" = "macOS-latest" ]
