@@ -188,34 +188,56 @@ void stream_info_impl::from_fullinfo_message(const std::string &m) {
 	read_xml(doc_);
 }
 
-/**
-* Test whether this stream info matches the given query string.
-*/
-bool stream_info_impl::matches_query(const string &query) {
+/// Test whether this stream info matches the given query string.
+bool stream_info_impl::matches_query(const string &query, bool nocache) {
+	return cached_.matches_query(doc_, query, nocache);
+}
+
+bool query_cache::matches_query(const xml_document &doc, const std::string query, bool nocache) {
 	lslboost::lock_guard<lslboost::mutex> lock(cache_mut_);
-    query_cache::left_iterator it = cached_.left.find(query);
-	if (it != cached_.left.end()) {
-		// found in cache
-		bool is_match = it->second.second;
+
+	decltype(cache)::iterator it;
+	if (!nocache && (it = cache.find(query)) != cache.end()) {
+		// the sign bit encodes if the query matches or not
+		bool matches = it->second > 0;
 		// update the last-use time stamp
-		cached_.left.replace_data(it,std::make_pair(lsl_clock(),is_match));
-		return is_match;
-	} else {
-		// not found in cache
-		try {
-			// compute whether it matches
-			string fullquery = (string("/info[") += query) += "]";
-			bool result = !doc_.select_nodes(fullquery.c_str()).empty();
-			// insert result into cache
-			cached_.left.insert(std::make_pair(query,std::make_pair(lsl_clock(),result)));
-			// remove oldest results until we're within capacity
-			while ((int)cached_.size() > api_config::get_instance()->max_cached_queries())
-				cached_.right.erase(cached_.right.begin());
-			// return result
-			return result;
-		} catch(...) {
-			return false; // error: unsupported query
+		it->second = ++query_cache_age * (matches ? 1 : -1);
+		// return cached match
+		return matches;
+	}
+
+	// not found in cache
+	try {
+		// compute whether it matches
+		bool matched = pugi::xpath_query(query.c_str()).evaluate_boolean(doc.first_child());
+
+		auto max_cached = (std::size_t)api_config::get_instance()->max_cached_queries();
+		if(nocache || max_cached == 0)
+			return matched;
+
+		cache.insert(std::make_pair(query, ++query_cache_age * (matched ? 1 : -1)));
+
+		// remove n/2 oldest results to make room for new entries
+		if (cache.size() > max_cached) {
+			// Find out the median cache entry age
+			std::vector<int> agevec;
+			agevec.reserve(cache.size());
+			for (auto &val : cache) agevec.push_back(std::abs(val.second));
+			auto middle = agevec.begin() + max_cached / 2;
+			std::nth_element(agevec.begin(), middle, agevec.end());
+			auto oldest_to_keep = *middle;
+
+			// Remove all elements older than the median age
+			for (auto it = cache.begin(); it != cache.end();)
+				if (abs(it->second) <= oldest_to_keep)
+					it = cache.erase(it);
+				else
+					++it;
 		}
+		return matched;
+	} catch (std::exception &e) {
+		LOG_F(WARNING, "Query error: %s", e.what());
+		return false;
 	}
 }
 
