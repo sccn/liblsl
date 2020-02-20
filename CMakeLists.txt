@@ -273,7 +273,10 @@ install(DIRECTORY include/
 	COMPONENT liblsl
 )
 
-install(FILES cmake/LSLCMake.cmake ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
+install(FILES
+	cmake/LSLCMake.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
+	${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake
 	COMPONENT liblsl
 	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/LSL
 )
