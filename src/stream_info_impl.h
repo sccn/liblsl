@@ -2,19 +2,26 @@
 #define STREAM_INFO_IMPL_H
 
 #include "common.h"
-#include <boost/bimap.hpp>
-#include <boost/thread/mutex.hpp>
 #include "pugixml/pugixml.hpp"
+#include <boost/thread/mutex.hpp>
+#include <unordered_map>
 
 namespace lsl {
+
+/// LRU cache for queries
+class query_cache {
+	std::unordered_map<std::string, int> cache;
+	int query_cache_age{0};
+	lslboost::mutex cache_mut_;
+public:
+	bool matches_query(const pugi::xml_document& doc, const std::string query, bool nocache);
+};
 
 	/**
 	* Actual implementation of the stream_info class.
 	* The stream_info class forwards all operations to an instance of this class.
 	*/
 	class stream_info_impl {
-		/// The query cache is a (bidirectional) mapping between query-strings and pairs of (last-use-timestamp, matching-true/false)
-		typedef lslboost::bimap<std::string,std::pair<double,bool> > query_cache;
 	public:
 
 		/**
@@ -80,7 +87,7 @@ namespace lsl {
 		* The info "matches" if the given XPath 1.0 query string returns a non-empty node set.
 		* @return Whether stream info is matched by the query string.
 		*/
-		bool matches_query(const std::string &query);
+		bool matches_query(const std::string &query, bool nocache = false);
 
 
 		//
@@ -255,7 +262,6 @@ namespace lsl {
 		pugi::xml_document doc_;
 		// cached query results
 		query_cache cached_;
-		lslboost::mutex cache_mut_;
 	};
 
 
