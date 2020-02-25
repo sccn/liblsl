@@ -23,4 +23,8 @@ TEST_CASE("resolve from streaminfo", "[resolver][streaminfo][basic]") {
 	lsl::stream_inlet(outlet.info());
 }
 
+TEST_CASE("Invalid queries are caught before sending the query", "[resolver][streaminfo][basic]") {
+	REQUIRE_THROWS(lsl::resolve_stream("invalid'query", 0, 0.1));
+}
+
 } // namespace

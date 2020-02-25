@@ -62,6 +62,13 @@ resolver_impl::resolver_impl()
 	}
 }
 
+void check_query(const std::string& query) {
+	try {
+		pugi::xpath_query(query.c_str());
+	} catch (std::exception &e) {
+		throw std::invalid_argument((("Invalid query '" + query) += "': ") += e.what());
+	}
+}
 
 // === resolve functions ===
 
@@ -70,6 +77,7 @@ resolver_impl::resolver_impl()
 * Blocks until at least the minimum number of streams has been resolved, or the timeout fires, or the resolve has been cancelled.
 */
 std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &query, int minimum, double timeout, double minimum_time) {
+	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
 	query_ = query;
@@ -101,6 +109,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 }
 
 void resolver_impl::resolve_continuous(const std::string &query, double forget_after) {
+	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
 	query_ = query;
