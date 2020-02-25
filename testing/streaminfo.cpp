@@ -47,6 +47,7 @@ TEST_CASE("streaminfo matching via XPath", "[basic][streaminfo][xml]") {
 	REQUIRE(info.matches_query("nominal_srate >= 499"));
 	REQUIRE(info.matches_query("count(desc/channels/channel[type='EEG'])>3"));
 
+	LOG_F(INFO, "The following warning is harmless and expected");
 	REQUIRE(!info.matches_query("in'va'lid"));
 	REQUIRE(!info.matches_query("name='othername'"));
 }
