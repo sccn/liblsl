@@ -48,8 +48,7 @@ set(lslobj_sources
 	src/inlet_connection.h
 	src/loguru/loguru.hpp
 	src/loguru/loguru.cpp
-	src/lsl_continuous_resolver_c.cpp
-	src/lsl_freefuncs_c.cpp
+	src/lsl_resolver_c.cpp
 	src/lsl_inlet_c.cpp
 	src/lsl_outlet_c.cpp
 	src/lsl_streaminfo_c.cpp
@@ -115,7 +114,7 @@ else()
 	set(lslgitbranch "unknown")
 endif()
 set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}/boost:\" BOOST_LIB_VERSION")
-set_source_files_properties("src/lsl_freefuncs_c.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
+set_source_files_properties("src/common.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
 
 
 ## create the lslboost target

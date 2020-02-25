@@ -1,3 +1,4 @@
+#include "api_config.h"
 #include "common.h"
 #include <algorithm>
 #include <boost/chrono/duration.hpp>
@@ -5,17 +6,64 @@
 #include <cctype>
 
 #ifdef _WIN32
-#include "api_config.h"
 #include <windows.h>
 #include <mmsystem.h>
 #pragma comment (lib,"winmm.lib")
 #endif
 
-// === implementation of misc functions ===
+// === Implementation of the free-standing functions in lsl_c.h ===
 
+extern "C" {
+#include "../include/lsl_c.h"
+
+/// Get the protocol version.
+LIBLSL_C_API int32_t lsl_protocol_version() {
+	return lsl::api_config::get_instance()->use_protocol_version();
+}
+
+/// Get the library version.
+LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
+
+/// Get a string containing library information
+LIBLSL_C_API const char *lsl_library_info() {
+#ifdef LSL_LIBRARY_INFO_STR
+	return LSL_LIBRARY_INFO_STR;
+#else
+	return "Unknown (not set by build system)";
+#endif
+}
+
+/** Obtain a local system time stamp in seconds.
+ *
+ * The resolution is better than a millisecond.
+ * This reading can be used to assign time stamps to samples as they are being
+ * acquired.
+ *
+ * If the "age" of a sample is known at a particular time (e.g., from USB
+ * transmission delays), it can be used as an offset to local_clock() to obtain
+ * a better estimate of when a sample was actually captured. */
+LIBLSL_C_API double lsl_local_clock() {
+	return lslboost::chrono::nanoseconds(
+			   lslboost::chrono::high_resolution_clock::now().time_since_epoch())
+			   .count() /
+		   1000000000.0;
+}
+
+
+/** Deallocate a string that has been transferred to the application.
+ *
+ * The only use case is to deallocate the contents of string-valued samples
+ * received from LSL in an application where no free() method is available
+ * (e.g., in some scripting languages). */
+LIBLSL_C_API void lsl_destroy_string(char *s) {
+	if (s) free(s);
+}
+}
+
+// === implementation of misc functions ===
 /// Implementation of the clock facility.
 double lsl::lsl_clock() { 
-	return lslboost::chrono::nanoseconds(lslboost::chrono::high_resolution_clock::now().time_since_epoch()).count()/1000000000.0; 
+	return lsl_local_clock();
 }
 
 /// Ensure that LSL is initialized. Performs initialization tasks
@@ -78,4 +126,3 @@ std::string lsl::trim(const std::string& input)
 	if(first == std::string::npos || last == std::string::npos) return "";
 	return input.substr(first, last-first+1);
 }
-
