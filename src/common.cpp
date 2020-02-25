@@ -14,8 +14,6 @@
 // === Implementation of the free-standing functions in lsl_c.h ===
 
 extern "C" {
-#include "../include/lsl_c.h"
-
 /// Get the protocol version.
 LIBLSL_C_API int32_t lsl_protocol_version() {
 	return lsl::api_config::get_instance()->use_protocol_version();

@@ -1,7 +1,7 @@
 #include "pugixml/pugixml.hpp"
 
 extern "C" {
-#include "../include/lsl_c.h"
+#include "../include/lsl/xml.h"
 
 // === implementation of the lsl_xml_ptr functions of lsl_c.h ===
 

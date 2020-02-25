@@ -2,7 +2,7 @@
 #include <string>
 
 extern "C" {
-#include "../include/lsl_c.h"
+#include "../include/lsl/streaminfo.h"
 
 // === Implementation of the streaminfo-related functions of the C API ===
 

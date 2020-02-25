@@ -2,7 +2,7 @@
 
 
 extern "C" {
-#include "../include/lsl_c.h"
+#include "../include/lsl/outlet.h"
 // === implementation of the lsl_outlet functions of the C API ===
 
 using namespace lsl;
