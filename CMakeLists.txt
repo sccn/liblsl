@@ -28,6 +28,7 @@ set(LSL_WINVER "0x0601" CACHE STRING
 set(lslobj_sources
 	src/api_config.cpp
 	src/api_config.h
+	src/api_types.hpp
 	src/cancellable_streambuf.h
 	src/cancellation.h
 	src/cancellation.cpp

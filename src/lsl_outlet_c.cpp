@@ -2,6 +2,8 @@
 
 
 extern "C" {
+#include "api_types.hpp"
+
 #include "../include/lsl/outlet.h"
 // === implementation of the lsl_outlet functions of the C API ===
 
@@ -10,8 +12,10 @@ using namespace lsl;
 // boilerplate wrapper code
 LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered) { 
 	try {
-		stream_info_impl *infoimpl = (stream_info_impl*)info;
-		lsl_outlet result = (lsl_outlet)new stream_outlet_impl(*infoimpl, chunk_size, infoimpl->nominal_srate()?(int)(infoimpl->nominal_srate()*max_buffered):max_buffered*100);
+		stream_info_impl *infoimpl = info;
+		lsl_outlet result = new stream_outlet_impl(*infoimpl, chunk_size,
+			infoimpl->nominal_srate() ? (int)(infoimpl->nominal_srate() * max_buffered)
+									  : max_buffered * 100);
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during construction of stream outlet: %s", e.what());
@@ -21,87 +25,87 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_siz
 
 LIBLSL_C_API void lsl_destroy_outlet(lsl_outlet out) { 
 	try {
-		delete (stream_outlet_impl*)out; 
+		delete out;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during deletion of stream outlet: %s", e.what());
 	}
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_f(lsl_outlet out, const float *data) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+LIBLSL_C_API int32_t lsl_push_sample_f(lsl_outlet out, const float *data) {
+	return out->push_sample_noexcept(data);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_ft(lsl_outlet out, const float *data, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+	return out->push_sample_noexcept(data, timestamp);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_ftp(lsl_outlet out, const float *data, double timestamp, int32_t pushthrough) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+LIBLSL_C_API int32_t lsl_push_sample_ftp(lsl_outlet out, const float *data, double timestamp, int32_t pushthrough) {
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_d(lsl_outlet out, const double *data) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+LIBLSL_C_API int32_t lsl_push_sample_d(lsl_outlet out, const double *data) {
+	return out->push_sample_noexcept(data);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_dt(lsl_outlet out, const double *data, double timestamp) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+LIBLSL_C_API int32_t lsl_push_sample_dt(lsl_outlet out, const double *data, double timestamp) {
+	return out->push_sample_noexcept(data, timestamp);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_dtp(lsl_outlet out, const double *data, double timestamp, int32_t pushthrough) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+LIBLSL_C_API int32_t lsl_push_sample_dtp(lsl_outlet out, const double *data, double timestamp, int32_t pushthrough) {
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_l(lsl_outlet out, const int64_t *data) {
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+	return out->push_sample_noexcept(data);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_lt(lsl_outlet out, const int64_t *data, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+	return out->push_sample_noexcept(data, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_ltp(lsl_outlet out, const int64_t *data, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_i(lsl_outlet out, const int32_t *data) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+LIBLSL_C_API int32_t lsl_push_sample_i(lsl_outlet out, const int32_t *data) {
+	return out->push_sample_noexcept(data);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_it(lsl_outlet out, const int32_t *data, double timestamp) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+LIBLSL_C_API int32_t lsl_push_sample_it(lsl_outlet out, const int32_t *data, double timestamp) {
+	return out->push_sample_noexcept(data, timestamp);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_itp(lsl_outlet out, const int32_t *data, double timestamp, int32_t pushthrough) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+LIBLSL_C_API int32_t lsl_push_sample_itp(lsl_outlet out, const int32_t *data, double timestamp, int32_t pushthrough) {
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_s(lsl_outlet out, const int16_t *data) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+LIBLSL_C_API int32_t lsl_push_sample_s(lsl_outlet out, const int16_t *data) {
+	return out->push_sample_noexcept(data);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_st(lsl_outlet out, const int16_t *data, double timestamp) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+LIBLSL_C_API int32_t lsl_push_sample_st(lsl_outlet out, const int16_t *data, double timestamp) {
+	return out->push_sample_noexcept(data, timestamp);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_stp(lsl_outlet out, const int16_t *data, double timestamp, int32_t pushthrough) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+LIBLSL_C_API int32_t lsl_push_sample_stp(lsl_outlet out, const int16_t *data, double timestamp, int32_t pushthrough) {
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const char *data) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data);
+LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const char *data) {
+	return out->push_sample_noexcept(data);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const char *data, double timestamp) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp);
+LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const char *data, double timestamp) {
+	return out->push_sample_noexcept(data, timestamp);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_ctp(lsl_outlet out, const char *data, double timestamp, int32_t pushthrough) { 
-	return ((stream_outlet_impl*)out)->push_sample_noexcept(data, timestamp, pushthrough);
+LIBLSL_C_API int32_t lsl_push_sample_ctp(lsl_outlet out, const char *data, double timestamp, int32_t pushthrough) {
+	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_v(lsl_outlet out, const void *data) { 
 	try {
-		((stream_outlet_impl*)out)->push_numeric_raw(data); 
+		out->push_numeric_raw(data);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -120,7 +124,7 @@ LIBLSL_C_API int32_t lsl_push_sample_v(lsl_outlet out, const void *data) {
 
 LIBLSL_C_API int32_t lsl_push_sample_vt(lsl_outlet out, const void *data, double timestamp) { 
 	try {
-		((stream_outlet_impl*)out)->push_numeric_raw(data,timestamp); 
+		out->push_numeric_raw(data, timestamp);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -139,7 +143,7 @@ LIBLSL_C_API int32_t lsl_push_sample_vt(lsl_outlet out, const void *data, double
 
 LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data, double timestamp, int32_t pushthrough) { 
 	try {
-		((stream_outlet_impl*)out)->push_numeric_raw(data,timestamp,pushthrough!=0); 
+		out->push_numeric_raw(data, timestamp, pushthrough != 0);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -166,7 +170,7 @@ LIBLSL_C_API int32_t lsl_push_sample_strt(lsl_outlet out, const char **data, dou
 
 LIBLSL_C_API int32_t lsl_push_sample_strtp(lsl_outlet out, const char **data, double timestamp, int32_t pushthrough) {
 	try {
-		stream_outlet_impl* outimpl = (stream_outlet_impl*)out;
+		stream_outlet_impl *outimpl = out;
 		std::vector<std::string> tmp;
 		for (uint32_t k=0;k<(uint32_t)outimpl->info().channel_count();k++)
 			tmp.emplace_back(data[k]);
@@ -188,7 +192,7 @@ LIBLSL_C_API int32_t lsl_push_sample_buft(lsl_outlet out, const char **data, con
 
 LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, const uint32_t *lengths, double timestamp, int32_t pushthrough) {
 	try {
-		stream_outlet_impl* outimpl = (stream_outlet_impl*)out;
+		stream_outlet_impl *outimpl = out;
 		std::vector<std::string> tmp;
 		for (uint32_t k=0;k<(uint32_t)outimpl->info().channel_count();k++)
 			tmp.emplace_back(data[k], lengths[k]);
@@ -201,123 +205,123 @@ LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, co
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_f(lsl_outlet out, const float *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_d(lsl_outlet out, const double *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_l(lsl_outlet out, const int64_t *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_i(lsl_outlet out, const int32_t *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_s(lsl_outlet out, const int16_t *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_c(lsl_outlet out, const char *data, unsigned long data_elements) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ft(lsl_outlet out, const float *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_dt(lsl_outlet out, const double *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_lt(lsl_outlet out, const int64_t *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_it(lsl_outlet out, const int32_t *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_st(lsl_outlet out, const int16_t *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ct(lsl_outlet out, const char *data, unsigned long data_elements, double timestamp) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ftp(lsl_outlet out, const float *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_dtp(lsl_outlet out, const double *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ltp(lsl_outlet out, const int64_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_itp(lsl_outlet out, const int32_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_stp(lsl_outlet out, const int16_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ctp(lsl_outlet out, const char *data, unsigned long data_elements, double timestamp, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data,data_elements, timestamp, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ftn(lsl_outlet out, const float *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_dtn(lsl_outlet out, const double *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ltn(lsl_outlet out, const int64_t *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_itn(lsl_outlet out, const int32_t *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_stn(lsl_outlet out, const int16_t *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ctn(lsl_outlet out, const char *data, unsigned long data_elements, const double *timestamps) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ftnp(lsl_outlet out, const float *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_dtnp(lsl_outlet out, const double *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ltnp(lsl_outlet out, const int64_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_itnp(lsl_outlet out, const int32_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_stnp(lsl_outlet out, const int16_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ctnp(lsl_outlet out, const char *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
-	return ((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
+	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_str(lsl_outlet out, const char **data, unsigned long data_elements) {
@@ -332,8 +336,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtp(lsl_outlet out, const char **data, uns
 	try {
 		std::vector<std::string> tmp;
 		for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k]);
-		if (data_elements)
-			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0], tmp.size(), timestamp, pushthrough);
+		if (data_elements) out->push_chunk_multiplexed(&tmp[0], tmp.size(), timestamp, pushthrough);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -359,7 +362,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_strtnp(lsl_outlet out, const char **data, un
 		if (data_elements) {
 			std::vector<std::string> tmp;
 			for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k]);
-			((stream_outlet_impl*)out)->push_chunk_multiplexed_noexcept(&tmp[0], timestamps, data_elements, pushthrough);
+			out->push_chunk_multiplexed_noexcept(&tmp[0], timestamps, data_elements, pushthrough);
 		}
 		return lsl_no_error;
 	} 
@@ -389,8 +392,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftp(lsl_outlet out, const char **data, con
 	try {
 		std::vector<std::string> tmp;
 		for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k], lengths[k]);
-		if (data_elements)
-			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0],tmp.size(),timestamp,pushthrough);
+		if (data_elements) out->push_chunk_multiplexed(&tmp[0], tmp.size(), timestamp, pushthrough);
 		return lsl_no_error;
 	} 
 	catch(std::range_error &e) {
@@ -416,7 +418,8 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftnp(lsl_outlet out, const char **data, co
 		if (data_elements) {
 			std::vector<std::string> tmp;
 			for (unsigned long k = 0; k < data_elements; k++) tmp.emplace_back(data[k], lengths[k]);
-			((stream_outlet_impl*)out)->push_chunk_multiplexed(&tmp[0],timestamps,(std::size_t)data_elements,pushthrough);
+			out->push_chunk_multiplexed(
+				&tmp[0], timestamps, (std::size_t)data_elements, pushthrough);
 		}
 		return lsl_no_error;
 	} 
@@ -436,7 +439,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_buftnp(lsl_outlet out, const char **data, co
 
 LIBLSL_C_API int32_t lsl_have_consumers(lsl_outlet out) { 
 	try {
-		return ((stream_outlet_impl*)out)->have_consumers(); 
+		return out->have_consumers();
 	} 
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in have_consumers: %s", e.what());
@@ -446,7 +449,7 @@ LIBLSL_C_API int32_t lsl_have_consumers(lsl_outlet out) {
 
 LIBLSL_C_API int32_t lsl_wait_for_consumers(lsl_outlet out, double timeout) {
 	try {
-		return ((stream_outlet_impl*)out)->wait_for_consumers(timeout);
+		return out->wait_for_consumers(timeout);
 	}
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in wait_for_consumers: %s", e.what());
@@ -456,7 +459,7 @@ LIBLSL_C_API int32_t lsl_wait_for_consumers(lsl_outlet out, double timeout) {
 
 LIBLSL_C_API lsl_streaminfo lsl_get_info(lsl_outlet out) { 
 	try {
-		return (lsl_streaminfo)new stream_info_impl(((stream_outlet_impl*)out)->info()); 
+		return new stream_info_impl(out->info());
 	}
 	catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_info: %s", e.what());

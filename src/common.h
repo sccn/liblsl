@@ -2,6 +2,8 @@
 #define COMMON_H
 
 extern "C" {
+#include "api_types.hpp"
+
 #include "../include/lsl/common.h"
 }
 #include "loguru/loguru.hpp"
@@ -41,10 +43,10 @@ namespace lsl {
 	const double FOREVER = 32000000.0;
 
 	/// Constant to indicate that a sample has the next successive time stamp.
-	const double DEDUCED_TIMESTAMP = -1.0; 
+	const double DEDUCED_TIMESTAMP = -1.0;
 
 	/// Constant to indicate that a stream has variable sampling rate.
-	const double IRREGULAR_RATE = 0.0; 
+	const double IRREGULAR_RATE = 0.0;
 
 	/// Obtain a local system time stamp in seconds.
 	double lsl_clock();

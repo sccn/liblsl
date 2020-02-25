@@ -2,6 +2,8 @@
 #include "api_config.h"
 
 extern "C" {
+#include "api_types.hpp"
+
 #include "../include/lsl/resolver.h"
 // === implementation of the continuous_resolver class ===
 
@@ -21,7 +23,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forge
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "'";
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return nullptr;
@@ -44,7 +46,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << prop << "='" << value << "'";
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return nullptr;
@@ -66,7 +68,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const
 		// start it with the given query
 		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << pred;
 		resolver->resolve_continuous(os.str(),forget_after);
-		return (lsl_continuous_resolver)resolver;
+		return resolver;
 	} catch(std::exception &e) {
 		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
 		return nullptr;
@@ -85,12 +87,11 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const
 LIBLSL_C_API int32_t lsl_resolver_results(lsl_continuous_resolver res, lsl_streaminfo *buffer, uint32_t buffer_elements) {
 	try {
 		// query it
-		resolver_impl *resolver = (resolver_impl*)res;
+		resolver_impl *resolver = res;
 		std::vector<stream_info_impl> tmp = resolver->results();
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
-		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error querying lsl_resolver_results: %s", e.what());
@@ -103,7 +104,7 @@ LIBLSL_C_API int32_t lsl_resolver_results(lsl_continuous_resolver res, lsl_strea
 */
 LIBLSL_C_API void lsl_destroy_continuous_resolver(lsl_continuous_resolver res) {
 	try {
-		delete (resolver_impl*)res; 
+		delete res;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected during destruction of a continuous_resolver: %s", e.what());
 	}
@@ -136,8 +137,7 @@ LIBLSL_C_API int32_t lsl_resolve_all(lsl_streaminfo *buffer, uint32_t buffer_ele
 		std::vector<stream_info_impl> tmp = resolver.resolve_oneshot((std::string("session_id='") += sess_id) += "'",0,wait_time);
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
-		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Error during resolve_all: %s", e.what());
@@ -170,8 +170,7 @@ LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_
 		std::vector<stream_info_impl> tmp = resolver.resolve_oneshot(os.str(),minimum,timeout);
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
-		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Error during resolve_byprop: %s", e.what());
@@ -204,8 +203,7 @@ LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_
 		std::vector<stream_info_impl> tmp = resolver.resolve_oneshot(os.str(),minimum,timeout);
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
-		for (uint32_t k=0;k<result;k++)
-			buffer[k] = (lsl_streaminfo)new stream_info_impl(tmp[k]);
+		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
 		return result;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Error during resolve_bypred: %s", e.what());

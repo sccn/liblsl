@@ -2,6 +2,8 @@
 #include <string>
 
 extern "C" {
+#include "api_types.hpp"
+
 #include "../include/lsl/streaminfo.h"
 
 // === Implementation of the streaminfo-related functions of the C API ===
@@ -13,7 +15,8 @@ LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *
 	try {
 		if (!source_id)
 			source_id = "";
-		return (lsl_streaminfo)new stream_info_impl(name,type,channel_count,nominal_srate,(lsl_channel_format_t)channel_format,source_id); 
+		return new stream_info_impl(
+			name, type, channel_count, nominal_srate, channel_format, source_id);
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return nullptr;
@@ -22,7 +25,7 @@ LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *
 
 LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) { 
 	try {
-		return (lsl_streaminfo)new stream_info_impl(*(stream_info_impl*)info); 
+		return new stream_info_impl(*info);
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while copying a streaminfo: %s", e.what());
 		return nullptr;
@@ -31,28 +34,36 @@ LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
 
 LIBLSL_C_API void lsl_destroy_streaminfo(lsl_streaminfo info) {
 	try {
-		delete (stream_info_impl*)info;
+		delete info;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while destroying a streaminfo: %s", e.what());
 	}
 }
 
-LIBLSL_C_API const char *lsl_get_type(lsl_streaminfo info) { return ((stream_info_impl*)info)->type().c_str(); }
-LIBLSL_C_API const char *lsl_get_name(lsl_streaminfo info) { return ((stream_info_impl*)info)->name().c_str(); }
-LIBLSL_C_API int32_t lsl_get_channel_count(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_count(); }
-LIBLSL_C_API double lsl_get_nominal_srate(lsl_streaminfo info) { return ((stream_info_impl*)info)->nominal_srate(); }
-LIBLSL_C_API lsl_channel_format_t lsl_get_channel_format(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_format(); }
-LIBLSL_C_API const char *lsl_get_source_id(lsl_streaminfo info) { return ((stream_info_impl*)info)->source_id().c_str(); }
-LIBLSL_C_API int32_t lsl_get_version(lsl_streaminfo info) { return ((stream_info_impl*)info)->version(); }
-LIBLSL_C_API double lsl_get_created_at(lsl_streaminfo info) { return ((stream_info_impl*)info)->created_at(); }
-LIBLSL_C_API const char *lsl_get_uid(lsl_streaminfo info) { return ((stream_info_impl*)info)->uid().c_str(); }
-LIBLSL_C_API const char *lsl_get_session_id(lsl_streaminfo info) { return ((stream_info_impl*)info)->session_id().c_str(); }
-LIBLSL_C_API const char *lsl_get_hostname(lsl_streaminfo info) { return ((stream_info_impl*)info)->hostname().c_str(); }
-LIBLSL_C_API lsl_xml_ptr lsl_get_desc(lsl_streaminfo info) { return (lsl_xml_ptr)((stream_info_impl*)info)->desc().internal_object(); }
+LIBLSL_C_API const char *lsl_get_type(lsl_streaminfo info) { return info->type().c_str(); }
+LIBLSL_C_API const char *lsl_get_name(lsl_streaminfo info) { return info->name().c_str(); }
+LIBLSL_C_API int32_t lsl_get_channel_count(lsl_streaminfo info) { return info->channel_count(); }
+LIBLSL_C_API double lsl_get_nominal_srate(lsl_streaminfo info) { return info->nominal_srate(); }
+LIBLSL_C_API lsl_channel_format_t lsl_get_channel_format(lsl_streaminfo info) {
+	return info->channel_format();
+}
+LIBLSL_C_API const char *lsl_get_source_id(lsl_streaminfo info) {
+	return info->source_id().c_str();
+}
+LIBLSL_C_API int32_t lsl_get_version(lsl_streaminfo info) { return info->version(); }
+LIBLSL_C_API double lsl_get_created_at(lsl_streaminfo info) { return info->created_at(); }
+LIBLSL_C_API const char *lsl_get_uid(lsl_streaminfo info) { return info->uid().c_str(); }
+LIBLSL_C_API const char *lsl_get_session_id(lsl_streaminfo info) {
+	return info->session_id().c_str();
+}
+LIBLSL_C_API const char *lsl_get_hostname(lsl_streaminfo info) { return info->hostname().c_str(); }
+LIBLSL_C_API lsl_xml_ptr lsl_get_desc(lsl_streaminfo info) {
+	return info->desc().internal_object();
+}
 
 LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 	try {
-		std::string tmp = ((stream_info_impl*)info)->to_fullinfo_message();
+		std::string tmp = info->to_fullinfo_message();
 		char *result = (char*)malloc(tmp.size()+1);
 		strcpy(result,tmp.c_str());
 		return result;
@@ -61,22 +72,21 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 		return nullptr;
 	}
 }
-LIBLSL_C_API int32_t lsl_get_channel_bytes(lsl_streaminfo info) { return ((stream_info_impl*)info)->channel_bytes(); }
-LIBLSL_C_API int32_t lsl_get_sample_bytes(lsl_streaminfo info) { return ((stream_info_impl*)info)->sample_bytes(); }
+LIBLSL_C_API int32_t lsl_get_channel_bytes(lsl_streaminfo info) { return info->channel_bytes(); }
+LIBLSL_C_API int32_t lsl_get_sample_bytes(lsl_streaminfo info) { return info->sample_bytes(); }
 
 LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const char *query) {
-	return ((stream_info_impl*)info)->matches_query(query);
+	return info->matches_query(query);
 }
 
 LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml) {
 	try {
 		stream_info_impl *impl = new stream_info_impl(); 
 		impl->from_fullinfo_message(xml);
-		return (lsl_streaminfo)impl;
+		return impl;
 	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return nullptr;
 	}
 }
-
 }
