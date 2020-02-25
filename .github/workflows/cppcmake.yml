@@ -87,6 +87,7 @@ jobs:
               dpkg -I package/liblsl*.deb
            fi
            cmake -E remove_directory package/_CPack_Packages
+           cp testing/lslcfgs/default.cfg .
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
