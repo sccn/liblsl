@@ -87,7 +87,13 @@ set(lslobj_sources
 	# headers
 	include/lsl_c.h
 	include/lsl_cpp.h
-	include/lsl/constants.h
+	include/lsl/common.h
+	include/lsl/inlet.h
+	include/lsl/outlet.h
+	include/lsl/resolver.h
+	include/lsl/streaminfo.h
+	include/lsl/types.h
+	include/lsl/xml.h
 )
 add_library(lslobj OBJECT ${lslobj_sources})
 

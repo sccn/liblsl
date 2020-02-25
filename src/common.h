@@ -1,7 +1,9 @@
 #ifndef COMMON_H
 #define COMMON_H
 
-#include "../include/lsl/constants.h"
+extern "C" {
+#include "../include/lsl/common.h"
+}
 #include "loguru/loguru.hpp"
 #include <boost/version.hpp>
 #include <stdexcept>
