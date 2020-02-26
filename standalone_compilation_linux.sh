@@ -12,9 +12,8 @@ ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} -Ilslboost \
 	-DBOOST_ALL_NO_LIB \
 	-DLSL_LIBRARY_INFO_STR=\"${LSLGITREVISION:-"built from standalone build script"}\" \
 	src/*.cpp src/pugixml/pugixml.cpp src/loguru/loguru.cpp \
-	lslboost/libs/atomic/src/lockpool.cpp \
 	lslboost/libs/chrono/src/chrono.cpp \
-	lslboost/libs/serialization/src/*.cpp \
+	lslboost/serialization_objects.cpp \
 	lslboost/libs/thread/src/pthread/once.cpp \
 	lslboost/libs/thread/src/pthread/thread.cpp \
 	${LDFLAGS} \

@@ -129,16 +129,7 @@ add_library(lslboost OBJECT
 	lslboost/asio_objects.cpp
 	lslboost/libs/atomic/src/lockpool.cpp
 	lslboost/libs/chrono/src/chrono.cpp
-	lslboost/libs/serialization/src/archive_exception.cpp
-	lslboost/libs/serialization/src/basic_archive.cpp
-	lslboost/libs/serialization/src/basic_iarchive.cpp
-	lslboost/libs/serialization/src/basic_iserializer.cpp
-	lslboost/libs/serialization/src/basic_oarchive.cpp
-	lslboost/libs/serialization/src/basic_oserializer.cpp
-	lslboost/libs/serialization/src/basic_serializer_map.cpp
-	lslboost/libs/serialization/src/extended_type_info.cpp
-	lslboost/libs/serialization/src/extended_type_info_typeid.cpp
-	lslboost/libs/serialization/src/void_cast.cpp
+	lslboost/serialization_objects.cpp
 )
 if (UNIX)
 	target_sources(lslboost PRIVATE
