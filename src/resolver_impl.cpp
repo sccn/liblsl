@@ -70,6 +70,28 @@ void check_query(const std::string& query) {
 	}
 }
 
+std::string resolver_impl::build_query(const char* pred_or_prop, const char* value)
+{
+	std::string query("session_id='");
+	query += api_config::get_instance()->session_id();
+	query += '\'';
+	if (pred_or_prop) (query += " and ") += pred_or_prop;
+	if (value) ((query += "='") += value) += '\'';
+	return query;
+}
+
+resolver_impl *resolver_impl::create_resolver(
+	double forget_after, const char *pred_or_prop, const char *value) noexcept {
+	try {
+		auto *resolver = new resolver_impl();
+		resolver->resolve_continuous(build_query(pred_or_prop, value), forget_after);
+		return resolver;
+	} catch (std::exception &e) {
+		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
+		return nullptr;
+	}
+}
+
 // === resolve functions ===
 
 /**

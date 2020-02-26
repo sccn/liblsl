@@ -44,6 +44,25 @@ namespace lsl {
 		*/
 		resolver_impl();
 
+		/** Build a query string
+		 *
+		 * @param pred_or_prop an entire predicate if value isn't set or the
+		 * name of the property, e.g. "foo='bar'" / "foo" (+value set as "bar")
+		 * @param value the value for the property parameter
+		 */
+		static std::string build_query(
+			const char *pred_or_prop = nullptr, const char *value = nullptr);
+
+		/** Create a resolver object with optionally a predicate or property + value
+		 *
+		 * @param pred_or_prop an entire predicate of value isn't set or the
+		 * name of the property, e.g. "foo='bar'" / "foo" (+value set as "bar")
+		 * @param value the value for the property parameter
+		 * @return A pointer to the resolver on success or nullptr on error
+		 */
+		static resolver_impl *create_resolver(double forget_after,
+			const char *pred_or_prop = nullptr, const char *value = nullptr) noexcept;
+
 		/// Destructor.
 		/// Cancels any ongoing processes and waits until they finish.
 		~resolver_impl();

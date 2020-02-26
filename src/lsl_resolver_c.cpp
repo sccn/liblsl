@@ -17,17 +17,7 @@ using namespace lsl;
 *					  The recommended default value is 5.0.
 */
 LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forget_after) {
-	try {
-		// create a new resolver
-		resolver_impl *resolver = new resolver_impl();
-		// start it with the given query
-		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "'";
-		resolver->resolve_continuous(os.str(),forget_after);
-		return resolver;
-	} catch(std::exception &e) {
-		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return nullptr;
-	}
+	return resolver_impl::create_resolver(forget_after);
 }
 
 /**
@@ -40,17 +30,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver(double forge
 *					  The recommended default value is 5.0.
 */
 LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const char *prop, const char *value, double forget_after) {
-	try {
-		// create a new resolver
-		resolver_impl *resolver = new resolver_impl();
-		// start it with the given query
-		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << prop << "='" << value << "'";
-		resolver->resolve_continuous(os.str(),forget_after);
-		return resolver;
-	} catch(std::exception &e) {
-		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return nullptr;
-	}
+	return resolver_impl::create_resolver(forget_after, prop, value);
 }
 
 /**
@@ -62,17 +42,7 @@ LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_byprop(const
 *					  The recommended default value is 5.0.
 */
 LIBLSL_C_API lsl_continuous_resolver lsl_create_continuous_resolver_bypred(const char *pred, double forget_after) {
-	try {
-		// create a new resolver
-		resolver_impl *resolver = new resolver_impl();
-		// start it with the given query
-		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << pred;
-		resolver->resolve_continuous(os.str(),forget_after);
-		return resolver;
-	} catch(std::exception &e) {
-		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
-		return nullptr;
-	}
+	return resolver_impl::create_resolver(forget_after, pred, nullptr);
 }
 
 /**
@@ -159,12 +129,8 @@ LIBLSL_C_API int32_t lsl_resolve_all(lsl_streaminfo *buffer, uint32_t buffer_ele
 */
 LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *prop, const char *value, int32_t minimum, double timeout) {
 	try {
-		// create a new resolver
-		resolver_impl resolver;
-		// build a new query.
-		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << prop << "='" << value << "'";
-		// invoke it
-		std::vector<stream_info_impl> tmp = resolver.resolve_oneshot(os.str(),minimum,timeout);
+		std::string query{resolver_impl::build_query(prop, value)};
+		auto tmp = resolver_impl().resolve_oneshot(query, minimum, timeout);
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
@@ -192,12 +158,8 @@ LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_
 */
 LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_elements, const char *pred, int32_t minimum, double timeout) {
 	try {
-		// create a new resolver
-		resolver_impl resolver;
-		// build a new query.
-		std::ostringstream os; os << "session_id='" << api_config::get_instance()->session_id() << "' and " << pred;
-		// invoke it
-		std::vector<stream_info_impl> tmp = resolver.resolve_oneshot(os.str(),minimum,timeout);
+		std::string query{resolver_impl::build_query(pred)};
+		auto tmp = resolver_impl().resolve_oneshot(query, minimum, timeout);
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements<tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
