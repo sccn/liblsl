@@ -126,17 +126,18 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 }
 
 /// Get the current set of results (e.g., during continuous operation).
-std::vector<stream_info_impl> resolver_impl::results() {
+std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 	std::vector<stream_info_impl> output;
 	lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
 	double expired_before = lsl_clock() - forget_after_;
-	for(result_container::iterator i=results_.begin(); i!=results_.end();) {
-		if (i->second.second < expired_before) {
-			result_container::iterator tmp = i++;
-			results_.erase(tmp);
-		} else {
-			output.push_back(i->second.first);
-			i++;
+
+	for (auto it = results_.begin(); it != results_.end();) {
+		if (it->second.second < expired_before)
+			it = results_.erase(it);
+		else {
+			if (output.size() < max_results)
+				output.push_back(it->second.first);
+			it++;
 		}
 	}
 	return output;

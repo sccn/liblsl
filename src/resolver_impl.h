@@ -75,7 +75,7 @@ namespace lsl {
 		void resolve_continuous(const std::string &query, double forget_after=5.0);
 
 		/// Get the current set of results (e.g., during continuous operation).
-		std::vector<stream_info_impl> results();
+		std::vector<stream_info_impl> results(uint32_t max_results = 4294967295);
 
 		/// Tear down any ongoing operations and render the resolver unusable.
 		/// This can be used to cancel a blocking resolve_oneshot() from another thread (e.g., to initiate teardown of the object).
