@@ -145,7 +145,7 @@ function(installLSLApp target)
 			message (STATUS \"Running windeployqt on $<TARGET_FILE:${target}>\")
 			execute_process(
 				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\" --no-translations
-				--no-system-d3d-compiler --no-opengl-sw --no-virtualkeyboard
+				--no-system-d3d-compiler --no-opengl-sw
 				--no-compiler-runtime --dry-run --list mapping
 				\"$<TARGET_FILE:${target}>\"
 				OUTPUT_VARIABLE output
