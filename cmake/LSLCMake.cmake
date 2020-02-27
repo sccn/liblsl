@@ -130,14 +130,17 @@ function(installLSLApp target)
 			DESTINATION ${CMAKE_INSTALL_BINDIR}
 			COMPONENT ${SHAREDLIBCOMPONENT})
 	endif()
+	set(APPLE_APP_PATH "\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${target}.app")
 	if(APPLE AND NOT qtapp)
 		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
 		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
 		if(target_is_bundle)
 			install(CODE "
+				get_filename_component(LIBDIR $<TARGET_FILE:LSL::lsl> DIRECTORY)
+				message(STATUS \${LIBDIR})
 				include(BundleUtilities)
 				set(BU_CHMOD_BUNDLE_ITEMS ON)
-				fixup_bundle(\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${target}.app \"\" \"${lsldir}\")
+				fixup_bundle(${APPLE_APP_PATH} \"\" \"\${LIBDIR}\")
 				"
 				COMPONENT ${PROJECT_NAME}
 			)
@@ -174,19 +177,24 @@ function(installLSLApp target)
 	elseif(APPLE)
 		# It should be enough to call fixup_bundle (see below),
 		# but this fails to install qt plugins (cocoa).
-		# Use macdeployqt instead (but this is bad at grabbing lsl dylib, so we did that above)
+		# Use macdeployqt instead (but this is bad at grabbing lsl dylib, so we do it manually
 		findQtInstallationTool("macdeployqt")
 		install(CODE "
-			if(\${CMAKE_INSTALL_CONFIG_NAME} STREQUAL Debug)
-				set(debug 1)
-			endif()
+			file(INSTALL $<TARGET_FILE:LSL::lsl> DESTINATION ${APPLE_APP_PATH}/Contents/MacOS)
 			message(STATUS \"Running Qt Deploy Tool for $<TARGET_FILE:${target}>...\")
 			execute_process(COMMAND
-				echo \"${QT_DEPLOYQT_EXECUTABLE}\"
-				$<TARGET_FILE:${target}>
-				-verbose=1
-				$<$<BOOL:\${debug}>:--use-debug-libs>
+				\"${QT_DEPLOYQT_EXECUTABLE}\"
+				\"${APPLE_APP_PATH}\"
+				-verbose=1 -always-overwrite
+				\$<\$<STREQUAL:\${CMAKE_INSTALL_CONFIG_NAME},\"Debug\">:--use-debug-libs>
+				COMMAND_ECHO STDOUT
+				OUTPUT_VARIABLE DEPLOYOUTPUT
+				ERROR_VARIABLE DEPLOYOUTPUT
+				RESULT_VARIABLE DEPLOYSTATUS
 			)
+			if(\${DEPLOYSTATUS})
+				message(WARNING \"\${DEPLOYOUTPUT}\")
+			endif()
 		")
 	endif()
 endfunction()
