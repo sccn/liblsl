@@ -13,6 +13,7 @@
 
 using namespace lsl;
 using namespace lslboost::asio;
+using err_t = const lslboost::system::error_code&;
 
 /**
 * Instantiate a new resolver and configure timing parameters.
@@ -83,7 +84,9 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 	// start a timer that cancels all outstanding IO operations and wave schedules after the timeout has expired
 	if (timeout != FOREVER) {
 		resolve_timeout_expired_.expires_after(timeout_sec(timeout));
-		resolve_timeout_expired_.async_wait(lslboost::bind(&resolver_impl::resolve_timeout_expired,this,placeholders::error));
+		resolve_timeout_expired_.async_wait([this](err_t err) {
+			if (err != error::operation_aborted) cancel_ongoing_resolve();
+		});
 	}
 
 	// start the first wave of resolve packets
@@ -148,17 +151,20 @@ void resolver_impl::next_resolve_wave() {
 	} else {
 		// start a new multicast wave
 		udp_multicast_burst();
+
+		auto wave_timer_timeout =
+			(fast_mode_ ? 0 : cfg_->continuous_resolve_interval()) + cfg_->multicast_min_rtt();
 		if (!ucast_endpoints_.empty()) {
-			// we have known peer addresses: we spawn a unicast wave and shortly thereafter the next wave
+			// we have known peer addresses: we spawn a unicast wave
 			unicast_timer_.expires_after(timeout_sec(cfg_->multicast_min_rtt()));
-			unicast_timer_.async_wait(lslboost::bind(&resolver_impl::udp_unicast_burst,this,placeholders::error));
-			wave_timer_.expires_after(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+(cfg_->multicast_min_rtt()+cfg_->unicast_min_rtt())));
-			wave_timer_.async_wait(lslboost::bind(&resolver_impl::wave_timeout_expired,this,placeholders::error));
-		} else {
-			// there are no known peer addresses; just set up the next wave
-			wave_timer_.expires_after(timeout_sec((fast_mode_?0:cfg_->continuous_resolve_interval())+cfg_->multicast_min_rtt()));
-			wave_timer_.async_wait(lslboost::bind(&resolver_impl::wave_timeout_expired,this,placeholders::error));
+			unicast_timer_.async_wait([this](err_t ec) { this->udp_unicast_burst(ec); });
+			// delay the next multicast wave
+			wave_timer_timeout += cfg_->unicast_min_rtt();
 		}
+		wave_timer_.expires_after(timeout_sec(wave_timer_timeout));
+		wave_timer_.async_wait([this](err_t err) {
+			if (err != error::operation_aborted) next_resolve_wave();
+		});
 	}
 }
 
@@ -199,19 +205,6 @@ void resolver_impl::udp_unicast_burst(error_code err) {
 	}
 }
 
-/// This handler is called when the overall resolve timeout (if any) expires.
-void resolver_impl::resolve_timeout_expired(error_code err) {
-	if (err != error::operation_aborted)
-		cancel_ongoing_resolve();
-}
-
-/// This handler is called when the wave timeout expires.
-void resolver_impl::wave_timeout_expired(error_code err) {
-	if (err != error::operation_aborted)
-		next_resolve_wave();
-}
-
-
 // === cancellation and teardown ===
 
 /// Cancel any ongoing operations and render the resolver unusable.
@@ -226,10 +219,10 @@ void resolver_impl::cancel_ongoing_resolve() {
 	// make sure that ongoing handler loops terminate
 	expired_ = true;
 	// timer fires: cancel the next wave schedule
-	post(*io_, lslboost::bind(&steady_timer::cancel, &wave_timer_));
-	post(*io_, lslboost::bind(&steady_timer::cancel, &unicast_timer_));
+	post(*io_, [this]() { wave_timer_.cancel(); });
+	post(*io_, [this]() { unicast_timer_.cancel(); });
 	// and cancel the timeout, too
-	post(*io_, lslboost::bind(&steady_timer::cancel, &resolve_timeout_expired_));
+	post(*io_, [this]() { resolve_timeout_expired_.cancel(); });
 	// cancel all currently active resolve attempts
 	cancel_all_registered();
 }

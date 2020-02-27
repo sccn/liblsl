@@ -63,17 +63,8 @@ namespace lsl {
 		/// Start a new multi-packet exchange for time estimation
 		void start_time_estimation();
 
-		/// Handler that gets called once the next time estimation shall be scheduled
-		void next_estimate_scheduled(error_code err);
-
 		/// Send the next packet in an exchange
 		void send_next_packet(int packet_num);
-
-		/// Handler that gets called once the sending of a packet has completed
-		void handle_send_outcome(string_p msg_buffer, error_code err);
-
-		/// Handler that gets called when the next packet shall be scheduled
-		void next_packet_scheduled(int packet_num, error_code err);
 
 		/// Request reception of the next time packet
 		void receive_next_packet();
@@ -83,9 +74,6 @@ namespace lsl {
 
 		/// Handlers that gets called once the time estimation results shall be aggregated.
 		void result_aggregation_scheduled(error_code err);
-
-		/// Function polled by the condition variable
-		bool timeoffset_available();
 
 		/// Ensures that the time-offset is reset when the underlying connection is recovered (e.g., switches to another host)
 		void reset_timeoffset_on_recovery();

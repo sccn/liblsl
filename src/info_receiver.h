@@ -33,10 +33,6 @@ namespace lsl {
 		/// The info reader thread.
 		void info_thread();
 		
-		/// function polled by the condition variable
-		bool info_ready();
-
-
 		// the underlying connection
 		inlet_connection &conn_;					// reference to our connection
 

@@ -1,7 +1,6 @@
-#include <boost/bind.hpp>
-#include <functional>
 #include "inlet_connection.h"
 #include "api_config.h"
+#include <functional>
 
 
 // === implementation of the inlet_connection class ===
@@ -246,7 +245,10 @@ void inlet_connection::watchdog_thread() {
 			// so that the watchdog can be cancelled conveniently
 			{
 				lslboost::unique_lock<lslboost::mutex> lock(shutdown_mut_);
-				shutdown_cond_.wait_for(lock,lslboost::chrono::duration<double>(api_config::get_instance()->watchdog_check_interval()), lslboost::bind(&inlet_connection::shutdown,this));
+				shutdown_cond_.wait_for(lock,
+					lslboost::chrono::duration<double>(
+						api_config::get_instance()->watchdog_check_interval()),
+					[this]() { return shutdown(); });
 			}
 		} catch(std::exception &e) {
 			LOG_F(ERROR, "Unexpected hiccup in the watchdog thread: %s", e.what());

@@ -146,9 +146,6 @@ using tcp_acceptor_p = std::shared_ptr<tcp::acceptor>;
 			/// Handler that gets called when a sample transfer has been completed.
 			void handle_chunk_transfer_outcome(error_code err, std::size_t len);
 
-			/// There is a condition variable that is waiting on this condition in the inner transfer loop
-			bool transfer_completed() const { return transfer_completed_; }
-
 			bool registered_;					// whether we have registered ourselves at the server as active (so we need to unregister ourselves at destruction)
 			io_context_p io_;					// shared pointer to IO service; ensures that the IO is still around by the time the serv_ and sock_ need to be destroyed
 			tcp_server_p serv_;					// the server that is associated with this connection

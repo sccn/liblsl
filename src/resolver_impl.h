@@ -91,12 +91,6 @@ namespace lsl {
 		/// Start a new resolver attempt on the known peers.
 		void udp_unicast_burst(error_code err);
 
-		/// This handler is called when the overall timeout (if any) expires.
-		void resolve_timeout_expired(error_code err);
-
-		/// This handler is called when the wave timeout (if any) expires.
-		void wave_timeout_expired(error_code err);
-
 		/// Cancel the currently ongoing resolve, if any.
 		void cancel_ongoing_resolve();
 

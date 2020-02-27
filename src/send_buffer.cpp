@@ -1,6 +1,5 @@
 #include "send_buffer.h"
 #include "consumer_queue.h"
-#include <boost/bind.hpp>
 #include <memory>
 
 
@@ -63,6 +62,7 @@ bool send_buffer::have_consumers() {
 /// Wait until some consumers are present.
 bool send_buffer::wait_for_consumers(double timeout) {
 	lslboost::unique_lock<lslboost::mutex> lock(consumers_mut_);
-	return some_registered_.wait_for(lock, lslboost::chrono::duration<double>(timeout), lslboost::bind(&send_buffer::some_registered,this));
+	return some_registered_.wait_for(
+		lock, lslboost::chrono::duration<double>(timeout), [this]() { return some_registered(); });
 }
 

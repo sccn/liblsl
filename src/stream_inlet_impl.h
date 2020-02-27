@@ -1,7 +1,6 @@
 #ifndef STREAM_INLET_IMPL_H
 #define STREAM_INLET_IMPL_H
 
-#include <boost/bind.hpp>
 #include "data_receiver.h"
 #include "time_receiver.h"
 #include "common.h"
@@ -32,11 +31,13 @@ namespace lsl {
 		*				 In all other cases (recover is false or the stream is not recoverable) a lost_error is thrown where 
 		*				 indicated if the stream's source is lost (e.g., due to an app or computer crash).
 		*/
-		stream_inlet_impl(const stream_info_impl &info, int32_t max_buflen=360, int32_t max_chunklen=0, bool recover=true): conn_(info,recover), info_receiver_(conn_), time_receiver_(conn_), data_receiver_(conn_,max_buflen,max_chunklen),
-			postprocessor_(lslboost::bind(&time_receiver::time_correction,&time_receiver_,5), 
-			lslboost::bind(&inlet_connection::current_srate,&conn_),
-			lslboost::bind(&time_receiver::was_reset,&time_receiver_)) 
-		{
+		stream_inlet_impl(const stream_info_impl &info, int32_t max_buflen = 360,
+			int32_t max_chunklen = 0, bool recover = true)
+			: conn_(info, recover), info_receiver_(conn_), time_receiver_(conn_),
+			  data_receiver_(conn_, max_buflen, max_chunklen),
+			  postprocessor_([this]() { return time_receiver_.time_correction(5); },
+				  [this]() { return conn_.current_srate(); },
+				  [this]() { return time_receiver_.was_reset(); }) {
 			ensure_lsl_initialized();
 			conn_.engage();
 		}

@@ -63,6 +63,7 @@ data_receiver::~data_receiver() {
 void data_receiver::open_stream(double timeout) {
 	closing_stream_ = false;
 	lslboost::unique_lock<lslboost::mutex> lock(connected_mut_);
+	auto connection_completed = [this]() { return connected_ || conn_.lost(); };
 	if (!connection_completed()) {
 		// start thread if not yet running
 		if (check_thread_start_ && !data_thread_.joinable()) {
@@ -71,10 +72,10 @@ void data_receiver::open_stream(double timeout) {
 		}
 		// wait until the connection attempt completes (or we time out)
 		if (timeout >= FOREVER)
-			connected_upd_.wait(lock, lslboost::bind(&data_receiver::connection_completed,this));
-		else
-			if (!connected_upd_.wait_for(lock, lslboost::chrono::duration<double>(timeout), lslboost::bind(&data_receiver::connection_completed,this)))
-				throw timeout_error("The open_stream() operation timed out.");
+			connected_upd_.wait(lock, connection_completed);
+		else if (!connected_upd_.wait_for(
+					 lock, lslboost::chrono::duration<double>(timeout), connection_completed))
+			throw timeout_error("The open_stream() operation timed out.");
 	}
 	if (conn_.lost())
 		throw lost_error("The stream read by this inlet has been lost. To recover, you need to re-resolve the source and re-create the inlet.");

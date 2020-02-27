@@ -1,7 +1,6 @@
 #include "stream_outlet_impl.h"
 #include "tcp_server.h"
 #include "udp_server.h"
-#include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
 #include <memory>
 
@@ -46,9 +45,19 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 	for (auto &responder : responders_) responder->begin_serving();
 
 	// and start the IO threads to handle them
+	const std::string name{"IO_" + this->info().name().substr(0, 11)};
 	for (const auto &io : ios_)
-		io_threads_.push_back(std::make_shared<lslboost::thread>(
-			lslboost::bind(&stream_outlet_impl::run_io, this, io)));
+		io_threads_.emplace_back(std::make_shared<lslboost::thread>([io, name]() {
+			loguru::set_thread_name(name.c_str());
+			while (true) {
+				try {
+					io->run();
+					return;
+				} catch (std::exception &e) {
+					LOG_F(ERROR, "Error during io_context processing: %s", e.what());
+				}
+			}
+		}));
 }
 
 /**
@@ -109,19 +118,6 @@ stream_outlet_impl::~stream_outlet_impl() {
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during destruction of a stream outlet: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
-}
-
-// Run an IO service.
-void stream_outlet_impl::run_io(io_context_p &ios) {
-	loguru::set_thread_name((std::string("IO_") += info().name().substr(0, 11)).c_str());
-	while (true) {
-		try {
-			ios->run();
-			return;
-		} catch(std::exception &e) {
-			LOG_F(ERROR, "Error during io_context processing: %s", e.what());
-		}
-	}
 }
 
 /**

@@ -61,9 +61,6 @@ namespace lsl {
 		/// The data reader thread.
 		void data_thread();
 
-		/// Function that is polled by the condition variable
-		bool connection_completed() { return connected_ || conn_.lost(); }
-
 		// the underlying connection
 		inlet_connection &conn_;
 

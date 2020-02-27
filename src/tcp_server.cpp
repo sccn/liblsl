@@ -455,7 +455,7 @@ void tcp_server::client_session::transfer_samples_thread(client_session_p) {
 					async_write(*sock_,feedbuf_.data(),
 						lslboost::bind(&client_session::handle_chunk_transfer_outcome,shared_from_this(),placeholders::error,placeholders::bytes_transferred));
 					// wait for the completion condition
-					completion_cond_.wait(lock, lslboost::bind(&client_session::transfer_completed,this));
+					completion_cond_.wait(lock, [this]() { return transfer_completed_; });
 					// handle transfer outcome
 					if (!transfer_error_) {
 						feedbuf_.consume(transfer_amount_);
