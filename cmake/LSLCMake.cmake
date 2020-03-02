@@ -352,6 +352,12 @@ macro(LSLGenerateCPackConfig)
 			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
 			if(LSLDEPENDS)
 				list(REMOVE_DUPLICATES LSLDEPENDS)
+				# remove dependencies we don't package ourselves
+				set(MISSING ${LSLDEPENDS})
+				list(REMOVE_ITEM MISSING ${CPACK_COMPONENTS_ALL})
+				if(MISSING)
+					list(REMOVE_ITEM LSLDEPENDS ${MISSING})
+				endif()
 				set("CPACK_COMPONENT_${COMPONENT}_DEPENDS" ${LSLDEPENDS})
 			endif()
 
