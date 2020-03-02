@@ -24,14 +24,6 @@ endif()
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-# Set runtime path, i.e. where shared libs are searched relative to the exe
-if(APPLE)
-	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../LSL/lib")
-	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/../lib")
-	list(APPEND CMAKE_INSTALL_RPATH "@executable_path/")
-elseif(UNIX)
-	list(APPEND CMAKE_INSTALL_RPATH "\$ORIGIN/../LSL/lib:\$ORIGIN/../lib/:\$ORIGIN")
-endif()
 
 set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
 
@@ -81,6 +73,17 @@ function(installLSLApp target)
 	# add start menu shortcut if supported by installer
 	set_property(INSTALL "${PROJECT_NAME}/$<TARGET_FILE_NAME:${target}>" PROPERTY
 		CPACK_START_MENU_SHORTCUTS "${target}")
+
+
+	# Set runtime path, i.e. where shared libs are searched relative to the exe
+	set(LIBDIRGENEXPR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+	if(APPLE)
+		set_property(TARGET ${target} APPEND
+			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIRGENEXPR}")
+	elseif(UNIX)
+		set_property(TARGET ${target}
+			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIRGENEXPR}")
+	endif()
 
 	if(LSL_UNIXFOLDERS)
 		include(GNUInstallDirs)
