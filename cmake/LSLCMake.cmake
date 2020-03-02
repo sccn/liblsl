@@ -65,6 +65,8 @@ endfunction()
 
 # installLSLApp: adds the specified target to the install list and
 # add some quality-of-life improvements for Qt executables
+# After the target, additional libraries to install alongside the target can be
+# specified, e.g. 	installLSLApp(FooApp libXY libZ)
 function(installLSLApp target)
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
 	string(REGEX MATCH ";Qt5::" qtapp ";${TARGET_LIBRARIES}")
@@ -88,6 +90,15 @@ function(installLSLApp target)
 		set(CMAKE_INSTALL_LIBDIR ${PROJECT_NAME})
 		set(lsldir "\${CMAKE_INSTALL_PREFIX}/LSL")
 	endif()
+
+	# install additional library dependencies supplied after the target argument
+	foreach(libdependency ${ARGN})
+		if(NOT TARGET ${libdependency})
+			message(FATAL_ERROR "Additional arguments to installLSLApp must be library targets, ${libdependency} isn't.")
+		endif()
+		install(CODE "file(INSTALL $<TARGET_FILE:${libdependency}> DESTINATION \${CMAKE_INSTALL_PREFIX}/$<IF:$<PLATFORM_ID:Windows>,${CMAKE_INSTALL_BINDIR},${CMAKE_INSTALL_LIBDIR}>)")
+	endforeach()
+
 	set_property(GLOBAL APPEND PROPERTY
 		"LSLDEPENDS_${PROJECT_NAME}" liblsl)
 	install(TARGETS ${target} COMPONENT ${PROJECT_NAME}
