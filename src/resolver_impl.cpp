@@ -63,6 +63,35 @@ resolver_impl::resolver_impl()
 	}
 }
 
+void check_query(const std::string& query) {
+	try {
+		pugi::xpath_query(query.c_str());
+	} catch (std::exception &e) {
+		throw std::invalid_argument((("Invalid query '" + query) += "': ") += e.what());
+	}
+}
+
+std::string resolver_impl::build_query(const char* pred_or_prop, const char* value)
+{
+	std::string query("session_id='");
+	query += api_config::get_instance()->session_id();
+	query += '\'';
+	if (pred_or_prop) (query += " and ") += pred_or_prop;
+	if (value) ((query += "='") += value) += '\'';
+	return query;
+}
+
+resolver_impl *resolver_impl::create_resolver(
+	double forget_after, const char *pred_or_prop, const char *value) noexcept {
+	try {
+		auto *resolver = new resolver_impl();
+		resolver->resolve_continuous(build_query(pred_or_prop, value), forget_after);
+		return resolver;
+	} catch (std::exception &e) {
+		LOG_F(ERROR, "Error while creating a continuous_resolver: %s", e.what());
+		return nullptr;
+	}
+}
 
 // === resolve functions ===
 
@@ -71,6 +100,7 @@ resolver_impl::resolver_impl()
 * Blocks until at least the minimum number of streams has been resolved, or the timeout fires, or the resolve has been cancelled.
 */
 std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &query, int minimum, double timeout, double minimum_time) {
+	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
 	query_ = query;
@@ -104,6 +134,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 }
 
 void resolver_impl::resolve_continuous(const std::string &query, double forget_after) {
+	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
 	query_ = query;
@@ -120,17 +151,18 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 }
 
 /// Get the current set of results (e.g., during continuous operation).
-std::vector<stream_info_impl> resolver_impl::results() {
+std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 	std::vector<stream_info_impl> output;
 	lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
 	double expired_before = lsl_clock() - forget_after_;
-	for(result_container::iterator i=results_.begin(); i!=results_.end();) {
-		if (i->second.second < expired_before) {
-			result_container::iterator tmp = i++;
-			results_.erase(tmp);
-		} else {
-			output.push_back(i->second.first);
-			i++;
+
+	for (auto it = results_.begin(); it != results_.end();) {
+		if (it->second.second < expired_before)
+			it = results_.erase(it);
+		else {
+			if (output.size() < max_results)
+				output.push_back(it->second.first);
+			it++;
 		}
 	}
 	return output;

@@ -26,6 +26,9 @@ namespace lsl {
    #include "lsl_c.h"
 #endif
 
+/// Assert that no error happened; throw appropriate exception otherwise
+int32_t check_error(int32_t ec);
+
     /// Constant to indicate that a stream has variable sampling rate.
     const double IRREGULAR_RATE = 0.0; 
 
@@ -649,7 +652,11 @@ namespace lsl {
     * @return A vector of stream info objects (excluding their desc field), any of which can 
     *         subsequently be used to open an inlet. The full info can be retrieve from the inlet.
     */
-    inline std::vector<stream_info> resolve_streams(double wait_time=1.0) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_all(buffer,sizeof(buffer),wait_time)]); }
+	inline std::vector<stream_info> resolve_streams(double wait_time = 1.0) {
+		lsl_streaminfo buffer[1024];
+		int nres = check_error(lsl_resolve_all(buffer, sizeof(buffer), wait_time));
+		return std::vector<stream_info>(&buffer[0], &buffer[nres]);
+	}
 
     /** Resolve all streams with a specific value for a given property.
     * If the goal is to resolve a specific stream, this method is preferred over resolving all streams and then selecting the desired one.
@@ -661,7 +668,14 @@ namespace lsl {
     * @return A vector of matching stream info objects (excluding their meta-data), any of 
     *         which can subsequently be used to open an inlet.
     */
-    inline std::vector<stream_info> resolve_stream(const std::string &prop, const std::string &value, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_byprop(buffer,sizeof(buffer),(prop.c_str()),(value.c_str()),minimum,timeout)]); }
+	inline std::vector<stream_info> resolve_stream(const std::string &prop,
+		const std::string &value, int32_t minimum = 1, double timeout = FOREVER) {
+		lsl_streaminfo buffer[1024];
+		int nres = check_error(lsl_resolve_byprop(
+			buffer, sizeof(buffer), prop.c_str(), value.c_str(), minimum, timeout));
+		return std::vector<stream_info>(
+			&buffer[0], &buffer[nres]);
+	}
 
 	/** Resolve all streams that match a given predicate.
 	 *
@@ -677,7 +691,13 @@ namespace lsl {
 	 * @return A vector of matching stream info objects (excluding their meta-data), any of
 	 *         which can subsequently be used to open an inlet.
 	 */
-	inline std::vector<stream_info> resolve_stream(const std::string &pred, int32_t minimum=1, double timeout=FOREVER) { lsl_streaminfo buffer[1024]; return std::vector<stream_info>(&buffer[0],&buffer[lsl_resolve_bypred(buffer,sizeof(buffer),(pred.c_str()),minimum,timeout)]); }
+	inline std::vector<stream_info> resolve_stream(
+		const std::string &pred, int32_t minimum = 1, double timeout = FOREVER) {
+		lsl_streaminfo buffer[1024];
+		int nres =
+			check_error(lsl_resolve_bypred(buffer, sizeof(buffer), pred.c_str(), minimum, timeout));
+		return std::vector<stream_info>(&buffer[0], &buffer[nres]);
+	}
 
 
     // ======================
@@ -687,7 +707,6 @@ namespace lsl {
     /** A stream inlet.
     * Inlets are used to receive streaming data (and meta-data) from the lab network.
     */  
-    void check_error(int32_t ec);
     class stream_inlet {
     public:
         /** Construct a new stream inlet from a resolved stream info.
@@ -1307,7 +1326,7 @@ namespace lsl {
     * Check error codes returned from the C interface 
     * and translate into appropriate exceptions.
     */
-    inline void check_error(int32_t ec) {
+    inline int32_t check_error(int32_t ec) {
         if (ec<0) {
             switch(ec) {
                 case lsl_timeout_error:
@@ -1322,6 +1341,7 @@ namespace lsl {
                     throw std::runtime_error("An unknown error has occurred.");
             }
         }
+		return ec;
     }
 
 } // end namespace
