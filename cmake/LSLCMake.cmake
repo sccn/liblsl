@@ -122,26 +122,38 @@ function(installLSLApp target)
 		set(SHAREDLIBCOMPONENT ${target})
 	endif()
 
-	# Copy lsl library for WIN32 or MacOS.
-	# On Mac, dylib is only needed for macdeployqt and for non bundles when not using system liblsl.
-	# Copy anyway, and fixup_bundle can deal with the dylib already being present.
-	if(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
-		install(FILES $<TARGET_FILE:LSL::lsl>
-			DESTINATION ${CMAKE_INSTALL_BINDIR}
-			COMPONENT ${SHAREDLIBCOMPONENT})
-	endif()
-	if(APPLE AND NOT qtapp)
-		# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
+	# For MacOS we need to know if the installed target will be a .app bundle...
+	if(APPLE)
 		get_target_property(target_is_bundle ${target} MACOSX_BUNDLE)
-		if(target_is_bundle)
-			install(CODE "
-				include(BundleUtilities)
-				set(BU_CHMOD_BUNDLE_ITEMS ON)
-				fixup_bundle(\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${target}.app \"\" \"${lsldir}\")
-				"
-				COMPONENT ${PROJECT_NAME}
-			)
-		endif()
+	endif(APPLE)
+	
+	# Copy lsl library. Logic is a bit complicated.
+	# If we are not building liblsl, and the (app) target is not using system liblsl
+	# (LSL_UNIXFOLDERS is maybe a poor proxy for use of system liblsl...),
+	# then the application needs to have liblsl in an expected location.
+	if(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
+		if(APPLE AND target_is_bundle)
+			# Copy the dylib into the bundle
+			install(FILES $<TARGET_FILE:LSL::lsl>
+				DESTINATION ${CMAKE_INSTALL_BINDIR}/${target}.app/Contents/MacOS/
+				COMPONENT ${SHAREDLIBCOMPONENT})
+		else()
+			# Copy the dll/dylib/so next to the executable binary.
+			install(FILES $<TARGET_FILE:LSL::lsl>
+				DESTINATION ${CMAKE_INSTALL_BINDIR}
+				COMPONENT ${SHAREDLIBCOMPONENT})
+		endif(APPLE AND target_is_bundle)
+	endif(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
+	# Mac bundles need further fixup (mostly for 3rd party libs)
+	# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
+	if(APPLE AND target_is_bundle AND NOT qtapp)
+		install(CODE "
+			include(BundleUtilities)
+			set(BU_CHMOD_BUNDLE_ITEMS ON)
+			fixup_bundle(\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/${target}.app \"\" \"${lsldir}\")
+			"
+			COMPONENT ${PROJECT_NAME}
+		)
 	endif()
 
 	# skip the rest if qt doesn't need to be deployed
