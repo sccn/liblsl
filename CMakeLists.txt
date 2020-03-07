@@ -201,15 +201,12 @@ set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
 
-set(LSL_EXPORT_TARGETS lsl lslobj lslboost lslver)
+set(LSL_EXPORT_TARGETS lsl lslobj lslboost)
 if(LSL_BUILD_STATIC)
 	add_library(lsl-static STATIC)
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
 	target_compile_definitions(lsl-static INTERFACE LIBLSL_STATIC)
-	add_executable(lslver-static testing/lslver.c)
-	target_link_libraries(lslver-static PRIVATE lsl-static)
-	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)
@@ -229,9 +226,6 @@ else()
 	set(CMAKE_INSTALL_INCLUDEDIR LSL/include)
 	set(CMAKE_INSTALL_DATAROOTDIR LSL/share)
 endif()
-
-add_executable(lslver testing/lslver.c)
-target_link_libraries(lslver PRIVATE lsl)
 
 include(CMakePackageConfigHelpers)
 write_basic_package_version_file(
@@ -279,6 +273,15 @@ install(FILES
 )
 
 include(cmake/LSLCMake.cmake)
+
+add_executable(lslver testing/lslver.c)
+target_link_libraries(lslver PRIVATE lsl)
+installLSLApp(lslver)
+if(LSL_BUILD_STATIC)
+	add_executable(lslver-static testing/lslver.c)
+	target_link_libraries(lslver-static PRIVATE lsl-static)
+	installLSLApp(lslver-static)
+endif()
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
