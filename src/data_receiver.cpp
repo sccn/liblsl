@@ -27,9 +27,16 @@ namespace lsl {
 * @param max_chunklen Optionally the maximum size, in samples, at which chunks are transmitted (the default corresponds to the chunk sizes used by the sender).
 *					  Recording applications can use a generous size here (leaving it to the network how to pack things), while real-time applications may want a finer (perhaps 1-sample) granularity.
 */
-data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chunklen): conn_(conn), check_thread_start_(true), closing_stream_(false), connected_(false), sample_queue_(max_buflen),
-	sample_factory_(new factory(conn.type_info().channel_format(),conn.type_info().channel_count(),conn.type_info().nominal_srate()?conn.type_info().nominal_srate()*api_config::get_instance()->inlet_buffer_reserve_ms()/1000:api_config::get_instance()->inlet_buffer_reserve_samples())), max_buflen_(max_buflen), max_chunklen_(max_chunklen)
-{
+data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chunklen)
+	: conn_(conn), check_thread_start_(true), closing_stream_(false), connected_(false),
+	  sample_queue_(max_buflen),
+	  sample_factory_(
+		  new factory(conn.type_info().channel_format(), conn.type_info().channel_count(),
+			  conn.type_info().nominal_srate()
+				  ? static_cast<int>(conn.type_info().nominal_srate() *
+									 api_config::get_instance()->inlet_buffer_reserve_ms() / 1000)
+				  : api_config::get_instance()->inlet_buffer_reserve_samples())),
+	  max_buflen_(max_buflen), max_chunklen_(max_chunklen) {
 	if (max_buflen < 0)
 		throw std::invalid_argument("The max_buflen argument must not be smaller than 0.");
 	if (max_chunklen < 0)
