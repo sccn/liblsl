@@ -1,5 +1,6 @@
 #include "stream_outlet_impl.h"
 
+#pragma warning(disable : 4800)
 
 extern "C" {
 #include "api_types.hpp"
