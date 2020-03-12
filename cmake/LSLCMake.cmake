@@ -70,10 +70,6 @@ function(installLSLApp target)
 			AUTORCC ON
 		)
 	endif()
-	# add start menu shortcut if supported by installer
-	set_property(INSTALL "${PROJECT_NAME}/$<TARGET_FILE_NAME:${target}>" PROPERTY
-		CPACK_START_MENU_SHORTCUTS "${target}")
-
 
 	# Set runtime path, i.e. where shared libs are searched relative to the exe
 	set(LIBDIRGENEXPR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
@@ -93,6 +89,10 @@ function(installLSLApp target)
 		set(CMAKE_INSTALL_LIBDIR ${PROJECT_NAME})
 		set(lsldir "\${CMAKE_INSTALL_PREFIX}/LSL")
 	endif()
+	
+	# add start menu shortcut if supported by installer
+	set_property(INSTALL "${CMAKE_INSTALL_BINDIR}/$<TARGET_FILE_NAME:${target}>" PROPERTY
+		CPACK_START_MENU_SHORTCUTS "${target}")
 
 	# install additional library dependencies supplied after the target argument
 	foreach(libdependency ${ARGN})
@@ -122,7 +122,7 @@ function(installLSLApp target)
 	# Some Windows installers have problems with several components having the same file,
 	# so libs shared between targets are copied into the SHAREDLIBCOMPONENT component if set
 	if(NOT SHAREDLIBCOMPONENT)
-		set(SHAREDLIBCOMPONENT ${target})
+		set(SHAREDLIBCOMPONENT ${PROJECT_NAME})
 	endif()
 
 	# For MacOS we need to know if the installed target will be a .app bundle...
@@ -368,8 +368,8 @@ macro(LSLGenerateCPackConfig)
 			set(LSL_OS "Linux${lslplatform}-${LSB_RELEASE_CODENAME}")
 		endif()
 		set(CPACK_GENERATOR ${LSL_CPACK_DEFAULT_GEN} CACHE STRING "CPack pkg type(s) to generate")
-		get_cmake_property(CPACK_COMPONENTS_ALL COMPONENTS)
-		foreach(component ${CPACK_COMPONENTS_ALL})
+		get_cmake_property(LSL_COMPONENTS COMPONENTS)
+		foreach(component ${LSL_COMPONENTS})
 			string(TOUPPER ${component} COMPONENT)
 			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION}-${LSL_OS}")
 			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
@@ -377,7 +377,7 @@ macro(LSLGenerateCPackConfig)
 				list(REMOVE_DUPLICATES LSLDEPENDS)
 				# remove dependencies we don't package ourselves
 				set(MISSING ${LSLDEPENDS})
-				list(REMOVE_ITEM MISSING ${CPACK_COMPONENTS_ALL})
+				list(REMOVE_ITEM MISSING ${LSL_COMPONENTS})
 				if(MISSING)
 					list(REMOVE_ITEM LSLDEPENDS ${MISSING})
 				endif()
@@ -387,10 +387,9 @@ macro(LSLGenerateCPackConfig)
 			set("CPACK_DEBIAN_${COMPONENT}_PACKAGE_NAME" ${component})
 			set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
 			set("CPACK_ARCHIVE_${COMPONENT}_FILE_NAME" ${LSL_CPACK_FILENAME})
-			#set(CPACK_DEBIAN_${component}_FILE_NAME "${FILENAME}.deb")
 		endforeach()
 
-		message(STATUS "Installing Components: ${CPACK_COMPONENTS_ALL}")
+		message(STATUS "Installing Components: ${LSL_COMPONENTS}")
 		include(CPack)
 	endif()
 endmacro()
