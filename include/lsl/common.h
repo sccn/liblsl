@@ -27,18 +27,8 @@ typedef unsigned int uint32_t;
 #define LIBLSL_C_API __declspec(dllexport)
 #else
 #define LIBLSL_C_API __declspec(dllimport)
-#ifdef _WIN64
-#define LSLBITS "64"
-#else
-#define LSLBITS "32"
-#endif
-#if defined _DEBUG && defined LSL_DEBUG_BINDINGS
-#define LSLLIBPOSTFIX "-debug"
-#else
-#define LSLLIBPOSTFIX ""
-#endif
 #ifndef LSLNOAUTOLINK
-#pragma comment(lib, "liblsl" LSLBITS LSLLIBPOSTFIX ".lib")
+#pragma comment(lib, "lsl.lib")
 #endif
 #endif
 #pragma warning(disable : 4275)

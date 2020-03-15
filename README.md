@@ -75,9 +75,9 @@ To connect an application to the lab streaming layer:
 * Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h for C++`)
   (automatically done when using CMake) or get
   [bindings for your preferred language](https://github.com/sccn/labstreaminglayer/tree/master/LSL)
-* Make sure that the library file (`liblsl32`/`64``.dll`/`.so`/`.dylib`) is found by your application. 
+* Make sure that the library file (`liblsl.so`/`liblsl.dylib`/`lsl.dll`) is found by your application. 
   On Windows, it should be enough to put it in the same folder as your executable.
-  When building a Windows app, also make sure that the liblsl64.lib (or liblsl32.lib) file is visible 
+  When building a Windows app, also make sure that the `lsl.lib` file is visible
   to your build environment.
 * To provide data, create a new streaminfo to describe your stream and create a new outlet with that info. 
   Push samples into the outlet as your app produces them. Destroy the outlet when you're done.

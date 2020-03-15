@@ -39,7 +39,7 @@ From Visual Studio:<BR/>
 
 The Library will be in buildRoot (defined in the configuration above) /LSL/liblsl
 
-Generally you only need liblsl32.dll.
+Generally you only need `lsl.dll`.
 
 Note that if you make significant changes, it may be necessary to do a full rebuild before CMake correctly notices the change. CMake -> Clean All is not sufficient to force this.
 
@@ -65,7 +65,7 @@ To see a list of possible generators, run the command with garbage in the -G opt
 
 The library is in labstreaminglayer\build\LSL\Release.
 
-Generally you only need liblsl32.dll.
+Generally you only need `lsl.dll`.
 
 You can open the Visual Studio Project with labstreaminglayer\build\LabStreamingLayer.sln.
 
