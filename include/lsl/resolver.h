@@ -2,6 +2,8 @@
 #include "common.h"
 #include "types.h"
 
+/// @file resolver.h Stream resolution functions
+
 /** @defgroup continuous_resolver The lsl_continuous_resolver
  * @ingroup resolve
  *

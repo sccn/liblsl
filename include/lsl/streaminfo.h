@@ -2,6 +2,8 @@
 #include "common.h"
 #include "types.h"
 
+/// @file streaminfo.h Stream info functions
+
 /** @defgroup streaminfo The lsl_streaminfo object
  *
  * The #lsl_streaminfo object keeps a stream's meta data and connection settings.

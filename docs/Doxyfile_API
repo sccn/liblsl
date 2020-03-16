@@ -8,13 +8,11 @@ OUTPUT_DIRECTORY       = liblsl_api
 FULL_PATH_NAMES        = NO
 DISTRIBUTE_GROUP_DOC   = YES
 INLINE_SIMPLE_STRUCTS  = YES
-EXTRACT_ALL            = YES
+WARN_IF_UNDOCUMENTED   = NO
 SHOW_NAMESPACES        = NO
-INPUT                  = ../include
+INPUT                  = ../include ../include/lsl/
 JAVADOC_AUTOBRIEF      = YES
-FILE_PATTERNS          = *.c \
-                         *.cpp \
-                        *.h
+FILE_PATTERNS          = *.h
 EXCLUDE_SYMBOLS        =  lslboost
 SOURCE_BROWSER         = YES
 CLANG_ASSISTED_PARSING = NO
@@ -22,7 +20,7 @@ CLANG_OPTIONS          = -I../lslboost
 MACRO_EXPANSION        = YES
 EXPAND_ONLY_PREDEF     = YES
 ENABLE_PREPROCESSING   = YES
-PREDEFINED             = LIBLSL_C_API DOXYGEN_SHOULD_SKIP_THIS
+PREDEFINED             = LIBLSL_C_API
 ALPHABETICAL_INDEX     = NO
 HTML_DYNAMIC_SECTIONS  = YES
 GENERATE_TREEVIEW      = YES
