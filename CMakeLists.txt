@@ -54,6 +54,8 @@ add_library(lslobj OBJECT
 	src/lsl_outlet_c.cpp
 	src/lsl_streaminfo_c.cpp
 	src/lsl_xml_element_c.cpp
+	src/netinterfaces.h
+	src/netinterfaces.cpp
 	src/portable_archive/portable_archive_exception.hpp
 	src/portable_archive/portable_archive_includes.hpp
 	src/portable_archive/portable_iarchive.hpp
@@ -145,6 +147,7 @@ target_link_libraries(lslboost
 		Threads::Threads
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:bcrypt>
+		$<$<PLATFORM_ID:Windows>:iphlpapi>
 	)
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
