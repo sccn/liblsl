@@ -13,14 +13,8 @@
 
 using namespace lsl;
 using namespace lslboost::asio;
-using err_t = const lslboost::system::error_code&;
+using err_t = const lslboost::system::error_code &;
 
-/**
-* Instantiate a new resolver and configure timing parameters.
-* A note on resolution logic. If KnownPeers in the api_config is empty, a new multicast wave will be scheduled every mcast_min_rtt (until a timeout expires or the desired number of streams has been resolved).
-* If KnownPeers is non-empty, a multicast wave an a unicast wave will be schedule in alternation. The spacing between waves will be no shorter than the respective minimum RTTs.
-* TCP resolves are currently not implemented (but may be at a later time); these are only necessary when UDP traffic is disabled on a particular router.
-*/
 resolver_impl::resolver_impl()
 	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
 	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
@@ -31,8 +25,7 @@ resolver_impl::resolver_impl()
 	for (const auto &mcast_addr : mcast_addrs) {
 		try {
 			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
-		} 
-		catch(std::exception &) { }
+		} catch (std::exception &) {}
 	}
 
 	// parse the per-host addresses into endpoints, and store them, too
@@ -41,15 +34,15 @@ resolver_impl::resolver_impl()
 	// for each known peer...
 	for (const auto &peer : peers) {
 		try {
-            // resolve the name
+			// resolve the name
 			// for each endpoint...
 			for (auto &res : udp_resolver.resolve(peer, std::to_string(cfg_->base_port()))) {
 				// for each port in the range...
-                for (int p=cfg_->base_port(); p<cfg_->base_port()+cfg_->port_range(); p++)
-                    // add a record
+				for (int p = cfg_->base_port(); p < cfg_->base_port() + cfg_->port_range(); p++)
+					// add a record
 					ucast_endpoints_.emplace_back(res.endpoint().address(), p);
 			}
-		} catch(std::exception &) { }
+		} catch (std::exception &) {}
 	}
 
 	// generate the list of protocols to use
@@ -63,7 +56,7 @@ resolver_impl::resolver_impl()
 	}
 }
 
-void check_query(const std::string& query) {
+void check_query(const std::string &query) {
 	try {
 		pugi::xpath_query(query.c_str());
 	} catch (std::exception &e) {
@@ -71,8 +64,7 @@ void check_query(const std::string& query) {
 	}
 }
 
-std::string resolver_impl::build_query(const char* pred_or_prop, const char* value)
-{
+std::string resolver_impl::build_query(const char *pred_or_prop, const char *value) {
 	std::string query("session_id='");
 	query += api_config::get_instance()->session_id();
 	query += '\'';
@@ -95,11 +87,8 @@ resolver_impl *resolver_impl::create_resolver(
 
 // === resolve functions ===
 
-/**
-* Resolve a query string into a list of matching stream_info's on the network.
-* Blocks until at least the minimum number of streams has been resolved, or the timeout fires, or the resolve has been cancelled.
-*/
-std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &query, int minimum, double timeout, double minimum_time) {
+std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
+	const std::string &query, int minimum, double timeout, double minimum_time) {
 	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
@@ -111,7 +100,8 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(const std::string &
 	fast_mode_ = true;
 	expired_ = false;
 
-	// start a timer that cancels all outstanding IO operations and wave schedules after the timeout has expired
+	// start a timer that cancels all outstanding IO operations and wave schedules after the timeout
+	// has expired
 	if (timeout != FOREVER) {
 		resolve_timeout_expired_.expires_after(timeout_sec(timeout));
 		resolve_timeout_expired_.async_wait([this](err_t err) {
@@ -147,10 +137,9 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_.reset(new lslboost::thread(lslboost::bind(&io_context::run,io_)));
+	background_io_.reset(new lslboost::thread(lslboost::bind(&io_context::run, io_)));
 }
 
-/// Get the current set of results (e.g., during continuous operation).
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 	std::vector<stream_info_impl> output;
 	lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
@@ -160,8 +149,7 @@ std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 		if (it->second.second < expired_before)
 			it = results_.erase(it);
 		else {
-			if (output.size() < max_results)
-				output.push_back(it->second.first);
+			if (output.size() < max_results) output.push_back(it->second.first);
 			it++;
 		}
 	}
@@ -170,14 +158,14 @@ std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 
 // === timer-driven async handlers ===
 
-/// This function starts a new wave of resolves.
 void resolver_impl::next_resolve_wave() {
 	std::size_t num_results = 0;
 	{
 		lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
 		num_results = results_.size();
 	}
-	if (cancelled_ || expired_ || (minimum_ && (num_results >= (std::size_t)minimum_) && lsl_clock() >= wait_until_)) {
+	if (cancelled_ || expired_ ||
+		(minimum_ && (num_results >= (std::size_t)minimum_) && lsl_clock() >= wait_until_)) {
 		// stopping criteria satisfied: cancel the ongoing operations
 		cancel_ongoing_resolve();
 	} else {
@@ -200,33 +188,33 @@ void resolver_impl::next_resolve_wave() {
 	}
 }
 
-/// Start a new resolver attepmpt on the multicast hosts.
 void resolver_impl::udp_multicast_burst() {
-		// start one per IP stack under consideration
-		for (std::size_t k=0,failures=0;k<udp_protocols_.size();k++) {
-			try {
-				resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_,udp_protocols_[k],mcast_endpoints_,query_,results_,results_mut_,cfg_->multicast_max_rtt(),this));
-				attempt->begin();
-			} catch(std::exception &e) {
-				if (++failures == udp_protocols_.size())
-					LOG_F(ERROR,
-						"Could not start a multicast resolve attempt for any of the allowed "
-						"protocol stacks: %s",
-						e.what());
-			}
+	// start one per IP stack under consideration
+	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
+		try {
+			resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_, udp_protocols_[k],
+				mcast_endpoints_, query_, results_, results_mut_, cfg_->multicast_max_rtt(), this));
+			attempt->begin();
+		} catch (std::exception &e) {
+			if (++failures == udp_protocols_.size())
+				LOG_F(ERROR,
+					"Could not start a multicast resolve attempt for any of the allowed "
+					"protocol stacks: %s",
+					e.what());
 		}
-
+	}
 }
 
-/// Start a new resolver attempt on the known peers.
 void resolver_impl::udp_unicast_burst(error_code err) {
 	if (err != error::operation_aborted) {
 		// start one per IP stack under consideration
-		for (std::size_t k=0,failures=0;k<udp_protocols_.size();k++) {
+		for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
 			try {
-				resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_,udp_protocols_[k],ucast_endpoints_,query_,results_,results_mut_,cfg_->unicast_max_rtt(),this));
+				resolve_attempt_udp_p attempt(
+					new resolve_attempt_udp(*io_, udp_protocols_[k], ucast_endpoints_, query_,
+						results_, results_mut_, cfg_->unicast_max_rtt(), this));
 				attempt->begin();
-			} catch(std::exception &e) {
+			} catch (std::exception &e) {
 				if (++failures == udp_protocols_.size())
 					LOG_F(WARNING,
 						"Could not start a unicast resolve attempt for any of the allowed protocol "
@@ -239,14 +227,11 @@ void resolver_impl::udp_unicast_burst(error_code err) {
 
 // === cancellation and teardown ===
 
-/// Cancel any ongoing operations and render the resolver unusable.
-/// This can be used to cancel a blocking resolve_oneshot() from another thread (e.g., to initiate teardown of the object).
 void resolver_impl::cancel() {
 	cancelled_ = true;
 	cancel_ongoing_resolve();
 }
 
-/// Cancel an ongoing resolve, if any (otherwise without effect).
 void resolver_impl::cancel_ongoing_resolve() {
 	// make sure that ongoing handler loops terminate
 	expired_ = true;
@@ -259,17 +244,13 @@ void resolver_impl::cancel_ongoing_resolve() {
 	cancel_all_registered();
 }
 
-/// Destructor.
-/// Cancels any ongoing processes and waits until they finish.
 resolver_impl::~resolver_impl() {
 	try {
 		if (background_io_) {
 			cancel();
 			background_io_->join();
 		}
-	} 
-	catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Error during destruction of a resolver_impl: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during destruction of a resolver_impl."); }
 }
-

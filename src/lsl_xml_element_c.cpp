@@ -2,10 +2,8 @@
 
 extern "C" {
 #include "api_types.hpp"
-
+// include api_types before public API header
 #include "../include/lsl/xml.h"
-
-// === implementation of the lsl_xml_ptr functions of lsl_c.h ===
 
 using namespace pugi;
 
@@ -72,16 +70,17 @@ LIBLSL_C_API int32_t lsl_set_child_value(lsl_xml_ptr e, const char *name, const 
 	return xml_node(e).child(name).first_child().set_value(value);
 }
 
-LIBLSL_C_API lsl_xml_ptr lsl_append_child_value(lsl_xml_ptr e, const char *name, const char *value) {
+LIBLSL_C_API lsl_xml_ptr lsl_append_child_value(
+	lsl_xml_ptr e, const char *name, const char *value) {
 	xml_node result = xml_node(e).append_child(name);
 	result.append_child(node_pcdata).set_value(value);
 	return e;
 }
 
-LIBLSL_C_API lsl_xml_ptr lsl_prepend_child_value(lsl_xml_ptr e, const char *name, const char *value) {
+LIBLSL_C_API lsl_xml_ptr lsl_prepend_child_value(
+	lsl_xml_ptr e, const char *name, const char *value) {
 	xml_node result = xml_node(e).prepend_child(name);
 	result.append_child(node_pcdata).set_value(value);
 	return e;
 }
-
 }

@@ -9,17 +9,14 @@
 using namespace lsl;
 using namespace lslboost::asio;
 
-/**
-* Establish a new stream outlet. This makes the stream discoverable.
-* @param info The stream information to use for creating this stream stays constant over the lifetime of the outlet.
-* @param chunk_size The preferred chunk size, in samples, at which data shall be transmitted over the network. Can be selectively overridden by the inlet.
-*					If 0 (=default), the chunk size is determined by the pushthrough flag in push_sample or push_chunk.
-* @param max_capacity The maximum number of samples buffered for unresponsive receivers. If more samples get pushed, the oldest will be dropped.
-*					   The default is sufficient to hold a bit more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB of RAM.
-*/
-stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_size, int max_capacity): chunk_size_(chunk_size), info_(new stream_info_impl(info)), 
-	sample_factory_(new factory(info.channel_format(),info.channel_count(),info.nominal_srate()?info.nominal_srate()*api_config::get_instance()->outlet_buffer_reserve_ms()/1000:api_config::get_instance()->outlet_buffer_reserve_samples())), send_buffer_(new send_buffer(max_capacity))
-{
+stream_outlet_impl::stream_outlet_impl(
+	const stream_info_impl &info, int chunk_size, int max_capacity)
+	: chunk_size_(chunk_size), info_(new stream_info_impl(info)),
+	  sample_factory_(new factory(info.channel_format(), info.channel_count(),
+		  info.nominal_srate()
+			  ? info.nominal_srate() * api_config::get_instance()->outlet_buffer_reserve_ms() / 1000
+			  : api_config::get_instance()->outlet_buffer_reserve_samples())),
+	  send_buffer_(new send_buffer(max_capacity)) {
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
 
@@ -60,9 +57,6 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int chunk_s
 		}));
 }
 
-/**
-* Instantiate a new server stack.
-*/
 void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	// get api_config
 	const api_config *cfg = api_config::get_instance();
@@ -87,15 +81,12 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 				responders_.push_back(std::make_shared<udp_server>(
 					info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address));
 		} catch (std::exception &e) {
-			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", mcastaddr.c_str(), e.what());
+			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", mcastaddr.c_str(),
+				e.what());
 		}
 	}
 }
 
-/**
-* Destructor.
-* The stream will no longer be discoverable after destruction and all paired inlets will stop delivering data.
-*/
 stream_outlet_impl::~stream_outlet_impl() {
 	try {
 		// cancel all request chains
@@ -103,14 +94,16 @@ stream_outlet_impl::~stream_outlet_impl() {
 		for (auto &udp_server : udp_servers_) udp_server->end_serving();
 		for (auto &responder : responders_) responder->end_serving();
 		// join the IO threads
-		for (std::size_t k=0;k<io_threads_.size();k++)
+		for (std::size_t k = 0; k < io_threads_.size(); k++)
 			if (!io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000))) {
- 				// .. using force, if necessary (should only ever happen if the CPU is maxed out)
+				// .. using force, if necessary (should only ever happen if the CPU is maxed out)
 				std::ostringstream os;
 				os << io_threads_[k]->get_id();
 				LOG_F(ERROR, "Tearing down stream_outlet of thread %s", os.str().c_str());
 				ios_[k]->stop();
-				for (int attempt=1; !io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000)); attempt++) {
+				for (int attempt = 1;
+					 !io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000));
+					 attempt++) {
 					LOG_F(ERROR, "Thread %s didn't complete.", os.str().c_str());
 					io_threads_[k]->interrupt();
 				}
@@ -120,20 +113,8 @@ stream_outlet_impl::~stream_outlet_impl() {
 	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
 }
 
-/**
-* Retrieve the stream info associated with this outlet.
-* This is the constant meta-data header that was used to create the stream.
-*/
-const stream_info_impl &stream_outlet_impl::info() const { return *info_; }
-
-/**
-* Check whether consumers are currently registered.
-*/
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
 
-/**
-* Wait until some consumer shows up.
-* @return Whether the wait was successful.
-*/
-bool stream_outlet_impl::wait_for_consumers(double timeout) { return send_buffer_->wait_for_consumers(timeout); }
-
+bool stream_outlet_impl::wait_for_consumers(double timeout) {
+	return send_buffer_->wait_for_consumers(timeout);
+}

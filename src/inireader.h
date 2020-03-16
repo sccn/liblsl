@@ -1,6 +1,7 @@
 #include <sstream>
 #include <unordered_map>
 
+// Reads an INI file from a stream into a map
 class INI {
 	std::unordered_map<std::string, std::string> values;
 

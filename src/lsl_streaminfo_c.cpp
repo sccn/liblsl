@@ -3,30 +3,29 @@
 
 extern "C" {
 #include "api_types.hpp"
-
+// include api_types before public API header
 #include "../include/lsl/streaminfo.h"
-
-// === Implementation of the streaminfo-related functions of the C API ===
 
 using namespace lsl;
 
 // boilerplate wrapper code
-LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type, int32_t channel_count, double nominal_srate, lsl_channel_format_t channel_format, const char *source_id) {
+LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type,
+	int32_t channel_count, double nominal_srate, lsl_channel_format_t channel_format,
+	const char *source_id) {
 	try {
-		if (!source_id)
-			source_id = "";
+		if (!source_id) source_id = "";
 		return new stream_info_impl(
 			name, type, channel_count, nominal_srate, channel_format, source_id);
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return nullptr;
 	}
 }
 
-LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) { 
+LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
 	try {
 		return new stream_info_impl(*info);
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while copying a streaminfo: %s", e.what());
 		return nullptr;
 	}
@@ -35,7 +34,7 @@ LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
 LIBLSL_C_API void lsl_destroy_streaminfo(lsl_streaminfo info) {
 	try {
 		delete info;
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while destroying a streaminfo: %s", e.what());
 	}
 }
@@ -64,10 +63,10 @@ LIBLSL_C_API lsl_xml_ptr lsl_get_desc(lsl_streaminfo info) {
 LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 	try {
 		std::string tmp = info->to_fullinfo_message();
-		char *result = (char*)malloc(tmp.size()+1);
-		strcpy(result,tmp.c_str());
+		char *result = (char *)malloc(tmp.size() + 1);
+		strcpy(result, tmp.c_str());
 		return result;
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_xml: %s", e.what());
 		return nullptr;
 	}
@@ -81,10 +80,10 @@ LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const ch
 
 LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml) {
 	try {
-		stream_info_impl *impl = new stream_info_impl(); 
+		stream_info_impl *impl = new stream_info_impl();
 		impl->from_fullinfo_message(xml);
 		return impl;
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
 		return nullptr;
 	}

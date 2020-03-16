@@ -143,9 +143,7 @@ namespace lsl {
 		// ======================================
 		// (these fields are implicitly assigned once bound to an outlet/inlet)
 
-		/**
-		* Protocol version used to deliver the stream.
-		*/
+		///  Protocol version used to deliver the stream.
 		int version() const;
 
 		/**
@@ -171,9 +169,7 @@ namespace lsl {
 		*/
 		const std::string &session_id() const;
 
-		/**
-		* Hostname of the providing machine.
-		*/
+		///  Hostname of the providing machine.
 		const std::string &hostname() const;
 
 
@@ -670,19 +666,13 @@ namespace lsl {
 
 		// === Modification ===
 
-		/**
-		* Append a child node with a given name, which has a (nameless) plain-text child with the given text value.
-		*/
+		///  Append a child node with a given name, which has a (nameless) plain-text child with the given text value.
 		xml_element append_child_value(const char *name, const char *value);
 
-		/**
-		* Prepend a child node with a given name, which has a (nameless) plain-text child with the given text value.
-		*/
+		///  Prepend a child node with a given name, which has a (nameless) plain-text child with the given text value.
 		xml_element prepend_child_value(const char *name, const char *value);
 
-		/**
-		* Set the text value of the (nameless) plain-text child of a named child node.
-		*/
+		///  Set the text value of the (nameless) plain-text child of a named child node.
 		bool set_child_value(const char *name, const char *value);
 
 		/**
