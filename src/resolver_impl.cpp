@@ -137,7 +137,7 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_.reset(new lslboost::thread(lslboost::bind(&io_context::run, io_)));
+	background_io_ = std::make_shared<lslboost::thread>(lslboost::bind(&io_context::run, io_));
 }
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
@@ -192,8 +192,9 @@ void resolver_impl::udp_multicast_burst() {
 	// start one per IP stack under consideration
 	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
 		try {
-			resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_, udp_protocols_[k],
-				mcast_endpoints_, query_, results_, results_mut_, cfg_->multicast_max_rtt(), this));
+			resolve_attempt_udp_p attempt(
+				std::make_shared<resolve_attempt_udp>(*io_, udp_protocols_[k], mcast_endpoints_,
+					query_, results_, results_mut_, cfg_->multicast_max_rtt(), this));
 			attempt->begin();
 		} catch (std::exception &e) {
 			if (++failures == udp_protocols_.size())

@@ -151,7 +151,7 @@ private:
 tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
 	const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size)
 	: chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory),
-	  send_buffer_(sendbuf), acceptor_(new tcp::acceptor(*io)) {
+	  send_buffer_(sendbuf), acceptor_(std::make_shared<tcp::acceptor>(*io)) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -338,7 +338,7 @@ void client_session::handle_read_query_outcome(error_code err) {
 }
 
 void client_session::send_status_message(const std::string &str) {
-	string_p msg(new std::string(str));
+	string_p msg(std::make_shared<std::string>(str));
 	async_write(*sock_, lslboost::asio::buffer(*msg),
 		lslboost::bind(
 			&client_session::handle_status_outcome, shared_from_this(), msg, placeholders::error));
@@ -504,7 +504,7 @@ void client_session::handle_send_feedheader_outcome(error_code err, std::size_t 
 		if (!err) {
 			feedbuf_.consume(n);
 			// register outstanding work at the server (will be unregistered at session destruction)
-			work_.reset(new work_p::element_type(serv_->io_->get_executor()));
+			work_ = std::make_shared<work_p::element_type>(serv_->io_->get_executor());
 			// spawn a sample transfer thread
 			lslboost::thread(&client_session::transfer_samples_thread, this, shared_from_this());
 		}

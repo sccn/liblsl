@@ -12,7 +12,8 @@ using namespace lsl;
 using namespace lslboost::asio;
 
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol)
-	: info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(true) {
+	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
+	  time_services_enabled_(true) {
 	// open the socket for the specified protocol
 	socket_->open(protocol);
 
@@ -29,7 +30,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address,
 	uint16_t port, int ttl, const std::string &listen_address)
-	: info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
+	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
+	  time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
@@ -127,7 +129,8 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					if (info_->matches_query(query)) {
 						// query matches: send back reply
 						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
-						string_p replymsg(new std::string((query_id += "\r\n") += shortinfo_msg_));
+						string_p replymsg(
+							std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
 							lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
 								replymsg, placeholders::error));
@@ -147,7 +150,7 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					std::ostringstream reply;
 					reply.precision(16);
 					reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
-					string_p replymsg(new std::string(reply.str()));
+					string_p replymsg(std::make_shared<std::string>(reply.str()));
 					socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
 						lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
 							replymsg, placeholders::error));
