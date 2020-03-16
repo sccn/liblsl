@@ -52,7 +52,7 @@ template <typename T> void test_DataTypeMulti(const char *name, lsl::channel_for
 	}
 
 	std::vector<T> received_data(numChannels);
-	outlet.push_sample(sent_data, lsl::lsl_local_clock(), true);
+	outlet.push_sample(sent_data, lsl::local_clock(), true);
 	CHECK(inlet.pull_sample(received_data, 0.5) != 0.0);
 	CHECK(received_data == sent_data);
 }

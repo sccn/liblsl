@@ -2,6 +2,9 @@
 #include "common.h"
 #include "types.h"
 
+
+/// @file inlet.h Stream inlet functions
+
 /** @defgroup lsl_inlet The lsl_inlet object
  * @{
  */

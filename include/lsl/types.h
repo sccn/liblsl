@@ -1,12 +1,11 @@
 #ifndef LSL_TYPES
 #define LSL_TYPES
 
-/* ===================================================== */
-/* ==== Objects provided by the lab streaming layer ==== */
-/* ===================================================== */
-
 /**
- * Handle to a stream info object. Stores the declaration of a data stream.
+ * @class lsl_streaminfo
+ * Handle to a stream info object.
+ *
+ * Stores the declaration of a data stream.
  * Represents the following information:
  *
  *  - stream data format (number of channels, channel format)
@@ -22,18 +21,21 @@
 typedef struct lsl_streaminfo_struct_ *lsl_streaminfo;
 
 /**
+ * @class lsl_outlet
  * A stream outlet handle.
  * Outlets are used to make streaming data (and the meta-data) available on the lab network.
  */
 typedef struct lsl_outlet_struct_ *lsl_outlet;
 
 /**
+ * @class lsl_inlet
  * A stream inlet handle.
  * Inlets are used to receive streaming data (and meta-data) from the lab network.
  */
 typedef struct lsl_inlet_struct_ *lsl_inlet;
 
 /**
+ * @class lsl_xml_ptr
  * A lightweight XML element tree handle; models the description of a streaminfo object.
  * XML elements behave like advanced pointers into memory that is owned by some respective
  * streaminfo.
@@ -47,6 +49,8 @@ typedef struct lsl_inlet_struct_ *lsl_inlet;
 typedef struct lsl_xml_ptr_struct_ *lsl_xml_ptr;
 
 /**
+ * @class lsl_continuous_resolver
+ *
  * Handle to a convenience object that resolves streams continuously in the background throughout
  * its lifetime and which can be queried at any time for the set of streams that are currently
  * visible on the network.

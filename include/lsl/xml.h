@@ -2,6 +2,8 @@
 #include "common.h"
 #include "types.h"
 
+/// @file inlet.h XML functions
+
 /** @defgroup xml_ptr The lsl_xml_ptr object
  * @{
  */

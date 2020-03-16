@@ -2,6 +2,8 @@
 #include "./common.h"
 #include "types.h"
 
+/// @file outlet.h Stream outlet functions
+
 /** @defgroup outlet The lsl_outlet object
  *
  * This object represents an outlet sending data to all connected inlets.
