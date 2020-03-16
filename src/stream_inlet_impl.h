@@ -93,7 +93,7 @@ namespace lsl {
 
 		template <typename T>
 		double pull_sample_noexcept(T *buffer, int32_t buffer_elements, double timeout = FOREVER,
-			lsl_error_code_t *ec = nullptr) BOOST_NOEXCEPT {
+			lsl_error_code_t *ec = nullptr) noexcept {
 			lsl_error_code_t dummy;
 			if (!ec) ec = &dummy;
 			*ec = lsl_no_error;
@@ -159,7 +159,7 @@ namespace lsl {
 		template <class T>
 		std::size_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer,
 			std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
-			double timeout = 0.0, lsl_error_code_t *ec = nullptr) BOOST_NOEXCEPT {
+			double timeout = 0.0, lsl_error_code_t *ec = nullptr) noexcept {
 			lsl_error_code_t dummy;
 			if(!ec) ec = &dummy;
 			*ec = lsl_no_error;

@@ -79,7 +79,7 @@ using thread_p = std::shared_ptr<lslboost::thread>;
 
 	    template <typename T>
 	    inline lsl_error_code_t push_sample_noexcept(const T* data, double timestamp = 0.0,
-		                                             bool pushthrough = true) BOOST_NOEXCEPT {
+		                                             bool pushthrough = true) noexcept {
 		    try {
 			    enqueue(data, timestamp, pushthrough);
 			    return lsl_no_error;
@@ -135,7 +135,7 @@ using thread_p = std::shared_ptr<lslboost::thread>;
 				enqueue(&data_buffer[k*num_chans],timestamp_buffer[k],pushthrough && k==num_samples-1);
 		}
 
-		template<class T> int32_t push_chunk_multiplexed_noexcept(const T *data_buffer, const double *timestamp_buffer, std::size_t data_buffer_elements, bool pushthrough=true) BOOST_NOEXCEPT {
+		template<class T> int32_t push_chunk_multiplexed_noexcept(const T *data_buffer, const double *timestamp_buffer, std::size_t data_buffer_elements, bool pushthrough=true) noexcept {
 			try {
 				push_chunk_multiplexed(data_buffer, timestamp_buffer, data_buffer_elements, pushthrough);
 				return lsl_no_error;
@@ -181,7 +181,7 @@ using thread_p = std::shared_ptr<lslboost::thread>;
 			}
 		}
 
-		template<class T> int32_t push_chunk_multiplexed_noexcept(const T *data, std::size_t data_elements, double timestamp=0.0, bool pushthrough=true) BOOST_NOEXCEPT {
+		template<class T> int32_t push_chunk_multiplexed_noexcept(const T *data, std::size_t data_elements, double timestamp=0.0, bool pushthrough=true) noexcept {
 			try {
 				push_chunk_multiplexed(data, data_elements, timestamp, pushthrough);
 				return lsl_no_error;

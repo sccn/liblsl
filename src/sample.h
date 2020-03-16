@@ -127,7 +127,7 @@ namespace lsl {
 		}
 
 		/// Test for equality with another sample.
-		bool operator==(const sample &rhs) const BOOST_NOEXCEPT ;
+		bool operator==(const sample &rhs) const noexcept ;
 
 		// === type-safe accessors ===
 
