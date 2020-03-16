@@ -9,7 +9,7 @@ void lsl::cancellable_obj::unregister_from_all() {
 	try {
 		for (auto obj : registered_at_) obj->unregister_cancellable(this);
 		registered_at_.clear();
-	} catch(std::exception &e) {
+	} catch (std::exception &e) {
 		LOG_F(ERROR,
 			"Unexpected error trying to unregister a cancellable object from its registry: %s",
 			e.what());

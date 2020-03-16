@@ -1,6 +1,6 @@
-#include <boost/thread/lock_guard.hpp>
 #include "time_postprocessor.h"
 #include "api_config.h"
+#include <boost/thread/lock_guard.hpp>
 
 #include <cmath>
 
@@ -8,16 +8,13 @@
 
 using namespace lsl;
 
-
-/// Construct a new time post-processor.
-time_postprocessor::time_postprocessor(const postproc_callback_t &query_correction, const postproc_callback_t &query_srate, const reset_callback_t &query_reset): 
-	samples_seen_(0.0), query_srate_(query_srate), options_(proc_none), halftime_(api_config::get_instance()->smoothing_halftime()),
-    query_correction_(query_correction), query_reset_(query_reset), next_query_time_(0.0), last_offset_(0.0), 
-	smoothing_initialized_(false), last_value_(-std::numeric_limits<double>::infinity())
-{
-}
-
-/// Post-process the given time-stamp and return the new time-stamp.
+time_postprocessor::time_postprocessor(const postproc_callback_t &query_correction,
+	const postproc_callback_t &query_srate, const reset_callback_t &query_reset)
+	: samples_seen_(0.0), query_srate_(query_srate), options_(proc_none),
+	  halftime_(api_config::get_instance()->smoothing_halftime()),
+	  query_correction_(query_correction), query_reset_(query_reset), next_query_time_(0.0),
+	  last_offset_(0.0), smoothing_initialized_(false),
+	  last_value_(-std::numeric_limits<double>::infinity()) {}
 
 double time_postprocessor::process_timestamp(double value) {
 	if (options_ & proc_threadsafe) {
@@ -30,8 +27,9 @@ double time_postprocessor::process_timestamp(double value) {
 double time_postprocessor::process_internal(double value) {
 	// --- clock synchronization ---
 	if (options_ & proc_clocksync) {
-		// update last correction value if needed (we do this every 50 samples and at most twice per second)
-		if ((fmod(samples_seen_,50.0) == 0.0) && lsl_clock() > next_query_time_) {
+		// update last correction value if needed (we do this every 50 samples and at most twice per
+		// second)
+		if ((fmod(samples_seen_, 50.0) == 0.0) && lsl_clock() > next_query_time_) {
 			last_offset_ = query_correction_();
 			if (query_reset_()) {
 				// reset state to unitialized
@@ -40,10 +38,11 @@ double time_postprocessor::process_internal(double value) {
 				samples_seen_ = 0;
 				smoothing_initialized_ = false;
 			}
-			next_query_time_ = lsl_clock()+0.5;
+			next_query_time_ = lsl_clock() + 0.5;
 		}
-		// perform clock synchronization; this is done by adding the last-measured clock offset value
-		// (typically this is used to map the value from the sender's clock to our local clock)
+		// perform clock synchronization; this is done by adding the last-measured clock offset
+		// value (typically this is used to map the value from the sender's clock to our local
+		// clock)
 		value += last_offset_;
 	}
 
@@ -56,12 +55,13 @@ double time_postprocessor::process_internal(double value) {
 			if (smoothing_applicable_) {
 				// linear regression model coefficients (intercept, slope)
 				w0_ = 0.0;
-				w1_ = 1.0/srate;
+				w1_ = 1.0 / srate;
 				// forget factor lambda in RLS calculation & its inverse
-				lam_ = pow(2.0, -1.0/(srate*halftime_));
-				il_ = 1.0/lam_;
+				lam_ = pow(2.0, -1.0 / (srate * halftime_));
+				il_ = 1.0 / lam_;
 				// inverse autocovariance matrix of predictors u
-				P00_ = P11_ = 1e10; P01_ = P10_ = 0.0;
+				P00_ = P11_ = 1e10;
+				P01_ = P10_ = 0.0;
 				// numeric baseline
 				baseline_value_ = value;
 			}
@@ -71,18 +71,18 @@ double time_postprocessor::process_internal(double value) {
 			value -= baseline_value_;
 
 			// RLS update
-			double u1 = samples_seen_;				// u = np.matrix([[1.0], [samples_seen]])
-			double pi0 = P00_ + u1*P10_;			// pi = u.T * P
-			double pi1 = P01_ + u1*P11_;			// ... (ct'd)
-			double al = value - w0_ - w1_ * u1;		// al = value - w.T * u (prediction error)
-			double gam = lam_ + pi0 + pi1 * u1;		// gam = lam + pi * u
-			P00_ = il_ * (P00_ - ((pi0*pi0)/gam));  // Pp = k * pi; P = il * (P - Pp)
-			P01_ = il_ * (P01_ - ((pi0*pi1)/gam));	// ...
-			P10_ = il_ * (P10_ - ((pi1*pi0)/gam));	// ...
-			P11_ = il_ * (P11_ - ((pi1*pi1)/gam));	// ...
-			w0_ += al * (P00_ + P10_ * u1);         // w = w + k*al
-			w1_ += al * (P01_ + P11_ * u1);			// ...
-			value = w0_ + w1_*u1;					// value = float(w.T * u)
+			double u1 = samples_seen_;				   // u = np.matrix([[1.0], [samples_seen]])
+			double pi0 = P00_ + u1 * P10_;			   // pi = u.T * P
+			double pi1 = P01_ + u1 * P11_;			   // ... (ct'd)
+			double al = value - w0_ - w1_ * u1;		   // al = value - w.T * u (prediction error)
+			double gam = lam_ + pi0 + pi1 * u1;		   // gam = lam + pi * u
+			P00_ = il_ * (P00_ - ((pi0 * pi0) / gam)); // Pp = k * pi; P = il * (P - Pp)
+			P01_ = il_ * (P01_ - ((pi0 * pi1) / gam)); // ...
+			P10_ = il_ * (P10_ - ((pi1 * pi0) / gam)); // ...
+			P11_ = il_ * (P11_ - ((pi1 * pi1) / gam)); // ...
+			w0_ += al * (P00_ + P10_ * u1);			   // w = w + k*al
+			w1_ += al * (P01_ + P11_ * u1);			   // ...
+			value = w0_ + w1_ * u1;					   // value = float(w.T * u)
 
 			value += baseline_value_;
 		}
@@ -90,8 +90,7 @@ double time_postprocessor::process_internal(double value) {
 
 	// --- force monotonic timestamps ---
 	if (options_ & proc_monotonize) {
-		if (value < last_value_)
-			value = last_value_;
+		if (value < last_value_) value = last_value_;
 	}
 
 	samples_seen_ += 1.0;

@@ -39,7 +39,8 @@ typedef unsigned int uint32_t;
 //! Constant to indicate that a stream has variable sampling rate.
 #define LSL_IRREGULAR_RATE 0.0
 
-/** Constant to indicate that a sample has the next successive time stamp.
+/**
+ * Constant to indicate that a sample has the next successive time stamp.
  *
  * This is an optional optimization to transmit less data per sample.
  * The stamp is then deduced from the preceding one according to the stream's
@@ -139,7 +140,8 @@ typedef enum {
 } lsl_error_code_t;
 
 
-/** LSL version the binary was compiled against
+/**
+ * LSL version the binary was compiled against
  *
  * Used either to check if the same version is used
  * (`if(lsl_protocol_version()!=LIBLSL_COMPILE_HEADER_VERSION`) …
@@ -152,7 +154,8 @@ typedef enum {
  * */
 #define LIBLSL_COMPILE_HEADER_VERSION 114
 
-/** Protocol version.
+/**
+ * Protocol version.
  *
  * The major version is `protocol_version() / 100;`
  * The minor version is `protocol_version() % 100;`
@@ -162,20 +165,23 @@ typedef enum {
  */
 extern LIBLSL_C_API int32_t lsl_protocol_version();
 
-/** Version of the liblsl library.
+/**
+ * Version of the liblsl library.
  *
  * The major version is `library_version() / 100;`
  * The minor version is `library_version() % 100;`
  */
 extern LIBLSL_C_API int32_t lsl_library_version();
 
-/** Get a string containing library information.
+/**
+ * Get a string containing library information.
  *
  * The format of the string shouldn't be used for anything important except giving a debugging
  * person a good idea which exact library version is used. */
 extern LIBLSL_C_API const char *lsl_library_info();
 
-/** Obtain a local system time stamp in seconds.
+/**
+ * Obtain a local system time stamp in seconds.
  *
  * The resolution is better than a millisecond.
  * This reading can be used to assign time stamps to samples as they are being acquired.
@@ -185,7 +191,8 @@ extern LIBLSL_C_API const char *lsl_library_info();
  */
 extern LIBLSL_C_API double lsl_local_clock();
 
-/** Deallocate a string that has been transferred to the application.
+/**
+ * Deallocate a string that has been transferred to the application.
  *
  * Rarely used: the only use case is to deallocate the contents of
  * string-valued samples received from LSL in an application where

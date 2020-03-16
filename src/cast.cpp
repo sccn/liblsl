@@ -38,9 +38,9 @@ template <> float from_string(const std::string &str) {
 
 // Explicit template instantiations so lexical_cast doesn't have to be included
 // in every compilation unit
-template signed char from_string(const std::string&);
-template char from_string(const std::string&);
-template int16_t from_string(const std::string&);
-template int32_t from_string(const std::string&);
-template int64_t from_string(const std::string&);
-}
+template signed char from_string(const std::string &);
+template char from_string(const std::string &);
+template int16_t from_string(const std::string &);
+template int32_t from_string(const std::string &);
+template int64_t from_string(const std::string &);
+} // namespace lsl

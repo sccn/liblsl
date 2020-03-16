@@ -8,30 +8,24 @@
 using namespace lsl;
 
 /**
-* Create a new send buffer.
-* @param max_capacity Hard upper bound on queue capacity beyond which the oldest samples will be dropped.
-*/
-send_buffer::send_buffer(int max_capacity): max_capacity_(max_capacity) {} 
-
-
-/**
-* Add a new consumer to the send buffer.
-* Each consumer will get all samples (although the oldest samples will be dropped when the buffer capacity is overrun).
-* @param max_buffered If non-zero, the queue size for this consumer will be constrained to be no larger than this value.
-*					  Note that the actual queue size will also never exceed the max_capacity of the send_buffer (so this is 
-*					  a global limit).
-* @return Shared pointer to the newly created queue.
-*/
-consumer_queue_p send_buffer::new_consumer(int max_buffered) { 
-	max_buffered = max_buffered ? std::min(max_buffered,max_capacity_) : max_capacity_;
+ * Add a new consumer to the send buffer.
+ * Each consumer will get all samples (although the oldest samples will be dropped when the buffer
+ *capacity is overrun).
+ * @param max_buffered If non-zero, the queue size for this consumer will be constrained to be no
+ *larger than this value. Note that the actual queue size will also never exceed the max_capacity of
+ *the send_buffer (so this is a global limit).
+ * @return Shared pointer to the newly created queue.
+ */
+consumer_queue_p send_buffer::new_consumer(int max_buffered) {
+	max_buffered = max_buffered ? std::min(max_buffered, max_capacity_) : max_capacity_;
 	return std::make_shared<consumer_queue>(max_buffered, shared_from_this());
 }
 
 
 /**
-* Push a sample onto the send buffer.
-* Will subsequently be seen by all consumers.
-*/
+ * Push a sample onto the send buffer.
+ * Will subsequently be seen by all consumers.
+ */
 void send_buffer::push_sample(const sample_p &s) {
 	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
 	for (auto &consumer : consumers_) consumer->push_sample(s);
@@ -65,4 +59,3 @@ bool send_buffer::wait_for_consumers(double timeout) {
 	return some_registered_.wait_for(
 		lock, lslboost::chrono::duration<double>(timeout), [this]() { return some_registered(); });
 }
-

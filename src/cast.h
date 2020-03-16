@@ -2,7 +2,7 @@
 #include <string>
 
 namespace lsl {
-template <typename T> std::string to_string(T val) { return std::to_string(val); };
+template <typename T> std::string to_string(T val) { return std::to_string(val); }
 
 template <typename T> T from_string(const std::string &str);
 

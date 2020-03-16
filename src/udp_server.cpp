@@ -8,24 +8,16 @@
 #include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
 
-
-// === implementation of the udp_server class ===
-
 using namespace lsl;
 using namespace lslboost::asio;
 
-/*
-* Create a UDP responder in unicast mode that listens next to a TCP server.
-* This server will listen on a free local port for timedata and shortinfo requests -- mainly for timing information (unless shortinfo is needed by clients).
-* @param info The stream_info of the stream to serve (shared). After success, the appropriate service port will be assigned.
-* @param protocol The protocol stack to use (tcp::v4() or tcp::v6()).
-*/
-udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(true) {
+udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol)
+	: info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(true) {
 	// open the socket for the specified protocol
 	socket_->open(protocol);
 
 	// bind to a free port
-	uint16_t port = bind_port_in_range(*socket_,protocol);
+	uint16_t port = bind_port_in_range(*socket_, protocol);
 
 	// assign the service port field
 	if (protocol == udp::v4())
@@ -35,11 +27,9 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 	LOG_F(2, "%s: Started unicast udp server %p at port %d", info_->name().c_str(), this, port);
 }
 
-/*
-* Create a new UDP server in multicast mode.
-* This server will listen on a multicast address and responds only to LSL:shortinfo requests. This is for multicast/broadcast local service discovery.
-*/
-udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address, uint16_t port, int ttl, const std::string &listen_address): info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
+udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address,
+	uint16_t port, int ttl, const std::string &listen_address)
+	: info_(info), io_(io), socket_(new udp::socket(io)), time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
 
@@ -51,8 +41,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 			listen_endpoint = udp::endpoint(udp::v4(), port);
 		else
 			listen_endpoint = udp::endpoint(udp::v6(), port);
-	}
-	else {
+	} else {
 		// choose an endpoint explicitly
 		ip::address listen_addr = ip::make_address(listen_address);
 		listen_endpoint = udp::endpoint(listen_addr, (uint16_t)port);
@@ -63,8 +52,7 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 	socket_->set_option(udp::socket::reuse_address(true));
 
 	// set the multicast TTL
-	if (addr.is_multicast() && !is_broadcast)
-		socket_->set_option(ip::multicast::hops(ttl));
+	if (addr.is_multicast() && !is_broadcast) socket_->set_option(ip::multicast::hops(ttl));
 
 	// bind to the listen endpoint
 	socket_->bind(listen_endpoint);
@@ -72,7 +60,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 	// join the multicast group, if any
 	if (addr.is_multicast() && !is_broadcast) {
 		if (addr.is_v4())
-			socket_->set_option(ip::multicast::join_group(addr.to_v4(),listen_endpoint.address().to_v4()));
+			socket_->set_option(
+				ip::multicast::join_group(addr.to_v4(), listen_endpoint.address().to_v4()));
 		else
 			socket_->set_option(ip::multicast::join_group(addr));
 	}
@@ -80,11 +69,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 		address.c_str(), port);
 }
 
-
 // === externally issued asynchronous commands ===
 
-/// Start serving UDP traffic.
-/// Call this only after the (shared) info object has been initialized by all other parties, too.
 void udp_server::begin_serving() {
 	// pre-calculate the shortinfo message (now that everyone should have initialized their part).
 	shortinfo_msg_ = info_->to_shortinfo_message();
@@ -95,29 +81,25 @@ void udp_server::begin_serving() {
 /// Gracefully close a socket.
 void close_if_open(udp_socket_p sock) {
 	try {
-		if (sock->is_open())
-			sock->close();
+		if (sock->is_open()) sock->close();
 	} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", __func__, e.what()); }
 }
 
-/// Initiate teardown of UDP traffic.
 void udp_server::end_serving() {
-	// gracefully close the socket; this will eventually lead to the cancellation of the IO operation(s) tied to its socket
+	// gracefully close the socket; this will eventually lead to the cancellation of the IO
+	// operation(s) tied to its socket
 	post(io_, lslboost::bind(&close_if_open, socket_));
 }
 
-
 // === receive / reply loop ===
 
-/// Initiate next packet request.
-/// The result of the operation will eventually trigger the handle_receive_outcome() handler.
 void udp_server::request_next_packet() {
 	DLOG_F(5, "udp_server::request_next_packet");
 	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
-		lslboost::bind(&udp_server::handle_receive_outcome, shared_from_this(), placeholders::error, placeholders::bytes_transferred));
+		lslboost::bind(&udp_server::handle_receive_outcome, shared_from_this(), placeholders::error,
+			placeholders::bytes_transferred));
 }
 
-/// Handler that gets called when the next packet was received (or the op was cancelled).
 void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err != error::operation_aborted && err != error::shut_down) {
@@ -127,11 +109,15 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 				double t1 = time_services_enabled_ ? lsl_clock() : 0.0;
 
 				// wrap received packet into a request stream and parse the method from it
-				std::istringstream request_stream(std::string(buffer_,buffer_+len));
-				std::string method; getline(request_stream,method); method = trim(method);
+				std::istringstream request_stream(std::string(buffer_, buffer_ + len));
+				std::string method;
+				getline(request_stream, method);
+				method = trim(method);
 				if (method == "LSL:shortinfo") {
 					// shortinfo request: parse content query string
-					std::string query; getline(request_stream,query); query = trim(query);
+					std::string query;
+					getline(request_stream, query);
+					query = trim(query);
 					// parse return address, port, and query ID
 					uint16_t return_port;
 					request_stream >> return_port;
@@ -177,11 +163,8 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 	}
 }
 
-/// Handler that's called after a response packet has been sent off.
 void udp_server::handle_send_outcome(string_p /*replymsg*/, error_code err) {
 	if (err != error::operation_aborted && err != error::shut_down)
 		// done sending: ask for next packet
 		request_next_packet();
 }
-
-
