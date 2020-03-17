@@ -27,7 +27,6 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/stream_socket_service.hpp>
-#include <boost/bind/bind.hpp>
 #include <boost/utility/base_from_member.hpp>
 #include <exception>
 #include <set>
@@ -68,8 +67,7 @@ public:
 		cancel_issued_ = true;
 		lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
 		cancel_started_ = false;
-		this->get_service().get_io_context().post(
-			lslboost::bind(&cancellable_streambuf::close_if_open, this));
+		this->get_service().get_io_context().post([this]() { close_if_open(); });
 	}
 
 

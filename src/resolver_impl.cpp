@@ -4,7 +4,6 @@
 #include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
-#include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
 #include <memory>
 
@@ -137,7 +136,8 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_ = std::make_shared<lslboost::thread>(lslboost::bind(&io_context::run, io_));
+	auto io_keepalive(io_);
+	background_io_ = std::make_shared<lslboost::thread>([io_keepalive]() { io_keepalive->run(); });
 }
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {

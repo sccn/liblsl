@@ -5,11 +5,11 @@
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
-#include <boost/bind.hpp>
 #include <boost/thread/thread_only.hpp>
 
 using namespace lsl;
 using namespace lslboost::asio;
+using err_t = const lslboost::system::error_code &;
 
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol)
 	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
@@ -80,26 +80,24 @@ void udp_server::begin_serving() {
 	request_next_packet();
 }
 
-/// Gracefully close a socket.
-void close_if_open(udp_socket_p sock) {
-	try {
-		if (sock->is_open()) sock->close();
-	} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", __func__, e.what()); }
-}
-
 void udp_server::end_serving() {
 	// gracefully close the socket; this will eventually lead to the cancellation of the IO
 	// operation(s) tied to its socket
-	post(io_, lslboost::bind(&close_if_open, socket_));
+	auto sock(socket_); // socket shared ptr to be kept alive
+	post(io_, [sock]() {
+		try {
+			if (sock->is_open()) sock->close();
+		} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", __func__, e.what()); }
+	});
 }
 
 // === receive / reply loop ===
 
 void udp_server::request_next_packet() {
 	DLOG_F(5, "udp_server::request_next_packet");
+	auto keepalive(shared_from_this());
 	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
-		lslboost::bind(&udp_server::handle_receive_outcome, shared_from_this(), placeholders::error,
-			placeholders::bytes_transferred));
+		[keepalive, this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
 }
 
 void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
@@ -131,9 +129,12 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 						string_p replymsg(
 							std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
+						auto keepalive(shared_from_this());
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
-							lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
-								replymsg, placeholders::error));
+							[keepalive, replymsg, this](err_t err, std::size_t len) {
+								if (err != error::operation_aborted && err != error::shut_down)
+									request_next_packet();
+							});
 						return;
 					} else {
 						LOG_F(INFO, "%p Got shortinfo query for mismatching query string: %s", this,
@@ -151,9 +152,12 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					reply.precision(16);
 					reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
 					string_p replymsg(std::make_shared<std::string>(reply.str()));
+					auto keepalive(shared_from_this());
 					socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
-						lslboost::bind(&udp_server::handle_send_outcome, shared_from_this(),
-							replymsg, placeholders::error));
+						[keepalive, replymsg, this](err_t err, std::size_t len) {
+							if (err != error::operation_aborted && err != error::shut_down)
+								request_next_packet();
+						});
 					return;
 				} else {
 					DLOG_F(INFO, "Unknown method '%s' received by udp-server", method.c_str());
@@ -164,10 +168,4 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 		}
 		request_next_packet();
 	}
-}
-
-void udp_server::handle_send_outcome(string_p /*replymsg*/, error_code err) {
-	if (err != error::operation_aborted && err != error::shut_down)
-		// done sending: ask for next packet
-		request_next_packet();
 }

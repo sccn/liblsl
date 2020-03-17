@@ -1,7 +1,6 @@
 #include "info_receiver.h"
 #include "cancellable_streambuf.h"
 #include "inlet_connection.h"
-#include <boost/bind.hpp>
 #include <iostream>
 #include <memory>
 

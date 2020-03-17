@@ -86,13 +86,7 @@ private:
 	/// Handler that gets called when a receive has completed.
 	void handle_receive_outcome(error_code err, std::size_t len);
 
-	/// Handler that gets called when a send has completed.
-	void handle_send_outcome(endpoint_list::const_iterator i, error_code err);
-
 	// === cancellation ===
-
-	/// Handler that gets called when the give up timeout has expired.
-	void handle_timeout(error_code err);
 
 	/// Cancel the outstanding operations.
 	void do_cancel();

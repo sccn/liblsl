@@ -4,13 +4,10 @@
 #include "socket_utils.h"
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
-#include <boost/bind.hpp>
-
-
-// === implementation of the resolver_burst_udp class ===
 
 using namespace lsl;
 using namespace lslboost::asio;
+using err_t = const lslboost::system::error_code &;
 
 resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
@@ -73,22 +70,25 @@ void resolve_attempt_udp::begin() {
 	// also initiate the cancel event, if desired
 	if (cancel_after_ != FOREVER) {
 		cancel_timer_.expires_after(timeout_sec(cancel_after_));
-		cancel_timer_.async_wait(lslboost::bind(
-			&resolve_attempt_udp::handle_timeout, shared_from_this(), placeholders::error));
+		auto keepalive(shared_from_this());
+		cancel_timer_.async_wait([keepalive, this](err_t err) {
+			if (!err) do_cancel();
+		});
 	}
 }
 
 void resolve_attempt_udp::cancel() {
-	post(io_, lslboost::bind(&resolve_attempt_udp::do_cancel, shared_from_this()));
+	auto keepalive(shared_from_this());
+	post(io_, [keepalive]() { keepalive->do_cancel(); });
 }
 
 
 // === receive loop ===
 
 void resolve_attempt_udp::receive_next_result() {
+	auto keepalive(shared_from_this());
 	recv_socket_.async_receive_from(buffer(resultbuf_), remote_endpoint_,
-		lslboost::bind(&resolve_attempt_udp::handle_receive_outcome, shared_from_this(),
-			placeholders::error, placeholders::bytes_transferred));
+		[keepalive, this](err_t err, size_t len) { handle_receive_outcome(err, len); });
 }
 
 void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len) {
@@ -142,9 +142,9 @@ void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len
 
 // === send loop ===
 
-void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator i) {
-	if (i != targets_.end() && !cancelled_) {
-		udp::endpoint ep(*i);
+void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
+	if (next != targets_.end() && !cancelled_) {
+		udp::endpoint ep(*next++);
 		// endpoint matches our active protocol?
 		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
 			// select socket to use
@@ -153,27 +153,17 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator i) {
 					? broadcast_socket_
 					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 			// and send the query over it
-			sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
-				lslboost::bind(&resolve_attempt_udp::handle_send_outcome, shared_from_this(), ++i,
-					placeholders::error));
+			auto keepalive(shared_from_this());
+			sock.async_send_to(
+				lslboost::asio::buffer(query_msg_), ep, [keepalive, this, next](err_t err, size_t) {
+					if (!cancelled_ && err != error::operation_aborted &&
+						err != error::not_connected && err != error::not_socket)
+						send_next_query(next);
+				});
 		} else
 			// otherwise just go directly to the next query
-			send_next_query(++i);
+			send_next_query(next);
 	}
-}
-
-/// Handler that gets called when a send has completed
-void resolve_attempt_udp::handle_send_outcome(endpoint_list::const_iterator i, error_code err) {
-	if (!cancelled_ && err != error::operation_aborted && err != error::not_connected &&
-		err != error::not_socket)
-		send_next_query(i);
-}
-
-
-// === cancellation logic ===
-
-void resolve_attempt_udp::handle_timeout(error_code err) {
-	if (!err) do_cancel();
 }
 
 void resolve_attempt_udp::do_cancel() {

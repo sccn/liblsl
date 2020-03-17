@@ -64,9 +64,6 @@ private:
 	/// Handler that gets called when a the next packet was received (or the op was cancelled).
 	void handle_receive_outcome(error_code err, std::size_t len);
 
-	/// Handler that gets called after a response packet has been sent off.
-	void handle_send_outcome(string_p replymsg, error_code err);
-
 	/// stream_info reference
 	stream_info_impl_p info_;
 	/// IO service reference
