@@ -122,6 +122,7 @@ else()
 endif()
 set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}/boost:\" BOOST_LIB_VERSION")
 set_source_files_properties("src/common.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
+set_source_files_properties("src/loguru/loguru.cpp" PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
 
 
 ## create the lslboost target
@@ -171,7 +172,6 @@ target_include_directories(lslobj
 target_compile_definitions(lslobj
 	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
 		LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
-		LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>
 	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 )
 
