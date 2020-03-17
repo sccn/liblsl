@@ -2,7 +2,6 @@
 #include "cancellable_streambuf.h"
 #include "sample.h"
 #include "socket_utils.h"
-#include <boost/bind.hpp>
 #include <iostream>
 #include <memory>
 

@@ -23,6 +23,7 @@
 #include "portable_archive/portable_oarchive.hpp"
 
 using namespace lslboost::asio;
+using err_t = const lslboost::system::error_code &;
 
 namespace lsl {
 /**
@@ -77,15 +78,8 @@ private:
 	/// Handler that gets called after finishing reading of the query line.
 	void handle_read_query_outcome(error_code err);
 
-	/// Handler that gets called after finishing the sending of a reply (nothing to do here).
-	void handle_send_outcome(error_code) {}
-
 	/// Helper function to send a status message to the connected party.
 	void send_status_message(const std::string &msg);
-
-	/// Handler that gets called after finishing the sending of a message, holding a reference
-	/// to the message.
-	void handle_status_outcome(string_p, error_code) {}
 
 	/// Handler that gets called after finishing the reading of feedparameters.
 	void handle_read_feedparams(
@@ -188,7 +182,8 @@ void tcp_server::end_serving() {
 	shutdown_ = true;
 	// issue closure of the server socket; this will result in a cancellation of the associated IO
 	// operations
-	post(*io_, lslboost::bind(&tcp::acceptor::close, acceptor_));
+	auto keepalive(acceptor_);
+	post(*io_, [keepalive]() { keepalive->close(); });
 	// issue closure of all active client session sockets; cancels the related outstanding IO jobs
 	close_inflight_sockets();
 	// also notify any transfer threads that are blocked waiting for a sample by sending them one (=
@@ -204,9 +199,9 @@ void tcp_server::accept_next_connection() {
 		std::shared_ptr<client_session> newsession{
 			std::make_shared<client_session>(shared_from_this())};
 		// accept a connection on the session's socket
-		acceptor_->async_accept(
-			*newsession->socket(), lslboost::bind(&tcp_server::handle_accept_outcome,
-									   shared_from_this(), newsession, placeholders::error));
+		auto keepalive(shared_from_this());
+		acceptor_->async_accept(*newsession->socket(),
+			[keepalive, newsession, this](err_t err) { handle_accept_outcome(newsession, err); });
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during tcp_server::accept_next_connection: %s", e.what());
 	}
@@ -234,22 +229,22 @@ void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
 	inflight_.erase(sock);
 }
 
-template <class SocketPtr, class Protocol> void shutdown_and_close(SocketPtr sock) {
-	try {
-		if (sock->is_open()) {
-			try {
-				// (in some cases shutdown may fail)
-				sock->shutdown(Protocol::socket::shutdown_both);
-			} catch (...) {}
-			sock->close();
-		}
-	} catch (std::exception &e) { LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what()); }
-}
-
 void tcp_server::close_inflight_sockets() {
 	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
-	for (const auto &i : inflight_)
-		post(*io_, lslboost::bind(&shutdown_and_close<tcp_socket_p, tcp>, i));
+	for (auto sock : inflight_)
+		post(*io_, [sock]() {
+			try {
+				if (sock->is_open()) {
+					try {
+						// (in some cases shutdown may fail)
+						sock->shutdown(sock->shutdown_both);
+					} catch (...) {}
+					sock->close();
+				}
+			} catch (std::exception &e) {
+				LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what());
+			}
+		});
 }
 
 
@@ -272,9 +267,9 @@ void client_session::begin_processing() {
 		serv_->register_inflight_socket(sock_);
 		registered_ = true;
 		// read the request line
+		auto keepalive(shared_from_this());
 		async_read_until(*sock_, requestbuf_, "\r\n",
-			lslboost::bind(&client_session::handle_read_command_outcome, shared_from_this(),
-				placeholders::error));
+			[keepalive, this](err_t err, size_t) { handle_read_command_outcome(err); });
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
@@ -287,29 +282,29 @@ void client_session::handle_read_command_outcome(error_code err) {
 			std::string method;
 			getline(requeststream_, method);
 			method = trim(method);
+			auto keepalive(shared_from_this());
 			if (method == "LSL:shortinfo")
 				// shortinfo request: read the content query string
 				async_read_until(*sock_, requestbuf_, "\r\n",
-					lslboost::bind(&client_session::handle_read_query_outcome, shared_from_this(),
-						placeholders::error));
+					[keepalive, this](err_t err, std::size_t) { handle_read_query_outcome(err); });
 			if (method == "LSL:fullinfo")
 				// fullinfo request: reply right away
 				async_write(*sock_, lslboost::asio::buffer(serv_->fullinfo_msg_),
-					lslboost::bind(&client_session::handle_send_outcome, shared_from_this(),
-						placeholders::error));
+					[keepalive, this](err_t, std::size_t) { });
 			if (method == "LSL:streamfeed")
 				// streamfeed request (1.00): read feed parameters
-				async_read_until(*sock_, requestbuf_, "\r\n",
-					lslboost::bind(&client_session::handle_read_feedparams, shared_from_this(), 100,
-						"", placeholders::error));
+				async_read_until(
+					*sock_, requestbuf_, "\r\n", [keepalive, this](err_t err, std::size_t) {
+						handle_read_feedparams(100, "", err);
+					});
 			if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
 				// streamfeed request with version: read feed parameters
 				std::vector<std::string> parts = splitandtrim(method, ' ', true);
 				int request_protocol_version = std::stoi(parts[0].substr(15));
 				std::string request_uid = (parts.size() > 1) ? parts[1] : "";
-				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
-					lslboost::bind(&client_session::handle_read_feedparams, shared_from_this(),
-						request_protocol_version, request_uid, placeholders::error));
+				async_read_until(*sock_, requestbuf_, "\r\n\r\n", [=](err_t err, std::size_t) {
+					keepalive->handle_read_feedparams(request_protocol_version, request_uid, err);
+				});
 			}
 		}
 	} catch (std::exception &e) {
@@ -324,12 +319,14 @@ void client_session::handle_read_query_outcome(error_code err) {
 			std::string query;
 			getline(requeststream_, query);
 			query = trim(query);
-			if (serv_->info_->matches_query(query))
+			if (serv_->info_->matches_query(query)) {
 				// matches: reply (otherwise just close the stream)
+				auto keepalive(shared_from_this());
 				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
-					lslboost::bind(&client_session::handle_send_outcome, shared_from_this(),
-						placeholders::error));
-			else
+					[keepalive](err_t, std::size_t) {
+						/* keep the client_session alive until the shortinfo is sent completely*/
+					});
+			} else
 				LOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
 		}
 	} catch (std::exception &e) {
@@ -338,10 +335,11 @@ void client_session::handle_read_query_outcome(error_code err) {
 }
 
 void client_session::send_status_message(const std::string &str) {
-	string_p msg(std::make_shared<std::string>(str));
+	auto msg(std::make_shared<std::string>(str));
+	auto keepalive(shared_from_this());
 	async_write(*sock_, lslboost::asio::buffer(*msg),
-		lslboost::bind(
-			&client_session::handle_status_outcome, shared_from_this(), msg, placeholders::error));
+		[msg, keepalive](
+			err_t, std::size_t) { /* keep objects alive until the message is sent */ });
 }
 
 void client_session::handle_read_feedparams(
@@ -489,9 +487,10 @@ void client_session::handle_read_feedparams(
 			else
 				*outarch_ << *temp;
 			// send off the newly created feedheader
-			async_write(*sock_, feedbuf_.data(),
-				lslboost::bind(&client_session::handle_send_feedheader_outcome, shared_from_this(),
-					placeholders::error, placeholders::bytes_transferred));
+			auto keepalive(shared_from_this());
+			async_write(*sock_, feedbuf_.data(), [keepalive, this](err_t err, size_t len) {
+				handle_send_feedheader_outcome(err, len);
+			});
 			DLOG_F(4, "%p sent test pattern samples", this);
 		}
 	} catch (std::exception &e) {
@@ -545,10 +544,10 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 					// send off the chunk that we aggregated so far
 					lslboost::unique_lock<lslboost::mutex> lock(completion_mut_);
 					transfer_completed_ = false;
-					async_write(*sock_, feedbuf_.data(),
-						lslboost::bind(&client_session::handle_chunk_transfer_outcome,
-							shared_from_this(), placeholders::error,
-							placeholders::bytes_transferred));
+					auto keepalive(shared_from_this());
+					async_write(*sock_, feedbuf_.data(), [keepalive, this](err_t err, size_t len) {
+						handle_chunk_transfer_outcome(err, len);
+					});
 					// wait for the completion condition
 					completion_cond_.wait(lock, [this]() { return transfer_completed_; });
 					// handle transfer outcome
