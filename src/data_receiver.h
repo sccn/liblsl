@@ -61,7 +61,7 @@ public:
 
 	/// Retrieve a sample from the sample queue and assign its contents to the given typed buffer.
 	template <class T>
-	double pull_sample_typed(T *buffer, int buffer_elements, double timeout = FOREVER);
+	double pull_sample_typed(T *buffer, uint32_t buffer_elements, double timeout = FOREVER);
 
 	/// Read sample from the inlet and read it into a pointer to raw data.
 	double pull_sample_untyped(void *buffer, int buffer_bytes, double timeout = FOREVER);
