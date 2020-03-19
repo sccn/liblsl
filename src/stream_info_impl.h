@@ -108,7 +108,7 @@ public:
 	const std::string &type() const { return type_; }
 
 	/// Get the number of channels of a stream.
-	int channel_count() const { return channel_count_; }
+	uint32_t channel_count() const { return channel_count_; }
 
 	/// Get the sampling rate of a stream (in Hz) as advertised by the device.
 	double nominal_srate() const { return nominal_srate_; }
@@ -227,7 +227,7 @@ private:
 	// data information
 	std::string name_;
 	std::string type_;
-	int channel_count_;
+	uint32_t channel_count_;
 	double nominal_srate_;
 	lsl_channel_format_t channel_format_;
 	std::string source_id_;
