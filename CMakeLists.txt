@@ -165,7 +165,12 @@ target_include_directories(lslboost PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 
-target_link_libraries(lslobj PRIVATE lslboost)
+# one supplementary dependency for loguru
+if (LSL_DEBUGLOG)
+	target_link_libraries(lslobj PUBLIC ${CMAKE_DL_LIBS}  PRIVATE lslboost)
+else ()
+	target_link_libraries(lslobj PRIVATE lslboost)
+endif (LSL_DEBUGLOG)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
