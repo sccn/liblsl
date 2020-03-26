@@ -11,7 +11,7 @@ option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 add_library(catch_main OBJECT catch_main.cpp)
 target_compile_features(catch_main PUBLIC cxx_std_11)
 
-target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO=${LSL_VERSION_INFO})
+target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO="${LSL_VERSION_INFO}")
 if(LSL_BENCHMARKS)
 	target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 endif()

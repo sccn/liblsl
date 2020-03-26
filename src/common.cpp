@@ -20,14 +20,6 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
-LIBLSL_C_API const char *lsl_library_info() {
-#ifdef LSL_LIBRARY_INFO_STR
-	return LSL_LIBRARY_INFO_STR;
-#else
-	return "Unknown (not set by build system)";
-#endif
-}
-
 LIBLSL_C_API double lsl_local_clock() {
 	return lslboost::chrono::nanoseconds(
 			   lslboost::chrono::high_resolution_clock::now().time_since_epoch())

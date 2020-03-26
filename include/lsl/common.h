@@ -171,7 +171,7 @@ extern LIBLSL_C_API int32_t lsl_library_version();
  *
  * The format of the string shouldn't be used for anything important except giving a debugging
  * person a good idea which exact library version is used. */
-extern LIBLSL_C_API const char *lsl_library_info();
+extern LIBLSL_C_API const char *lsl_library_info(void);
 
 /**
  * Obtain a local system time stamp in seconds.
