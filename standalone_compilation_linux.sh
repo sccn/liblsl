@@ -5,7 +5,7 @@
 # For development, install a recent CMake version, either via pip
 # (pip install cmake) or as binary download from cmake.org
 
-set -x
+set -e -x
 # Try to read LSLGITREVISION from git if the variable isn't set
 echo ${LSLGITREVISION:="$(git describe --tags HEAD)"}
 ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} -Ilslboost \
