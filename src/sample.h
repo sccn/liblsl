@@ -125,7 +125,7 @@ private:
 	factory *factory_;
 	/// the data payload begins here
 	BOOST_ALIGNMENT(8) char data_;
-
+        
 public:
 	// === Construction ===
 
@@ -141,12 +141,10 @@ public:
 	void operator delete(void *x) {
 		// delete the underlying memory only if it wasn't allocated in the factory's storage area
 		sample *s = (sample *)x;
-		if (s && !(s->factory_ &&
-					 (((char *)s) >= s->factory_->storage_ &&
-						 ((char *)s) <= s->factory_->storage_ + s->factory_->storage_size_)))
+		if (s && !s->is_from_factory())
 			delete[](char *) x;
 	}
-
+	
 	/// Test for equality with another sample.
 	bool operator==(const sample &rhs) const noexcept;
 
@@ -361,16 +359,27 @@ private:
 				;
 	}
 
+	/// Test if the sample wasn't allocated in the factory's storage area
+	bool is_from_factory(void) {
+		return (factory_ && (((char *)this) >= factory_->storage_ &&
+			((char *)this) <= factory_->storage_ + factory_->storage_size_));
+	}
+
 	/// Increment ref count.
 	friend void intrusive_ptr_add_ref(sample *s) {
 		s->refcount_.fetch_add(1, std::memory_order_relaxed);
 	}
 
-	/// Decrement ref count and reclaim if unreferenced.
+	/// Decrement ref count, reclaim if unreferenced and belong to factory's storage, delete otherwise to avoid memory leaks
 	friend void intrusive_ptr_release(sample *s) {
 		if (s->refcount_.fetch_sub(1, std::memory_order_release) == 1) {
 			std::atomic_thread_fence(std::memory_order_acquire);
-			s->factory_->reclaim_sample(s);
+			if (s->is_from_factory()) {
+				s->factory_->reclaim_sample(s);
+			}
+			else {
+				delete s;
+			}
 		}
 	}
 };
