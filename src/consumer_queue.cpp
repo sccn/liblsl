@@ -3,7 +3,6 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include <chrono>
-#include <thread>
 
 using namespace lsl;
 
@@ -23,10 +22,13 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
+	// acquire lock for more predictable behavior in regards to pop_sample()
+	std::unique_lock<std::mutex> lk(mut_);
 	while (!buffer_.push(sample)) {
 		sample_p dummy;
 		buffer_.pop(dummy);
 	}
+	cv_.notify_one();
 }
 
 sample_p consumer_queue::pop_sample(double timeout) {
@@ -35,12 +37,10 @@ sample_p consumer_queue::pop_sample(double timeout) {
 		buffer_.pop(result);
 	} else {
 		if (!buffer_.pop(result)) {
-			// turn timeout into the point in time at which we give up
-			timeout += lsl::lsl_clock();
-			do {
-				if (lsl::lsl_clock() >= timeout) break;
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			} while (!buffer_.pop(result));
+			// wait for a new sample until the thread calling push_sample delivers one, or until timeout
+			std::unique_lock<std::mutex> lk(mut_);
+			std::chrono::duration<double> sec(timeout);
+			cv_.wait_for(lk, sec, [&]{ return this->buffer_.pop(result); });
 		}
 	}
 	return result;
