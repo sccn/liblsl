@@ -22,7 +22,10 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
+	// if the buffer is full, drop oldest samples
 	while (!buffer_.push(sample)) {
+		// lock before freeing buffer ta avoid a thread race in pop_sample
+                std::unique_lock<std::mutex> lk(lock_);
 		sample_p dummy;
 		buffer_.pop(dummy);
 	}
@@ -32,11 +35,12 @@ void consumer_queue::push_sample(const sample_p &sample) {
 sample_p consumer_queue::pop_sample(double timeout) {
 	sample_p result;
 	if (timeout <= 0.0) {
+		std::unique_lock<std::mutex> lk(lock_);
 		buffer_.pop(result);
 	} else {
+		std::unique_lock<std::mutex> lk(lock_);
 		if (!buffer_.pop(result)) {
-			// wait untill for a new sample until the thread calling push_sample delivers one, or until timeout
-			std::unique_lock<std::mutex> lk(lock_);
+			// release lock, wait untill for a new sample until the thread calling push_sample delivers one, or until timeout
 			std::chrono::duration<double> sec(timeout);
 			cv_.wait_for(lk, sec, [&]{ return this->buffer_.pop(result); });
 		}
