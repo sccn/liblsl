@@ -2,7 +2,7 @@
 #include "common.h"
 #include "sample.h"
 #include "send_buffer.h"
-#include <boost/chrono/duration.hpp>
+#include <chrono>
 
 using namespace lsl;
 
@@ -26,6 +26,7 @@ void consumer_queue::push_sample(const sample_p &sample) {
 		sample_p dummy;
 		buffer_.pop(dummy);
 	}
+	cv_.notify_one();
 }
 
 sample_p consumer_queue::pop_sample(double timeout) {
@@ -34,12 +35,10 @@ sample_p consumer_queue::pop_sample(double timeout) {
 		buffer_.pop(result);
 	} else {
 		if (!buffer_.pop(result)) {
-			// turn timeout into the point in time at which we give up
-			timeout += lsl::lsl_clock();
-			do {
-				if (lsl::lsl_clock() >= timeout) break;
-				lslboost::this_thread::sleep_for(lslboost::chrono::milliseconds(1));
-			} while (!buffer_.pop(result));
+			// wait untill for a new sample until the thread calling push_sample delivers one, or until timeout
+			std::unique_lock<std::mutex> lk(lock_);
+			std::chrono::duration<double> sec(timeout);
+			cv_.wait_for(lk, sec, [&]{ return this->buffer_.pop(result); });
 		}
 	}
 	return result;

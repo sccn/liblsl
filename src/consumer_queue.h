@@ -4,6 +4,8 @@
 #include "common.h"
 #include "forward.h"
 #include <boost/lockfree/spsc_queue.hpp>
+#include <mutex>
+#include <condition_variable>
 
 namespace lsl {
 /**
@@ -43,6 +45,9 @@ public:
 private:
 	send_buffer_p registry_; // optional consumer registry
 	buffer_type buffer_;	 // the sample buffer
+	// used to wait for new samples
+	std::mutex lock_;
+	std::condition_variable cv_;
 };
 
 } // namespace lsl
