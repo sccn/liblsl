@@ -162,7 +162,11 @@ target_include_directories(lslboost PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 
-target_link_libraries(lslobj PRIVATE lslboost)
+target_link_libraries(lslobj
+	PRIVATE
+		lslboost
+		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
+	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
