@@ -329,7 +329,7 @@ void client_session::handle_read_query_outcome(error_code err) {
 						/* keep the client_session alive until the shortinfo is sent completely*/
 					});
 			} else
-				LOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
+				DLOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
 		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while parsing a client request: %s", e.what());
@@ -356,7 +356,7 @@ void client_session::handle_read_feedparams(
 				send_status_message(
 					"LSL/" + std::to_string(api_config::get_instance()->use_protocol_version()) +
 					" 505 Version not supported");
-				LOG_F(INFO, "%p Got a request for a too new protocol version", this);
+				DLOG_F(INFO, "%p Got a request for a too new protocol version", this);
 				return;
 			}
 			if (!request_uid.empty() && request_uid != serv_->info_->uid()) {

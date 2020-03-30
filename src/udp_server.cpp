@@ -136,7 +136,7 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 							});
 						return;
 					} else {
-						LOG_F(INFO, "%p Got shortinfo query for mismatching query string: %s", this,
+						DLOG_F(INFO, "%p Got shortinfo query for mismatching query string: %s", this,
 							query.c_str());
 					}
 				} else if (time_services_enabled_ && method == "LSL:timedata") {

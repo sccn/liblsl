@@ -76,7 +76,10 @@ void api_config::load_from_file(const std::string &filename) {
 		INI pt;
 		if (!filename.empty()) {
 			std::ifstream infile(filename);
-			if (infile.good()) pt.load(infile);
+			if (infile.good()) {
+				LOG_F(INFO, "Loading configuration from %s", filename.c_str());
+				pt.load(infile);
+			}
 		}
 
 		// read out the [ports] parameters
@@ -206,7 +209,7 @@ void api_config::load_from_file(const std::string &filename) {
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
 		// read the [log] settings
-		int log_level = pt.get("log.level", -1);
+		int log_level = pt.get("log.level", (int) loguru::Verbosity_INFO);
 		if (log_level < -3 || log_level > 9)
 			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
 
