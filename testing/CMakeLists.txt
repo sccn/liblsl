@@ -34,6 +34,8 @@ target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
 
 set(LSL_TESTS lsl_test_exported lsl_test_internal)
 foreach(lsltest ${LSL_TESTS})
-	add_test(NAME ${lsltest} COMMAND ${lsltest})
+	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	installLSLApp(${lsltest})
 endforeach()
+
+installLSLAuxFiles(lsl_test_exported directory lslcfgs)
