@@ -182,8 +182,7 @@ void tcp_server::end_serving() {
 	shutdown_ = true;
 	// issue closure of the server socket; this will result in a cancellation of the associated IO
 	// operations
-	auto keepalive(acceptor_);
-	post(*io_, [keepalive]() { keepalive->close(); });
+	post(*io_, [shared_acceptor = acceptor_]() { shared_acceptor->close(); });
 	// issue closure of all active client session sockets; cancels the related outstanding IO jobs
 	close_inflight_sockets();
 	// also notify any transfer threads that are blocked waiting for a sample by sending them one (=
@@ -199,9 +198,10 @@ void tcp_server::accept_next_connection() {
 		std::shared_ptr<client_session> newsession{
 			std::make_shared<client_session>(shared_from_this())};
 		// accept a connection on the session's socket
-		auto keepalive(shared_from_this());
-		acceptor_->async_accept(*newsession->socket(),
-			[keepalive, newsession, this](err_t err) { handle_accept_outcome(newsession, err); });
+		acceptor_->async_accept(
+			*newsession->socket(), [shared_this = shared_from_this(), newsession, this](err_t err) {
+				shared_this->handle_accept_outcome(newsession, err);
+			});
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during tcp_server::accept_next_connection: %s", e.what());
 	}
@@ -267,9 +267,10 @@ void client_session::begin_processing() {
 		serv_->register_inflight_socket(sock_);
 		registered_ = true;
 		// read the request line
-		auto keepalive(shared_from_this());
-		async_read_until(*sock_, requestbuf_, "\r\n",
-			[keepalive, this](err_t err, size_t) { handle_read_command_outcome(err); });
+		async_read_until(
+			*sock_, requestbuf_, "\r\n", [shared_this = shared_from_this()](err_t err, size_t) {
+				shared_this->handle_read_command_outcome(err);
+			});
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
@@ -282,29 +283,31 @@ void client_session::handle_read_command_outcome(error_code err) {
 			std::string method;
 			getline(requeststream_, method);
 			method = trim(method);
-			auto keepalive(shared_from_this());
 			if (method == "LSL:shortinfo")
 				// shortinfo request: read the content query string
 				async_read_until(*sock_, requestbuf_, "\r\n",
-					[keepalive, this](err_t err, std::size_t) { handle_read_query_outcome(err); });
+					[shared_this = shared_from_this()](
+						err_t err, std::size_t) { shared_this->handle_read_query_outcome(err); });
 			if (method == "LSL:fullinfo")
 				// fullinfo request: reply right away
 				async_write(*sock_, lslboost::asio::buffer(serv_->fullinfo_msg_),
-					[keepalive, this](err_t, std::size_t) { });
+					[shared_this = shared_from_this()](err_t, std::size_t) {});
 			if (method == "LSL:streamfeed")
 				// streamfeed request (1.00): read feed parameters
-				async_read_until(
-					*sock_, requestbuf_, "\r\n", [keepalive, this](err_t err, std::size_t) {
-						handle_read_feedparams(100, "", err);
+				async_read_until(*sock_, requestbuf_, "\r\n",
+					[shared_this = shared_from_this()](err_t err, std::size_t) {
+						shared_this->handle_read_feedparams(100, "", err);
 					});
 			if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
 				// streamfeed request with version: read feed parameters
 				std::vector<std::string> parts = splitandtrim(method, ' ', true);
-				int request_protocol_version = std::stoi(parts[0].substr(15));
-				std::string request_uid = (parts.size() > 1) ? parts[1] : "";
-				async_read_until(*sock_, requestbuf_, "\r\n\r\n", [=](err_t err, std::size_t) {
-					keepalive->handle_read_feedparams(request_protocol_version, request_uid, err);
-				});
+				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
+					[shared_this = shared_from_this(),
+						request_protocol_version = std::stoi(parts[0].substr(15)),
+						request_uid = (parts.size() > 1) ? parts[1] : ""](err_t err, std::size_t) {
+						shared_this->handle_read_feedparams(
+							request_protocol_version, request_uid, err);
+					});
 			}
 		}
 	} catch (std::exception &e) {
@@ -321,9 +324,8 @@ void client_session::handle_read_query_outcome(error_code err) {
 			query = trim(query);
 			if (serv_->info_->matches_query(query)) {
 				// matches: reply (otherwise just close the stream)
-				auto keepalive(shared_from_this());
 				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
-					[keepalive](err_t, std::size_t) {
+					[shared_this = shared_from_this()](err_t, std::size_t) {
 						/* keep the client_session alive until the shortinfo is sent completely*/
 					});
 			} else
@@ -336,9 +338,8 @@ void client_session::handle_read_query_outcome(error_code err) {
 
 void client_session::send_status_message(const std::string &str) {
 	auto msg(std::make_shared<std::string>(str));
-	auto keepalive(shared_from_this());
 	async_write(*sock_, lslboost::asio::buffer(*msg),
-		[msg, keepalive](
+		[msg, shared_this = shared_from_this()](
 			err_t, std::size_t) { /* keep objects alive until the message is sent */ });
 }
 
@@ -487,10 +488,10 @@ void client_session::handle_read_feedparams(
 			else
 				*outarch_ << *temp;
 			// send off the newly created feedheader
-			auto keepalive(shared_from_this());
-			async_write(*sock_, feedbuf_.data(), [keepalive, this](err_t err, size_t len) {
-				handle_send_feedheader_outcome(err, len);
-			});
+			async_write(
+				*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {
+					shared_this->handle_send_feedheader_outcome(err, len);
+				});
 			DLOG_F(4, "%p sent test pattern samples", this);
 		}
 	} catch (std::exception &e) {
@@ -544,10 +545,10 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 					// send off the chunk that we aggregated so far
 					lslboost::unique_lock<lslboost::mutex> lock(completion_mut_);
 					transfer_completed_ = false;
-					auto keepalive(shared_from_this());
-					async_write(*sock_, feedbuf_.data(), [keepalive, this](err_t err, size_t len) {
-						handle_chunk_transfer_outcome(err, len);
-					});
+					async_write(*sock_, feedbuf_.data(),
+						[shared_this = shared_from_this()](err_t err, size_t len) {
+							shared_this->handle_chunk_transfer_outcome(err, len);
+						});
 					// wait for the completion condition
 					completion_cond_.wait(lock, [this]() { return transfer_completed_; });
 					// handle transfer outcome

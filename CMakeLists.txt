@@ -136,7 +136,7 @@ if (UNIX)
 	)
 	find_package(Threads REQUIRED)
 	target_link_libraries(lslboost PUBLIC Threads::Threads)
-	target_compile_features(lslboost PUBLIC cxx_std_11)
+	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
 		lslboost/libs/serialization/src/codecvt_null.cpp

@@ -95,9 +95,9 @@ void udp_server::end_serving() {
 
 void udp_server::request_next_packet() {
 	DLOG_F(5, "udp_server::request_next_packet");
-	auto keepalive(shared_from_this());
 	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
-		[keepalive, this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
+		[shared_this = shared_from_this()](
+			err_t err, std::size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
 
 void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
@@ -129,11 +129,10 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 						string_p replymsg(
 							std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
-						auto keepalive(shared_from_this());
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
-							[keepalive, replymsg, this](err_t err, std::size_t len) {
-								if (err != error::operation_aborted && err != error::shut_down)
-									request_next_packet();
+							[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+								if (err_ != error::operation_aborted && err_ != error::shut_down)
+									shared_this->request_next_packet();
 							});
 						return;
 					} else {
@@ -152,11 +151,10 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					reply.precision(16);
 					reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
 					string_p replymsg(std::make_shared<std::string>(reply.str()));
-					auto keepalive(shared_from_this());
 					socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
-						[keepalive, replymsg, this](err_t err, std::size_t len) {
-							if (err != error::operation_aborted && err != error::shut_down)
-								request_next_packet();
+						[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+							if (err_ != error::operation_aborted && err_ != error::shut_down)
+								shared_this->request_next_packet();
 						});
 					return;
 				} else {
