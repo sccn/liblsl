@@ -347,7 +347,7 @@ void client_session::handle_read_feedparams(
 	int request_protocol_version, std::string request_uid, error_code err) {
 	try {
 		if (!err) {
-			DLOG_F(3, "%p got a streamfeed request", this);
+			DLOG_F(2, "%p got a streamfeed request", this);
 			// --- protocol negotiation ---
 
 			// check request validity
@@ -356,7 +356,7 @@ void client_session::handle_read_feedparams(
 				send_status_message(
 					"LSL/" + std::to_string(api_config::get_instance()->use_protocol_version()) +
 					" 505 Version not supported");
-				DLOG_F(INFO, "%p Got a request for a too new protocol version", this);
+				DLOG_F(WARNING, "%p Got a request for a too new protocol version", this);
 				return;
 			}
 			if (!request_uid.empty() && request_uid != serv_->info_->uid()) {
@@ -408,7 +408,7 @@ void client_session::handle_read_feedparams(
 						if (type == "max-chunk-length") chunk_granularity_ = std::stoi(rest);
 						if (type == "protocol-version") client_protocol_version = std::stoi(rest);
 					} else {
-						DLOG_F(4, "%p Request line '%s' contained no key-value pair", this,
+						DLOG_F(WARNING, "%p Request line '%s' contained no key-value pair", this,
 							hdrline.c_str());
 					}
 				}
@@ -492,7 +492,7 @@ void client_session::handle_read_feedparams(
 				*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {
 					shared_this->handle_send_feedheader_outcome(err, len);
 				});
-			DLOG_F(4, "%p sent test pattern samples", this);
+			DLOG_F(2, "%p sent test pattern samples", this);
 		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while serializing the feed header: %s", e.what());

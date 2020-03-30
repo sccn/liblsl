@@ -50,6 +50,9 @@ resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	os << recv_socket_.local_endpoint().port() << " " << query_id_ << "\r\n";
 	query_msg_ = os.str();
 
+	DLOG_F(2, "Waiting for query results (port %d) for %s", recv_socket_.local_endpoint().port(),
+		query_msg_.c_str());
+
 	// register ourselves as a candidate for cancellation
 	if (registry) register_at(registry);
 }
