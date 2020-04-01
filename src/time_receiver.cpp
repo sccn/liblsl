@@ -3,6 +3,7 @@
 #include "inlet_connection.h"
 #include "socket_utils.h"
 #include <limits>
+#include <sstream>
 
 /// internally used constant to represent an unassigned time offset
 const double NOT_ASSIGNED = std::numeric_limits<double>::max();
