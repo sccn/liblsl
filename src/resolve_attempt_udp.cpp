@@ -4,6 +4,7 @@
 #include "socket_utils.h"
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
+#include <sstream>
 
 using namespace lsl;
 using namespace lslboost::asio;

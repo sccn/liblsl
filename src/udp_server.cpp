@@ -6,6 +6,7 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <sstream>
 
 using namespace lsl;
 using namespace lslboost::asio;

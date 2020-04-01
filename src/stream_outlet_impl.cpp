@@ -3,8 +3,7 @@
 #include "udp_server.h"
 #include <boost/thread/thread_only.hpp>
 #include <memory>
-
-// === implementation of the stream_outlet_impl class ===
+#include <sstream>
 
 using namespace lsl;
 using namespace lslboost::asio;

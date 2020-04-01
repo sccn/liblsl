@@ -1,6 +1,7 @@
 #include "inlet_connection.h"
 #include "api_config.h"
 #include <functional>
+#include <sstream>
 
 // lock types for shared_mutex_t
 #include <boost/thread/lock_types.hpp>
