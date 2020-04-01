@@ -10,10 +10,10 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
-#include <boost/thread/thread_only.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <memory>
+#include <thread>
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads
@@ -505,7 +505,8 @@ void client_session::handle_send_feedheader_outcome(error_code err, std::size_t 
 			// register outstanding work at the server (will be unregistered at session destruction)
 			work_ = std::make_shared<work_p::element_type>(serv_->io_->get_executor());
 			// spawn a sample transfer thread
-			lslboost::thread(&client_session::transfer_samples_thread, this, shared_from_this());
+			std::thread(&client_session::transfer_samples_thread, this, shared_from_this())
+				.detach();
 		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while handling the feedheader send outcome: %s", e.what());

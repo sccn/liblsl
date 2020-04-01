@@ -129,30 +129,24 @@ add_library(lslboost OBJECT
 	lslboost/libs/chrono/src/chrono.cpp
 	lslboost/serialization_objects.cpp
 )
-if (UNIX)
-	target_sources(lslboost PRIVATE
-		lslboost/libs/thread/src/pthread/once.cpp
-		lslboost/libs/thread/src/pthread/thread.cpp
-	)
-else ()  # WIN32
-	target_sources(lslboost PRIVATE
-		lslboost/libs/thread/src/win32/thread.cpp
-		lslboost/libs/thread/src/win32/tss_dll.cpp
-		lslboost/libs/thread/src/win32/tss_pe.cpp
-	)
-	target_link_libraries(lslboost PRIVATE
-		bcrypt
-		$<$<BOOL:${MINGW}>:wsock32 ws2_32 winmm>
-	)
-endif ()
+
+if(WIN32 AND MINGW)
+	target_link_libraries(lslboost PRIVATE wsock32 ws2_32 winmm)
+endif()
 
 find_package(Threads REQUIRED)
-target_link_libraries(lslboost PUBLIC Threads::Threads)
+target_link_libraries(lslboost
+	PUBLIC
+		Threads::Threads
+	PRIVATE
+		$<$<PLATFORM_ID:Windows>:bcrypt>
+	)
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
+		BOOST_ASIO_STANDALONE
 		BOOST_ASIO_SEPARATE_COMPILATION
 		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 		$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
