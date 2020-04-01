@@ -5,9 +5,6 @@
 #include <vector>
 
 #include "common.h"
-namespace lslboost {
-struct once_flag;
-}
 
 namespace lsl {
 /**
@@ -194,10 +191,8 @@ public:
 	api_config &operator=(const api_config &rhs) = delete;
 
 private:
-	// Thread-safe initialization logic (boilerplate).
-	static lslboost::once_flag once_flag;
+	/// Get the api_config singleton after thread-safe initialization if needed
 	static api_config *get_instance_internal();
-	static void called_once();
 
 	/**
 	 * Constructor.

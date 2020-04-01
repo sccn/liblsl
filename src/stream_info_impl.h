@@ -3,7 +3,7 @@
 
 #include "common.h"
 #include "pugixml/pugixml.hpp"
-#include <boost/thread/mutex.hpp>
+#include <mutex>
 #include <unordered_map>
 
 namespace lsl {
@@ -12,7 +12,7 @@ namespace lsl {
 class query_cache {
 	std::unordered_map<std::string, int> cache;
 	int query_cache_age{0};
-	lslboost::mutex cache_mut_;
+	std::mutex cache_mut_;
 
 public:
 	bool matches_query(const pugi::xml_document &doc, const std::string query, bool nocache);

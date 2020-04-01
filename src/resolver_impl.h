@@ -9,8 +9,8 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/noncopyable.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <mutex>
 
 using lslboost::asio::ip::tcp;
 using lslboost::asio::ip::udp;
@@ -167,7 +167,7 @@ private:
 	/// results are stored here
 	result_container results_;
 	/// a mutex that protects the results map
-	lslboost::mutex results_mut_;
+	std::mutex results_mut_;
 
 	// io objects
 	/// our IO service

@@ -1,8 +1,7 @@
 #ifndef CANCELLATION_H
 #define CANCELLATION_H
 
-#include <boost/thread/lock_guard.hpp>
-#include <boost/thread/recursive_mutex.hpp>
+#include <mutex>
 #include <set>
 
 namespace lsl {
@@ -30,7 +29,7 @@ private:
 
 	/// Register a cancellable object.
 	void register_cancellable(class cancellable_obj *o) {
-		lslboost::lock_guard<lslboost::recursive_mutex> lock(state_mut_);
+		std::lock_guard<std::recursive_mutex> lock(state_mut_);
 		if (shutdown_issued_)
 			throw shutdown_error(
 				"The registry has begun to shut down; no new registrations possible.");
@@ -38,14 +37,14 @@ private:
 	}
 	/// Unregister a cancellable object.
 	void unregister_cancellable(class cancellable_obj *o) {
-		lslboost::lock_guard<lslboost::recursive_mutex> lock(state_mut_);
+		std::lock_guard<std::recursive_mutex> lock(state_mut_);
 		cancellables_.erase(o);
 	}
 
 	bool shutdown_issued_{false}; // whether a shutdown has been issued
 	std::set<cancellable_obj *>
 		cancellables_; // a set of objects that we have to cancel upon re-resolves & disengage
-	lslboost::recursive_mutex state_mut_; // mutex to protect the registry's state
+	std::recursive_mutex state_mut_; // mutex to protect the registry's state
 };
 
 
@@ -77,7 +76,7 @@ private:
 
 /// Cancel all registered objects.
 inline void cancellable_registry::cancel_all_registered() {
-	lslboost::lock_guard<lslboost::recursive_mutex> lock(state_mut_);
+	std::lock_guard<std::recursive_mutex> lock(state_mut_);
 	std::set<cancellable_obj *> copy(cancellables_);
 	for (auto obj : copy)
 		if (cancellables_.find(obj) != cancellables_.end()) obj->cancel();
@@ -85,7 +84,7 @@ inline void cancellable_registry::cancel_all_registered() {
 
 /// Cancel and prevent future object registrations.
 inline void cancellable_registry::cancel_and_shutdown() {
-	lslboost::lock_guard<lslboost::recursive_mutex> lock(state_mut_);
+	std::lock_guard<std::recursive_mutex> lock(state_mut_);
 	shutdown_issued_ = true;
 	cancel_all_registered();
 }

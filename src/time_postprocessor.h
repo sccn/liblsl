@@ -2,7 +2,8 @@
 #define TIME_POSTPROCESSOR_H
 
 #include "common.h"
-#include <boost/thread/mutex.hpp>
+#include <functional>
+#include <mutex>
 
 
 namespace lsl {
@@ -81,7 +82,7 @@ private:
 	double last_value_;
 
 	/// a mutex that protects the runtime data structures
-	lslboost::mutex processing_mut_;
+	std::mutex processing_mut_;
 };
 
 

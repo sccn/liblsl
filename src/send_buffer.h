@@ -4,9 +4,9 @@
 #include "common.h"
 #include "forward.h"
 #include <boost/container/flat_set.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 
 namespace lsl {
 
@@ -67,9 +67,9 @@ private:
 	/// a set of registered consumer queues
 	consumer_set consumers_;
 	/// mutex to protect the integrity of consumers_
-	lslboost::mutex consumers_mut_;
+	std::mutex consumers_mut_;
 	/// condition variable signaling that a consumer has registered
-	lslboost::condition_variable some_registered_;
+	std::condition_variable some_registered_;
 };
 } // namespace lsl
 

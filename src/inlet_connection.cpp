@@ -2,6 +2,11 @@
 #include "api_config.h"
 #include <functional>
 
+// lock types for shared_mutex_t
+#include <boost/thread/lock_types.hpp>
+using shared_lock_t = lslboost::shared_lock<lslboost::shared_mutex>;
+using unique_lock_t = lslboost::unique_lock<lslboost::shared_mutex>;
+
 using namespace lsl;
 using namespace lslboost::asio;
 
@@ -87,7 +92,7 @@ void inlet_connection::engage() {
 void inlet_connection::disengage() {
 	// shut down the connection
 	{
-		lslboost::lock_guard<lslboost::mutex> lock(shutdown_mut_);
+		std::lock_guard<std::mutex> lock(shutdown_mut_);
 		shutdown_ = true;
 	}
 	shutdown_cond_.notify_all();
@@ -117,7 +122,7 @@ ip::address resolve_v6_addr(const std::string &addr) {
 }
 
 tcp::endpoint inlet_connection::get_tcp_endpoint() {
-	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
+	shared_lock_t lock(host_info_mut_);
 	if (tcp_protocol_ == tcp::v4())
 		return tcp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4data_port());
 	else
@@ -125,7 +130,7 @@ tcp::endpoint inlet_connection::get_tcp_endpoint() {
 }
 
 udp::endpoint inlet_connection::get_udp_endpoint() {
-	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
+	shared_lock_t lock(host_info_mut_);
 
 	if (udp_protocol_ == udp::v4())
 		return udp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4service_port());
@@ -134,12 +139,12 @@ udp::endpoint inlet_connection::get_udp_endpoint() {
 }
 
 std::string inlet_connection::current_uid() {
-	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
+	shared_lock_t lock(host_info_mut_);
 	return host_info_.uid();
 }
 
 double inlet_connection::current_srate() {
-	lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
+	shared_lock_t lock(host_info_mut_);
 	return host_info_.nominal_srate();
 }
 
@@ -148,11 +153,11 @@ double inlet_connection::current_srate() {
 void inlet_connection::try_recover() {
 	if (recovery_enabled_) {
 		try {
-			lslboost::lock_guard<lslboost::mutex> lock(recovery_mut_);
+			std::lock_guard<std::mutex> lock(recovery_mut_);
 			// first create the query string based on the known stream information
 			std::ostringstream query;
 			{
-				lslboost::shared_lock<lslboost::shared_mutex> lock(host_info_mut_);
+				shared_lock_t lock(host_info_mut_);
 				// construct query according to the fields that are present in the stream_info
 				const char *channel_format_strings[] = {"undefined", "float32", "double64",
 					"string", "int32", "int16", "int8", "int64"};
@@ -179,7 +184,7 @@ void inlet_connection::try_recover() {
 					resolver_.resolve_oneshot(query.str(), 1, FOREVER, attempt == 0 ? 1.0 : 5.0);
 				if (!infos.empty()) {
 					// got a result
-					lslboost::unique_lock<lslboost::shared_mutex> lock(host_info_mut_);
+					unique_lock_t lock(host_info_mut_);
 					// check if any of the returned streams is the one that we're currently
 					// connected to
 					for (auto &info : infos)
@@ -194,7 +199,7 @@ void inlet_connection::try_recover() {
 						// cancel all cancellable operations registered with this connection
 						cancel_all_registered();
 						// invoke any callbacks associated with a connection recovery
-						lslboost::lock_guard<lslboost::mutex> lock(onrecover_mut_);
+						std::lock_guard<std::mutex> lock(onrecover_mut_);
 						for (auto &pair : onrecover_) (pair.second)();
 					} else {
 						// there are multiple possible streams to connect to in a recovery attempt:
@@ -228,7 +233,7 @@ void inlet_connection::watchdog_thread() {
 			// we only try to recover if a) there are active transmissions and b) we haven't seen
 			// new data for some time
 			{
-				lslboost::unique_lock<lslboost::mutex> lock(client_status_mut_);
+				std::unique_lock<std::mutex> lock(client_status_mut_);
 				if ((active_transmissions_ > 0) &&
 					(lsl_clock() - last_receive_time_ >
 						api_config::get_instance()->watchdog_time_threshold())) {
@@ -239,9 +244,9 @@ void inlet_connection::watchdog_thread() {
 			// instead of sleeping we're waiting on a condition variable for the sleep duration
 			// so that the watchdog can be cancelled conveniently
 			{
-				lslboost::unique_lock<lslboost::mutex> lock(shutdown_mut_);
+				std::unique_lock<std::mutex> lock(shutdown_mut_);
 				shutdown_cond_.wait_for(lock,
-					lslboost::chrono::duration<double>(
+					std::chrono::duration<double>(
 						api_config::get_instance()->watchdog_check_interval()),
 					[this]() { return shutdown(); });
 			}
@@ -258,7 +263,7 @@ void inlet_connection::try_recover_from_error() {
 			// so we need to notify the other inlet components
 			lost_ = true;
 			try {
-				lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+				std::lock_guard<std::mutex> lock(client_status_mut_);
 				for (auto &pair : onlost_) pair.second->notify_all();
 			} catch (std::exception &e) {
 				LOG_F(ERROR,
@@ -276,36 +281,36 @@ void inlet_connection::try_recover_from_error() {
 // === client status updates ===
 
 void inlet_connection::acquire_watchdog() {
-	lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+	std::lock_guard<std::mutex> lock(client_status_mut_);
 	active_transmissions_++;
 }
 
 void inlet_connection::release_watchdog() {
-	lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+	std::lock_guard<std::mutex> lock(client_status_mut_);
 	active_transmissions_--;
 }
 
 void inlet_connection::update_receive_time(double t) {
-	lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+	std::lock_guard<std::mutex> lock(client_status_mut_);
 	last_receive_time_ = t;
 }
 
-void inlet_connection::register_onlost(void *id, lslboost::condition_variable *cond) {
-	lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+void inlet_connection::register_onlost(void *id, std::condition_variable *cond) {
+	std::lock_guard<std::mutex> lock(client_status_mut_);
 	onlost_[id] = cond;
 }
 
 void inlet_connection::unregister_onlost(void *id) {
-	lslboost::lock_guard<lslboost::mutex> lock(client_status_mut_);
+	std::lock_guard<std::mutex> lock(client_status_mut_);
 	onlost_.erase(id);
 }
 
 void inlet_connection::register_onrecover(void *id, const std::function<void()> &func) {
-	lslboost::lock_guard<lslboost::mutex> lock(onrecover_mut_);
+	std::lock_guard<std::mutex> lock(onrecover_mut_);
 	onrecover_[id] = func;
 }
 
 void inlet_connection::unregister_onrecover(void *id) {
-	lslboost::lock_guard<lslboost::mutex> lock(onrecover_mut_);
+	std::lock_guard<std::mutex> lock(onrecover_mut_);
 	onrecover_.erase(id);
 }

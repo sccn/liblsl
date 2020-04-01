@@ -137,9 +137,9 @@ private:
 	/// the amount of bytes transferred
 	std::size_t transfer_amount_;
 	/// a mutex that protects the completion data
-	lslboost::mutex completion_mut_;
+	std::mutex completion_mut_;
 	/// a condition variable that signals completion
-	lslboost::condition_variable completion_cond_;
+	std::condition_variable completion_cond_;
 };
 
 tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
@@ -220,17 +220,17 @@ void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsessio
 // === graceful cancellation of in-flight sockets ===
 
 void tcp_server::register_inflight_socket(const tcp_socket_p &sock) {
-	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
+	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
 	inflight_.insert(sock);
 }
 
 void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
-	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
+	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
 	inflight_.erase(sock);
 }
 
 void tcp_server::close_inflight_sockets() {
-	lslboost::lock_guard<lslboost::recursive_mutex> lock(inflight_mut_);
+	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
 	for (auto sock : inflight_)
 		post(*io_, [sock]() {
 			try {
@@ -543,7 +543,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 				// if the sample shall be pushed though...
 				if (samp->pushthrough) {
 					// send off the chunk that we aggregated so far
-					lslboost::unique_lock<lslboost::mutex> lock(completion_mut_);
+					std::unique_lock<std::mutex> lock(completion_mut_);
 					transfer_completed_ = false;
 					async_write(*sock_, feedbuf_.data(),
 						[shared_this = shared_from_this()](err_t err, size_t len) {
@@ -570,7 +570,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 void client_session::handle_chunk_transfer_outcome(error_code err, std::size_t len) {
 	try {
 		{
-			lslboost::lock_guard<lslboost::mutex> lock(completion_mut_);
+			std::lock_guard<std::mutex> lock(completion_mut_);
 			// assign the transfer outcome
 			transfer_error_ = err;
 			transfer_amount_ = len;

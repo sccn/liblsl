@@ -3,9 +3,9 @@
 
 #include "common.h"
 #include "forward.h"
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <condition_variable>
+#include <mutex>
 
 namespace lsl {
 class inlet_connection;
@@ -49,9 +49,9 @@ private:
 	/// the full stream_info_impl object (retrieved by the info thread)
 	stream_info_impl_p fullinfo_;
 	/// mutex to protect the fullinfo
-	lslboost::mutex fullinfo_mut_;
+	std::mutex fullinfo_mut_;
 	/// condition variable to indicate that an update for the fullinfo is available
-	lslboost::condition_variable fullinfo_upd_;
+	std::condition_variable fullinfo_upd_;
 };
 
 } // namespace lsl

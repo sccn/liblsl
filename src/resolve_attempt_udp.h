@@ -58,7 +58,7 @@ public:
 	 */
 	resolve_attempt_udp(lslboost::asio::io_context &io, const udp &protocol,
 		const std::vector<udp::endpoint> &targets, const std::string &query,
-		result_container &results, lslboost::mutex &results_mut, double cancel_after = 5.0,
+		result_container &results, std::mutex &results_mut, double cancel_after = 5.0,
 		cancellable_registry *registry = nullptr);
 
 	/// Destructor
@@ -98,7 +98,7 @@ private:
 	/// shared result container
 	result_container &results_;
 	/// shared mutex that protects the results
-	lslboost::mutex &results_mut_;
+	std::mutex &results_mut_;
 
 	// constant over the lifetime of this attempt
 	/// the timeout for giving up
