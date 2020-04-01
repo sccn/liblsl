@@ -134,9 +134,6 @@ if (UNIX)
 		lslboost/libs/thread/src/pthread/once.cpp
 		lslboost/libs/thread/src/pthread/thread.cpp
 	)
-	find_package(Threads REQUIRED)
-	target_link_libraries(lslboost PUBLIC Threads::Threads)
-	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
 		lslboost/libs/thread/src/win32/thread.cpp
@@ -149,10 +146,15 @@ else ()  # WIN32
 	)
 endif ()
 
+find_package(Threads REQUIRED)
+target_link_libraries(lslboost PUBLIC Threads::Threads)
+target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
+
 target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
 		BOOST_ASIO_SEPARATE_COMPILATION
+		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 		$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:BOOST_THREAD_BUILD_DLL>

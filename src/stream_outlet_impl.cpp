@@ -1,7 +1,6 @@
 #include "stream_outlet_impl.h"
 #include "tcp_server.h"
 #include "udp_server.h"
-#include <boost/thread/thread_only.hpp>
 #include <memory>
 #include <sstream>
 
@@ -45,7 +44,7 @@ stream_outlet_impl::stream_outlet_impl(
 	// and start the IO threads to handle them
 	const std::string name{"IO_" + this->info().name().substr(0, 11)};
 	for (const auto &io : ios_)
-		io_threads_.emplace_back(std::make_shared<lslboost::thread>([io, name]() {
+		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
 			loguru::set_thread_name(name.c_str());
 			while (true) {
 				try {
@@ -94,21 +93,44 @@ stream_outlet_impl::~stream_outlet_impl() {
 		for (auto &tcp_server : tcp_servers_) tcp_server->end_serving();
 		for (auto &udp_server : udp_servers_) udp_server->end_serving();
 		for (auto &responder : responders_) responder->end_serving();
-		// join the IO threads
-		for (std::size_t k = 0; k < io_threads_.size(); k++)
-			if (!io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000))) {
-				// .. using force, if necessary (should only ever happen if the CPU is maxed out)
-				std::ostringstream os;
-				os << io_threads_[k]->get_id();
-				LOG_F(ERROR, "Tearing down stream_outlet of thread %s", os.str().c_str());
-				ios_[k]->stop();
-				for (int attempt = 1;
-					 !io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000));
-					 attempt++) {
-					LOG_F(ERROR, "Thread %s didn't complete.", os.str().c_str());
-					io_threads_[k]->interrupt();
+
+		// In theory, an io context should end quickly, but in practice it
+		// might take a while. So we
+		// 1. ask them to stop after they've finished their current task
+		// 2. wait a bit
+		// 3. stop the io contexts from our thread. Not ideal, but better than
+		// 4. waiting a bit and
+		// 5. detaching thread, i.e. letting it hang and continue tearing down
+		//    the outlet
+		for (auto &ios : ios_) lslboost::asio::post(*ios, [ios]() { ios->stop(); });
+		const char *name = this->info().name().c_str();
+		for (int try_nr = 0; try_nr <= 100; ++try_nr) {
+			switch (try_nr) {
+			case 0: DLOG_F(INFO, "Trying to join IO threads for %s", name); break;
+			case 20: LOG_F(INFO, "Waiting for %s's IO threads to end", name); break;
+			case 80:
+				LOG_F(WARNING, "Stopping io_contexts for %s", name);
+				for (std::size_t k = 0; k < io_threads_.size(); k++) {
+					if (!io_threads_[k]->joinable()) {
+						LOG_F(ERROR, "Tearing down stream_outlet of %s's thread #%d", name, k);
+						ios_[k]->stop();
+					}
 				}
+				break;
+			case 100:
+				LOG_F(ERROR, "Detaching io_threads for %s", name);
+				for (auto &thread : io_threads_) thread->detach();
+				return;
 			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(25));
+			if (std::all_of(io_threads_.begin(), io_threads_.end(),
+					[](thread_p thread) { return thread->joinable(); })) {
+				for (auto &thread : io_threads_) thread->join();
+				DLOG_F(INFO, "All of %s's IO threads were joined succesfully", name);
+				break;
+			}
+		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during destruction of a stream outlet: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
