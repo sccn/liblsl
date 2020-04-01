@@ -5,6 +5,7 @@
 #include "legacy_abi.h"
 #include "../resolver_impl.h"
 #include "../pugixml/pugixml.hpp"
+#include <sstream>
 
 #define NO_EXPLICIT_TEMPLATE_INSTANTIATION
 

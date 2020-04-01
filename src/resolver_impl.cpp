@@ -141,7 +141,7 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 	std::vector<stream_info_impl> output;
-	lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
+	std::lock_guard<std::mutex> lock(results_mut_);
 	double expired_before = lsl_clock() - forget_after_;
 
 	for (auto it = results_.begin(); it != results_.end();) {
@@ -160,7 +160,7 @@ std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 void resolver_impl::next_resolve_wave() {
 	std::size_t num_results = 0;
 	{
-		lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
+		std::lock_guard<std::mutex> lock(results_mut_);
 		num_results = results_.size();
 	}
 	if (cancelled_ || expired_ ||

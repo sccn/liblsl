@@ -5,8 +5,9 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/random/mersenne_twister.hpp>
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <condition_variable>
+#include <mutex>
 
 using lslboost::asio::steady_timer;
 using lslboost::asio::ip::udp;
@@ -97,9 +98,9 @@ private:
 	/// round trip time (a.k.a. uncertainty) at the specficied timeoffset_
 	double uncertainty_;
 	/// mutex to protect the time offset
-	lslboost::mutex timeoffset_mut_;
+	std::mutex timeoffset_mut_;
 	/// condition variable to indicate that an update for the time offset is available
-	lslboost::condition_variable timeoffset_upd_;
+	std::condition_variable timeoffset_upd_;
 
 
 	// data used internally by the background thread
