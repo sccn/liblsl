@@ -86,8 +86,7 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 }
 
 void inlet_connection::engage() {
-	if (recovery_enabled_)
-		watchdog_thread_ = lslboost::thread(&inlet_connection::watchdog_thread, this);
+	if (recovery_enabled_) watchdog_thread_ = std::thread(&inlet_connection::watchdog_thread, this);
 }
 
 void inlet_connection::disengage() {

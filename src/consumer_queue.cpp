@@ -2,8 +2,8 @@
 #include "common.h"
 #include "sample.h"
 #include "send_buffer.h"
-#include <boost/chrono/duration.hpp>
-#include <boost/thread/thread_only.hpp>
+#include <chrono>
+#include <thread>
 
 using namespace lsl;
 
@@ -39,7 +39,7 @@ sample_p consumer_queue::pop_sample(double timeout) {
 			timeout += lsl::lsl_clock();
 			do {
 				if (lsl::lsl_clock() >= timeout) break;
-				lslboost::this_thread::sleep_for(lslboost::chrono::milliseconds(1));
+				std::this_thread::sleep_for(std::chrono::milliseconds(1));
 			} while (!buffer_.pop(result));
 		}
 	}

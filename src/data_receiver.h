@@ -4,9 +4,9 @@
 #include "cancellation.h"
 #include "consumer_queue.h"
 #include "inlet_connection.h"
-#include <boost/thread/thread_only.hpp>
 #include <condition_variable>
 #include <mutex>
+#include <thread>
 
 using lslboost::asio::ip::tcp;
 
@@ -84,7 +84,7 @@ private:
 	/// a factory to create samples of appropriate type
 	factory_p sample_factory_;
 	/// background read thread
-	lslboost::thread data_thread_;
+	std::thread data_thread_;
 	/// whether we need to check whether the thread has been started
 	bool check_thread_start_;
 	/// indicates to the data thread that it a close has been requested

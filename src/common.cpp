@@ -1,9 +1,8 @@
 #include "common.h"
 #include "api_config.h"
 #include <algorithm>
-#include <boost/chrono/duration.hpp>
-#include <boost/chrono/system_clocks.hpp>
 #include <cctype>
+#include <chrono>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -21,8 +20,7 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
 LIBLSL_C_API double lsl_local_clock() {
-	return lslboost::chrono::nanoseconds(
-			   lslboost::chrono::high_resolution_clock::now().time_since_epoch())
+	return std::chrono::nanoseconds(std::chrono::high_resolution_clock::now().time_since_epoch())
 			   .count() /
 		   1000000000.0;
 }
