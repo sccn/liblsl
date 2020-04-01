@@ -315,7 +315,7 @@ private:
 	 * Check whether some given number of channels matches the stream's channel_count.
 	 * Throws an error if not.
 	 */
-	void check_numchan(int32_t chns) {
+	void check_numchan(uint32_t chns) {
 		if (chns != info_->channel_count())
 			throw std::range_error("The provided sample data has a different length than the "
 								   "stream's number of channels.");

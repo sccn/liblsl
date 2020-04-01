@@ -25,7 +25,7 @@ set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
 # Add an object library so all files are only compiled once
-set(lslobj_sources
+add_library(lslobj OBJECT
 	src/api_config.cpp
 	src/api_config.h
 	src/api_types.hpp
@@ -96,7 +96,6 @@ set(lslobj_sources
 	include/lsl/types.h
 	include/lsl/xml.h
 )
-add_library(lslobj OBJECT ${lslobj_sources})
 
 # try to find out which revision is currently checked out
 find_package(Git)
@@ -120,10 +119,8 @@ else()
 	set(lslgitrevision "unknown")
 	set(lslgitbranch "unknown")
 endif()
-set(LSL_VERSION_INFO "\"git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}/boost:\" BOOST_LIB_VERSION")
-set_source_files_properties("src/common.cpp" PROPERTIES COMPILE_DEFINITIONS LSL_LIBRARY_INFO_STR=${LSL_VERSION_INFO})
+set(LSL_VERSION_INFO "git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
 set_source_files_properties("src/loguru/loguru.cpp" PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
-
 
 ## create the lslboost target
 add_library(lslboost OBJECT
@@ -139,7 +136,7 @@ if (UNIX)
 	)
 	find_package(Threads REQUIRED)
 	target_link_libraries(lslboost PUBLIC Threads::Threads)
-	target_compile_features(lslboost PUBLIC cxx_std_11)
+	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
 		lslboost/libs/serialization/src/codecvt_null.cpp
@@ -165,7 +162,11 @@ target_include_directories(lslboost PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 
-target_link_libraries(lslobj PRIVATE lslboost)
+target_link_libraries(lslobj
+	PRIVATE
+		lslboost
+		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
+	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
@@ -176,37 +177,24 @@ target_compile_definitions(lslobj
 )
 
 # shared library
-if (CMAKE_GENERATOR MATCHES "Xcode")
-    # Xcode is rather annoying in that it doesn't build SHARED libs unless they have source files.
-    # So we need to build from source, and then add all the other settings missing due to lack of lslobj
-    add_library(lsl SHARED ${lslobj_sources})
-    target_link_libraries(lsl PRIVATE lslboost)
-else()
-    add_library(lsl SHARED)
-    target_link_libraries(lsl
-		PUBLIC lslobj
-		PRIVATE lslboost)
-endif()
-target_include_directories(lsl
-	PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-		$<INSTALL_INTERFACE:include>
-)
-target_compile_definitions(lsl
-	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
-	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-)
-
+add_library(lsl SHARED src/buildinfo.cpp)
+target_compile_definitions(lsl PRIVATE
+	LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:shared"
+	LIBLSL_EXPORTS)
+target_link_libraries(lsl
+	PUBLIC lslobj
+	PRIVATE lslboost)
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
 
 set(LSL_EXPORT_TARGETS lsl lslobj lslboost)
 if(LSL_BUILD_STATIC)
-	add_library(lsl-static STATIC)
+	add_library(lsl-static STATIC src/buildinfo.cpp)
+	target_compile_definitions(lsl-static PRIVATE LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:static")
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
 	# for LSL_CPP_API export header
-	target_compile_definitions(lsl-static INTERFACE LIBLSL_STATIC)
+	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
 endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)

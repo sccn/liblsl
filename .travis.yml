@@ -7,20 +7,13 @@ matrix:
   - os: osx
     osx_image: xcode10.1
     env: OSXVER=MacOS10.13
-  - os: osx
-    osx_image: xcode9.2
-    env: OSXVER=MacOS10.12
-  - os: osx
-    osx_image: xcode8
-    env: OSXVER=MacOS10.11
 before_script:
 - brew update
 - brew upgrade cmake
 script:
-- mkdir -p build/install
-- cd build
 - cmake --version
-- cmake -DCMAKE_BUILD_TYPE=Release -DLSL_UNIXFOLDERS=1 ${CMakeArgs} -DLSL_UNITTESTS=1 ../
+- cmake -S . -B build ${CMakeArgs} -DLSL_UNITTESTS=1
+- cd build
 - cmake --build . --config Release --target install
 - testing/lsl_test_internal || true
 - testing/lsl_test_exported

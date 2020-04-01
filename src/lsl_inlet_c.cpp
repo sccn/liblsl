@@ -282,7 +282,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 		// capture output in a temporary string buffer
 		if (data_buffer_elements) {
 			std::vector<std::string> tmp(data_buffer_elements);
-			unsigned long result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
+			uint32_t result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
 			for (std::size_t k = 0; k < tmp.size(); k++) {
@@ -320,7 +320,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 		// capture output in a temporary string buffer
 		if (data_buffer_elements) {
 			std::vector<std::string> tmp(data_buffer_elements);
-			unsigned long result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
+			uint32_t result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
 			for (uint32_t k = 0; k < tmp.size(); k++) {

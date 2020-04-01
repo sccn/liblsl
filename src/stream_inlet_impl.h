@@ -190,7 +190,7 @@ public:
 	 * @throws lost_error (if the stream source has been lost).
 	 */
 	template <class T>
-	std::size_t pull_chunk_multiplexed(T *data_buffer, double *timestamp_buffer,
+	uint32_t pull_chunk_multiplexed(T *data_buffer, double *timestamp_buffer,
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		std::size_t samples_written = 0, num_chans = info().channel_count(),
@@ -203,17 +203,17 @@ public:
 				"The timestamp buffer must hold the same number of samples as the data buffer.");
 		double end_time = timeout ? lsl_clock() + timeout : 0.0;
 		for (samples_written = 0; samples_written < max_samples; samples_written++) {
-			if (double ts = pull_sample(&data_buffer[samples_written * num_chans], num_chans,
+			if (double ts = pull_sample(&data_buffer[samples_written * num_chans], (int) num_chans,
 					timeout ? end_time - lsl_clock() : 0.0)) {
 				if (timestamp_buffer) timestamp_buffer[samples_written] = ts;
 			} else
 				break;
 		}
-		return samples_written * num_chans;
+		return static_cast<uint32_t>(samples_written * num_chans);
 	}
 
 	template <class T>
-	std::size_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer,
+	uint32_t pull_chunk_multiplexed_noexcept(T *data_buffer, double *timestamp_buffer,
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0, lsl_error_code_t *ec = nullptr) noexcept {
 		lsl_error_code_t dummy;

@@ -11,7 +11,7 @@ option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 add_library(catch_main OBJECT catch_main.cpp)
 target_compile_features(catch_main PUBLIC cxx_std_11)
 
-target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO=${LSL_VERSION_INFO})
+target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO="${LSL_VERSION_INFO}")
 if(LSL_BENCHMARKS)
 	target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 endif()
@@ -34,6 +34,8 @@ target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
 
 set(LSL_TESTS lsl_test_exported lsl_test_internal)
 foreach(lsltest ${LSL_TESTS})
-	add_test(NAME ${lsltest} COMMAND ${lsltest})
+	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	installLSLApp(${lsltest})
 endforeach()
+
+installLSLAuxFiles(lsl_test_exported directory lslcfgs)

@@ -3,8 +3,6 @@
 #include <memory>
 
 
-// === implementation of the send_buffer class ===
-
 using namespace lsl;
 
 /**

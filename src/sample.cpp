@@ -5,12 +5,12 @@
 
 using namespace lsl;
 
-bool sample::operator==(const sample &rhs) const BOOST_NOEXCEPT {
+bool sample::operator==(const sample &rhs) const noexcept {
 	if ((timestamp != rhs.timestamp) || (format_ != rhs.format_) ||
 		(num_channels_ != rhs.num_channels_))
 		return false;
 	if (format_ != cft_string)
-		return memcmp(&(rhs.data_), &data_, format_sizes[format_] * num_channels_) == 0;
+		return memcmp(&(rhs.data_), &data_, datasize()) == 0;
 	else {
 		std::string *data = (std::string *)&data_;
 		std::string *rhsdata = (std::string *)&(rhs.data_);
@@ -111,7 +111,7 @@ void sample::load_raw(std::streambuf &sb, void *address, std::size_t count) {
 }
 
 void sample::save_streambuf(
-	std::streambuf &sb, int protocol_version, int use_byte_order, void *scratchpad) const {
+	std::streambuf &sb, int /*protocol_version*/, int use_byte_order, void *scratchpad) const {
 	// write sample header
 	if (timestamp == DEDUCED_TIMESTAMP) {
 		save_value(sb, TAG_DEDUCED_TIMESTAMP, use_byte_order);
@@ -146,17 +146,16 @@ void sample::save_streambuf(
 	} else {
 		// write numeric data in binary
 		if (use_byte_order == BOOST_BYTE_ORDER || format_sizes[format_] == 1) {
-			save_raw(sb, &data_, format_sizes[format_] * num_channels_);
+			save_raw(sb, &data_, datasize());
 		} else {
-			memcpy(scratchpad, &data_, format_sizes[format_] * num_channels_);
+			memcpy(scratchpad, &data_, datasize());
 			convert_endian(scratchpad);
-			save_raw(sb, scratchpad, format_sizes[format_] * num_channels_);
+			save_raw(sb, scratchpad, datasize());
 		}
 	}
 }
 
-void sample::load_streambuf(
-	std::streambuf &sb, int protocol_version, int use_byte_order, bool suppress_subnormals) {
+void sample::load_streambuf(std::streambuf &sb, int, int use_byte_order, bool suppress_subnormals) {
 	// read sample header
 	uint8_t tag;
 	load_value(sb, tag, use_byte_order);
@@ -208,7 +207,7 @@ void sample::load_streambuf(
 		}
 	} else {
 		// read numeric channel data
-		load_raw(sb, &data_, format_sizes[format_] * num_channels_);
+		load_raw(sb, &data_, datasize());
 		if (use_byte_order != BOOST_BYTE_ORDER && format_sizes[format_] > 1) convert_endian(&data_);
 		if (suppress_subnormals && format_float[format_]) {
 			if (format_ == cft_float32) {
@@ -226,8 +225,7 @@ void sample::load_streambuf(
 	}
 }
 
-template <class Archive>
-void sample::serialize_channels(Archive &ar, const uint32_t archive_version) {
+template <class Archive> void sample::serialize_channels(Archive &ar, const uint32_t) {
 	switch (format_) {
 	case cft_float32:
 		for (float *p = (float *)&data_, *e = p + num_channels_; p < e; ar & *p++)
@@ -289,52 +287,49 @@ void sample::load(eos::portable_iarchive &ar, const uint32_t archive_version) {
 	serialize_channels(ar, archive_version);
 }
 
+template <typename T> void test_pattern(T *data, uint32_t num_channels, int offset) {
+	const int mod = std::is_integral<T>::value ? (int)std::numeric_limits<T>::max() : 1;
+	for (std::size_t k = 0; k < num_channels; k++) {
+		data[k] = static_cast<T>((k + static_cast<std::size_t>(offset)) % mod);
+		if (k % 2 == 1) data[k] = -data[k];
+	}
+}
+
 sample &sample::assign_test_pattern(int offset) {
 	pushthrough = 1;
 	timestamp = 123456.789;
 
 	switch (format_) {
-	case cft_float32: {
-		float *data = (float *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = ((float)k + (float)offset) * (k % 2 == 0 ? 1 : -1);
+	case cft_float32:
+		test_pattern(reinterpret_cast<float *>(&data_), num_channels_, offset + 0);
 		break;
-	}
-	case cft_double64: {
-		double *data = (double *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = (k + offset + 16777217) * (k % 2 == 0 ? 1 : -1);
+	case cft_double64:
+		test_pattern(reinterpret_cast<double *>(&data_), num_channels_, offset + 16777217);
 		break;
-	}
 	case cft_string: {
 		std::string *data = (std::string *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = to_string((k + 10) * (k % 2 == 0 ? 1 : -1));
+		offset += 10;
+		for (uint32_t k = 0u; k < num_channels_; k++)
+			data[k] = to_string(k * (k % 2 == 0 ? 1 : -1));
 		break;
 	}
-	case cft_int32: {
-		int32_t *data = (int32_t *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = ((k + offset + 65537) % 2147483647) * (k % 2 == 0 ? 1 : -1);
+	case cft_int32:
+		test_pattern(reinterpret_cast<int32_t *>(&data_), num_channels_, offset + 65537);
 		break;
-	}
-	case cft_int16: {
-		int16_t *data = (int16_t *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = (int16_t)(((k + offset + 257) % 32767) * (k % 2 == 0 ? 1 : -1));
+	case cft_int16:
+		test_pattern(reinterpret_cast<int16_t *>(&data_), num_channels_, offset + 257);
 		break;
-	}
-	case cft_int8: {
-		int8_t *data = (int8_t *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = (int8_t)(((k + offset + 1) % 127) * (k % 2 == 0 ? 1 : -1));
+	case cft_int8:
+		test_pattern(reinterpret_cast<int8_t *>(&data_), num_channels_, offset + 1);
 		break;
-	}
 #ifndef BOOST_NO_INT64_T
 	case cft_int64: {
 		int64_t *data = (int64_t *)&data_;
-		for (int k = 0; k < num_channels_; k++)
-			data[k] = ((2 + k + (int64_t)offset + 2147483647)) * (int64_t)(k % 2 == 0 ? 1 : -1);
+		int64_t offset64 = 2147483649ll + offset;
+		for (uint32_t k = 0; k < num_channels_; k++) {
+			data[k] = (k + offset64);
+			if (k % 2 == 1) data[k] = -data[k];
+		}
 		break;
 	}
 #endif
@@ -344,11 +339,11 @@ sample &sample::assign_test_pattern(int offset) {
 	return *this;
 }
 
-factory::factory(lsl_channel_format_t fmt, int num_chans, int num_reserve)
+factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_reserve)
 	: fmt_(fmt), num_chans_(num_chans),
 	  sample_size_(
 		  ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
-	  storage_size_(sample_size_ * std::max(1, num_reserve)), storage_(new char[storage_size_]),
+	  storage_size_(sample_size_ * std::max(1u, num_reserve)), storage_(new char[storage_size_]),
 	  sentinel_(new_sample_unmanaged(fmt, num_chans, 0.0, false)), head_(sentinel_),
 	  tail_(sentinel_) {
 	// pre-construct an array of samples in the storage area and chain into a freelist
@@ -374,7 +369,7 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 }
 
 sample *factory::new_sample_unmanaged(
-	lsl_channel_format_t fmt, int num_chans, double timestamp, bool pushthrough) {
+	lsl_channel_format_t fmt, uint32_t num_chans, double timestamp, bool pushthrough) {
 #pragma warning(suppress : 4291)
 	sample *result = new (new char[ensure_multiple(
 		sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)])
