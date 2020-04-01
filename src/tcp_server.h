@@ -8,10 +8,9 @@
 #include "forward.h"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/thread/condition_variable.hpp>
-#include <boost/thread/mutex.hpp>
-#include <boost/thread/recursive_mutex.hpp>
+#include <condition_variable>
 #include <memory>
+#include <mutex>
 #include <set>
 
 using lslboost::asio::ip::tcp;
@@ -108,7 +107,7 @@ private:
 
 	// registry of in-flight client sockets (for cancellation)
 	std::set<tcp_socket_p> inflight_;		 // registry of currently in-flight sockets
-	lslboost::recursive_mutex inflight_mut_; // mutex protecting the registry from concurrent access
+	std::recursive_mutex inflight_mut_;		 // mutex protecting the registry from concurrent access
 
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response

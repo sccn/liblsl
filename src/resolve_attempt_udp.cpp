@@ -4,6 +4,7 @@
 #include "socket_utils.h"
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/placeholders.hpp>
+#include <sstream>
 
 using namespace lsl;
 using namespace lslboost::asio;
@@ -11,7 +12,7 @@ using err_t = const lslboost::system::error_code &;
 
 resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
-	lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry)
+	std::mutex &results_mut, double cancel_after, cancellable_registry *registry)
 	: io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after),
 	  cancelled_(false), targets_(targets), query_(query), unicast_socket_(io),
 	  broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), cancel_timer_(io) {
@@ -50,6 +51,9 @@ resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	os << recv_socket_.local_endpoint().port() << " " << query_id_ << "\r\n";
 	query_msg_ = os.str();
 
+	DLOG_F(2, "Waiting for query results (port %d) for %s", recv_socket_.local_endpoint().port(),
+		query_msg_.c_str());
+
 	// register ourselves as a candidate for cancellation
 	if (registry) register_at(registry);
 }
@@ -70,25 +74,23 @@ void resolve_attempt_udp::begin() {
 	// also initiate the cancel event, if desired
 	if (cancel_after_ != FOREVER) {
 		cancel_timer_.expires_after(timeout_sec(cancel_after_));
-		auto keepalive(shared_from_this());
-		cancel_timer_.async_wait([keepalive, this](err_t err) {
+		cancel_timer_.async_wait([shared_this = shared_from_this(), this](err_t err) {
 			if (!err) do_cancel();
 		});
 	}
 }
 
 void resolve_attempt_udp::cancel() {
-	auto keepalive(shared_from_this());
-	post(io_, [keepalive]() { keepalive->do_cancel(); });
+	post(io_, [shared_this = shared_from_this()]() { shared_this->do_cancel(); });
 }
 
 
 // === receive loop ===
 
 void resolve_attempt_udp::receive_next_result() {
-	auto keepalive(shared_from_this());
 	recv_socket_.async_receive_from(buffer(resultbuf_), remote_endpoint_,
-		[keepalive, this](err_t err, size_t len) { handle_receive_outcome(err, len); });
+		[shared_this = shared_from_this()](
+			err_t err, size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
 
 void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len) {
@@ -110,7 +112,7 @@ void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len
 					std::string uid = info.uid();
 					{
 						// update the results
-						lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
+						std::lock_guard<std::mutex> lock(results_mut_);
 						if (results_.find(uid) == results_.end())
 							results_[uid] = std::make_pair(info, lsl_clock()); // insert new result
 						else
@@ -153,12 +155,11 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
 					? broadcast_socket_
 					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 			// and send the query over it
-			auto keepalive(shared_from_this());
-			sock.async_send_to(
-				lslboost::asio::buffer(query_msg_), ep, [keepalive, this, next](err_t err, size_t) {
-					if (!cancelled_ && err != error::operation_aborted &&
+			sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
+				[shared_this = shared_from_this(), next](err_t err, size_t) {
+					if (!shared_this->cancelled_ && err != error::operation_aborted &&
 						err != error::not_connected && err != error::not_socket)
-						send_next_query(next);
+						shared_this->send_next_query(next);
 				});
 		} else
 			// otherwise just go directly to the next query

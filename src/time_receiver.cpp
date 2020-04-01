@@ -3,6 +3,7 @@
 #include "inlet_connection.h"
 #include "socket_utils.h"
 #include <limits>
+#include <sstream>
 
 /// internally used constant to represent an unassigned time offset
 const double NOT_ASSIGNED = std::numeric_limits<double>::max();
@@ -42,7 +43,7 @@ double time_receiver::time_correction(double timeout) {
 }
 
 double time_receiver::time_correction(double *remote_time, double *uncertainty, double timeout) {
-	lslboost::unique_lock<lslboost::mutex> lock(timeoffset_mut_);
+	std::unique_lock<std::mutex> lock(timeoffset_mut_);
 	auto timeoffset_available = [this]() {
 		return (timeoffset_ != std::numeric_limits<double>::max()) || conn_.lost();
 	};
@@ -54,7 +55,7 @@ double time_receiver::time_correction(double *remote_time, double *uncertainty, 
 		if (timeout >= FOREVER)
 			timeoffset_upd_.wait(lock, timeoffset_available);
 		else if (!timeoffset_upd_.wait_for(
-					 lock, lslboost::chrono::duration<double>(timeout), timeoffset_available))
+					 lock, std::chrono::duration<double>(timeout), timeoffset_available))
 			throw timeout_error("The time_correction() operation timed out.");
 	}
 	if (conn_.lost())
@@ -66,7 +67,7 @@ double time_receiver::time_correction(double *remote_time, double *uncertainty, 
 }
 
 bool time_receiver::was_reset() {
-	lslboost::unique_lock<lslboost::mutex> lock(timeoffset_mut_);
+	std::unique_lock<std::mutex> lock(timeoffset_mut_);
 	bool result = was_reset_;
 	was_reset_ = false;
 	return result;
@@ -188,7 +189,7 @@ void time_receiver::result_aggregation_scheduled(error_code err) {
 			}
 			// and notify that the result is available
 			{
-				lslboost::lock_guard<lslboost::mutex> lock(timeoffset_mut_);
+				std::lock_guard<std::mutex> lock(timeoffset_mut_);
 				uncertainty_ = best_rtt;
 				timeoffset_ = -best_offset;
 				remote_time_ = best_remote_time;
@@ -199,7 +200,7 @@ void time_receiver::result_aggregation_scheduled(error_code err) {
 }
 
 void time_receiver::reset_timeoffset_on_recovery() {
-	lslboost::lock_guard<lslboost::mutex> lock(timeoffset_mut_);
+	std::lock_guard<std::mutex> lock(timeoffset_mut_);
 	if (timeoffset_ != NOT_ASSIGNED)
 		// this will only be set to true if the reset may have caused a possible interruption in the
 		// obtained time offsets

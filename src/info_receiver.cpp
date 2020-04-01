@@ -3,6 +3,7 @@
 #include "inlet_connection.h"
 #include <iostream>
 #include <memory>
+#include <sstream>
 
 lsl::info_receiver::info_receiver(inlet_connection &conn) : conn_(conn) {
 	conn_.register_onlost(this, &fullinfo_upd_);
@@ -18,7 +19,7 @@ lsl::info_receiver::~info_receiver() {
 }
 
 const lsl::stream_info_impl &lsl::info_receiver::info(double timeout) {
-	lslboost::unique_lock<lslboost::mutex> lock(fullinfo_mut_);
+	std::unique_lock<std::mutex> lock(fullinfo_mut_);
 	auto info_ready = [this]() { return fullinfo_ || conn_.lost(); };
 	if (!info_ready()) {
 		// start thread if not yet running
@@ -27,8 +28,7 @@ const lsl::stream_info_impl &lsl::info_receiver::info(double timeout) {
 		// wait until we are ready to return a result (or we time out)
 		if (timeout >= FOREVER)
 			fullinfo_upd_.wait(lock, info_ready);
-		else if (!fullinfo_upd_.wait_for(
-					 lock, lslboost::chrono::duration<double>(timeout), info_ready))
+		else if (!fullinfo_upd_.wait_for(lock, std::chrono::duration<double>(timeout), info_ready))
 			throw timeout_error("The info() operation timed out.");
 	}
 	if (conn_.lost())
@@ -61,7 +61,7 @@ void lsl::info_receiver::info_thread() {
 				if (!info.created_at()) continue;
 				// store the result for pickup & return
 				{
-					lslboost::lock_guard<lslboost::mutex> lock(fullinfo_mut_);
+					std::lock_guard<std::mutex> lock(fullinfo_mut_);
 					fullinfo_ = std::make_shared<stream_info_impl>(info);
 				}
 				fullinfo_upd_.notify_all();

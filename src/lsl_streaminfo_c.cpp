@@ -1,4 +1,5 @@
 #include "stream_info_impl.h"
+#include <cstring>
 #include <string>
 
 extern "C" {

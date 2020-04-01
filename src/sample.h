@@ -40,7 +40,7 @@ const uint8_t TAG_DEDUCED_TIMESTAMP = 1;
 const uint8_t TAG_TRANSMITTED_TIMESTAMP = 2;
 
 /// channel format properties
-const int format_sizes[] = {0, sizeof(float), sizeof(double), sizeof(std::string), sizeof(int32_t),
+const uint8_t format_sizes[] = {0, sizeof(float), sizeof(double), sizeof(std::string), sizeof(int32_t),
 	sizeof(int16_t), sizeof(int8_t), 8};
 const bool format_ieee754[] = {false, std::numeric_limits<float>::is_iec559,
 	std::numeric_limits<double>::is_iec559, false, false, false, false, false};
@@ -54,8 +54,13 @@ const bool format_float[] = {false, true, true, false, false, false, false, fals
 /// A factory to create samples of a given format/size. Must outlive all of its created samples.
 class factory {
 public:
-	/// Create a new factory and optionally pre-allocate samples.
-	factory(lsl_channel_format_t fmt, int num_chans, int num_reserve);
+	/**
+	 * Create a new factory and optionally pre-allocate samples.
+	 * @param fmt Sample format
+	 * @param num_chans nr of channels
+	 * @param num_reserve nr of samples to pre-allocate in the storage pool
+	 */
+	factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_reserve);
 
 	/// Destroy the factory and delete all of its samples.
 	~factory();
@@ -69,7 +74,7 @@ public:
 
 	/// Create a new sample whose memory is not managed by the factory.
 	static sample *new_sample_unmanaged(
-		lsl_channel_format_t fmt, int num_chans, double timestamp, bool pushthrough);
+		lsl_channel_format_t fmt, uint32_t num_chans, double timestamp, bool pushthrough);
 
 private:
 	/// ensure that a given value is a multiple of some base, round up if necessary
@@ -84,11 +89,11 @@ private:
 	/// the channel format to construct samples with
 	lsl_channel_format_t fmt_;
 	/// the number of channels to construct samples with
-	int num_chans_;
+	const uint32_t num_chans_;
 	/// size of a sample, in bytes
-	int sample_size_;
+	const uint32_t sample_size_;
 	/// size of the allocated storage, in bytes
-	int storage_size_;
+	uint32_t storage_size_;
 	/// a slab of storage for pre-allocated samples
 	char *storage_;
 	/// a sentinel element for our freelist
@@ -116,7 +121,7 @@ private:
 	/// the channel format
 	lsl_channel_format_t format_;
 	/// number of channels
-	int num_channels_;
+	uint32_t num_channels_;
 	/// reference count used by sample_p
 	std::atomic<int> refcount_;
 	/// linked list of samples, for use in a freelist
@@ -124,7 +129,7 @@ private:
 	/// the factory used to reclaim this sample, if any
 	factory *factory_;
 	/// the data payload begins here
-	BOOST_ALIGNMENT(8) char data_;
+	alignas(8) char data_;
 
 public:
 	// === Construction ===
@@ -150,6 +155,8 @@ public:
 	/// Test for equality with another sample.
 	bool operator==(const sample &rhs) const noexcept;
 
+	std::size_t datasize() const { return format_sizes[format_] * num_channels_; }
+
 	// === type-safe accessors ===
 
 	/// Assign an array of numeric values (with type conversions).
@@ -157,7 +164,7 @@ public:
 		if ((sizeof(T) == format_sizes[format_]) &&
 			((std::is_integral<T>::value && format_integral[format_]) ||
 				(std::is_floating_point<T>::value && format_float[format_]))) {
-			memcpy(&data_, s, format_sizes[format_] * num_channels_);
+			memcpy(&data_, s, datasize());
 		} else {
 			switch (format_) {
 			case cft_float32:
@@ -207,7 +214,7 @@ public:
 		if ((sizeof(T) == format_sizes[format_]) &&
 			((std::is_integral<T>::value && format_integral[format_]) ||
 				(std::is_floating_point<T>::value && format_float[format_]))) {
-			memcpy(d, &data_, format_sizes[format_] * num_channels_);
+			memcpy(d, &data_, datasize());
 		} else {
 			switch (format_) {
 			case cft_float32:
@@ -258,7 +265,7 @@ public:
 	/// Assign numeric data to the sample.
 	sample &assign_untyped(const void *newdata) {
 		if (format_ != cft_string)
-			memcpy(&data_, newdata, format_sizes[format_] * num_channels_);
+			memcpy(&data_, newdata, datasize());
 		else
 			throw std::invalid_argument("Cannot assign untyped data to a string-formatted sample.");
 		return *this;
@@ -267,7 +274,7 @@ public:
 	/// Retrieve numeric data from the sample.
 	sample &retrieve_untyped(void *newdata) {
 		if (format_ != cft_string)
-			memcpy(newdata, &data_, format_sizes[format_] * num_channels_);
+			memcpy(newdata, &data_, datasize());
 		else
 			throw std::invalid_argument(
 				"Cannot retrieve untyped data from a string-formatted sample.");
@@ -295,7 +302,7 @@ public:
 	}
 
 	/// Load a value from a stream buffer; specialization of the above.
-	void load_value(std::streambuf &sb, uint8_t &v, int use_byte_order) {
+	void load_value(std::streambuf &sb, uint8_t &v, int) {
 		load_raw(sb, &v, sizeof(v));
 	}
 
@@ -353,7 +360,7 @@ public:
 
 private:
 	/// Construct a new sample for a given channel format/count combination.
-	sample(lsl_channel_format_t fmt, int num_channels, factory *fact)
+	sample(lsl_channel_format_t fmt, uint32_t num_channels, factory *fact)
 		: format_(fmt), num_channels_(num_channels), refcount_(0), next_(nullptr), factory_(fact) {
 		if (format_ == cft_string)
 			for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e;

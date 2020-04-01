@@ -1,6 +1,5 @@
 #include "time_postprocessor.h"
 #include "api_config.h"
-#include <boost/thread/lock_guard.hpp>
 
 #include <cmath>
 
@@ -18,7 +17,7 @@ time_postprocessor::time_postprocessor(const postproc_callback_t &query_correcti
 
 double time_postprocessor::process_timestamp(double value) {
 	if (options_ & proc_threadsafe) {
-		lslboost::lock_guard<lslboost::mutex> lock(processing_mut_);
+		std::lock_guard<std::mutex> lock(processing_mut_);
 		return process_internal(value);
 	} else
 		return process_internal(value);

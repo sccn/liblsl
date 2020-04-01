@@ -28,8 +28,8 @@ LIBLSL_C_API int32_t lsl_resolver_results(
 		std::vector<stream_info_impl> tmp = res->results(buffer_elements);
 		// allocate new stream_info_impl's and assign to the buffer
 		for (uint32_t k = 0; k < tmp.size(); k++) buffer[k] = new stream_info_impl(tmp[k]);
-		return tmp.size();
-	} catch (std::exception &e) {
+		return static_cast<int32_t>(tmp.size());
+	} catch(std::exception &e) {
 		LOG_F(WARNING, "Unexpected error querying lsl_resolver_results: %s", e.what());
 		return lsl_internal_error;
 	}

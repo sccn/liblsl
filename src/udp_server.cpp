@@ -6,6 +6,7 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/placeholders.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <sstream>
 
 using namespace lsl;
 using namespace lslboost::asio;
@@ -25,7 +26,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 		info_->v4service_port(port);
 	else
 		info_->v6service_port(port);
-	LOG_F(2, "%s: Started unicast udp server %p at port %d", info_->name().c_str(), this, port);
+	LOG_F(2, "%s: Started unicast udp server at port %d (addr %p)", info_->name().c_str(), port,
+		(void *)this);
 }
 
 udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address,
@@ -67,8 +69,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std
 		else
 			socket_->set_option(ip::multicast::join_group(addr));
 	}
-	LOG_F(2, "%s: Started multicast udp server at %s port %d", this->info_->name().c_str(),
-		address.c_str(), port);
+	LOG_F(2, "%s: Started multicast udp server at %s port %d (addr %p)",
+		this->info_->name().c_str(), address.c_str(), port, (void *)this);
 }
 
 // === externally issued asynchronous commands ===
@@ -95,9 +97,9 @@ void udp_server::end_serving() {
 
 void udp_server::request_next_packet() {
 	DLOG_F(5, "udp_server::request_next_packet");
-	auto keepalive(shared_from_this());
 	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
-		[keepalive, this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
+		[shared_this = shared_from_this()](
+			err_t err, std::size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
 
 void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
@@ -123,22 +125,24 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					request_stream >> return_port;
 					std::string query_id;
 					request_stream >> query_id;
+					DLOG_F(2, "%p shortinfo req from %s for %s", (void *)this,
+						remote_endpoint_.address().to_string().c_str(), query.c_str());
 					// check query
 					if (info_->matches_query(query)) {
+						LOG_F(
+							3, "%p query matches, replying to port %d", (void *)this, return_port);
 						// query matches: send back reply
 						udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 						string_p replymsg(
 							std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
-						auto keepalive(shared_from_this());
 						socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
-							[keepalive, replymsg, this](err_t err, std::size_t len) {
-								if (err != error::operation_aborted && err != error::shut_down)
-									request_next_packet();
+							[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+								if (err_ != error::operation_aborted && err_ != error::shut_down)
+									shared_this->request_next_packet();
 							});
 						return;
 					} else {
-						LOG_F(INFO, "%p Got shortinfo query for mismatching query string: %s", this,
-							query.c_str());
+						DLOG_F(2, "%p query didn't match", (void *)this);
 					}
 				} else if (time_services_enabled_ && method == "LSL:timedata") {
 					// timedata request: parse time of original transmission
@@ -152,19 +156,20 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 					reply.precision(16);
 					reply << " " << wave_id << " " << t0 << " " << t1 << " " << lsl_clock();
 					string_p replymsg(std::make_shared<std::string>(reply.str()));
-					auto keepalive(shared_from_this());
 					socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
-						[keepalive, replymsg, this](err_t err, std::size_t len) {
-							if (err != error::operation_aborted && err != error::shut_down)
-								request_next_packet();
+						[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+							if (err_ != error::operation_aborted && err_ != error::shut_down)
+								shared_this->request_next_packet();
 						});
 					return;
 				} else {
-					DLOG_F(INFO, "Unknown method '%s' received by udp-server", method.c_str());
+					DLOG_F(INFO, "%p Unknown method '%s' received by udp-server", (void *)this,
+						method.c_str());
 				}
 			}
 		} catch (std::exception &e) {
-			LOG_F(WARNING, "udp_server: hiccup during request processing: %s", e.what());
+			LOG_F(WARNING, "%p udp_server: hiccup during request processing: %s", (void *)this,
+				e.what());
 		}
 		request_next_packet();
 	}

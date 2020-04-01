@@ -4,8 +4,9 @@
 #include "cancellation.h"
 #include "consumer_queue.h"
 #include "inlet_connection.h"
-#include <boost/thread/mutex.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <condition_variable>
+#include <mutex>
 
 using lslboost::asio::ip::tcp;
 
@@ -61,7 +62,7 @@ public:
 
 	/// Retrieve a sample from the sample queue and assign its contents to the given typed buffer.
 	template <class T>
-	double pull_sample_typed(T *buffer, int buffer_elements, double timeout = FOREVER);
+	double pull_sample_typed(T *buffer, uint32_t buffer_elements, double timeout = FOREVER);
 
 	/// Read sample from the inlet and read it into a pointer to raw data.
 	double pull_sample_untyped(void *buffer, int buffer_bytes, double timeout = FOREVER);
@@ -90,9 +91,9 @@ private:
 	/// queue of samples ready to be picked up (populated by the data thread)
 	consumer_queue sample_queue_;
 	/// mutex to protect the connected state
-	lslboost::mutex connected_mut_;
+	std::mutex connected_mut_;
 	/// condition variable to indicate that an update for the connected state is available
-	lslboost::condition_variable connected_upd_;
+	std::condition_variable connected_upd_;
 
 	// internal data used by the reader thread
 	/// the maximum number of samples to be buffered for this inlet

@@ -1,10 +1,9 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
 #include "cast.h"
+#include <algorithm>
 #include <boost/thread/lock_guard.hpp>
-
-
-// === implementation of the stream_info_impl class ===
+#include <sstream>
 
 using namespace lsl;
 using namespace pugi;
@@ -169,7 +168,7 @@ bool stream_info_impl::matches_query(const string &query, bool nocache) {
 }
 
 bool query_cache::matches_query(const xml_document &doc, const std::string query, bool nocache) {
-	lslboost::lock_guard<lslboost::mutex> lock(cache_mut_);
+	std::lock_guard<std::mutex> lock(cache_mut_);
 
 	decltype(cache)::iterator it;
 	if (!nocache && (it = cache.find(query)) != cache.end()) {

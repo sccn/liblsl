@@ -20,14 +20,6 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
-LIBLSL_C_API const char *lsl_library_info() {
-#ifdef LSL_LIBRARY_INFO_STR
-	return LSL_LIBRARY_INFO_STR;
-#else
-	return "Unknown (not set by build system)";
-#endif
-}
-
 LIBLSL_C_API double lsl_local_clock() {
 	return lslboost::chrono::nanoseconds(
 			   lslboost::chrono::high_resolution_clock::now().time_since_epoch())
@@ -49,7 +41,7 @@ void lsl::ensure_lsl_initialized() {
 	if (!is_initialized) {
 		is_initialized = true;
 
-		loguru::g_stderr_verbosity = loguru::Verbosity_WARNING;
+		loguru::g_stderr_verbosity = loguru::Verbosity_INFO;
 #ifdef LOGURU_DEBUG_LOGGING
 		// Initialize loguru, mainly to print stacktraces on segmentation faults
 		int argc = 1;

@@ -44,7 +44,7 @@ data_receiver::~data_receiver() {
 
 void data_receiver::open_stream(double timeout) {
 	closing_stream_ = false;
-	lslboost::unique_lock<lslboost::mutex> lock(connected_mut_);
+	std::unique_lock<std::mutex> lock(connected_mut_);
 	auto connection_completed = [this]() { return connected_ || conn_.lost(); };
 	if (!connection_completed()) {
 		// start thread if not yet running
@@ -56,7 +56,7 @@ void data_receiver::open_stream(double timeout) {
 		if (timeout >= FOREVER)
 			connected_upd_.wait(lock, connection_completed);
 		else if (!connected_upd_.wait_for(
-					 lock, lslboost::chrono::duration<double>(timeout), connection_completed))
+					 lock, std::chrono::duration<double>(timeout), connection_completed))
 			throw timeout_error("The open_stream() operation timed out.");
 	}
 	if (conn_.lost())
@@ -71,7 +71,7 @@ void data_receiver::close_stream() {
 }
 
 template <class T>
-double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double timeout) {
+double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, double timeout) {
 	if (conn_.lost())
 		throw lost_error("The stream read by this outlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
@@ -95,13 +95,13 @@ double data_receiver::pull_sample_typed(T *buffer, int buffer_elements, double t
 	}
 }
 
-template double data_receiver::pull_sample_typed<char>(char *, int, double);
-template double data_receiver::pull_sample_typed<int16_t>(int16_t *, int, double);
-template double data_receiver::pull_sample_typed<int32_t>(int32_t *, int, double);
-template double data_receiver::pull_sample_typed<int64_t>(int64_t *, int, double);
-template double data_receiver::pull_sample_typed<float>(float *, int, double);
-template double data_receiver::pull_sample_typed<double>(double *, int, double);
-template double data_receiver::pull_sample_typed<std::string>(std::string *, int, double);
+template double data_receiver::pull_sample_typed<char>(char *, uint32_t, double);
+template double data_receiver::pull_sample_typed<int16_t>(int16_t *, uint32_t, double);
+template double data_receiver::pull_sample_typed<int32_t>(int32_t *, uint32_t, double);
+template double data_receiver::pull_sample_typed<int64_t>(int64_t *, uint32_t, double);
+template double data_receiver::pull_sample_typed<float>(float *, uint32_t, double);
+template double data_receiver::pull_sample_typed<double>(double *, uint32_t, double);
+template double data_receiver::pull_sample_typed<std::string>(std::string *, uint32_t, double);
 
 double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double timeout) {
 	if (conn_.lost())
@@ -296,7 +296,7 @@ void data_receiver::data_thread() {
 				// been successful, so we're now connected (and remain to be even if we later
 				// recover silently)
 				{
-					lslboost::lock_guard<lslboost::mutex> lock(connected_mut_);
+					std::lock_guard<std::mutex> lock(connected_mut_);
 					connected_ = true;
 				}
 				connected_upd_.notify_all();

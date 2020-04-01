@@ -1,8 +1,9 @@
 #include "api_config.h"
 #include "common.h"
 #include "inireader.h"
-#include <boost/thread/once.hpp>
+#include <algorithm>
 #include <fstream>
+#include <mutex>
 
 using namespace lsl;
 
@@ -76,7 +77,10 @@ void api_config::load_from_file(const std::string &filename) {
 		INI pt;
 		if (!filename.empty()) {
 			std::ifstream infile(filename);
-			if (infile.good()) pt.load(infile);
+			if (infile.good()) {
+				LOG_F(INFO, "Loading configuration from %s", filename.c_str());
+				pt.load(infile);
+			}
 		}
 
 		// read out the [ports] parameters
@@ -206,7 +210,7 @@ void api_config::load_from_file(const std::string &filename) {
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
 		// read the [log] settings
-		int log_level = pt.get("log.level", -1);
+		int log_level = pt.get("log.level", (int) loguru::Verbosity_INFO);
 		if (log_level < -3 || log_level > 9)
 			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
 
@@ -228,8 +232,10 @@ void api_config::load_from_file(const std::string &filename) {
 	}
 }
 
+static std::once_flag api_config_once_flag;
+
 const api_config *api_config::get_instance() {
-	lslboost::call_once(&called_once, once_flag);
+	std::call_once(api_config_once_flag, []() { api_config::get_instance_internal(); });
 	return get_instance_internal();
 }
 
@@ -237,7 +243,3 @@ api_config *api_config::get_instance_internal() {
 	static api_config cfg;
 	return &cfg;
 }
-
-void api_config::called_once() { get_instance_internal(); }
-
-lslboost::once_flag api_config::once_flag = BOOST_ONCE_INIT;

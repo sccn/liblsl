@@ -65,7 +65,7 @@ public:
 	 */
 	void cancel() {
 		cancel_issued_ = true;
-		lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
+		std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
 		cancel_started_ = false;
 		this->get_service().get_io_context().post([this]() { close_if_open(); });
 	}
@@ -80,7 +80,7 @@ public:
 	 */
 	cancellable_streambuf *connect(const Protocol::endpoint &endpoint) {
 		{
-			lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
+			std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
 			if (cancel_issued_)
 				throw std::runtime_error(
 					"Attempt to connect() a cancellable_streambuf after it has been cancelled.");
@@ -130,7 +130,7 @@ protected:
 	/// This function makes sure that a cancellation, if issued, is not being eaten by the
 	/// io_context reset()
 	void protected_reset() {
-		lslboost::lock_guard<lslboost::recursive_mutex> lock(cancel_mut_);
+		std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
 		// if the cancel() comes between completion of a run_one() and this call, close will be
 		// issued right here at the next opportunity
 		if (cancel_issued_) close_if_open();
@@ -224,7 +224,7 @@ protected:
 	std::size_t bytes_transferred_;
 	bool cancel_issued_;
 	bool cancel_started_;
-	lslboost::recursive_mutex cancel_mut_;
+	std::recursive_mutex cancel_mut_;
 };
 } // namespace lsl
 
