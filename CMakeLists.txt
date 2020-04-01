@@ -165,6 +165,7 @@ target_include_directories(lslboost PUBLIC
 target_link_libraries(lslobj
 	PRIVATE
 		lslboost
+	PUBLIC
 		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
 	)
 target_include_directories(lslobj
