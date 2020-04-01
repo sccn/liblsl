@@ -5,9 +5,15 @@
 #include "resolver_impl.h"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/thread/shared_mutex.hpp>
 #include <boost/thread/thread_only.hpp>
+#include <condition_variable>
 #include <map>
+
+/* Shared mutex implementation from boost. The stdlib only added a
+ * shared_timed_mutex in C++14 (but Apple didn't) and shared_mutex
+ * in C++17 so for this type we have to fall back to boost*/
+#include <boost/thread/shared_mutex.hpp>
+using shared_mutex_t = lslboost::shared_mutex;
 
 namespace lslboost {
 template <class Fn> class function;
@@ -108,7 +114,7 @@ public:
 	void update_receive_time(double t);
 
 	/// Register a condition variable that should be notified when a connection is lost
-	void register_onlost(void *id, lslboost::condition_variable *cond);
+	void register_onlost(void *id, std::condition_variable *cond);
 
 	/// Unregister a condition variable from the set that is notified on connection loss
 	void unregister_onlost(void *id);
@@ -149,7 +155,7 @@ private:
 	/// the volatile information of the stream (addresses + ports); protected by a read/write mutex
 	stream_info_impl host_info_;
 	/// a mutex to protect the state of the host_info (single-write/multiple-reader)
-	lslboost::shared_mutex host_info_mut_;
+	shared_mutex_t host_info_mut_;
 	/// the TCP protocol used (according to api_config)
 	tcp tcp_protocol_;
 	/// the UDP protocol used (according to api_config)
@@ -167,19 +173,19 @@ private:
 	/// indicates to threads that we're shutting down
 	bool shutdown_;
 	/// a mutex to protect the shutdown state
-	lslboost::mutex shutdown_mut_;
+	std::mutex shutdown_mut_;
 	/// condition variable indicating that we're shutting down
-	lslboost::condition_variable shutdown_cond_;
+	std::condition_variable shutdown_cond_;
 
 	// things related to recovery
 	/// our resolver, in case we need it
 	resolver_impl resolver_;
 	/// we allow only one recovery operation at a time
-	lslboost::mutex recovery_mut_;
+	std::mutex recovery_mut_;
 
 	// client status info for recovery & notification purposes
 	/// a group of condition variables that should be notified when the connection is lost
-	std::map<void *, lslboost::condition_variable *> onlost_;
+	std::map<void *, std::condition_variable *> onlost_;
 	/// a group of callback functions that should be invoked once the connection has been recovered
 	std::map<void *, std::function<void()>> onrecover_;
 	/// the last time when we received data from the server
@@ -187,9 +193,9 @@ private:
 	/// the number of currently active transmissions (data or info)
 	int active_transmissions_;
 	/// protects the client status info
-	lslboost::mutex client_status_mut_;
+	std::mutex client_status_mut_;
 	/// protects the onrecover callback map
-	lslboost::mutex onrecover_mut_;
+	std::mutex onrecover_mut_;
 };
 } // namespace lsl
 

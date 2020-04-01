@@ -25,7 +25,7 @@ consumer_queue_p send_buffer::new_consumer(int max_buffered) {
  * Will subsequently be seen by all consumers.
  */
 void send_buffer::push_sample(const sample_p &s) {
-	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
+	std::lock_guard<std::mutex> lock(consumers_mut_);
 	for (auto &consumer : consumers_) consumer->push_sample(s);
 }
 
@@ -33,7 +33,7 @@ void send_buffer::push_sample(const sample_p &s) {
 /// Registered a new consumer.
 void send_buffer::register_consumer(consumer_queue *q) {
 	{
-		lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
+		std::lock_guard<std::mutex> lock(consumers_mut_);
 		consumers_.insert(q);
 	}
 	some_registered_.notify_all();
@@ -41,19 +41,19 @@ void send_buffer::register_consumer(consumer_queue *q) {
 
 /// Unregister a previously registered consumer.
 void send_buffer::unregister_consumer(consumer_queue *q) {
-	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
+	std::lock_guard<std::mutex> lock(consumers_mut_);
 	consumers_.erase(q);
 }
 
 /// Check whether there currently are consumers.
 bool send_buffer::have_consumers() {
-	lslboost::lock_guard<lslboost::mutex> lock(consumers_mut_);
+	std::lock_guard<std::mutex> lock(consumers_mut_);
 	return some_registered();
 }
 
 /// Wait until some consumers are present.
 bool send_buffer::wait_for_consumers(double timeout) {
-	lslboost::unique_lock<lslboost::mutex> lock(consumers_mut_);
+	std::unique_lock<std::mutex> lock(consumers_mut_);
 	return some_registered_.wait_for(
-		lock, lslboost::chrono::duration<double>(timeout), [this]() { return some_registered(); });
+		lock, std::chrono::duration<double>(timeout), [this]() { return some_registered(); });
 }

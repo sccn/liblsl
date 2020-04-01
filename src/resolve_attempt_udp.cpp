@@ -11,7 +11,7 @@ using err_t = const lslboost::system::error_code &;
 
 resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
-	lslboost::mutex &results_mut, double cancel_after, cancellable_registry *registry)
+	std::mutex &results_mut, double cancel_after, cancellable_registry *registry)
 	: io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after),
 	  cancelled_(false), targets_(targets), query_(query), unicast_socket_(io),
 	  broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), cancel_timer_(io) {
@@ -111,7 +111,7 @@ void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len
 					std::string uid = info.uid();
 					{
 						// update the results
-						lslboost::lock_guard<lslboost::mutex> lock(results_mut_);
+						std::lock_guard<std::mutex> lock(results_mut_);
 						if (results_.find(uid) == results_.end())
 							results_[uid] = std::make_pair(info, lsl_clock()); // insert new result
 						else

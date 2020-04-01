@@ -3,6 +3,7 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include <boost/chrono/duration.hpp>
+#include <boost/thread/thread_only.hpp>
 
 using namespace lsl;
 
