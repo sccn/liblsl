@@ -7,6 +7,7 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include "stream_info_impl.h"
+#include <thread>
 
 using lslboost::asio::ip::tcp;
 using lslboost::asio::ip::udp;
@@ -14,7 +15,7 @@ using lslboost::asio::ip::udp;
 namespace lsl {
 
 /// pointer to a thread
-using thread_p = std::shared_ptr<lslboost::thread>;
+using thread_p = std::shared_ptr<std::thread>;
 
 /**
  * A stream outlet.
