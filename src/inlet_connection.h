@@ -5,9 +5,9 @@
 #include "resolver_impl.h"
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
-#include <boost/thread/thread_only.hpp>
 #include <condition_variable>
 #include <map>
+#include <thread>
 
 /* Shared mutex implementation from boost. The stdlib only added a
  * shared_timed_mutex in C++14 (but Apple didn't) and shared_mutex
@@ -167,7 +167,7 @@ private:
 
 	/// internal watchdog thread (to detect dead connections), re-resolves the current connection
 	/// speculatively
-	lslboost::thread watchdog_thread_;
+	std::thread watchdog_thread_;
 
 	// things related to the shutdown condition
 	/// indicates to threads that we're shutting down

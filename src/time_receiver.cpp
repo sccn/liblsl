@@ -49,8 +49,7 @@ double time_receiver::time_correction(double *remote_time, double *uncertainty, 
 	};
 	if (!timeoffset_available()) {
 		// start thread if not yet running
-		if (!time_thread_.joinable())
-			time_thread_ = lslboost::thread(&time_receiver::time_thread, this);
+		if (!time_thread_.joinable()) time_thread_ = std::thread(&time_receiver::time_thread, this);
 		// wait until the timeoffset becomes available (or we time out)
 		if (timeout >= FOREVER)
 			timeoffset_upd_.wait(lock, timeoffset_available);

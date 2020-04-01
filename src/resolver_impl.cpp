@@ -3,8 +3,8 @@
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
-#include <boost/thread/thread_only.hpp>
 #include <memory>
+#include <thread>
 
 
 // === implementation of the resolver_impl class ===
@@ -135,7 +135,7 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_ = std::make_shared<lslboost::thread>([shared_io = io_]() { shared_io->run(); });
+	background_io_ = std::make_shared<std::thread>([shared_io = io_]() { shared_io->run(); });
 }
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
