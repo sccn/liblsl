@@ -3,7 +3,6 @@
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
-#include <boost/asio/placeholders.hpp>
 #include <boost/thread/thread_only.hpp>
 #include <memory>
 
