@@ -1,7 +1,6 @@
 #include "helpers.h"
 #include "catch.hpp"
 #include <lsl_cpp.h>
-#include <iostream>
 
 namespace {
 
