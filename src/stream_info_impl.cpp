@@ -128,11 +128,11 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// hostname
 		hostname_ = info.child_value("hostname");
 		v4address_ = info.child_value("v4address");
-		get_bounded_child_val(info, "v4data_port", v4data_port_, 1024, 65535);
-		get_bounded_child_val(info, "v4service_port", v4service_port_, 1024, 65535);
+		get_bounded_child_val(info, "v4data_port", v4data_port_, 0, 65535);
+		get_bounded_child_val(info, "v4service_port", v4service_port_, 0, 65535);
 		v6address_ = info.child_value("v6address");
-		get_bounded_child_val(info, "v6data_port", v6data_port_, 1024, 65535);
-		get_bounded_child_val(info, "v6service_port", v6service_port_, 1024, 65535);
+		get_bounded_child_val(info, "v6data_port", v6data_port_, 0, 65535);
+		get_bounded_child_val(info, "v6service_port", v6service_port_, 0, 65535);
 	} catch (std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();
