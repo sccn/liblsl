@@ -273,6 +273,9 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_b
 */
 extern LIBLSL_C_API uint32_t lsl_samples_available(lsl_inlet in);
 
+/// Drop all queued not-yet pulled samples, return the nr of dropped samples
+extern LIBLSL_C_API uint32_t lsl_inlet_flush(lsl_inlet in);
+
 /**
 * Query whether the clock was potentially reset since the last call to lsl_was_clock_reset().
 *

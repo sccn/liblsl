@@ -1575,6 +1575,9 @@ public:
 	 */
 	std::size_t samples_available() { return lsl_samples_available(obj); }
 
+	/// Drop all queued not-yet pulled samples, return the nr of dropped samples
+	uint32_t flush() noexcept { return lsl_inlet_flush(obj); }
+
 	/**
 	 * Query whether the clock was potentially reset since the last call to was_clock_reset().
 	 *
