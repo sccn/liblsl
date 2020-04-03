@@ -8,3 +8,6 @@
 #include "libs/serialization/src/extended_type_info.cpp"
 #include "libs/serialization/src/extended_type_info_typeid.cpp"
 #include "libs/serialization/src/void_cast.cpp"
+#ifdef _WIN32
+#include "lslboost/libs/serialization/src/codecvt_null.cpp"
+#endif
