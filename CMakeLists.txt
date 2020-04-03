@@ -139,7 +139,6 @@ if (UNIX)
 	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 else ()  # WIN32
 	target_sources(lslboost PRIVATE
-		lslboost/libs/serialization/src/codecvt_null.cpp
 		lslboost/libs/thread/src/win32/thread.cpp
 		lslboost/libs/thread/src/win32/tss_dll.cpp
 		lslboost/libs/thread/src/win32/tss_pe.cpp
