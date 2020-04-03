@@ -750,8 +750,7 @@ public:
 	}
 
 	/** Push a chunk of multiplexed samples into the outlet. Single timestamp provided.
-	 * IMPORTANT: Note that the provided buffer size is measured in channel values (e.g., floats)
-	 * rather than in samples.
+	 * @warning The provided buffer size is measured in channel values (e.g., floats), not samples.
 	 * @param buffer A buffer of channel values holding the data for zero or more successive samples
 	 * to send.
 	 * @param buffer_elements The number of channel values (of type T) in the buffer. Must be a
@@ -760,8 +759,8 @@ public:
 	 * local_clock(); if omitted, the current time is used. The time stamps of other samples are
 	 * automatically derived based on the sampling rate of the stream.
 	 * @param pushthrough Whether to push the chunk through to the receivers instead of buffering it
-	 * with subsequent samples. Note that the chunk_size, if specified at outlet construction, takes
-	 * precedence over the pushthrough flag.
+	 * with subsequent samples. Note that the stream_outlet() constructur parameter @p chunk_size,
+	 * if specified at outlet construction, takes precedence over the pushthrough flag.
 	 */
 	void push_chunk_multiplexed(const float *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
@@ -802,7 +801,7 @@ public:
 	}
 
 	/** Push a chunk of multiplexed samples into the outlet. One timestamp per sample is provided.
-	 * IMPORTANT: Note that the provided buffer size is measured in channel values (e.g., floats)
+	 * @warning Note that the provided buffer size is measured in channel values (e.g., floats)
 	 * rather than in samples.
 	 * @param data_buffer A buffer of channel values holding the data for zero or more successive
 	 * samples to send.
@@ -932,8 +931,8 @@ private:
  * (see Network Connectivity in the LSL wiki).
  * This is the default mechanism used by the browsing programs and the recording program.
  * @param wait_time The waiting time for the operation, in seconds, to search for streams.
- *                  Warning: If this is too short (<0.5s) only a subset (or none) of the
- *                           outlets that are present on the network may be returned.
+ * If this is too short (<0.5s) only a subset (or none) of the outlets that are present on the
+ * network may be returned.
  * @return A vector of stream info objects (excluding their desc field), any of which can
  *         subsequently be used to open an inlet. The full info can be retrieve from the inlet.
  */
@@ -996,34 +995,27 @@ inline std::vector<stream_info> resolve_stream(
  */
 class stream_inlet {
 public:
-	/** Construct a new stream inlet from a resolved stream info.
-	* @param info A resolved stream info object (as coming from one of the resolver functions).
-	*             Note: the stream_inlet may also be constructed with a fully-specified stream_info,
-	*                   if the desired channel format and count is already known up-front, but this
-	is
-	*                   strongly discouraged and should only ever be done if there is no time to
-	resolve the
-	*                   stream up-front (e.g., due to limitations in the client program).
-	* @param max_buflen Optionally the maximum amount of data to buffer (in seconds if there is a
-	nominal
-	*                   sampling rate, otherwise x100 in samples). Recording applications want to
-	use a fairly
-	*                   large buffer size here, while real-time applications would only buffer as
-	much as
-	*                   they need to perform their next calculation.
-	* @param max_chunklen Optionally the maximum size, in samples, at which chunks are transmitted
-	*                     (the default corresponds to the chunk sizes used by the sender).
-	*                     Recording applications can use a generous size here (leaving it to the
-	network how
-	*                     to pack things), while real-time applications may want a finer (perhaps
-	1-sample) granularity. If left unspecified (=0), the sender determines the chunk granularity.
-	* @param recover Try to silently recover lost streams that are recoverable (=those that that
-	have a source_id set).
-	*                In all other cases (recover is false or the stream is not recoverable)
-	functions may throw a
-	*                lost_error if the stream's source is lost (e.g., due to an app or computer
-	crash).
-	*/
+	/**
+	 * Construct a new stream inlet from a resolved stream info.
+	 * @param info A resolved stream info object (as coming from one of the resolver functions).
+	 * Note: The stream_inlet may also be constructed with a fully-specified stream_info, if the
+	 * desired channel format and count is already known up-front, but this is strongly discouraged
+	 * and should only ever be done if there is no time to resolve the stream up-front (e.g., due
+	 * to limitations in the client program).
+	 * @param max_buflen Optionally the maximum amount of data to buffer (in seconds if there is a
+	 * nominal sampling rate, otherwise x100 in samples). Recording applications want to use a
+	 * fairly large buffer size here, while real-time applications would only buffer as much as
+	 * they need to perform their next calculation.
+	 * @param max_chunklen Optionally the maximum size, in samples, at which chunks are transmitted
+	 * (the default corresponds to the chunk sizes used by the sender).
+	 * Recording applications can use a generous size here (leaving it to the network how to pack
+	 * things), while real-time applications may want a finer (perhaps 1-sample) granularity.
+	 * If left unspecified (=0), the sender determines the chunk granularity.
+	 * @param recover Try to silently recover lost streams that are recoverable (=those that that
+	 * have a source_id set).
+	 * In all other cases (recover is false or the stream is not recoverable) functions may throw a
+	 * lsl::lost_error if the stream's source is lost (e.g., due to an app or computer crash).
+	 */
 	stream_inlet(const stream_info &info, int32_t max_buflen = 360, int32_t max_chunklen = 0,
 		bool recover = true)
 		: channel_count(info.channel_count()),
@@ -1066,7 +1058,7 @@ public:
 	/** Subscribe to the data stream.
 	 * All samples pushed in at the other end from this moment onwards will be queued and
 	 * eventually be delivered in response to pull_sample() or pull_chunk() calls.
-	 * Pulling a sample without some preceding open_stream is permitted (the stream will then be
+	 * Pulling a sample without some preceding open_stream() is permitted (the stream will then be
 	 * opened implicitly).
 	 * @param timeout Optional timeout of the operation (default: no timeout).
 	 * @throws timeout_error (if the timeout expires), or lost_error (if the stream source has been
@@ -1090,19 +1082,18 @@ public:
 
 	/** Retrieve an estimated time correction offset for the given stream.
 	 *
-	 * The first call to this function takes several milliseconds until a reliable first
-	 * estimate is obtained. Subsequent calls are instantaneous (and rely on periodic background
-	 * updates). On a well-behaved network, the precision of these estimates should be below 1
-	 * ms (empirically it is within +/-0.2 ms).
+	 * The first call to this function takes several milliseconds until a reliable first estimate
+	 * is obtained. Subsequent calls are instantaneous (and rely on periodic background updates).
+	 * On a well-behaved network, the precision of these estimates should be below 1 ms
+	 * (empirically it is within +/-0.2 ms).
+	 *
 	 * To get a measure of whether the network is well-behaved, use the extended version
-	 * time_correction(double*,double*,double)
-	 * and check uncertainty (which maps to round-trip-time).
+	 * time_correction(double*,double*,double) and check uncertainty (i.e. the round-trip-time).
 	 *
 	 * 0.2 ms is typical of wired networks. 2 ms is typical of wireless networks.
 	 * The number can be much higher on poor networks.
 	 *
-	 * @param timeout Timeout to acquire the first time-correction estimate (default: no
-	 * timeout).
+	 * @param timeout Timeout to acquire the first time-correction estimate (default: no timeout).
 	 * @return The time correction estimate. This is the number that needs to be added to a time
 	 * stamp that was remotely generated via lsl_local_clock() to map it into the local clock
 	 * domain of this machine.
@@ -1135,8 +1126,8 @@ public:
 	 * stamps, which can then be manually synchronized using .time_correction(), and then
 	 * smoothed/dejittered if desired.<br>
 	 * This function allows automating these two and possibly more operations.<br>
-	 * Warning: when you enable this, you will no longer receive or be able to recover the
-	 * original time stamps.
+	 * @warning When you enable this, you will no longer receive or be able to recover the original
+	 * time stamps.
 	 * @param flags An integer that is the result of bitwise OR'ing one or more options from
 	 * processing_options_t together (e.g., `post_clocksync|post_dejitter`); the default is to
 	 * enable all options.
@@ -1376,8 +1367,7 @@ public:
 	 *
 	 * This is a high-performance function that performs no memory allocations
 	 * (useful for very high data rates or on low-powered devices).
-	 * IMPORTANT: Note that the provided data buffer size is measured in channel values (e.g.,
-	 * floats) rather than in samples.
+	 * @warning The provided buffer size is measured in channel values (e.g., floats), not samples.
 	 * @param data_buffer A pointer to a buffer of data values where the results shall be stored.
 	 * @param timestamp_buffer A pointer to a buffer of timestamp values where time stamps shall be
 	 * stored. If this is NULL, no time stamps will be returned.
