@@ -24,11 +24,14 @@ add_executable(lsl_test_exported
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)
 
+find_package(Threads REQUIRED)
+
 add_executable(lsl_test_internal
 	asiocancel.cpp
 	inireader.cpp
 	stringfuncs.cpp
 	streaminfo.cpp
+	test_int_samples.cpp
 )
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
 
@@ -39,8 +42,9 @@ if(LSL_BENCHMARKS)
 	add_executable(lsl_bench_exported
 		bench_ext_bounce.cpp
 		bench_ext_common.cpp
+		bench_ext_pushpull.cpp
 	)
-	target_link_libraries(lsl_bench_exported PRIVATE lsl catch_main)
+	target_link_libraries(lsl_bench_exported PRIVATE lsl catch_main Threads::Threads)
 	installLSLApp(lsl_bench_exported)
 
 	add_executable(lsl_bench_internal
