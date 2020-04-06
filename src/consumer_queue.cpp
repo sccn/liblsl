@@ -22,6 +22,8 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
+	// acquire lock for more predictable behavior in regards to pop_sample()
+	std::unique_lock<std::mutex> lk(lock_);
 	while (!buffer_.push(sample)) {
 		sample_p dummy;
 		buffer_.pop(dummy);
