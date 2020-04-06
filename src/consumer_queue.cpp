@@ -49,6 +49,7 @@ sample_p consumer_queue::pop_sample(double timeout) {
 }
 
 uint32_t consumer_queue::flush() noexcept {
+	std::unique_lock<std::mutex> lk(lock_);
 	uint32_t n = 0;
 	while (buffer_.pop()) n++;
 	return n;
