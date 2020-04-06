@@ -44,4 +44,10 @@ sample_p consumer_queue::pop_sample(double timeout) {
 	return result;
 }
 
+uint32_t consumer_queue::flush() noexcept {
+	uint32_t n = 0;
+	while (buffer_.pop()) n++;
+	return n;
+}
+
 bool consumer_queue::empty() { return buffer_.empty(); }

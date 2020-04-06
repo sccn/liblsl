@@ -70,6 +70,9 @@ public:
 	/// Check whether the underlying buffer is empty. This value may be inaccurate.
 	bool empty() { return sample_queue_.empty(); }
 
+	/// Flush the queue, return the number of dropped samples
+	uint32_t flush() noexcept { return sample_queue_.flush(); }
+
 private:
 	/// The data reader thread.
 	void data_thread();

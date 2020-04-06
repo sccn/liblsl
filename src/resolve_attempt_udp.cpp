@@ -3,7 +3,6 @@
 #include "resolver_impl.h"
 #include "socket_utils.h"
 #include <boost/asio/ip/multicast.hpp>
-#include <boost/asio/placeholders.hpp>
 #include <sstream>
 
 using namespace lsl;

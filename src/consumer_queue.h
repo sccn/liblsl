@@ -39,6 +39,12 @@ public:
 	 */
 	sample_p pop_sample(double timeout = FOREVER);
 
+	/// Number of available samples
+	std::size_t read_available() const { return buffer_.read_available(); }
+
+	/// Flush the queue, return the number of dropped samples
+	uint32_t flush() noexcept;
+
 	/// Check whether the buffer is empty.
 	bool empty();
 

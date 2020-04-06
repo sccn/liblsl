@@ -1,13 +1,14 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
-#include "cast.h"
 #include <algorithm>
 #include <boost/thread/lock_guard.hpp>
+#include <limits>
 #include <sstream>
 
 using namespace lsl;
 using namespace pugi;
 using std::string;
+using std::to_string;
 
 stream_info_impl::stream_info_impl()
 	: channel_count_(0), nominal_srate_(0), channel_format_(cft_undefined), version_(0),
@@ -66,6 +67,20 @@ void stream_info_impl::write_xml(xml_document &doc) {
 	info.append_child("desc");
 }
 
+template <typename T>
+void get_bounded_child_val(xml_node &node, const char *child_name, T &target, int min, int max = 0) {
+	auto value = node.child_value(child_name);
+	int intval = std::stoi(value);
+	if (intval < min || (max != 0 && intval > max)) {
+		std::string errmsg{child_name};
+		errmsg+=" must be >=";
+		errmsg+=std::to_string(min);
+		if(max) errmsg+= " and <=" + std::to_string(max);
+		throw std::runtime_error(errmsg);
+	}
+	target = static_cast<T>(intval);
+}
+
 void stream_info_impl::read_xml(xml_document &doc) {
 	try {
 		xml_node info = doc.child("info");
@@ -75,33 +90,36 @@ void stream_info_impl::read_xml(xml_document &doc) {
 			throw std::runtime_error("Received a stream info with empty <name> field.");
 		// type
 		type_ = info.child_value("type");
-		// channel_count
-		channel_count_ = std::stoi(info.child_value("channel_count"));
-		if (channel_count_ < 0)
-			throw std::runtime_error(
-				"The channel count of the given stream info is smaller than 0.");
-		// nominal_srate
-		nominal_srate_ = from_string<double>(info.child_value("nominal_srate"));
-		if (nominal_srate_ < 0.0)
-			throw std::runtime_error("The sampling rate of the given stream info is negative.");
-		// channel_format
-		channel_format_ = cft_undefined;
+
+		get_bounded_child_val(info, "channel_count", channel_count_, 0);
+		get_bounded_child_val(info, "nominal_srate", nominal_srate_, 0);
+		nominal_srate_ = std::stod(info.child_value("nominal_srate"));
+
 		string fmt(info.child_value("channel_format"));
-		if (fmt == "float32") channel_format_ = cft_float32;
-		if (fmt == "double64") channel_format_ = cft_double64;
-		if (fmt == "string") channel_format_ = cft_string;
-		if (fmt == "int32") channel_format_ = cft_int32;
-		if (fmt == "int16") channel_format_ = cft_int16;
-		if (fmt == "int8") channel_format_ = cft_int8;
-		if (fmt == "int64") channel_format_ = cft_int64;
+		if (fmt == "float32")
+			channel_format_ = cft_float32;
+		else if (fmt == "double64")
+			channel_format_ = cft_double64;
+		else if (fmt == "string")
+			channel_format_ = cft_string;
+		else if (fmt == "int32")
+			channel_format_ = cft_int32;
+		else if (fmt == "int16")
+			channel_format_ = cft_int16;
+		else if (fmt == "int8")
+			channel_format_ = cft_int8;
+		else if (fmt == "int64")
+			channel_format_ = cft_int64;
+		else
+			throw std::runtime_error("Invalid channel format " + fmt);
+
 		// source_id
 		source_id_ = info.child_value("source_id");
-		// version
-		version_ = (int)(from_string<double>(info.child_value("version")) * 100.0);
+		version_ = (int)(std::stod(info.child_value("version")) * 100);
 		if (version_ <= 0)
 			throw std::runtime_error("The version of the given stream info is invalid.");
 		// created_at
-		created_at_ = from_string<double>(info.child_value("created_at"));
+		created_at_ = std::stod(info.child_value("created_at"));
 		// uid
 		uid_ = info.child_value("uid");
 		if (uid_.empty()) throw std::runtime_error("The UID of the given stream info is empty.");
@@ -109,18 +127,12 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		session_id_ = info.child_value("session_id");
 		// hostname
 		hostname_ = info.child_value("hostname");
-		// address
 		v4address_ = info.child_value("v4address");
-		// data_port
-		v4data_port_ = std::stoi(info.child_value("v4data_port"));
-		// service_port
-		v4service_port_ = std::stoi(info.child_value("v4service_port"));
-		// address
+		get_bounded_child_val(info, "v4data_port", v4data_port_, 1024, 65535);
+		get_bounded_child_val(info, "v4service_port", v4service_port_, 1024, 65535);
 		v6address_ = info.child_value("v6address");
-		// data_port
-		v6data_port_ = std::stoi(info.child_value("v6data_port"));
-		// service_port
-		v6service_port_ = std::stoi(info.child_value("v6service_port"));
+		get_bounded_child_val(info, "v6data_port", v6data_port_, 1024, 65535);
+		get_bounded_child_val(info, "v6service_port", v6service_port_, 1024, 65535);
 	} catch (std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();
