@@ -357,6 +357,10 @@ LIBLSL_C_API uint32_t lsl_samples_available(lsl_inlet in) {
 	} catch (std::exception &) { return 0; }
 }
 
+LIBLSL_C_API uint32_t lsl_inlet_flush(lsl_inlet in) {
+	return in->flush();
+}
+
 LIBLSL_C_API uint32_t lsl_was_clock_reset(lsl_inlet in) {
 	try {
 		return (uint32_t)in->was_clock_reset();
