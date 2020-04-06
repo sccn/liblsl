@@ -22,10 +22,10 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
+	// acquire lock for more predictable behavior and avoid race condition with pop_sample()
+	std::unique_lock<std::mutex> lk(lock_);
 	// if the buffer is full, drop oldest samples
 	while (!buffer_.push(sample)) {
-		// lock before freeing buffer ta avoid a thread race in pop_sample
-                std::unique_lock<std::mutex> lk(lock_);
 		sample_p dummy;
 		buffer_.pop(dummy);
 	}
