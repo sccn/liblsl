@@ -199,12 +199,19 @@ if(LSL_BUILD_STATIC)
 endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)
-	set(CMAKE_DEBUG_POSTFIX "-debug")
 	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
 	set_target_properties(lsl PROPERTIES
 		PREFIX ""
 		OUTPUT_NAME "liblsl${lslplatform}"
+		DEBUG_POSTFIX "-debug"
+	)
+	if(LSL_BUILD_STATIC)
+		set_target_properties(lsl-static PROPERTIES
+			PREFIX ""
+			OUTPUT_NAME "liblsl-static${lslplatform}"
+			DEBUG_POSTFIX "-debug"
 		)
+	endif()
 endif()
 
 if(LSL_UNIXFOLDERS)
