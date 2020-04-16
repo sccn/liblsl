@@ -193,6 +193,7 @@ if(LSL_BUILD_STATIC)
 	add_library(lsl-static STATIC src/buildinfo.cpp)
 	target_compile_definitions(lsl-static PRIVATE LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:static")
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
+	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 	# for LSL_CPP_API export header
 	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
 endif()
