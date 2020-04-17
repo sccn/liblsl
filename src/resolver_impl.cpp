@@ -18,19 +18,17 @@ resolver_impl::resolver_impl()
 	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
 	  wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
-	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
 	uint16_t mcast_port = cfg_->multicast_port();
-	for (const auto &mcast_addr : mcast_addrs) {
+	for (const auto &mcast_addr : cfg_->multicast_addresses()) {
 		try {
 			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
 		} catch (std::exception &) {}
 	}
 
 	// parse the per-host addresses into endpoints, and store them, too
-	std::vector<std::string> peers = cfg_->known_peers();
 	udp::resolver udp_resolver(*io_);
 	// for each known peer...
-	for (const auto &peer : peers) {
+	for (const auto &peer : cfg_->known_peers()) {
 		try {
 			// resolve the name
 			// for each endpoint...

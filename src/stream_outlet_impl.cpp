@@ -61,7 +61,6 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	// get api_config
 	const api_config *cfg = api_config::get_instance();
 	std::string listen_address = cfg->listen_address();
-	std::vector<std::string> multicast_addrs = cfg->multicast_addresses();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
@@ -73,7 +72,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	ios_.push_back(std::make_shared<io_context>());
 	udp_servers_.push_back(std::make_shared<udp_server>(info_, *ios_.back(), udp_protocol));
 	// create UDP multicast responders
-	for (const auto &mcastaddr : multicast_addrs) {
+	for (const auto &mcastaddr : cfg->multicast_addresses()) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
 			ip::address address(ip::make_address(mcastaddr));
