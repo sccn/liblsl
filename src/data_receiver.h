@@ -88,7 +88,7 @@ private:
 	/// whether we need to check whether the thread has been started
 	bool check_thread_start_;
 	/// indicates to the data thread that it a close has been requested
-	bool closing_stream_;
+	std::atomic<bool> closing_stream_;
 	/// whether the stream has been connected / opened
 	bool connected_;
 	/// queue of samples ready to be picked up (populated by the data thread)

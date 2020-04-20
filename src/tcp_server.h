@@ -93,7 +93,8 @@ private:
 
 	// data used by the transfer threads
 	int chunk_size_; // the chunk size to use (or 0)
-	bool shutdown_; // shutdown flag: tells the transfer thread that it should terminate itself asap
+	/// shutdown flag: tells the transfer thread that it should terminate itself asap
+	std::atomic<bool> shutdown_;
 
 	// data shared with the outlet
 	stream_info_impl_p info_; // shared stream_info object
