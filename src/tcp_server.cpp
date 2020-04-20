@@ -207,13 +207,12 @@ void tcp_server::accept_next_connection() {
 }
 
 void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsession, error_code err) {
-	if (err != error::operation_aborted && err != error::shut_down && !shutdown_) {
-		if (!err)
-			// no error: start processing the new connection
-			newsession->begin_processing();
-		// and move on to the next connection
-		accept_next_connection();
-	}
+	if (err == error::operation_aborted || err == error::shut_down || shutdown_) return;
+
+	// no error: start processing the new connection
+	if (!err) newsession->begin_processing();
+	// and move on to the next connection
+	accept_next_connection();
 }
 
 // === graceful cancellation of in-flight sockets ===
@@ -275,39 +274,36 @@ void client_session::begin_processing() {
 	}
 }
 
-void client_session::handle_read_command_outcome(error_code err) {
+void client_session::handle_read_command_outcome(error_code read_err) {
 	try {
-		if (!err) {
-			// parse request method
-			std::string method;
-			getline(requeststream_, method);
-			method = trim(method);
-			if (method == "LSL:shortinfo")
-				// shortinfo request: read the content query string
-				async_read_until(*sock_, requestbuf_, "\r\n",
-					[shared_this = shared_from_this()](
-						err_t err, std::size_t) { shared_this->handle_read_query_outcome(err); });
-			if (method == "LSL:fullinfo")
-				// fullinfo request: reply right away
-				async_write(*sock_, lslboost::asio::buffer(serv_->fullinfo_msg_),
-					[shared_this = shared_from_this()](err_t, std::size_t) {});
-			if (method == "LSL:streamfeed")
-				// streamfeed request (1.00): read feed parameters
-				async_read_until(*sock_, requestbuf_, "\r\n",
-					[shared_this = shared_from_this()](err_t err, std::size_t) {
-						shared_this->handle_read_feedparams(100, "", err);
-					});
-			if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
-				// streamfeed request with version: read feed parameters
-				std::vector<std::string> parts = splitandtrim(method, ' ', true);
-				async_read_until(*sock_, requestbuf_, "\r\n\r\n",
-					[shared_this = shared_from_this(),
-						request_protocol_version = std::stoi(parts[0].substr(15)),
-						request_uid = (parts.size() > 1) ? parts[1] : ""](err_t err, std::size_t) {
-						shared_this->handle_read_feedparams(
-							request_protocol_version, request_uid, err);
-					});
-			}
+		if (read_err) return;
+		// parse request method
+		std::string method;
+		getline(requeststream_, method);
+		method = trim(method);
+		if (method == "LSL:shortinfo")
+			// shortinfo request: read the content query string
+			async_read_until(*sock_, requestbuf_, "\r\n",
+				[shared_this = shared_from_this()](
+					err_t err, std::size_t) { shared_this->handle_read_query_outcome(err); });
+		else if (method == "LSL:fullinfo")
+			// fullinfo request: reply right away
+			async_write(*sock_, lslboost::asio::buffer(serv_->fullinfo_msg_),
+				[shared_this = shared_from_this()](err_t, std::size_t) {});
+		else if (method == "LSL:streamfeed")
+			// streamfeed request (1.00): read feed parameters
+			async_read_until(*sock_, requestbuf_, "\r\n",
+				[shared_this = shared_from_this()](
+					err_t err, std::size_t) { shared_this->handle_read_feedparams(100, "", err); });
+		else if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
+			// streamfeed request with version: read feed parameters
+			std::vector<std::string> parts = splitandtrim(method, ' ', true);
+			async_read_until(*sock_, requestbuf_, "\r\n\r\n",
+				[shared_this = shared_from_this(),
+					request_protocol_version = std::stoi(parts[0].substr(15)),
+					request_uid = (parts.size() > 1) ? parts[1] : ""](err_t err, std::size_t) {
+					shared_this->handle_read_feedparams(request_protocol_version, request_uid, err);
+				});
 		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while parsing a client command: %s", e.what());
@@ -316,20 +312,19 @@ void client_session::handle_read_command_outcome(error_code err) {
 
 void client_session::handle_read_query_outcome(error_code err) {
 	try {
-		if (!err) {
-			// read the query line
-			std::string query;
-			getline(requeststream_, query);
-			query = trim(query);
-			if (serv_->info_->matches_query(query)) {
-				// matches: reply (otherwise just close the stream)
-				async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
-					[shared_this = shared_from_this()](err_t, std::size_t) {
-						/* keep the client_session alive until the shortinfo is sent completely*/
-					});
-			} else
-				DLOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
-		}
+		if (err) return;
+		// read the query line
+		std::string query;
+		getline(requeststream_, query);
+		query = trim(query);
+		if (serv_->info_->matches_query(query)) {
+			// matches: reply (otherwise just close the stream)
+			async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
+				[shared_this = shared_from_this()](err_t, std::size_t) {
+					/* keep the client_session alive until the shortinfo is sent completely*/
+				});
+		} else
+			DLOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while parsing a client request: %s", e.what());
 	}
@@ -345,154 +340,150 @@ void client_session::send_status_message(const std::string &str) {
 void client_session::handle_read_feedparams(
 	int request_protocol_version, std::string request_uid, error_code err) {
 	try {
-		if (!err) {
-			DLOG_F(2, "%p got a streamfeed request", this);
-			// --- protocol negotiation ---
+		if (err) return;
+		DLOG_F(2, "%p got a streamfeed request", this);
+		// --- protocol negotiation ---
 
-			// check request validity
-			if (request_protocol_version / 100 >
-				api_config::get_instance()->use_protocol_version() / 100) {
-				send_status_message(
-					"LSL/" + std::to_string(api_config::get_instance()->use_protocol_version()) +
-					" 505 Version not supported");
-				DLOG_F(WARNING, "%p Got a request for a too new protocol version", this);
-				return;
-			}
-			if (!request_uid.empty() && request_uid != serv_->info_->uid()) {
-				send_status_message("LSL/" +
-									to_string(api_config::get_instance()->use_protocol_version()) +
-									" 404 Not found");
-				return;
-			}
-
-			if (request_protocol_version >= 110) {
-				int client_byte_order = 1234; // assume little endian
-				double client_endian_performance =
-					0; // the other party's endian conversion performance
-				bool client_has_ieee754_floats =
-					true; // the client has IEEE-754 compliant floating point formats
-				bool client_supports_subnormals = true; // the client supports subnormal numbers
-				int client_protocol_version =
-					request_protocol_version; // assume that the client wants to use the same
-											  // version for data transmission
-				int client_value_size =
-					serv_->info_->channel_bytes(); // assume that the client has a standard size for
-												   // the relevant data type
-				lsl_channel_format_t format = serv_->info_->channel_format();
-
-				// read feed parameters
-				char buf[16384] = {0};
-				while (requeststream_.getline(buf, sizeof(buf)) && (buf[0] != '\r')) {
-					std::string hdrline(buf);
-					std::size_t colon = hdrline.find_first_of(':');
-					if (colon != std::string::npos) {
-						// strip off comments
-						auto semicolon = hdrline.find_first_of(';');
-						if (semicolon != std::string::npos) hdrline.erase(semicolon);
-						// convert to lowercase
-						for (auto &c : hdrline) c = ::tolower(c);
-						// extract key & value
-						std::string type = trim(hdrline.substr(0, colon)),
-									rest = trim(hdrline.substr(colon + 1));
-						// get the header information
-						if (type == "native-byte-order") client_byte_order = std::stoi(rest);
-						if (type == "endian-performance")
-							client_endian_performance = from_string<double>(rest);
-						if (type == "has-ieee754-floats")
-							client_has_ieee754_floats = from_string<bool>(rest);
-						if (type == "supports-subnormals")
-							client_supports_subnormals = from_string<bool>(rest);
-						if (type == "value-size") client_value_size = std::stoi(rest);
-						if (type == "max-buffer-length") max_buffered_ = std::stoi(rest);
-						if (type == "max-chunk-length") chunk_granularity_ = std::stoi(rest);
-						if (type == "protocol-version") client_protocol_version = std::stoi(rest);
-					} else {
-						DLOG_F(WARNING, "%p Request line '%s' contained no key-value pair", this,
-							hdrline.c_str());
-					}
-				}
-
-				// determine the parameters for data transmission
-				bool client_suppress_subnormals = false;
-				// use least common denominator data protocol version
-				data_protocol_version_ = std::min(
-					api_config::get_instance()->use_protocol_version(), client_protocol_version);
-				// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is
-				// involved
-				if (serv_->info_->channel_bytes() != client_value_size)
-					data_protocol_version_ = 100;
-				if (!format_ieee754[cft_double64] ||
-					(format == cft_float32 && !format_ieee754[cft_float32]) ||
-					!client_has_ieee754_floats)
-					data_protocol_version_ = 100;
-				if (data_protocol_version_ >= 110) {
-					// decide on the byte order if conflicting
-					if (BOOST_BYTE_ORDER != client_byte_order) {
-						if (client_byte_order == 2134 && client_value_size >= 8) {
-							// since we have no implementation for this byte order conversion let
-							// the client do it
-							use_byte_order_ = BOOST_BYTE_ORDER;
-						} else {
-							// let the faster party perform the endian conversion
-							use_byte_order_ =
-								(client_value_size <= 1 ||
-									(measure_endian_performance() > client_endian_performance))
-									? client_byte_order
-									: BOOST_BYTE_ORDER;
-						}
-					} else
-						use_byte_order_ = BOOST_BYTE_ORDER;
-					// determine if subnormal suppression needs to be enabled
-					client_suppress_subnormals =
-						(format_subnormal[format] && !client_supports_subnormals);
-				}
-
-				// send the response
-				std::ostream response_stream(&feedbuf_);
-				response_stream << "LSL/" << api_config::get_instance()->use_protocol_version()
-								<< " 200 OK\r\n";
-				response_stream << "UID: " << serv_->info_->uid() << "\r\n";
-				response_stream << "Byte-Order: " << use_byte_order_ << "\r\n";
-				response_stream << "Suppress-Subnormals: " << client_suppress_subnormals << "\r\n";
-				response_stream << "Data-Protocol-Version: " << data_protocol_version_ << "\r\n";
-				response_stream << "\r\n" << std::flush;
-			} else {
-				// read feed parameters
-				requeststream_ >> max_buffered_ >> chunk_granularity_;
-			}
-
-			// --- validation ---
-			if (data_protocol_version_ == 100) {
-				// create a portable output archive to write to
-				outarch_.reset(new eos::portable_oarchive(feedbuf_));
-				// serialize the shortinfo message into an archive
-				*outarch_ << serv_->shortinfo_msg_;
-			} else {
-				// allocate scratchpad memory for endian conversion, etc.
-				scratch_ = new char[format_sizes[serv_->info_->channel_format()] *
-									serv_->info_->channel_count()];
-			}
-
-			// send test pattern samples
-			std::unique_ptr<sample> temp(factory::new_sample_unmanaged(
-				serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
-			temp->assign_test_pattern(4);
-			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
-			else
-				*outarch_ << *temp;
-			temp->assign_test_pattern(2);
-			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
-			else
-				*outarch_ << *temp;
-			// send off the newly created feedheader
-			async_write(
-				*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {
-					shared_this->handle_send_feedheader_outcome(err, len);
-				});
-			DLOG_F(2, "%p sent test pattern samples", this);
+		// check request validity
+		if (request_protocol_version / 100 >
+			api_config::get_instance()->use_protocol_version() / 100) {
+			send_status_message("LSL/" +
+								std::to_string(api_config::get_instance()->use_protocol_version()) +
+								" 505 Version not supported");
+			DLOG_F(WARNING, "%p Got a request for a too new protocol version", this);
+			return;
 		}
+		if (!request_uid.empty() && request_uid != serv_->info_->uid()) {
+			send_status_message("LSL/" +
+								to_string(api_config::get_instance()->use_protocol_version()) +
+								" 404 Not found");
+			return;
+		}
+
+		if (request_protocol_version >= 110) {
+			int client_byte_order = 1234;		  // assume little endian
+			double client_endian_performance = 0; // the other party's endian conversion performance
+			bool client_has_ieee754_floats =
+				true; // the client has IEEE-754 compliant floating point formats
+			bool client_supports_subnormals = true; // the client supports subnormal numbers
+			int client_protocol_version =
+				request_protocol_version; // assume that the client wants to use the same
+										  // version for data transmission
+			int client_value_size =
+				serv_->info_->channel_bytes(); // assume that the client has a standard size for
+											   // the relevant data type
+			lsl_channel_format_t format = serv_->info_->channel_format();
+
+			// read feed parameters
+			char buf[16384] = {0};
+			while (requeststream_.getline(buf, sizeof(buf)) && (buf[0] != '\r')) {
+				std::string hdrline(buf);
+				std::size_t colon = hdrline.find_first_of(':');
+				if (colon != std::string::npos) {
+					// strip off comments
+					auto semicolon = hdrline.find_first_of(';');
+					if (semicolon != std::string::npos) hdrline.erase(semicolon);
+					// convert to lowercase
+					for (auto &c : hdrline) c = ::tolower(c);
+					// extract key & value
+					std::string type = trim(hdrline.substr(0, colon)),
+								rest = trim(hdrline.substr(colon + 1));
+					// get the header information
+					if (type == "native-byte-order") client_byte_order = std::stoi(rest);
+					if (type == "endian-performance")
+						client_endian_performance = std::stod(rest);
+					if (type == "has-ieee754-floats")
+						client_has_ieee754_floats = from_string<bool>(rest);
+					if (type == "supports-subnormals")
+						client_supports_subnormals = from_string<bool>(rest);
+					if (type == "value-size") client_value_size = std::stoi(rest);
+					if (type == "max-buffer-length") max_buffered_ = std::stoi(rest);
+					if (type == "max-chunk-length") chunk_granularity_ = std::stoi(rest);
+					if (type == "protocol-version") client_protocol_version = std::stoi(rest);
+				} else {
+					DLOG_F(WARNING, "%p Request line '%s' contained no key-value pair", this,
+						hdrline.c_str());
+				}
+			}
+
+			// determine the parameters for data transmission
+			bool client_suppress_subnormals = false;
+			// use least common denominator data protocol version
+			data_protocol_version_ = std::min(
+				api_config::get_instance()->use_protocol_version(), client_protocol_version);
+			// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is
+			// involved
+			if (serv_->info_->channel_bytes() != client_value_size) data_protocol_version_ = 100;
+			if (!format_ieee754[cft_double64] ||
+				(format == cft_float32 && !format_ieee754[cft_float32]) ||
+				!client_has_ieee754_floats)
+				data_protocol_version_ = 100;
+			if (data_protocol_version_ >= 110) {
+				// decide on the byte order if conflicting
+				if (BOOST_BYTE_ORDER != client_byte_order) {
+					if (client_byte_order == 2134 && client_value_size >= 8) {
+						// since we have no implementation for this byte order conversion let
+						// the client do it
+						use_byte_order_ = BOOST_BYTE_ORDER;
+					} else {
+						// let the faster party perform the endian conversion
+						use_byte_order_ = (client_value_size <= 1 || (measure_endian_performance() >
+																		 client_endian_performance))
+											  ? client_byte_order
+											  : BOOST_BYTE_ORDER;
+					}
+				} else
+					use_byte_order_ = BOOST_BYTE_ORDER;
+				// determine if subnormal suppression needs to be enabled
+				client_suppress_subnormals =
+					(format_subnormal[format] && !client_supports_subnormals);
+			}
+
+			// send the response
+			std::ostream response_stream(&feedbuf_);
+			response_stream << "LSL/" << api_config::get_instance()->use_protocol_version()
+							<< " 200 OK\r\n";
+			response_stream << "UID: " << serv_->info_->uid() << "\r\n";
+			response_stream << "Byte-Order: " << use_byte_order_ << "\r\n";
+			response_stream << "Suppress-Subnormals: " << client_suppress_subnormals << "\r\n";
+			response_stream << "Data-Protocol-Version: " << data_protocol_version_ << "\r\n";
+			response_stream << "\r\n" << std::flush;
+		} else {
+			// read feed parameters
+			requeststream_ >> max_buffered_ >> chunk_granularity_;
+		}
+
+		// --- validation ---
+		if (data_protocol_version_ == 100) {
+			// create a portable output archive to write to
+			outarch_.reset(new eos::portable_oarchive(feedbuf_));
+			// serialize the shortinfo message into an archive
+			*outarch_ << serv_->shortinfo_msg_;
+		} else {
+			// allocate scratchpad memory for endian conversion, etc.
+			scratch_ = new char[format_sizes[serv_->info_->channel_format()] *
+								serv_->info_->channel_count()];
+		}
+
+		// send test pattern samples
+		std::unique_ptr<sample> temp(factory::new_sample_unmanaged(
+			serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
+		temp->assign_test_pattern(4);
+		if (data_protocol_version_ >= 110)
+			temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
+		else
+			*outarch_ << *temp;
+		temp->assign_test_pattern(2);
+		if (data_protocol_version_ >= 110)
+			temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
+		else
+			*outarch_ << *temp;
+		// send off the newly created feedheader
+		async_write(
+			*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {
+				shared_this->handle_send_feedheader_outcome(err, len);
+			});
+		DLOG_F(2, "%p sent test pattern samples", this);
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while serializing the feed header: %s", e.what());
 	}
@@ -500,14 +491,13 @@ void client_session::handle_read_feedparams(
 
 void client_session::handle_send_feedheader_outcome(error_code err, std::size_t n) {
 	try {
-		if (!err) {
-			feedbuf_.consume(n);
-			// register outstanding work at the server (will be unregistered at session destruction)
-			work_ = std::make_shared<work_p::element_type>(serv_->io_->get_executor());
-			// spawn a sample transfer thread
-			std::thread(&client_session::transfer_samples_thread, this, shared_from_this())
-				.detach();
-		}
+		if (err) return;
+
+		feedbuf_.consume(n);
+		// register outstanding work at the server (will be unregistered at session destruction)
+		work_ = std::make_shared<work_p::element_type>(serv_->io_->get_executor());
+		// spawn a sample transfer thread
+		std::thread(&client_session::transfer_samples_thread, this, shared_from_this()).detach();
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while handling the feedheader send outcome: %s", e.what());
 	}
@@ -557,7 +547,6 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 					} else
 						break;
 				}
-
 			} catch (std::exception &e) {
 				LOG_F(WARNING, "Unexpected glitch in transfer_samples_thread: %s", e.what());
 			}
