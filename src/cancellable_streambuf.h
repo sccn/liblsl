@@ -222,7 +222,7 @@ protected:
 	lslboost::asio::detail::array<char, buffer_size> put_buffer_;
 	lslboost::system::error_code ec_;
 	std::size_t bytes_transferred_;
-	bool cancel_issued_;
+	std::atomic<bool> cancel_issued_;
 	bool cancel_started_;
 	std::recursive_mutex cancel_mut_;
 };

@@ -148,9 +148,9 @@ private:
 
 	// things related to cancellation
 	/// if set, no more resolves can be started (destructively cancelled).
-	bool cancelled_;
+	std::atomic<bool> cancelled_;
 	/// if set, ongoing operations will finished quickly
-	bool expired_;
+	std::atomic<bool> expired_;
 
 	// reinitialized for each query
 	/// our current query string

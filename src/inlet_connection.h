@@ -163,7 +163,7 @@ private:
 	/// whether we would try to recover the stream if it is lost
 	bool recovery_enabled_;
 	/// is the stream irrecoverably lost (set by try_recover_from_error if recovery is disabled)
-	bool lost_;
+	std::atomic<bool> lost_;
 
 	/// internal watchdog thread (to detect dead connections), re-resolves the current connection
 	/// speculatively
@@ -171,7 +171,7 @@ private:
 
 	// things related to the shutdown condition
 	/// indicates to threads that we're shutting down
-	bool shutdown_;
+	std::atomic<bool> shutdown_;
 	/// a mutex to protect the shutdown state
 	std::mutex shutdown_mut_;
 	/// condition variable indicating that we're shutting down
