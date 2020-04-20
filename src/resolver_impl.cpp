@@ -203,21 +203,20 @@ void resolver_impl::udp_multicast_burst() {
 }
 
 void resolver_impl::udp_unicast_burst(error_code err) {
-	if (err != error::operation_aborted) {
-		// start one per IP stack under consideration
-		for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
-			try {
-				resolve_attempt_udp_p attempt(
-					new resolve_attempt_udp(*io_, udp_protocols_[k], ucast_endpoints_, query_,
-						results_, results_mut_, cfg_->unicast_max_rtt(), this));
-				attempt->begin();
-			} catch (std::exception &e) {
-				if (++failures == udp_protocols_.size())
-					LOG_F(WARNING,
-						"Could not start a unicast resolve attempt for any of the allowed protocol "
-						"stacks: %s",
-						e.what());
-			}
+	if (err == error::operation_aborted) return;
+
+	// start one per IP stack under consideration
+	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
+		try {
+			resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_, udp_protocols_[k],
+				ucast_endpoints_, query_, results_, results_mut_, cfg_->unicast_max_rtt(), this));
+			attempt->begin();
+		} catch (std::exception &e) {
+			if (++failures == udp_protocols_.size())
+				LOG_F(WARNING,
+					"Could not start a unicast resolve attempt for any of the allowed protocol "
+					"stacks: %s",
+					e.what());
 		}
 	}
 }

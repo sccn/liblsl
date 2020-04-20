@@ -174,27 +174,27 @@ void time_receiver::handle_receive_outcome(error_code err, std::size_t len) {
 }
 
 void time_receiver::result_aggregation_scheduled(error_code err) {
-	if (!err) {
-		if ((int)estimates_.size() >= cfg_->time_update_minprobes()) {
-			// take the estimate with the lowest error bound (=rtt), as in NTP
-			double best_offset = 0, best_rtt = FOREVER;
-			double best_remote_time = 0;
-			for (std::size_t k = 0; k < estimates_.size(); k++) {
-				if (estimates_[k].first < best_rtt) {
-					best_rtt = estimates_[k].first;
-					best_offset = estimates_[k].second;
-					best_remote_time = estimate_times_[k].second;
-				}
+	if (err) return;
+
+	if ((int)estimates_.size() >= cfg_->time_update_minprobes()) {
+		// take the estimate with the lowest error bound (=rtt), as in NTP
+		double best_offset = 0, best_rtt = FOREVER;
+		double best_remote_time = 0;
+		for (std::size_t k = 0; k < estimates_.size(); k++) {
+			if (estimates_[k].first < best_rtt) {
+				best_rtt = estimates_[k].first;
+				best_offset = estimates_[k].second;
+				best_remote_time = estimate_times_[k].second;
 			}
-			// and notify that the result is available
-			{
-				std::lock_guard<std::mutex> lock(timeoffset_mut_);
-				uncertainty_ = best_rtt;
-				timeoffset_ = -best_offset;
-				remote_time_ = best_remote_time;
-			}
-			timeoffset_upd_.notify_all();
 		}
+		// and notify that the result is available
+		{
+			std::lock_guard<std::mutex> lock(timeoffset_mut_);
+			uncertainty_ = best_rtt;
+			timeoffset_ = -best_offset;
+			remote_time_ = best_remote_time;
+		}
+		timeoffset_upd_.notify_all();
 	}
 }
 
