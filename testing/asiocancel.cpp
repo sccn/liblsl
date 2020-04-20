@@ -16,19 +16,23 @@ typedef lsl::cancellable_streambuf cancellable_streambuf;
 
 const uint16_t port = 28812;
 
+static std::mutex output_mutex;
+
+#define MINFO(str) {std::unique_lock<std::mutex> out_lock(output_mutex); INFO(str)}
+
 template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &sb) {
 	std::condition_variable cv;
 	std::mutex mut;
 	bool status = false;
 	auto future = std::async(std::launch::async, [&]() {
 		std::unique_lock<std::mutex> lock(mut);
-		INFO("Thread 1: started");
+		MINFO("Thread 1: started")
 		status = true;
 		lock.unlock();
 		cv.notify_all();
-		INFO("Thread 1: starting socket operation");
+		MINFO("Thread 1: starting socket operation")
 		task();
-		INFO("Thread 1: socket operation finished");
+		MINFO("Thread 1: socket operation finished")
 	});
 	// We need to wait until sb_blockconnect.connect() was called, but the
 	// thread is blocked connecting so we can't let it signal it's ready
@@ -39,8 +43,8 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	}
 
 	if (future.wait_for(std::chrono::milliseconds(200)) == std::future_status::ready)
-		INFO("Thread 1 finished too soon, couldn't test cancellation");
-	INFO("Thread 0: Closing socket…");
+		MINFO("Thread 1 finished too soon, couldn't test cancellation")
+	MINFO("Thread 0: Closing socket…");
 	sb.cancel();
 	// Double cancel, shouldn't do anything dramatic
 	sb.cancel();
@@ -49,7 +53,7 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	if (future.wait_for(std::chrono::seconds(2)) != std::future_status::ready)
 		throw std::runtime_error("Thread 0: Thread didn't join!");
 	else {
-		INFO("Thread 0: Thread was successfully canceled");
+		INFO("Thread 0: Thread was successfully canceled")
 		future.get();
 	}
 }
@@ -57,7 +61,7 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 TEST_CASE("streambufs can connect", "[streambuf][basic]") {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_connect;
-	INFO("Thread 0: Binding remote socket and keeping it busy…");
+	INFO("Thread 0: Binding remote socket and keeping it busy…")
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port + 1);
 	ip::tcp::acceptor remote(io_ctx);
 	remote.open(ip::tcp::v4());
@@ -79,7 +83,7 @@ TEST_CASE("streambufs can connect", "[streambuf][basic]") {
 	cancellable_streambuf busykeeper;
 	busykeeper.connect(ep);
 #endif
-	INFO("Thread 0: Remote socket should be busy");
+	INFO("Thread 0: Remote socket should be busy")
 
 	test_cancel_thread([&sb_connect, ep]() { sb_connect.connect(ep); }, sb_connect);
 	remote.close();
@@ -91,16 +95,16 @@ TEST_CASE("streambufs can transfer data", "[streambuf][read]") {
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port + 1);
 	ip::tcp::acceptor remote(io_ctx, ep, true);
 	remote.listen(1);
-	INFO("Thread 0: Connecting…");
+	INFO("Thread 0: Connecting…")
 	sb_read.connect(ep);
-	INFO("Thread 0: Connected (" << sb_read.puberror().message() << ')');
+	INFO("Thread 0: Connected (" << sb_read.puberror().message() << ')')
 	ip::tcp::socket sock(io_ctx);
 	remote.accept(sock);
 
 	test_cancel_thread(
 		[&sb_read]() {
 			int c = sb_read.sgetc();
-			INFO("Thread 1: Read char " << c);
+			MINFO("Thread 1: Read char " << c);
 		},
 		sb_read);
 }
