@@ -9,15 +9,21 @@
 #include <map>
 #include <thread>
 
-/* Shared mutex implementation from boost. The stdlib only added a
- * shared_timed_mutex in C++14 (but Apple didn't) and shared_mutex
- * in C++17 so for this type we have to fall back to boost*/
+/* shared_mutex was added in C++17 so we use the boost shared_mutex when
+building for C++11 / C++14 or MSVC <= 2019 */
+#if __cpluscplus >= 201703L || _MSC_VER >= 1925
+#include <mutex>
+#include <shared_mutex>
+using shared_mutex_t = std::shared_mutex;
+using shared_lock_t = std::shared_lock<std::shared_mutex>;
+using unique_lock_t = std::unique_lock<std::shared_mutex>;
+#else
+#include <boost/thread/lock_types.hpp>
 #include <boost/thread/shared_mutex.hpp>
 using shared_mutex_t = lslboost::shared_mutex;
-
-namespace lslboost {
-template <class Fn> class function;
-}
+using shared_lock_t = lslboost::shared_lock<lslboost::shared_mutex>;
+using unique_lock_t = lslboost::unique_lock<lslboost::shared_mutex>;
+#endif
 
 using lslboost::asio::ip::tcp;
 using lslboost::asio::ip::udp;
