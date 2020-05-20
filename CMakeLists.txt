@@ -130,8 +130,13 @@ add_library(lslboost OBJECT
 	lslboost/serialization_objects.cpp
 )
 
-if(WIN32 AND MINGW)
-	target_link_libraries(lslboost PRIVATE wsock32 ws2_32 winmm)
+if(UNIX)
+	include(CheckSymbolExists)
+	# look for clock_gettime, if not we need to link against librt
+	check_symbol_exists(clock_gettime time.h HAS_GETTIME)
+	if(NOT HAS_GETTIME)
+		set(NEEDS_LIBRT ON CACHE INTERNAL "Link to librt")
+	endif()
 endif()
 
 find_package(Threads REQUIRED)
@@ -162,6 +167,7 @@ target_link_libraries(lslobj
 		lslboost
 	PUBLIC
 		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
+		$<$<BOOL:${NEEDS_LIBRT}>:rt>
 	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
