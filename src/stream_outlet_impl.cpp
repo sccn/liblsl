@@ -111,7 +111,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 				LOG_F(WARNING, "Stopping io_contexts for %s", name);
 				for (std::size_t k = 0; k < io_threads_.size(); k++) {
 					if (!io_threads_[k]->joinable()) {
-						LOG_F(ERROR, "Tearing down stream_outlet of %s's thread #%d", name, k);
+						LOG_F(ERROR, "Tearing down stream_outlet of %s's thread #%lu", name, k);
 						ios_[k]->stop();
 					}
 				}
