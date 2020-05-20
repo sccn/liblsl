@@ -11,6 +11,17 @@ TEST_CASE("streaminfo matching via XPath", "[basic][streaminfo][xml]") {
 	for(int i=0; i< 4;++i)
 		channels.append_child("channel").append_child("type").append_child(pugi::node_pcdata).set_value("EOG");
 
+	INFO(info.to_fullinfo_message());
+	REQUIRE(info.matches_query("name='streamname'"));
+	REQUIRE(info.matches_query("name='streamname' and type='streamtype'"));
+	REQUIRE(info.matches_query("channel_count > 5"));
+	REQUIRE(info.matches_query("nominal_srate >= 499"));
+	REQUIRE(info.matches_query("count(desc/channels/channel[type='EEG'])>3"));
+
+	LOG_F(INFO, "The following warning is harmless and expected");
+	REQUIRE(!info.matches_query("in'va'lid"));
+	REQUIRE(!info.matches_query("name='othername'"));
+
 #ifdef CATCH_CONFIG_ENABLE_BENCHMARKING
 	// Append lots of dummy channels for performance tests
 	for(int i=0; i<50000; ++i)
@@ -40,14 +51,4 @@ TEST_CASE("streaminfo matching via XPath", "[basic][streaminfo][xml]") {
 
 #endif
 
-	INFO(info.to_fullinfo_message());
-	REQUIRE(info.matches_query("name='streamname'"));
-	REQUIRE(info.matches_query("name='streamname' and type='streamtype'"));
-	REQUIRE(info.matches_query("channel_count > 5"));
-	REQUIRE(info.matches_query("nominal_srate >= 499"));
-	REQUIRE(info.matches_query("count(desc/channels/channel[type='EEG'])>3"));
-
-	LOG_F(INFO, "The following warning is harmless and expected");
-	REQUIRE(!info.matches_query("in'va'lid"));
-	REQUIRE(!info.matches_query("name='othername'"));
 }
