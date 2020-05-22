@@ -12,5 +12,5 @@ TEST_CASE("strings are split correctly", "[string][basic]") {
 	CHECK(lsl::splitandtrim(" a ", ',', false) == vec{"a"});
 	CHECK(lsl::splitandtrim("a,b", ',', true) == vec{"a", "b"});
 	CHECK(lsl::splitandtrim(",a,,", ',', false) == vec{"a"});
-	CHECK(lsl::splitandtrim("a, b \t,\t c ", ',', true) == vec{"a", "b","c"});
+	CHECK(lsl::splitandtrim("a, b \t,\t c ", ',', true) == vec{"a", "b", "c"});
 }

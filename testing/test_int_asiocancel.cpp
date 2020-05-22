@@ -18,7 +18,11 @@ const uint16_t port = 28812;
 
 static std::mutex output_mutex;
 
-#define MINFO(str) {std::unique_lock<std::mutex> out_lock(output_mutex); INFO(str)}
+#define MINFO(str)                                                                                 \
+	{                                                                                              \
+		std::unique_lock<std::mutex> out_lock(output_mutex);                                       \
+		INFO(str)                                                                                  \
+	}
 
 template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &sb) {
 	std::condition_variable cv;

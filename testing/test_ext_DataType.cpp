@@ -1,14 +1,15 @@
 #include "catch.hpp"
-#include "helpers.h"
 #include "helper_type.hpp"
+#include "helpers.h"
 #include <cstdint>
 #include <lsl_cpp.h>
 
-TEMPLATE_TEST_CASE("datatransfer", "[datatransfer][basic]", char, int16_t, int32_t, int64_t, float, double) {
+TEMPLATE_TEST_CASE(
+	"datatransfer", "[datatransfer][basic]", char, int16_t, int32_t, int64_t, float, double) {
 	const int numBounces = sizeof(TestType) * 8;
 	double timestamps[numBounces][2];
-	const char* name = SampleType<TestType>::fmt_string();
-	lsl::channel_format_t cf = (lsl::channel_format_t) SampleType<TestType>::chan_fmt;
+	const char *name = SampleType<TestType>::fmt_string();
+	lsl::channel_format_t cf = (lsl::channel_format_t)SampleType<TestType>::chan_fmt;
 
 	Streampair sp(create_streampair(
 		lsl::stream_info(name, "Bounce", 2, lsl::IRREGULAR_RATE, cf, "streamid")));
@@ -37,8 +38,8 @@ TEMPLATE_TEST_CASE("datatransfer", "[datatransfer][basic]", char, int16_t, int32
 TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 	const std::size_t numChannels = 2;
 
-	Streampair sp(create_streampair(
-		lsl::stream_info("cf_string", "DataType", numChannels, lsl::IRREGULAR_RATE, lsl::cf_string, "streamid")));
+	Streampair sp(create_streampair(lsl::stream_info(
+		"cf_string", "DataType", numChannels, lsl::IRREGULAR_RATE, lsl::cf_string, "streamid")));
 
 	std::vector<std::string> sent_data, received_data(numChannels);
 	const char nullstr[] = "\0Test\0string\0with\0nulls";
@@ -49,23 +50,22 @@ TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 	CHECK(sp.in_.pull_sample(received_data, 5.) != 0.0);
 	CHECK(received_data[0] == sent_data[0]);
 	// Manually check second string for equality to avoid printing the entire test string
-	if(received_data[1] != sent_data[1])
+	if (received_data[1] != sent_data[1])
 		FAIL("Sent large string data doesn't match received data");
 }
 
 TEST_CASE("TypeConversion", "[datatransfer][types][basic]") {
-	Streampair sp{
-		create_streampair(lsl::stream_info("TypeConversion", "int2str2int", 1, 1, lsl::cf_string, "TypeConversion"))};
+	Streampair sp{create_streampair(
+		lsl::stream_info("TypeConversion", "int2str2int", 1, 1, lsl::cf_string, "TypeConversion"))};
 	const int num_bounces = 31;
 	std::vector<int32_t> data;
 	for (int i = 0; i < num_bounces; ++i) data.push_back(1 << i);
 
 	sp.out_.push_chunk_multiplexed(data);
 
-	for (int32_t val: data) {
+	for (int32_t val : data) {
 		int32_t result;
 		sp.in_.pull_sample(&result, 1, 1.);
 		CHECK(result == val);
 	}
 }
-
