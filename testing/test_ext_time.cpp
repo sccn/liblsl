@@ -1,7 +1,7 @@
-#include "helpers.h"
 #include "catch.hpp"
-#include <lsl_cpp.h>
+#include "helpers.h"
 #include <atomic>
+#include <lsl_cpp.h>
 #include <thread>
 
 namespace {
@@ -21,11 +21,12 @@ TEST_CASE("simple timesync", "[timesync][basic]") {
 
 
 TEST_CASE("timeouts", "[pull][basic]") {
-	auto sp = create_streampair(lsl::stream_info("timeouts", "Test", 1, lsl::IRREGULAR_RATE, lsl::cf_int8, "timeouts"));
+	auto sp = create_streampair(
+		lsl::stream_info("timeouts", "Test", 1, lsl::IRREGULAR_RATE, lsl::cf_int8, "timeouts"));
 	std::atomic<bool> done{false};
 
 	// Push a sample after some time so the test can continue even if the timeout isn't honored
-	std::thread saver([&](){
+	std::thread saver([&]() {
 		char val;
 		auto end = lsl::local_clock() + 2;
 		while (!done && lsl::local_clock() < end)
