@@ -1,3 +1,4 @@
+#include "lsl_c_api_helpers.hpp"
 #include "stream_info_impl.h"
 #include <cstring>
 #include <string>
@@ -13,23 +14,12 @@ using namespace lsl;
 LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type,
 	int32_t channel_count, double nominal_srate, lsl_channel_format_t channel_format,
 	const char *source_id) {
-	try {
-		if (!source_id) source_id = "";
-		return new stream_info_impl(
-			name, type, channel_count, nominal_srate, channel_format, source_id);
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Unexpected error during streaminfo construction: %s", e.what());
-		return nullptr;
-	}
+	return create_object_noexcept<stream_info_impl>(
+		name, type, channel_count, nominal_srate, channel_format, source_id);
 }
 
 LIBLSL_C_API lsl_streaminfo lsl_copy_streaminfo(lsl_streaminfo info) {
-	try {
-		return new stream_info_impl(*info);
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Unexpected error while copying a streaminfo: %s", e.what());
-		return nullptr;
-	}
+	return create_object_noexcept<stream_info_impl>(*info);
 }
 
 LIBLSL_C_API void lsl_destroy_streaminfo(lsl_streaminfo info) {

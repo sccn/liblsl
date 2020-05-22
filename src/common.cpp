@@ -11,7 +11,10 @@
 #include <mmsystem.h>
 #endif
 
+char last_error[512];
+
 extern "C" {
+
 LIBLSL_C_API int32_t lsl_protocol_version() {
 	return lsl::api_config::get_instance()->use_protocol_version();
 }
@@ -27,6 +30,8 @@ LIBLSL_C_API double lsl_local_clock() {
 LIBLSL_C_API void lsl_destroy_string(char *s) {
 	if (s) free(s);
 }
+
+LIBLSL_C_API const char *lsl_last_error(void) { return last_error; }
 }
 
 // === implementation of misc functions ===

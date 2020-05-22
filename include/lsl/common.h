@@ -150,6 +150,8 @@ typedef enum {
 	_lsl_error_code_maxval = 0x7f000000
 } lsl_error_code_t;
 
+/// Return an explanation for the last error
+extern LIBLSL_C_API const char *lsl_last_error(void);
 
 /**
  * LSL version the binary was compiled against
