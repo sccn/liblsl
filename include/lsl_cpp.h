@@ -180,7 +180,9 @@ public:
 		double nominal_srate = IRREGULAR_RATE, channel_format_t channel_format = cf_float32,
 		const std::string &source_id = std::string())
 		: obj(lsl_create_streaminfo((name.c_str()), (type.c_str()), channel_count, nominal_srate,
-			  (lsl_channel_format_t)channel_format, (source_id.c_str()))) {}
+			  (lsl_channel_format_t)channel_format, (source_id.c_str()))) {
+		if (obj == nullptr) throw std::invalid_argument(lsl_last_error());
+	}
 	stream_info(lsl_streaminfo handle) : obj(handle) {}
 
 

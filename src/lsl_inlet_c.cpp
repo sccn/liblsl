@@ -1,3 +1,4 @@
+#include "lsl_c_api_helpers.hpp"
 #include "stream_inlet_impl.h"
 
 extern "C" {
@@ -9,20 +10,9 @@ using namespace lsl;
 
 LIBLSL_C_API lsl_inlet lsl_create_inlet(
 	lsl_streaminfo info, int32_t max_buflen, int32_t max_chunklen, int32_t recover) {
-	try {
-		stream_info_impl *infoimpl = info;
-		lsl_inlet result = new stream_inlet_impl(*infoimpl,
-			infoimpl->nominal_srate() ? (int)(infoimpl->nominal_srate() * max_buflen)
-									  : max_buflen * 100,
-			max_chunklen, recover != 0);
-		return result;
-	} catch (std::invalid_argument &e) {
-		LOG_F(WARNING, "Error during construction of a stream_inlet: %s", e.what());
-		return nullptr;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		return nullptr;
-	}
+	return create_object_noexcept<stream_inlet_impl>(*info,
+		info->nominal_srate() ? (int)(info->nominal_srate() * max_buflen) : max_buflen * 100,
+		max_chunklen, recover != 0);
 }
 
 LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) {
@@ -32,32 +22,14 @@ LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) {
 }
 
 LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout, int32_t *ec) {
-	if (ec) *ec = lsl_no_error;
-	try {
-		return new stream_info_impl(in->info(timeout));
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
-	return nullptr;
+	return create_object_noexcept<stream_info_impl>(in->info(timeout));
 }
 
 LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *ec) {
 	if (ec) *ec = lsl_no_error;
 	try {
 		in->open_stream(timeout);
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 }
 
 LIBLSL_C_API void lsl_close_stream(lsl_inlet in) {
@@ -70,14 +42,7 @@ LIBLSL_C_API double lsl_time_correction(lsl_inlet in, double timeout, int32_t *e
 	if (ec) *ec = lsl_no_error;
 	try {
 		return in->time_correction(timeout);
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0.0;
 }
 
@@ -87,13 +52,7 @@ LIBLSL_C_API double lsl_time_correction_ex(
 	try {
 		double correction = in->time_correction(remote_time, uncertainty, timeout);
 		return correction;
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::exception &) {
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0.0;
 }
 
@@ -160,18 +119,7 @@ LIBLSL_C_API double lsl_pull_sample_str(
 			strcpy(buffer[k], tmp[k].c_str());
 		}
 		return result;
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::invalid_argument &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::range_error &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0.0;
 }
 
@@ -197,18 +145,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 			memcpy(buffer[k], &tmp[k][0], tmp[k].size());
 		}
 		return result;
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::invalid_argument &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::range_error &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0.0;
 }
 
@@ -217,18 +154,7 @@ LIBLSL_C_API double lsl_pull_sample_v(
 	if (ec) *ec = lsl_no_error;
 	try {
 		return in->pull_numeric_raw(buffer, buffer_bytes, timeout);
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::invalid_argument &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::range_error &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0.0;
 }
 
@@ -297,18 +223,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 			return result;
 		} else
 			return 0;
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::invalid_argument &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::range_error &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0;
 }
 
@@ -336,18 +251,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 			return result;
 		} else
 			return 0;
-	} catch (timeout_error &) {
-		if (ec) *ec = lsl_timeout_error;
-	} catch (lost_error &) {
-		if (ec) *ec = lsl_lost_error;
-	} catch (std::invalid_argument &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::range_error &) {
-		if (ec) *ec = lsl_argument_error;
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Unexpected error in %s: %s", __func__, e.what());
-		if (ec) *ec = lsl_internal_error;
-	}
+	} LSL_STORE_EXCEPTION_IN(ec)
 	return 0;
 }
 

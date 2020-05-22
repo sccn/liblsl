@@ -21,6 +21,7 @@ add_executable(lsl_test_exported
 	test_ext_DataType.cpp
 	test_ext_discovery.cpp
 	test_ext_move.cpp
+	test_ext_streaminfo.cpp
 	test_ext_time.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)

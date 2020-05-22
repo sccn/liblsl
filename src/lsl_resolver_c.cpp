@@ -1,4 +1,5 @@
 #include "api_config.h"
+#include "lsl_c_api_helpers.hpp"
 #include "resolver_impl.h"
 
 extern "C" {
@@ -29,10 +30,8 @@ LIBLSL_C_API int32_t lsl_resolver_results(
 		// allocate new stream_info_impl's and assign to the buffer
 		for (uint32_t k = 0; k < tmp.size(); k++) buffer[k] = new stream_info_impl(tmp[k]);
 		return static_cast<int32_t>(tmp.size());
-	} catch(std::exception &e) {
-		LOG_F(WARNING, "Unexpected error querying lsl_resolver_results: %s", e.what());
-		return lsl_internal_error;
 	}
+	LSL_RETURN_CAUGHT_EC;
 }
 
 LIBLSL_C_API void lsl_destroy_continuous_resolver(lsl_continuous_resolver res) {
@@ -55,11 +54,9 @@ LIBLSL_C_API int32_t lsl_resolve_all(
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements < tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
-		return result;
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Error during resolve_all: %s", e.what());
-		return lsl_internal_error;
+		return static_cast<int32_t>(result);
 	}
+	LSL_RETURN_CAUGHT_EC;
 }
 
 LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_elements,
@@ -70,11 +67,9 @@ LIBLSL_C_API int32_t lsl_resolve_byprop(lsl_streaminfo *buffer, uint32_t buffer_
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements < tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
-		return result;
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Error during resolve_byprop: %s", e.what());
-		return lsl_internal_error;
+		return static_cast<int32_t>(result);
 	}
+	LSL_RETURN_CAUGHT_EC;
 }
 
 LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_elements,
@@ -85,10 +80,8 @@ LIBLSL_C_API int32_t lsl_resolve_bypred(lsl_streaminfo *buffer, uint32_t buffer_
 		// allocate new stream_info_impl's and assign to the buffer
 		uint32_t result = buffer_elements < tmp.size() ? buffer_elements : (uint32_t)tmp.size();
 		for (uint32_t k = 0; k < result; k++) buffer[k] = new stream_info_impl(tmp[k]);
-		return result;
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Error during resolve_bypred: %s", e.what());
-		return lsl_internal_error;
+		return static_cast<int32_t>(result);
 	}
+	LSL_RETURN_CAUGHT_EC;
 }
 }
