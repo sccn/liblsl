@@ -2,6 +2,8 @@
 #include "catch.hpp"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/tcp.hpp>
+#include <boost/asio/ip/udp.hpp>
+#include <boost/asio/ip/v6_only.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <future>
@@ -62,7 +64,7 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	}
 }
 
-TEST_CASE("streambufs can connect", "[streambuf][basic]") {
+TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_connect;
 	INFO("Thread 0: Binding remote socket and keeping it busy…")
@@ -93,7 +95,7 @@ TEST_CASE("streambufs can connect", "[streambuf][basic]") {
 	remote.close();
 }
 
-TEST_CASE("streambufs can transfer data", "[streambuf][read]") {
+TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_read;
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port + 1);
@@ -108,7 +110,30 @@ TEST_CASE("streambufs can transfer data", "[streambuf][read]") {
 	test_cancel_thread(
 		[&sb_read]() {
 			int c = sb_read.sgetc();
-			MINFO("Thread 1: Read char " << c);
+			MINFO("Thread 1: Read char " << c)
 		},
 		sb_read);
+}
+
+TEST_CASE("receive v4 packets on v6 socket", "[ipv6][network]") {
+	const uint16_t test_port = port + 2;
+	asio::io_context io_ctx;
+	ip::udp::socket sock(io_ctx, ip::udp::v6());
+	sock.set_option(ip::v6_only(false));
+	sock.bind(ip::udp::endpoint(ip::address_v6::any(), test_port));
+
+	ip::udp::socket sender_v4(io_ctx, ip::udp::v4()), sender_v6(io_ctx, ip::udp::v6());
+	const std::string buf = "Hello World";
+	asio::const_buffer sbuf(buf.data(), buf.length());
+	char recvbuf[64] = {0};
+	sender_v4.send_to(sbuf, ip::udp::endpoint(ip::address_v4::loopback(), test_port));
+	auto recv_len = sock.receive(asio::buffer(recvbuf, sizeof(recvbuf) - 1));
+	CHECK(recv_len == buf.length());
+	CHECK(buf == recvbuf);
+	std::fill_n(recvbuf, recv_len, 0);
+
+	sender_v6.send_to(sbuf, ip::udp::endpoint(ip::address_v6::loopback(), test_port));
+	recv_len = sock.receive(asio::buffer(recvbuf, sizeof(recvbuf) - 1));
+	CHECK(buf == recvbuf);
+	std::fill_n(recvbuf, recv_len, 0);
 }

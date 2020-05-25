@@ -27,8 +27,8 @@ target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)
 find_package(Threads REQUIRED)
 
 add_executable(lsl_test_internal
-	test_int_asiocancel.cpp
 	test_int_inireader.cpp
+	test_int_network.cpp
 	test_int_stringfuncs.cpp
 	test_int_streaminfo.cpp
 	test_int_samples.cpp
