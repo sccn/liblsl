@@ -14,7 +14,7 @@ using namespace lsl;
  *the send_buffer (so this is a global limit).
  * @return Shared pointer to the newly created queue.
  */
-consumer_queue_p send_buffer::new_consumer(int max_buffered) {
+std::shared_ptr<consumer_queue> send_buffer::new_consumer(int max_buffered) {
 	max_buffered = max_buffered ? std::min(max_buffered, max_capacity_) : max_capacity_;
 	return std::make_shared<consumer_queue>(max_buffered, shared_from_this());
 }

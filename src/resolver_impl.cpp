@@ -186,12 +186,12 @@ void resolver_impl::next_resolve_wave() {
 
 void resolver_impl::udp_multicast_burst() {
 	// start one per IP stack under consideration
-	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
+	int failures = 0;
+	for (auto protocol: udp_protocols_) {
 		try {
-			resolve_attempt_udp_p attempt(
-				std::make_shared<resolve_attempt_udp>(*io_, udp_protocols_[k], mcast_endpoints_,
-					query_, results_, results_mut_, cfg_->multicast_max_rtt(), this));
-			attempt->begin();
+			std::make_shared<resolve_attempt_udp>(*io_, protocol, mcast_endpoints_, query_,
+				results_, results_mut_, cfg_->multicast_max_rtt(), this)
+				->begin();
 		} catch (std::exception &e) {
 			if (++failures == udp_protocols_.size())
 				LOG_F(ERROR,
@@ -205,12 +205,13 @@ void resolver_impl::udp_multicast_burst() {
 void resolver_impl::udp_unicast_burst(error_code err) {
 	if (err == error::operation_aborted) return;
 
+	int failures = 0;
 	// start one per IP stack under consideration
-	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
+	for (auto protocol: udp_protocols_) {
 		try {
-			resolve_attempt_udp_p attempt(new resolve_attempt_udp(*io_, udp_protocols_[k],
-				ucast_endpoints_, query_, results_, results_mut_, cfg_->unicast_max_rtt(), this));
-			attempt->begin();
+			std::make_shared<resolve_attempt_udp>(*io_, protocol, ucast_endpoints_, query_,
+				results_, results_mut_, cfg_->unicast_max_rtt(), this)
+				->begin();
 		} catch (std::exception &e) {
 			if (++failures == udp_protocols_.size())
 				LOG_F(WARNING,
