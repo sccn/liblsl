@@ -40,7 +40,7 @@ public:
 	 * of the send_buffer (so this is a global limit).
 	 * @return Shared pointer to the newly created consumer.
 	 */
-	consumer_queue_p new_consumer(int max_buffered = 0);
+	std::shared_ptr<consumer_queue> new_consumer(int max_buffered = 0);
 
 	/// Push a sample onto the send buffer that will subsequently be received by all consumers.
 	void push_sample(const sample_p &s);

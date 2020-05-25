@@ -507,7 +507,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
 	if (max_buffered_ <= 0) return;
 	try {
 		// make a new consumer queue
-		consumer_queue_p queue = serv_->send_buffer_->new_consumer(max_buffered_);
+		auto queue = serv_->send_buffer_->new_consumer(max_buffered_);
 		// the sequence # is merely used to determine chunk boundaries (no need for int64)
 		uint32_t seqn = 0;
 		while (!serv_->shutdown_) {
