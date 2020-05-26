@@ -180,6 +180,7 @@ bool stream_info_impl::matches_query(const string &query, bool nocache) {
 }
 
 bool query_cache::matches_query(const xml_document &doc, const std::string query, bool nocache) {
+	if(query == "") return true;
 	std::lock_guard<std::mutex> lock(cache_mut_);
 
 	decltype(cache)::iterator it;
@@ -221,7 +222,7 @@ bool query_cache::matches_query(const xml_document &doc, const std::string query
 		}
 		return matched;
 	} catch (std::exception &e) {
-		LOG_F(WARNING, "Query error: %s", e.what());
+		LOG_F(WARNING, "Query \"%s\" error: %s", query.c_str(), e.what());
 		return false;
 	}
 }
