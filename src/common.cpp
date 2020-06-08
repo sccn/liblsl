@@ -47,6 +47,7 @@ void lsl::ensure_lsl_initialized() {
 		loguru::init(argc, const_cast<char **>(argv));
 #else
 #endif
+		LOG_F(INFO, "%s", lsl_library_info());
 
 #ifdef _WIN32
 		// if a timer resolution other than 0 is requested (0 means don't override)...
