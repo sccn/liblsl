@@ -1,5 +1,6 @@
 #include "api_config.h"
 #include "common.h"
+#include "util/cast.hpp"
 #include "util/inireader.hpp"
 #include "util/strfuns.hpp"
 #include <algorithm>
@@ -184,6 +185,37 @@ void api_config::load_from_file(const std::string &filename) {
 		if (ttl_override >= 0) multicast_ttl_ = ttl_override;
 		if (!address_override.empty()) multicast_addresses_ = address_override;
 
+		// The network stack requires the source interfaces for multicast packets to be
+		// specified as IPv4 address or an IPv6 interface index
+		// Try getting the interfaces from the configuration files
+		using namespace asio::ip;
+		std::vector<std::string> netifs = parse_set(pt.get("multicast.Interfaces", "{}"));
+		for (const auto &netifstr : netifs) {
+			netif if_;
+			if_.name = std::string("Configured in lslapi.cfg");
+			if_.addr = make_address(netifstr);
+			if (if_.addr.is_v6()) if_.ifindex = if_.addr.to_v6().scope_id();
+			multicast_interfaces.push_back(if_);
+		}
+		// Try getting the interfaces from the OS
+		if (multicast_interfaces.empty()) multicast_interfaces = get_local_interfaces();
+
+		// Otherwise, let the OS select an appropriate network interface
+		if (multicast_interfaces.empty()) {
+			LOG_F(ERROR,
+				"No local network interface addresses found, resolving streams will likely "
+				"only work for devices connected to the main network adapter\n");
+			// Add dummy interface with default settings
+			netif dummy;
+			dummy.name = "Dummy interface";
+			dummy.addr = address_v4::any();
+			multicast_interfaces.push_back(dummy);
+			dummy.name = "IPv6 dummy interface";
+			dummy.addr = address_v6::any();
+			multicast_interfaces.push_back(dummy);
+		}
+
+
 		// read the [lab] settings
 		known_peers_ = parse_set(pt.get("lab.KnownPeers", "{}"));
 		session_id_ = pt.get("lab.SessionID", "default");
@@ -215,7 +247,7 @@ void api_config::load_from_file(const std::string &filename) {
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
 		// read the [log] settings
-		int log_level = pt.get("log.level", (int) loguru::Verbosity_INFO);
+		int log_level = pt.get("log.level", (int)loguru::Verbosity_INFO);
 		if (log_level < -3 || log_level > 9)
 			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
 

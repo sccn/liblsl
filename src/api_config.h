@@ -1,7 +1,9 @@
 #ifndef API_CONFIG_H
 #define API_CONFIG_H
 
+#include "netinterfaces.h"
 #include <cstdint>
+#include <loguru.hpp>
 #include <string>
 #include <vector>
 
@@ -106,8 +108,16 @@ public:
 	const std::string &listen_address() const { return listen_address_; }
 
 	/**
-	 * @brief The TTL setting (time-to-live) for the multicast packets.
+	 * A list of local interface addresses the multicast packets should be
+	 * sent from.
 	 *
+	 * The ini file may contain IPv4 addresses and/or IPv6 addresses with the
+	 * interface index as scope id, e.g. `1234:5678::2%3`
+	 **/
+	std::vector<lsl::netif> multicast_interfaces;
+
+	/**
+	 * The TTL setting (time-to-live) for the multicast packets.
 	 * This is determined according to the ResolveScope setting if not overridden by the TTLOverride
 	 * setting. The higher this number (0-255), the broader their distribution. Routers (if
 	 * correctly configured) employ various thresholds below which packets are not further
