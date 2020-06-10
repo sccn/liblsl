@@ -3,9 +3,10 @@
 
 #include "cancellation.h"
 #include "forward.h"
+#include "netinterfaces.h"
 #include "stream_info_impl.h"
 #include "socket_utils.h"
-#include <asio/ip/udp.hpp>
+#include <asio/ip/multicast.hpp>
 #include <asio/steady_timer.hpp>
 #include <map>
 #include <memory>
@@ -21,6 +22,8 @@ using steady_timer = asio::basic_waitable_timer<asio::chrono::steady_clock, asio
 
 /// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
 typedef std::map<std::string, std::pair<stream_info_impl, double>> result_container;
+/// A container for outgoing multicast interfaces
+typedef std::vector<class netif> mcast_interface_list;
 
 /**
  * An asynchronous resolve attempt for a single query targeted at a set of endpoints, via UDP.
@@ -78,7 +81,8 @@ private:
 	void receive_next_result();
 
 	/// Thos function starts an async send operation for the given current endpoint.
-	void send_next_query(endpoint_list::const_iterator next);
+	void send_next_query(
+		endpoint_list::const_iterator next, mcast_interface_list::const_iterator mcit);
 
 	/// Handler that gets called when a receive has completed.
 	void handle_receive_outcome(err_t err, std::size_t len);
@@ -122,6 +126,8 @@ private:
 	udp_socket broadcast_socket_;
 	/// socket to send data over (for multicasts)
 	udp_socket multicast_socket_;
+	/// Interface addresses to send multicast packets from
+	const mcast_interface_list &multicast_interfaces;
 	/// socket to receive replies (always unicast)
 	udp_socket recv_socket_;
 	/// timer to schedule the cancel action

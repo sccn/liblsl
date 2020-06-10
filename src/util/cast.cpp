@@ -36,5 +36,6 @@ template signed char from_string(const std::string &);
 template char from_string(const std::string &);
 template int16_t from_string(const std::string &);
 template int32_t from_string(const std::string &);
+template uint32_t from_string(const std::string &);
 template int64_t from_string(const std::string &);
 } // namespace lsl
