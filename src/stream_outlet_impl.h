@@ -1,7 +1,6 @@
 #ifndef STREAM_OUTLET_IMPL_H
 #define STREAM_OUTLET_IMPL_H
 
-#include "api_config.h"
 #include "common.h"
 #include "forward.h"
 #include "sample.h"
@@ -162,13 +161,7 @@ public:
 	 * @param pushthrough Whether to push the sample through to the receivers instead of buffering
 	 * it into a chunk according to network speeds.
 	 */
-	void push_numeric_raw(const void *data, double timestamp = 0.0, bool pushthrough = true) {
-		if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
-		sample_p smp(
-			sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-		smp->assign_untyped(data);
-		send_buffer_->push_sample(smp);
-	}
+	void push_numeric_raw(const void *data, double timestamp = 0.0, bool pushthrough = true);
 
 	//
 	// === Pushing an chunk of samples into the outlet ===
@@ -300,17 +293,8 @@ private:
 	/// Instantiate a new server stack.
 	void instantiate_stack(tcp tcp_protocol, udp udp_protocol);
 
-	/// Run the given io_context
-	void run_io(io_context_p &ios);
-
 	/// Allocate and enqueue a new sample into the send buffer.
-	template <class T> void enqueue(T *data, double timestamp, bool pushthrough) {
-		if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
-		sample_p smp(
-			sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-		smp->assign_typed(data);
-		send_buffer_->push_sample(smp);
-	}
+	template <class T> void enqueue(const T *data, double timestamp, bool pushthrough);
 
 	/**
 	 * Check whether some given number of channels matches the stream's channel_count.
