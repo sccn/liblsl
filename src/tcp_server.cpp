@@ -1,4 +1,5 @@
 #include "tcp_server.h"
+#include "api_config.h"
 #include "cast.h"
 #include "consumer_queue.h"
 #include "sample.h"

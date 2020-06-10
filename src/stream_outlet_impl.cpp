@@ -1,11 +1,13 @@
 #include "stream_outlet_impl.h"
+#include "api_config.h"
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <memory>
 #include <sstream>
 
-using namespace lsl;
 using namespace lslboost::asio;
+
+namespace lsl {
 
 stream_outlet_impl::stream_outlet_impl(
 	const stream_info_impl &info, int chunk_size, int max_capacity)
@@ -135,8 +137,35 @@ stream_outlet_impl::~stream_outlet_impl() {
 	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
 }
 
+void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bool pushthrough) {
+	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
+	sample_p smp(
+		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
+	smp->assign_untyped(data);
+	send_buffer_->push_sample(smp);
+}
+
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
 
 bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
+
+template <class T>
+void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrough) {
+	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
+	sample_p smp(
+		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
+	smp->assign_typed(data);
+	send_buffer_->push_sample(smp);
+}
+
+template void stream_outlet_impl::enqueue<char>(const char *data, double, bool);
+template void stream_outlet_impl::enqueue<int16_t>(const int16_t *data, double, bool);
+template void stream_outlet_impl::enqueue<int32_t>(const int32_t *data, double, bool);
+template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, bool);
+template void stream_outlet_impl::enqueue<float>(const float *data, double, bool);
+template void stream_outlet_impl::enqueue<double>(const double *data, double, bool);
+template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
+
+} // namespace lsl

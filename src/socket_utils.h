@@ -1,7 +1,6 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
-#include "api_config.h"
 #include <boost/asio/detail/chrono.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
