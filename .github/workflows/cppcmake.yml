@@ -30,7 +30,7 @@ jobs:
            cmake --version
            cmake -E make_directory build
            cd build
-           cmake -DLSL_UNITTESTS=1 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package ..
+           cmake -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON -DCPACK_PACKAGE_DIRECTORY=${PWD}/package ..
     - name: make
       run: cmake --build build --config Release -j --target install
     - name: package
