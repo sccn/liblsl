@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.5)
-project(Examples
+project(lslexamples
 	LANGUAGES C CXX
 	VERSION 0.2.0)
 find_package(LSL REQUIRED
