@@ -173,8 +173,12 @@ function(installLSLApp target)
 		findQtInstallationTool("windeployqt")
 		install(CODE "
 			message (STATUS \"Running windeployqt on $<TARGET_FILE:${target}>\")
+			set(qml_dir $<TARGET_PROPERTY:${target},qml_directory>)
+			message(STATUS \"qml directory: \${qml_dir}\")
 			execute_process(
-				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\" --no-translations
+				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\"
+				\$<\$<BOOL:\${qml_dir}>:--qmldir \${qml_dir}>
+				--no-translations
 				--no-system-d3d-compiler --no-opengl-sw
 				--no-compiler-runtime --dry-run --list mapping
 				\"$<TARGET_FILE:${target}>\"
