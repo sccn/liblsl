@@ -309,9 +309,8 @@ sample &sample::assign_test_pattern(int offset) {
 		break;
 	case cft_string: {
 		std::string *data = (std::string *)&data_;
-		offset += 10;
 		for (uint32_t k = 0u; k < num_channels_; k++)
-			data[k] = to_string(k * (k % 2 == 0 ? 1 : -1));
+			data[k] = to_string((k + 10) * (k % 2 == 0 ? 1 : -1));
 		break;
 	}
 	case cft_int32:
