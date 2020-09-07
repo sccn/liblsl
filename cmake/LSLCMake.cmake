@@ -6,19 +6,18 @@
 macro(LSLAPP_Setup_Boilerplate)
 endmacro()
 
-message(STATUS "Included LSL CMake helpers, rev. 12, ${CMAKE_CURRENT_LIST_DIR}")
+message(STATUS "Included LSL CMake helpers, rev. 13, ${CMAKE_CURRENT_LIST_DIR}")
 option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
-# set build type and default install dir if not done already
+# set build type and default install dir if not done already or undesired
 if(NOT CMAKE_BUILD_TYPE)
 	message(STATUS "CMAKE_BUILD_TYPE was default initialized to Release")
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-# OR ((${MSVC_VERSION} GREATER_EQUAL 1910) AND ("${CMAKE_GENERATOR}" STREQUAL "Ninja"))
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT LSL_PRESERVE_INSTALL_PREFIX)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
-	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}")
+	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}. Set LSL_PRESERVE_INSTALL_PREFIX or CMAKE_INSTALL_PREFIX to skip this.")
 endif()
 
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
