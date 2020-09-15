@@ -71,13 +71,18 @@ function(installLSLApp target)
 	endif()
 
 	# Set runtime path, i.e. where shared libs are searched relative to the exe
-	set(LIBDIRGENEXPR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+	# CMake>=3.16: set(LIBDIR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+	if(LSL_UNIXFOLDERS)
+		set(LIBDIR "../lib")
+	else()
+		set(LIBDIR "../LSL/lib")
+	endif()
 	if(APPLE)
 		set_property(TARGET ${target} APPEND
-			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIRGENEXPR}")
+			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR}")
 	elseif(UNIX)
 		set_property(TARGET ${target}
-			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIRGENEXPR}")
+			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
 	endif()
 
 	if(LSL_UNIXFOLDERS)
