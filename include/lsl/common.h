@@ -1,6 +1,6 @@
 #pragma once
 
-/// @file common.h Global constants for liblsl
+//! @file common.h Global constants for liblsl
 
 #if defined(LIBLSL_FFI)
 // Skip any typedefs that might confuse a FFI header parser, e.g. cffi
@@ -57,7 +57,7 @@ typedef unsigned int uint32_t;
  */
 #define LSL_NO_PREFERENCE 0
 
-/// Data format of a channel (each transmitted sample holds an array of channels).
+/// Data format of a channel (each transmitted sample holds an array of channels), 4 bytes wide
 typedef enum {
 	/** For up to 24-bit precision measurements in the appropriate physical unit (e.g., microvolts).
 	 * Integers from -16777216 to 16777216 are represented accurately. */
@@ -81,8 +81,20 @@ typedef enum {
 	 * Also, some builds of liblsl will not be able to send or receive data of this type. */
 	cft_int64 = 7,
 	/// Can not be transmitted.
-	cft_undefined = 0
+	cft_undefined = 0,
+
+	// prevent compilers from assuming an instance fits in a single byte
+	_cft_maxval = 0x7f000000
 } lsl_channel_format_t;
+
+// Abort compilation if lsl_channel_format_t isn't exactly 4 bytes wide
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
+_Static_assert(sizeof(lsl_channel_format_t) == 4, "lsl_channel_format_t size breaks the LSL ABI");
+#elif defined(__cplusplus) && __cplusplus >= 201103L
+static_assert (sizeof(lsl_channel_format_t) == 4, "lsl_channel_format_t size breaks the LSL ABI");
+#elif !defined(LIBLSL_FFI)
+static char _lsl_channel_format_size_check[1 - 2*!(sizeof(lsl_channel_format_t)==4)];
+#endif
 
 /// Post-processing options for stream inlets.
 typedef enum {
@@ -111,7 +123,10 @@ typedef enum {
 	proc_threadsafe = 8,
 
 	/// The combination of all possible post-processing options.
-	proc_ALL = 1 | 2 | 4 | 8
+	proc_ALL = 1 | 2 | 4 | 8,
+
+	// prevent compilers from assuming an instance fits in a single byte
+	_proc_maxval = 0x7f000000
 } lsl_processing_options_t;
 
 /// Possible error codes.
@@ -129,7 +144,10 @@ typedef enum {
 	lsl_argument_error = -3,
 
 	/// Some other internal error has happened.
-	lsl_internal_error = -4
+	lsl_internal_error = -4,
+
+	// prevent compilers from assuming an instance fits in a single byte
+	_lsl_error_code_maxval = 0x7f000000
 } lsl_error_code_t;
 
 
