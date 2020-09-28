@@ -1,5 +1,6 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
+#include "cast.h"
 #include <algorithm>
 #include <boost/thread/lock_guard.hpp>
 #include <limits>
@@ -8,7 +9,7 @@
 using namespace lsl;
 using namespace pugi;
 using std::string;
-using std::to_string;
+using lsl::to_string;
 
 stream_info_impl::stream_info_impl()
 	: channel_count_(0), nominal_srate_(0), channel_format_(cft_undefined), version_(0),
@@ -29,7 +30,8 @@ stream_info_impl::stream_info_impl(const string &name, const string &type, int c
 	if (nominal_srate < 0)
 		throw std::invalid_argument("The nominal sampling rate of a stream must be nonnegative.");
 	if (channel_format < 0 || channel_format > 7)
-		throw std::invalid_argument("The stream info was created with an unknown channel format.");
+		throw std::invalid_argument("The stream info was created with an unknown channel format " +
+									to_string(static_cast<int>(channel_format)));
 	// initialize XML document
 	write_xml(doc_);
 }
