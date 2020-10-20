@@ -88,6 +88,7 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		inarch >> in2 >> in3;
 		REQUIRE(in2.i == 0x00ab00cd00ef0012u);
 		REQUIRE(in3.i == 0x00ab00cd00ef0012u);
+
 		std::string teststr;
 		inarch >> teststr >> in1;
 		REQUIRE(teststr == std::string("Testclass"));
@@ -97,9 +98,11 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		REQUIRE(in1.negativeint == out1.negativeint);
 		REQUIRE(in1.testint == out1.testint);
 		REQUIRE(in1.teststr == out1.teststr);
-		REQUIRE(*in1.s1 == *out1.s1);
-		REQUIRE(*in1.s2 == *out1.s2);
-		CHECK(true);
+
+		if(!(*in1.s1 == *out1.s1))
+			FAIL("Sample 1 serialization mismatch");
+		if(!(*in1.s2 == *out1.s2))
+			FAIL("Sample 2 serialization mismatch");
 	} catch (std::exception &e) { FAIL(e.what()); }
 }
 
