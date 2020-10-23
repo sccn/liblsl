@@ -12,9 +12,9 @@ before_script:
 - brew upgrade cmake
 script:
 - cmake --version
-- cmake -S . -B build ${CMakeArgs} -DLSL_UNITTESTS=1
+- cmake -S . -B build ${CMakeArgs} -DLSL_UNITTESTS=ON -DLSL_EXAMPLES=ON
 - cd build
-- cmake --build . --config Release --target install
+- cmake --build . --config Release -j --target install
 - testing/lsl_test_internal || true
 - testing/lsl_test_exported
 - cpack

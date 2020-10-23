@@ -3,10 +3,10 @@
 
 #include "common.h"
 #include "forward.h"
-#include <boost/container/flat_set.hpp>
 #include <condition_variable>
 #include <memory>
 #include <mutex>
+#include <vector>
 
 namespace lsl {
 
@@ -20,7 +20,7 @@ namespace lsl {
  * send_buffer.
  */
 class send_buffer : public std::enable_shared_from_this<send_buffer> {
-	using consumer_set = lslboost::container::flat_set<consumer_queue *>;
+	using consumer_set = std::vector<class consumer_queue *>;
 
 public:
 	/**
@@ -40,7 +40,7 @@ public:
 	 * of the send_buffer (so this is a global limit).
 	 * @return Shared pointer to the newly created consumer.
 	 */
-	consumer_queue_p new_consumer(int max_buffered = 0);
+	std::shared_ptr<consumer_queue> new_consumer(int max_buffered = 0);
 
 	/// Push a sample onto the send buffer that will subsequently be received by all consumers.
 	void push_sample(const sample_p &s);

@@ -12,13 +12,14 @@ environment:
 build_script:
 - cmd: cmake -Dlslgitrevision=%APPVEYOR_REPO_COMMIT% -Dlslgitbranch=%APPVEYOR_REPO_BRANCH% -S . -B build -T v140,host=x86 -A %LSLARCH%
 - sh: cmake -Dlslgitrevision=${APPVEYOR_REPO_COMMIT} -Dlslgitbranch=${APPVEYOR_REPO_BRANCH} -S . -B build
-- cmake -DLSL_UNITTESTS=1 build
+- cmake -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON build
 - cmd: cmake --build build --config Release -j --target package
 - sh: /usr/bin/time -v cmake --build build -j 3 --target package
 - sh: cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON build
 - cd build
 - sh: sudo dpkg -i *.deb
 - sh: cpack -G DEB
+- sh: ifconfig
 - cmd: testing\Release\lsl_test_internal.exe --wait-for-keypress never
 - cmd: set PATH=Release;%PATH% && testing\Release\lsl_test_exported.exe --wait-for-keypress never
 - sh: testing/lsl_test_internal --wait-for-keypress never

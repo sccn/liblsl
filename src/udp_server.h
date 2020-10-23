@@ -64,6 +64,12 @@ private:
 	/// Handler that gets called when a the next packet was received (or the op was cancelled).
 	void handle_receive_outcome(error_code err, std::size_t len);
 
+	/// Parse and process a LSL::shortinfo request
+	void process_shortinfo_request(std::istream& request_stream);
+
+	/// Parse and process a LSL::timedata request
+	void process_timedata_request(std::istream& request_stream, double t1);
+
 	/// stream_info reference
 	stream_info_impl_p info_;
 	/// IO service reference

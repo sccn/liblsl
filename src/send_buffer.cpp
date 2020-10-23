@@ -14,7 +14,7 @@ using namespace lsl;
  *the send_buffer (so this is a global limit).
  * @return Shared pointer to the newly created queue.
  */
-consumer_queue_p send_buffer::new_consumer(int max_buffered) {
+std::shared_ptr<consumer_queue> send_buffer::new_consumer(int max_buffered) {
 	max_buffered = max_buffered ? std::min(max_buffered, max_capacity_) : max_capacity_;
 	return std::make_shared<consumer_queue>(max_buffered, shared_from_this());
 }
@@ -34,7 +34,10 @@ void send_buffer::push_sample(const sample_p &s) {
 void send_buffer::register_consumer(consumer_queue *q) {
 	{
 		std::lock_guard<std::mutex> lock(consumers_mut_);
-		consumers_.insert(q);
+		if (std::find(consumers_.begin(), consumers_.end(), q) != consumers_.end())
+			LOG_F(WARNING, "Duplicate consumer queue in send buffer");
+		else
+			consumers_.push_back(q);
 	}
 	some_registered_.notify_all();
 }
@@ -42,7 +45,13 @@ void send_buffer::register_consumer(consumer_queue *q) {
 /// Unregister a previously registered consumer.
 void send_buffer::unregister_consumer(consumer_queue *q) {
 	std::lock_guard<std::mutex> lock(consumers_mut_);
-	consumers_.erase(q);
+	auto pos = std::find(consumers_.begin(), consumers_.end(), q);
+	if (pos == consumers_.end()) LOG_F(ERROR, "Trying to remove consumer queue not in send buffer");
+
+	// Put the element to be removed at the end (if it isn't there already) and
+	// remove the last element
+	if (*pos != consumers_.back()) std::swap(*pos, consumers_.back());
+	consumers_.pop_back();
 }
 
 /// Check whether there currently are consumers.

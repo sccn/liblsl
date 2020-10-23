@@ -17,23 +17,25 @@ if(LSL_BENCHMARKS)
 endif()
 
 add_executable(lsl_test_exported
-	DataType.cpp
-	discovery.cpp
-	move.cpp
-	timesync.cpp
+	test_ext_DataType.cpp
+	test_ext_discovery.cpp
+	test_ext_move.cpp
+	test_ext_time.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)
 
 find_package(Threads REQUIRED)
 
 add_executable(lsl_test_internal
-	asiocancel.cpp
-	inireader.cpp
-	stringfuncs.cpp
-	streaminfo.cpp
+	test_int_inireader.cpp
+	test_int_network.cpp
+	test_int_stringfuncs.cpp
+	test_int_streaminfo.cpp
 	test_int_samples.cpp
+	internal/serialization_v100.cpp
 )
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
+target_include_directories(lsl_test_internal PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src/)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:

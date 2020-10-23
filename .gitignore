@@ -7,3 +7,6 @@
 /.vs/
 .DS_Store
 /out/
+# CLion
+.idea/
+/cmake-build-*/

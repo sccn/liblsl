@@ -1,4 +1,5 @@
 #include "data_receiver.h"
+#include "api_config.h"
 #include "cancellable_streambuf.h"
 #include "sample.h"
 #include "socket_utils.h"
@@ -49,7 +50,7 @@ void data_receiver::open_stream(double timeout) {
 	if (!connection_completed()) {
 		// start thread if not yet running
 		if (check_thread_start_ && !data_thread_.joinable()) {
-			data_thread_ = lslboost::thread(&data_receiver::data_thread, this);
+			data_thread_ = std::thread(&data_receiver::data_thread, this);
 			check_thread_start_ = false;
 		}
 		// wait until the connection attempt completes (or we time out)
@@ -77,7 +78,7 @@ double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, dou
 						 "re-resolve the source and re-create the inlet.");
 	// start data thread implicitly if necessary
 	if (check_thread_start_ && !data_thread_.joinable()) {
-		data_thread_ = lslboost::thread(&data_receiver::data_thread, this);
+		data_thread_ = std::thread(&data_receiver::data_thread, this);
 		check_thread_start_ = false;
 	}
 	// get the sample with timeout
@@ -109,7 +110,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 						 "re-resolve the source and re-create the inlet.");
 	// start data thread implicitly if necessary
 	if (check_thread_start_ && !data_thread_.joinable()) {
-		data_thread_ = lslboost::thread(&data_receiver::data_thread, this);
+		data_thread_ = std::thread(&data_receiver::data_thread, this);
 		check_thread_start_ = false;
 	}
 	// get the sample with timeout
@@ -341,7 +342,7 @@ void data_receiver::data_thread() {
 				conn_.try_recover_from_error();
 			}
 			// wait for a few msec so as to not spam the provider with reconnects
-			lslboost::this_thread::sleep_for(lslboost::chrono::milliseconds(500));
+			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
 	} catch (lost_error &) {
 		// the connection was irrecoverably lost: since the pull_sample() function may
