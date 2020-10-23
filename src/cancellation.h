@@ -10,6 +10,7 @@ namespace lsl {
 class shutdown_error : public std::runtime_error {
 public:
 	explicit shutdown_error(const std::string &msg) : std::runtime_error(msg) {}
+	explicit shutdown_error(const char *msg) : std::runtime_error(msg) {}
 };
 
 

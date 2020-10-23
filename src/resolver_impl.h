@@ -8,9 +8,8 @@
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/noncopyable.hpp>
-#include <boost/thread/thread_only.hpp>
 #include <mutex>
+#include <thread>
 
 using lslboost::asio::ip::tcp;
 using lslboost::asio::ip::udp;
@@ -148,9 +147,9 @@ private:
 
 	// things related to cancellation
 	/// if set, no more resolves can be started (destructively cancelled).
-	bool cancelled_;
+	std::atomic<bool> cancelled_;
 	/// if set, ongoing operations will finished quickly
-	bool expired_;
+	std::atomic<bool> expired_;
 
 	// reinitialized for each query
 	/// our current query string
@@ -173,7 +172,7 @@ private:
 	/// our IO service
 	io_context_p io_;
 	/// a thread that runs background IO if we are performing a resolve_continuous
-	std::shared_ptr<lslboost::thread> background_io_;
+	std::shared_ptr<std::thread> background_io_;
 	/// the overall timeout for a query
 	lslboost::asio::steady_timer resolve_timeout_expired_;
 	/// a timer that fires when a new wave should be scheduled

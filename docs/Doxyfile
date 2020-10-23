@@ -14,7 +14,7 @@ INPUT                  = ../src \
                          ../include
 FILE_PATTERNS          = *.c \
                          *.cpp \
-                        *.h
+                        *.h *.hpp
 EXCLUDE_SYMBOLS        =  lslboost
 SOURCE_BROWSER         = YES
 CLANG_ASSISTED_PARSING = NO

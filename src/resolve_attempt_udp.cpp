@@ -93,77 +93,76 @@ void resolve_attempt_udp::receive_next_result() {
 }
 
 void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len) {
-	if (!cancelled_ && err != error::operation_aborted && err != error::not_connected &&
-		err != error::not_socket) {
-		if (!err) {
-			try {
-				// first parse & check the query id
-				std::istringstream is(std::string(resultbuf_, len));
-				std::string returned_id;
-				getline(is, returned_id);
-				returned_id = trim(returned_id);
-				if (returned_id == query_id_) {
-					// parse the rest of the query into a stream_info
-					stream_info_impl info;
-					std::ostringstream os;
-					os << is.rdbuf();
-					info.from_shortinfo_message(os.str());
-					std::string uid = info.uid();
-					{
-						// update the results
-						std::lock_guard<std::mutex> lock(results_mut_);
-						if (results_.find(uid) == results_.end())
-							results_[uid] = std::make_pair(info, lsl_clock()); // insert new result
-						else
-							results_[uid].second = lsl_clock(); // update only the receive time
-						// ... also update the address associated with the result (but don't
-						// override the address of an earlier record for this stream since this
-						// would be the faster route)
-						if (remote_endpoint_.address().is_v4()) {
-							if (results_[uid].first.v4address().empty())
-								results_[uid].first.v4address(
-									remote_endpoint_.address().to_string());
-						} else {
-							if (results_[uid].first.v6address().empty())
-								results_[uid].first.v6address(
-									remote_endpoint_.address().to_string());
-						}
+	if (cancelled_ || err == error::operation_aborted || err == error::not_connected ||
+		err == error::not_socket)
+		return;
+
+	if (!err) {
+		try {
+			// first parse & check the query id
+			std::istringstream is(std::string(resultbuf_, len));
+			std::string returned_id;
+			getline(is, returned_id);
+			returned_id = trim(returned_id);
+			if (returned_id == query_id_) {
+				// parse the rest of the query into a stream_info
+				stream_info_impl info;
+				std::ostringstream os;
+				os << is.rdbuf();
+				info.from_shortinfo_message(os.str());
+				std::string uid = info.uid();
+				{
+					// update the results
+					std::lock_guard<std::mutex> lock(results_mut_);
+					if (results_.find(uid) == results_.end())
+						results_[uid] = std::make_pair(info, lsl_clock()); // insert new result
+					else
+						results_[uid].second = lsl_clock(); // update only the receive time
+					// ... also update the address associated with the result (but don't
+					// override the address of an earlier record for this stream since this
+					// would be the faster route)
+					if (remote_endpoint_.address().is_v4()) {
+						if (results_[uid].first.v4address().empty())
+							results_[uid].first.v4address(remote_endpoint_.address().to_string());
+					} else {
+						if (results_[uid].first.v6address().empty())
+							results_[uid].first.v6address(remote_endpoint_.address().to_string());
 					}
 				}
-			} catch (std::exception &e) {
-				LOG_F(WARNING, "resolve_attempt_udp: hiccup while processing the received data: %s",
-					e.what());
 			}
+		} catch (std::exception &e) {
+			LOG_F(WARNING, "resolve_attempt_udp: hiccup while processing the received data: %s",
+				e.what());
 		}
-		// ask for the next result
-		receive_next_result();
 	}
+	// ask for the next result
+	receive_next_result();
 }
 
 
 // === send loop ===
 
 void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
-	if (next != targets_.end() && !cancelled_) {
-		udp::endpoint ep(*next++);
-		// endpoint matches our active protocol?
-		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
-			// select socket to use
-			udp::socket &sock =
-				(ep.address() == ip::address_v4::broadcast())
-					? broadcast_socket_
-					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
-			// and send the query over it
-			sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
-				[shared_this = shared_from_this(), next](err_t err, size_t) {
-					if (!shared_this->cancelled_ && err != error::operation_aborted &&
-						err != error::not_connected && err != error::not_socket)
-						shared_this->send_next_query(next);
-				});
-		} else
-			// otherwise just go directly to the next query
-			send_next_query(next);
-	}
+	if (next == targets_.end() || cancelled_) return;
+
+	udp::endpoint ep(*next++);
+	// endpoint matches our active protocol?
+	if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
+		// select socket to use
+		udp::socket &sock =
+			(ep.address() == ip::address_v4::broadcast())
+				? broadcast_socket_
+				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
+		// and send the query over it
+		sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
+			[shared_this = shared_from_this(), next](err_t err, size_t) {
+				if (!shared_this->cancelled_ && err != error::operation_aborted &&
+					err != error::not_connected && err != error::not_socket)
+					shared_this->send_next_query(next);
+			});
+	} else
+		// otherwise just go directly to the next query
+		send_next_query(next);
 }
 
 void resolve_attempt_udp::do_cancel() {

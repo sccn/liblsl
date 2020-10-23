@@ -25,9 +25,10 @@ int main(int argc, char* argv[]) {
 		std::random_device rd;
 		std::mt19937 gen(rd());
 		std::uniform_int_distribution<std::size_t> rnd(0, markertypes.size() - 1);
+		std::uniform_int_distribution<int> delayrnd(0, 1000);
 		while(true) {
 			// wait for a 20ms
-			std::this_thread::sleep_for(std::chrono::milliseconds(20));
+			std::this_thread::sleep_for(std::chrono::milliseconds(delayrnd(gen)));
 			// and choose the marker to send
 			std::string mrk = markertypes[rnd(gen)];
 			std::cout << "now sending: " << mrk << std::endl;

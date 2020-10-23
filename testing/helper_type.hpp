@@ -1,5 +1,7 @@
 #pragma once
+extern "C" {
 #include "../include/lsl/common.h"
+}
 #include <string>
 
 template <typename T> struct SampleType {

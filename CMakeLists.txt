@@ -54,6 +54,8 @@ add_library(lslobj OBJECT
 	src/lsl_outlet_c.cpp
 	src/lsl_streaminfo_c.cpp
 	src/lsl_xml_element_c.cpp
+	src/netinterfaces.h
+	src/netinterfaces.cpp
 	src/portable_archive/portable_archive_exception.hpp
 	src/portable_archive/portable_archive_includes.hpp
 	src/portable_archive/portable_iarchive.hpp
@@ -129,30 +131,32 @@ add_library(lslboost OBJECT
 	lslboost/libs/chrono/src/chrono.cpp
 	lslboost/serialization_objects.cpp
 )
-if (UNIX)
-	target_sources(lslboost PRIVATE
-		lslboost/libs/thread/src/pthread/once.cpp
-		lslboost/libs/thread/src/pthread/thread.cpp
+
+if(UNIX)
+	include(CheckSymbolExists)
+	# look for clock_gettime, if not we need to link against librt
+	check_symbol_exists(clock_gettime time.h HAS_GETTIME)
+	if(NOT HAS_GETTIME)
+		set(NEEDS_LIBRT ON CACHE INTERNAL "Link to librt")
+	endif()
+endif()
+
+find_package(Threads REQUIRED)
+target_link_libraries(lslboost
+	PUBLIC
+		Threads::Threads
+	PRIVATE
+		$<$<PLATFORM_ID:Windows>:bcrypt>
+		$<$<PLATFORM_ID:Windows>:iphlpapi>
 	)
-	find_package(Threads REQUIRED)
-	target_link_libraries(lslboost PUBLIC Threads::Threads)
-	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
-else ()  # WIN32
-	target_sources(lslboost PRIVATE
-		lslboost/libs/thread/src/win32/thread.cpp
-		lslboost/libs/thread/src/win32/tss_dll.cpp
-		lslboost/libs/thread/src/win32/tss_pe.cpp
-	)
-	target_link_libraries(lslboost PRIVATE
-		bcrypt
-		$<$<BOOL:${MINGW}>:wsock32 ws2_32 winmm>
-	)
-endif ()
+target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
+		BOOST_ASIO_STANDALONE
 		BOOST_ASIO_SEPARATE_COMPILATION
+		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 		$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:BOOST_THREAD_BUILD_DLL>
@@ -166,6 +170,7 @@ target_link_libraries(lslobj
 		lslboost
 	PUBLIC
 		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
+		$<$<BOOL:${NEEDS_LIBRT}>:rt>
 	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
@@ -193,17 +198,25 @@ if(LSL_BUILD_STATIC)
 	add_library(lsl-static STATIC src/buildinfo.cpp)
 	target_compile_definitions(lsl-static PRIVATE LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:static")
 	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
+	list(APPEND LSL_EXPORT_TARGETS lsl-static)
 	# for LSL_CPP_API export header
 	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
 endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)
-	set(CMAKE_DEBUG_POSTFIX "-debug")
 	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
 	set_target_properties(lsl PROPERTIES
 		PREFIX ""
 		OUTPUT_NAME "liblsl${lslplatform}"
+		DEBUG_POSTFIX "-debug"
+	)
+	if(LSL_BUILD_STATIC)
+		set_target_properties(lsl-static PROPERTIES
+			PREFIX ""
+			OUTPUT_NAME "liblsl${lslplatform}-static"
+			DEBUG_POSTFIX "-debug"
 		)
+	endif()
 endif()
 
 if(LSL_UNIXFOLDERS)

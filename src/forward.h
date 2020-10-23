@@ -24,9 +24,7 @@ class portable_iarchive;
 
 namespace lsl {
 /// shared pointers to various classes
-using consumer_queue_p = std::shared_ptr<class consumer_queue>;
 using factory_p = std::shared_ptr<class factory>;
-using resolve_attempt_udp_p = std::shared_ptr<class resolve_attempt_udp>;
 using sample_p = lslboost::intrusive_ptr<class sample>;
 using send_buffer_p = std::shared_ptr<class send_buffer>;
 using stream_info_impl_p = std::shared_ptr<class stream_info_impl>;

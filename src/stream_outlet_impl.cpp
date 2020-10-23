@@ -1,12 +1,13 @@
 #include "stream_outlet_impl.h"
+#include "api_config.h"
 #include "tcp_server.h"
 #include "udp_server.h"
-#include <boost/thread/thread_only.hpp>
 #include <memory>
 #include <sstream>
 
-using namespace lsl;
 using namespace lslboost::asio;
+
+namespace lsl {
 
 stream_outlet_impl::stream_outlet_impl(
 	const stream_info_impl &info, int chunk_size, int max_capacity)
@@ -45,7 +46,7 @@ stream_outlet_impl::stream_outlet_impl(
 	// and start the IO threads to handle them
 	const std::string name{"IO_" + this->info().name().substr(0, 11)};
 	for (const auto &io : ios_)
-		io_threads_.emplace_back(std::make_shared<lslboost::thread>([io, name]() {
+		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
 			loguru::set_thread_name(name.c_str());
 			while (true) {
 				try {
@@ -62,7 +63,6 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	// get api_config
 	const api_config *cfg = api_config::get_instance();
 	std::string listen_address = cfg->listen_address();
-	std::vector<std::string> multicast_addrs = cfg->multicast_addresses();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
@@ -74,7 +74,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	ios_.push_back(std::make_shared<io_context>());
 	udp_servers_.push_back(std::make_shared<udp_server>(info_, *ios_.back(), udp_protocol));
 	// create UDP multicast responders
-	for (const auto &mcastaddr : multicast_addrs) {
+	for (const auto &mcastaddr : cfg->multicast_addresses()) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
 			ip::address address(ip::make_address(mcastaddr));
@@ -94,24 +94,55 @@ stream_outlet_impl::~stream_outlet_impl() {
 		for (auto &tcp_server : tcp_servers_) tcp_server->end_serving();
 		for (auto &udp_server : udp_servers_) udp_server->end_serving();
 		for (auto &responder : responders_) responder->end_serving();
-		// join the IO threads
-		for (std::size_t k = 0; k < io_threads_.size(); k++)
-			if (!io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000))) {
-				// .. using force, if necessary (should only ever happen if the CPU is maxed out)
-				std::ostringstream os;
-				os << io_threads_[k]->get_id();
-				LOG_F(ERROR, "Tearing down stream_outlet of thread %s", os.str().c_str());
-				ios_[k]->stop();
-				for (int attempt = 1;
-					 !io_threads_[k]->try_join_for(lslboost::chrono::milliseconds(1000));
-					 attempt++) {
-					LOG_F(ERROR, "Thread %s didn't complete.", os.str().c_str());
-					io_threads_[k]->interrupt();
+
+		// In theory, an io context should end quickly, but in practice it
+		// might take a while. So we
+		// 1. ask them to stop after they've finished their current task
+		// 2. wait a bit
+		// 3. stop the io contexts from our thread. Not ideal, but better than
+		// 4. waiting a bit and
+		// 5. detaching thread, i.e. letting it hang and continue tearing down
+		//    the outlet
+		for (auto &ios : ios_) lslboost::asio::post(*ios, [ios]() { ios->stop(); });
+		const char *name = this->info().name().c_str();
+		for (int try_nr = 0; try_nr <= 100; ++try_nr) {
+			switch (try_nr) {
+			case 0: DLOG_F(INFO, "Trying to join IO threads for %s", name); break;
+			case 20: LOG_F(INFO, "Waiting for %s's IO threads to end", name); break;
+			case 80:
+				LOG_F(WARNING, "Stopping io_contexts for %s", name);
+				for (std::size_t k = 0; k < io_threads_.size(); k++) {
+					if (!io_threads_[k]->joinable()) {
+						LOG_F(ERROR, "Tearing down stream_outlet of %s's thread #%lu", name, k);
+						ios_[k]->stop();
+					}
 				}
+				break;
+			case 100:
+				LOG_F(ERROR, "Detaching io_threads for %s", name);
+				for (auto &thread : io_threads_) thread->detach();
+				return;
 			}
+
+			std::this_thread::sleep_for(std::chrono::milliseconds(25));
+			if (std::all_of(io_threads_.begin(), io_threads_.end(),
+					[](thread_p thread) { return thread->joinable(); })) {
+				for (auto &thread : io_threads_) thread->join();
+				DLOG_F(INFO, "All of %s's IO threads were joined succesfully", name);
+				break;
+			}
+		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during destruction of a stream outlet: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during stream outlet shutdown."); }
+}
+
+void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bool pushthrough) {
+	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
+	sample_p smp(
+		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
+	smp->assign_untyped(data);
+	send_buffer_->push_sample(smp);
 }
 
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
@@ -119,3 +150,22 @@ bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(
 bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
+
+template <class T>
+void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrough) {
+	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
+	sample_p smp(
+		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
+	smp->assign_typed(data);
+	send_buffer_->push_sample(smp);
+}
+
+template void stream_outlet_impl::enqueue<char>(const char *data, double, bool);
+template void stream_outlet_impl::enqueue<int16_t>(const int16_t *data, double, bool);
+template void stream_outlet_impl::enqueue<int32_t>(const int32_t *data, double, bool);
+template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, bool);
+template void stream_outlet_impl::enqueue<float>(const float *data, double, bool);
+template void stream_outlet_impl::enqueue<double>(const double *data, double, bool);
+template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
+
+} // namespace lsl

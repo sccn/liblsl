@@ -1,9 +1,8 @@
 #include "common.h"
 #include "api_config.h"
 #include <algorithm>
-#include <boost/chrono/duration.hpp>
-#include <boost/chrono/system_clocks.hpp>
 #include <cctype>
+#include <chrono>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -21,8 +20,7 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
 LIBLSL_C_API double lsl_local_clock() {
-	return lslboost::chrono::nanoseconds(
-			   lslboost::chrono::high_resolution_clock::now().time_since_epoch())
+	return std::chrono::nanoseconds(std::chrono::high_resolution_clock::now().time_since_epoch())
 			   .count() /
 		   1000000000.0;
 }
@@ -42,13 +40,14 @@ void lsl::ensure_lsl_initialized() {
 		is_initialized = true;
 
 		loguru::g_stderr_verbosity = loguru::Verbosity_INFO;
-#ifdef LOGURU_DEBUG_LOGGING
+#if LOGURU_DEBUG_LOGGING
 		// Initialize loguru, mainly to print stacktraces on segmentation faults
 		int argc = 1;
 		const char *argv[] = {"liblsl", nullptr};
 		loguru::init(argc, const_cast<char **>(argv));
 #else
 #endif
+		LOG_F(INFO, "%s", lsl_library_info());
 
 #ifdef _WIN32
 		// if a timer resolution other than 0 is requested (0 means don't override)...

@@ -38,7 +38,7 @@ TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
 
 	unsigned int n = 0, total = 0;
 	// Pull samples until the pusher is done and the queue is empty
-	while((n = queue.flush()) != 0 || !done) total+=n;
+	while ((n = queue.flush()) != 0 || !done) total += n;
 	CHECK(total == size);
 	pusher.join();
 }
