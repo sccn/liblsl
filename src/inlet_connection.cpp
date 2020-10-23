@@ -3,11 +3,6 @@
 #include <functional>
 #include <sstream>
 
-// lock types for shared_mutex_t
-#include <boost/thread/lock_types.hpp>
-using shared_lock_t = lslboost::shared_lock<lslboost::shared_mutex>;
-using unique_lock_t = lslboost::unique_lock<lslboost::shared_mutex>;
-
 using namespace lsl;
 using namespace lslboost::asio;
 
@@ -86,8 +81,7 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 }
 
 void inlet_connection::engage() {
-	if (recovery_enabled_)
-		watchdog_thread_ = lslboost::thread(&inlet_connection::watchdog_thread, this);
+	if (recovery_enabled_) watchdog_thread_ = std::thread(&inlet_connection::watchdog_thread, this);
 }
 
 void inlet_connection::disengage() {

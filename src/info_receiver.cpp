@@ -23,8 +23,7 @@ const lsl::stream_info_impl &lsl::info_receiver::info(double timeout) {
 	auto info_ready = [this]() { return fullinfo_ || conn_.lost(); };
 	if (!info_ready()) {
 		// start thread if not yet running
-		if (!info_thread_.joinable())
-			info_thread_ = lslboost::thread(&info_receiver::info_thread, this);
+		if (!info_thread_.joinable()) info_thread_ = std::thread(&info_receiver::info_thread, this);
 		// wait until we are ready to return a result (or we time out)
 		if (timeout >= FOREVER)
 			fullinfo_upd_.wait(lock, info_ready);

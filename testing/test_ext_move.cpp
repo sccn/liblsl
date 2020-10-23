@@ -63,4 +63,4 @@ TEST_CASE("move C++ API types", "[move][basic]") {
 	REQUIRE(found_stream_info.empty());
 }
 
-}
+} // namespace

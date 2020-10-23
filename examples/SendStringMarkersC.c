@@ -1,6 +1,14 @@
 #include <lsl_c.h>
 #include <stdio.h>
 #include <stdlib.h>
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <Windows.h>
+void sleep_(int ms) { Sleep(ms); }
+#else
+#include <unistd.h>
+void sleep_(int ms) { usleep(ms*1000); }
+#endif
 
 /**
 * This example program offers a 1-channel stream which contains strings. 
@@ -28,8 +36,7 @@ int main(int argc, char* argv[]) {
 
 	while(1) {
 		/* wait for a random period of time */
-		endtime = lsl_local_clock() + (rand()%1000)/1000.0;
-		while (lsl_local_clock() < endtime);
+		sleep_(rand()%1000);
 		/* and choose the marker to send */
 		mrk = markertypes[rand() % (sizeof(markertypes)/sizeof(markertypes[0]))];
 		printf("now sending: %s\n",mrk);

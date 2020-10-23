@@ -1,5 +1,6 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
+#include "cast.h"
 #include <algorithm>
 #include <boost/thread/lock_guard.hpp>
 #include <limits>
@@ -8,7 +9,7 @@
 using namespace lsl;
 using namespace pugi;
 using std::string;
-using std::to_string;
+using lsl::to_string;
 
 stream_info_impl::stream_info_impl()
 	: channel_count_(0), nominal_srate_(0), channel_format_(cft_undefined), version_(0),
@@ -29,7 +30,8 @@ stream_info_impl::stream_info_impl(const string &name, const string &type, int c
 	if (nominal_srate < 0)
 		throw std::invalid_argument("The nominal sampling rate of a stream must be nonnegative.");
 	if (channel_format < 0 || channel_format > 7)
-		throw std::invalid_argument("The stream info was created with an unknown channel format.");
+		throw std::invalid_argument("The stream info was created with an unknown channel format " +
+									to_string(static_cast<int>(channel_format)));
 	// initialize XML document
 	write_xml(doc_);
 }
@@ -128,11 +130,11 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		// hostname
 		hostname_ = info.child_value("hostname");
 		v4address_ = info.child_value("v4address");
-		get_bounded_child_val(info, "v4data_port", v4data_port_, 1024, 65535);
-		get_bounded_child_val(info, "v4service_port", v4service_port_, 1024, 65535);
+		get_bounded_child_val(info, "v4data_port", v4data_port_, 0, 65535);
+		get_bounded_child_val(info, "v4service_port", v4service_port_, 0, 65535);
 		v6address_ = info.child_value("v6address");
-		get_bounded_child_val(info, "v6data_port", v6data_port_, 1024, 65535);
-		get_bounded_child_val(info, "v6service_port", v6service_port_, 1024, 65535);
+		get_bounded_child_val(info, "v6data_port", v6data_port_, 0, 65535);
+		get_bounded_child_val(info, "v6service_port", v6service_port_, 0, 65535);
 	} catch (std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();
@@ -180,6 +182,7 @@ bool stream_info_impl::matches_query(const string &query, bool nocache) {
 }
 
 bool query_cache::matches_query(const xml_document &doc, const std::string query, bool nocache) {
+	if(query == "") return true;
 	std::lock_guard<std::mutex> lock(cache_mut_);
 
 	decltype(cache)::iterator it;
@@ -221,7 +224,7 @@ bool query_cache::matches_query(const xml_document &doc, const std::string query
 		}
 		return matched;
 	} catch (std::exception &e) {
-		LOG_F(WARNING, "Query error: %s", e.what());
+		LOG_F(WARNING, "Query \"%s\" error: %s", query.c_str(), e.what());
 		return false;
 	}
 }

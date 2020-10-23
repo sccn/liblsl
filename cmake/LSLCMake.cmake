@@ -6,19 +6,18 @@
 macro(LSLAPP_Setup_Boilerplate)
 endmacro()
 
-message(STATUS "Included LSL CMake helpers, rev. 12, ${CMAKE_CURRENT_LIST_DIR}")
+message(STATUS "Included LSL CMake helpers, rev. 13, ${CMAKE_CURRENT_LIST_DIR}")
 option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
-# set build type and default install dir if not done already
+# set build type and default install dir if not done already or undesired
 if(NOT CMAKE_BUILD_TYPE)
 	message(STATUS "CMAKE_BUILD_TYPE was default initialized to Release")
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-# OR ((${MSVC_VERSION} GREATER_EQUAL 1910) AND ("${CMAKE_GENERATOR}" STREQUAL "Ninja"))
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT LSL_PRESERVE_INSTALL_PREFIX)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
-	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}")
+	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}. Set LSL_PRESERVE_INSTALL_PREFIX or CMAKE_INSTALL_PREFIX to skip this.")
 endif()
 
 # Generate folders for IDE targets (e.g., VisualStudio solutions)
@@ -72,13 +71,18 @@ function(installLSLApp target)
 	endif()
 
 	# Set runtime path, i.e. where shared libs are searched relative to the exe
-	set(LIBDIRGENEXPR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+	# CMake>=3.16: set(LIBDIR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+	if(LSL_UNIXFOLDERS)
+		set(LIBDIR "../lib")
+	else()
+		set(LIBDIR "../LSL/lib")
+	endif()
 	if(APPLE)
 		set_property(TARGET ${target} APPEND
-			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIRGENEXPR}")
+			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR}")
 	elseif(UNIX)
 		set_property(TARGET ${target}
-			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIRGENEXPR}")
+			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
 	endif()
 
 	if(LSL_UNIXFOLDERS)
@@ -173,8 +177,12 @@ function(installLSLApp target)
 		findQtInstallationTool("windeployqt")
 		install(CODE "
 			message (STATUS \"Running windeployqt on $<TARGET_FILE:${target}>\")
+			set(qml_dir $<TARGET_PROPERTY:${target},qml_directory>)
+			message(STATUS \"qml directory: \${qml_dir}\")
 			execute_process(
-				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\" --no-translations
+				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\"
+				\$<\$<BOOL:\${qml_dir}>:--qmldir \${qml_dir}>
+				--no-translations
 				--no-system-d3d-compiler --no-opengl-sw
 				--no-compiler-runtime --dry-run --list mapping
 				\"$<TARGET_FILE:${target}>\"

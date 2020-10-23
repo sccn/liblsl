@@ -288,10 +288,11 @@ void sample::load(eos::portable_iarchive &ar, const uint32_t archive_version) {
 }
 
 template <typename T> void test_pattern(T *data, uint32_t num_channels, int offset) {
-	const int mod = std::is_integral<T>::value ? (int)std::numeric_limits<T>::max() : 1;
 	for (std::size_t k = 0; k < num_channels; k++) {
-		data[k] = static_cast<T>((k + static_cast<std::size_t>(offset)) % mod);
-		if (k % 2 == 1) data[k] = -data[k];
+		std::size_t val = k + static_cast<std::size_t>(offset);
+		if(std::is_integral<T>::value)
+			val %= static_cast<std::size_t>(std::numeric_limits<T>::max());
+		data[k] = ( k % 2 == 0) ? static_cast<T>(val) : -static_cast<T>(val);
 	}
 }
 
@@ -308,9 +309,8 @@ sample &sample::assign_test_pattern(int offset) {
 		break;
 	case cft_string: {
 		std::string *data = (std::string *)&data_;
-		offset += 10;
-		for (uint32_t k = 0u; k < num_channels_; k++)
-			data[k] = to_string(k * (k % 2 == 0 ? 1 : -1));
+		for (int32_t k = 0u; k < (int) num_channels_; k++)
+			data[k] = to_string((k + 10) * (k % 2 == 0 ? 1 : -1));
 		break;
 	}
 	case cft_int32:

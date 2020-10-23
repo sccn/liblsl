@@ -13,7 +13,7 @@ namespace lsl {
  *
  * Erases the oldest samples if max capacity is exceeded. Implemented as a circular buffer.
  */
-class consumer_queue : private lslboost::noncopyable {
+class consumer_queue {
 	using buffer_type = lslboost::lockfree::spsc_queue<sample_p>;
 
 public:
@@ -47,6 +47,9 @@ public:
 
 	/// Check whether the buffer is empty.
 	bool empty();
+
+	consumer_queue(const consumer_queue&) = delete;
+	consumer_queue& operator=(const consumer_queue&) = delete;
 
 private:
 	send_buffer_p registry_; // optional consumer registry

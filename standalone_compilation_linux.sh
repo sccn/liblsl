@@ -10,6 +10,8 @@ set -e -x
 echo ${LSLGITREVISION:="$(git describe --tags HEAD)"}
 ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} -Ilslboost \
 	-DBOOST_ALL_NO_LIB \
+	-DBOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS \
+	-DBOOST_ASIO_STANDALONE \
 	-DLOGURU_DEBUG_LOGGING=0 \
 	-DLOGURU_STACKTRACES=0 \
 	-DLSL_LIBRARY_INFO_STR=\"${LSLGITREVISION:-"built from standalone build script"}\" \

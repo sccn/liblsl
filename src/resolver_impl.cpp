@@ -3,8 +3,8 @@
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include <boost/asio/ip/udp.hpp>
-#include <boost/thread/thread_only.hpp>
 #include <memory>
+#include <thread>
 
 
 // === implementation of the resolver_impl class ===
@@ -18,19 +18,17 @@ resolver_impl::resolver_impl()
 	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
 	  wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
-	std::vector<std::string> mcast_addrs = cfg_->multicast_addresses();
 	uint16_t mcast_port = cfg_->multicast_port();
-	for (const auto &mcast_addr : mcast_addrs) {
+	for (const auto &mcast_addr : cfg_->multicast_addresses()) {
 		try {
 			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
 		} catch (std::exception &) {}
 	}
 
 	// parse the per-host addresses into endpoints, and store them, too
-	std::vector<std::string> peers = cfg_->known_peers();
 	udp::resolver udp_resolver(*io_);
 	// for each known peer...
-	for (const auto &peer : peers) {
+	for (const auto &peer : cfg_->known_peers()) {
 		try {
 			// resolve the name
 			// for each endpoint...
@@ -135,7 +133,7 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	// start a wave of resolve packets
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
-	background_io_ = std::make_shared<lslboost::thread>([shared_io = io_]() { shared_io->run(); });
+	background_io_ = std::make_shared<std::thread>([shared_io = io_]() { shared_io->run(); });
 }
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
@@ -188,12 +186,12 @@ void resolver_impl::next_resolve_wave() {
 
 void resolver_impl::udp_multicast_burst() {
 	// start one per IP stack under consideration
-	for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
+	int failures = 0;
+	for (auto protocol: udp_protocols_) {
 		try {
-			resolve_attempt_udp_p attempt(
-				std::make_shared<resolve_attempt_udp>(*io_, udp_protocols_[k], mcast_endpoints_,
-					query_, results_, results_mut_, cfg_->multicast_max_rtt(), this));
-			attempt->begin();
+			std::make_shared<resolve_attempt_udp>(*io_, protocol, mcast_endpoints_, query_,
+				results_, results_mut_, cfg_->multicast_max_rtt(), this)
+				->begin();
 		} catch (std::exception &e) {
 			if (++failures == udp_protocols_.size())
 				LOG_F(ERROR,
@@ -205,21 +203,21 @@ void resolver_impl::udp_multicast_burst() {
 }
 
 void resolver_impl::udp_unicast_burst(error_code err) {
-	if (err != error::operation_aborted) {
-		// start one per IP stack under consideration
-		for (std::size_t k = 0, failures = 0; k < udp_protocols_.size(); k++) {
-			try {
-				resolve_attempt_udp_p attempt(
-					new resolve_attempt_udp(*io_, udp_protocols_[k], ucast_endpoints_, query_,
-						results_, results_mut_, cfg_->unicast_max_rtt(), this));
-				attempt->begin();
-			} catch (std::exception &e) {
-				if (++failures == udp_protocols_.size())
-					LOG_F(WARNING,
-						"Could not start a unicast resolve attempt for any of the allowed protocol "
-						"stacks: %s",
-						e.what());
-			}
+	if (err == error::operation_aborted) return;
+
+	int failures = 0;
+	// start one per IP stack under consideration
+	for (auto protocol: udp_protocols_) {
+		try {
+			std::make_shared<resolve_attempt_udp>(*io_, protocol, ucast_endpoints_, query_,
+				results_, results_mut_, cfg_->unicast_max_rtt(), this)
+				->begin();
+		} catch (std::exception &e) {
+			if (++failures == udp_protocols_.size())
+				LOG_F(WARNING,
+					"Could not start a unicast resolve attempt for any of the allowed protocol "
+					"stacks: %s",
+					e.what());
 		}
 	}
 }
