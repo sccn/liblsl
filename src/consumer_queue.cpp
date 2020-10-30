@@ -3,7 +3,6 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include <chrono>
-#include <thread>
 
 using namespace lsl;
 
@@ -23,30 +22,36 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
-	while (!buffer_.push(sample)) {
-		sample_p dummy;
-		buffer_.pop(dummy);
-	}
+    {
+        std::lock_guard<std::mutex> lk(mut_);
+        while (!buffer_.push(sample)) {
+            // buffer full, drop oldest sample
+            // (during this operation the producer becomes a second consumer, i.e., a case
+            // where the underlying spsc queue isn't thread-safe)
+            buffer_.pop();
+        }
+    }
+    cv_.notify_one();
 }
 
 sample_p consumer_queue::pop_sample(double timeout) {
-	sample_p result;
-	if (timeout <= 0.0) {
-		buffer_.pop(result);
-	} else {
-		if (!buffer_.pop(result)) {
-			// turn timeout into the point in time at which we give up
-			timeout += lsl::lsl_clock();
-			do {
-				if (lsl::lsl_clock() >= timeout) break;
-				std::this_thread::sleep_for(std::chrono::milliseconds(1));
-			} while (!buffer_.pop(result));
-		}
-	}
-	return result;
+    sample_p result;
+    if (timeout <= 0.0) {
+        std::lock_guard<std::mutex> lk(mut_);
+        buffer_.pop(result);
+    } else {
+        std::unique_lock<std::mutex> lk(mut_);
+        if (!buffer_.pop(result)) {
+            // release lock, wait for a new sample until the thread calling push_sample delivers one, or until timeout
+            std::chrono::duration<double> sec(timeout);
+            cv_.wait_for(lk, sec, [&]{ return this->buffer_.pop(result); });
+        }
+    }
+    return result;
 }
 
 uint32_t consumer_queue::flush() noexcept {
+    std::lock_guard<std::mutex> lk(mut_);
 	uint32_t n = 0;
 	while (buffer_.pop()) n++;
 	return n;
