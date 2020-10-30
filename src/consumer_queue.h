@@ -55,7 +55,7 @@ private:
 	send_buffer_p registry_; // optional consumer registry
 	buffer_type buffer_;	 // the sample buffer
 	// used to wait for new samples
-	std::mutex lock_;
+	std::mutex mut_;
 	std::condition_variable cv_;
 };
 
