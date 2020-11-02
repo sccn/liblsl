@@ -22,8 +22,10 @@ consumer_queue::~consumer_queue() {
 }
 
 void consumer_queue::push_sample(const sample_p &sample) {
-	// acquire lock for more predictable behavior in regards to pop_sample()
-	std::unique_lock<std::mutex> lk(mut_);
+	// push a sample, dropping the oldest sample if the queue ist already full.
+	// During this operation the producer becomes a second consumer, i.e., a case
+	// where the underlying spsc queue isn't thread-safe) so the mutex is locked.
+	std::lock_guard<std::mutex> lk(mut_);
 	while (!buffer_.push(sample)) {
 		sample_p dummy;
 		buffer_.pop(dummy);
@@ -34,11 +36,13 @@ void consumer_queue::push_sample(const sample_p &sample) {
 sample_p consumer_queue::pop_sample(double timeout) {
 	sample_p result;
 	if (timeout <= 0.0) {
+		std::lock_guard<std::mutex> lk(mut_);
 		buffer_.pop(result);
 	} else {
+		std::unique_lock<std::mutex> lk(mut_);
 		if (!buffer_.pop(result)) {
-			// wait for a new sample until the thread calling push_sample delivers one, or until timeout
-			std::unique_lock<std::mutex> lk(mut_);
+			// wait for a new sample until the thread calling push_sample delivers one and sends a
+			// notification, or until timeout
 			std::chrono::duration<double> sec(timeout);
 			cv_.wait_for(lk, sec, [&]{ return this->buffer_.pop(result); });
 		}
@@ -47,6 +51,7 @@ sample_p consumer_queue::pop_sample(double timeout) {
 }
 
 uint32_t consumer_queue::flush() noexcept {
+	std::lock_guard<std::mutex> lk(mut_);
 	uint32_t n = 0;
 	while (buffer_.pop()) n++;
 	return n;
