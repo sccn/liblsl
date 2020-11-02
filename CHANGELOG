@@ -1,5 +1,15 @@
 # Changes for liblsl 1.14
 
+* fix: prevent race condition when two threads modify an overflowing buffer (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
+* fix: improve latency and CPU usage (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
+* fix: various build system fixces and improvments (Chadwick Boulay, Tristan Stenner)
+* added: enumerate network interfaces on startup, for now unused. Requires Android SDK >=26 (Tristan Stenner)
+* added: lsl_inlet_flush() to drop all outstanding samples from an inlet to avoid the pull_ overhead in realtime applications (Tristan Stenner)
+* change: the binary names are changed so that the OS resolver (e.g. `find_library(lsl)`) searches
+  for the correct library. Windows: liblsl32.dll / liblsl64.dll -> lsl.dll, Unix: liblsl.so. (Tristan Stenner)
+* change: the lsl_c.h header is now split into several header files (Tristan Stenner)
+* change: refactor logging, add `log.file` config option (Tristan Stenner)
+* change: replace various Boost libraries with C++11 counterparts (Tristan Stenner)
 * change: liblsl requires a compiler with C++11 support, MSVC 2015 on Windows
 
 # Changes for liblsl 1.13 (released 2020-01-30)
