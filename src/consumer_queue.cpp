@@ -27,8 +27,7 @@ void consumer_queue::push_sample(const sample_p &sample) {
 	// where the underlying spsc queue isn't thread-safe) so the mutex is locked.
 	std::lock_guard<std::mutex> lk(mut_);
 	while (!buffer_.push(sample)) {
-		sample_p dummy;
-		buffer_.pop(dummy);
+		buffer_.pop();
 	}
 	cv_.notify_one();
 }
