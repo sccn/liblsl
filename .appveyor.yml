@@ -4,11 +4,11 @@ pull_requests:
 shallow_clone: true
 environment:
   matrix:
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    LSLARCH: Win32
-  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2015
-    LSLARCH: x64
   - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu1604
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    LSLARCH: Win32
+  - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+    LSLARCH: x64
 build_script:
 - cmd: cmake -Dlslgitrevision=%APPVEYOR_REPO_COMMIT% -Dlslgitbranch=%APPVEYOR_REPO_BRANCH% -S . -B build -T v140,host=x86 -A %LSLARCH%
 - sh: cmake -Dlslgitrevision=${APPVEYOR_REPO_COMMIT} -Dlslgitbranch=${APPVEYOR_REPO_BRANCH} -S . -B build
