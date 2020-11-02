@@ -61,12 +61,7 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	sb.cancel();
 
 	// Allow the thread 2 seconds to finish
-	if (future.wait_for(std::chrono::seconds(2)) != std::future_status::ready)
-		throw std::runtime_error("Thread 0: Thread didn't join!");
-	else {
-		INFO("Thread 0: Thread was successfully canceled")
-		future.get();
-	}
+	CHECK(future.wait_for(std::chrono::seconds(2)) == std::future_status::ready);
 }
 
 TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
@@ -74,11 +69,10 @@ TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
 	cancellable_streambuf sb_connect;
 	INFO("Thread 0: Binding remote socket and keeping it busy…")
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
-	ip::tcp::acceptor remote(io_ctx);
-	remote.open(ip::tcp::v4());
+	ip::tcp::acceptor remote(io_ctx, ip::tcp::v4());
 	remote.bind(ep);
 	// Create a socket that keeps connect()ing sockets hanging
-	// On Windows, this requires an additional socket options, on Unix
+	// On Windows, this requires an additional socket option, on Unix
 	// a backlog size of 0 and a socket waiting for the connection to be accept()ed
 	// On macOS, backlog 0 uses SOMAXCONN instead and 1 is correct
 #ifdef _WIN32
@@ -109,8 +103,7 @@ TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
 	INFO("Thread 0: Connecting…")
 	sb_read.connect(ep);
 	INFO("Thread 0: Connected (" << sb_read.puberror().message() << ')')
-	ip::tcp::socket sock(io_ctx);
-	remote.accept(sock);
+	ip::tcp::socket sock(remote.accept());
 
 	test_cancel_thread(
 		[&sb_read]() {
@@ -161,51 +154,59 @@ TEST_CASE("ipaddresses", "[ipv6][network][basic]") {
 
 /// Can multiple sockets bind to the same port and receive all broad-/multicast packets?
 TEST_CASE("reuseport", "[network][basic][!mayfail]") {
-	const uint16_t test_port = port++;
-	asio::io_context io_ctx(1);
-	lslboost::system::error_code ec;
 	// Linux: sudo ip link set lo multicast on; sudo ip mroute show table all
-	for (auto addrstr : {"224.0.0.1", "255.255.255.255", "ff02::1"}) SECTION(addrstr) {
-			std::vector<ip::udp::socket> socks;
-			auto addr = ip::make_address(addrstr);
-			if (!addr.is_multicast())
-				REQUIRE((addr.is_v4() && addr.to_v4() == ip::address_v4::broadcast()));
-			auto proto = addr.is_v4() ? ip::udp::v4() : ip::udp::v6();
-			for (int i = 0; i < 2; ++i) {
-				socks.emplace_back(io_ctx, proto);
-				auto &sock = socks.back();
-				sock.set_option(ip::udp::socket::reuse_address(true));
-				if (addr.is_multicast()) sock.set_option(ip::multicast::join_group(addr), ec);
-				if (ec == error::no_such_device || ec == std::errc::address_not_available)
-					FAIL("No IPv6 route configured, skipping test!");
-				sock.bind(ip::udp::endpoint(proto, test_port));
-			}
-			{
-				ip::udp::socket outsock(io_ctx, proto);
-				if (addr.is_multicast())
-					outsock.set_option(ip::multicast::join_group(addr));
-				else
-					outsock.set_option(ip::udp::socket::broadcast(true));
-				// outsock.set_option(ip::multicast::enable_loopback(true));
-				auto sent = outsock.send_to(hellobuf(), ip::udp::endpoint(addr, test_port));
-				REQUIRE(sent == sizeof(hello));
-				outsock.close();
-			}
-			char inbuf[sizeof(hello)] = {0};
-			std::size_t received = 0;
 
-			asio::steady_timer timeout(io_ctx, std::chrono::seconds(2));
-			timeout.async_wait([](err_t err) {
-				if (!err) throw std::runtime_error("Test didn't finish in time");
-			});
-			for (auto &insock : socks)
-				insock.async_receive(
-					asio::buffer(inbuf, sizeof(inbuf)), [&](err_t, std::size_t len) {
-						CHECK(len == sizeof(hello));
-						CHECK(hellostr == inbuf);
-						received++;
-					});
-			while (received < socks.size()) io_ctx.run_one();
-			timeout.cancel();
+	auto addrstr = GENERATE("224.0.0.1", "255.255.255.255", "ff03::1");
+	SECTION(addrstr) {
+		const uint16_t test_port = port++;
+		INFO("Test port " + std::to_string(test_port))
+		asio::io_context io_ctx(1);
+
+		auto addr = ip::make_address(addrstr);
+		if (!addr.is_multicast())
+			REQUIRE((addr.is_v4() && addr.to_v4() == ip::address_v4::broadcast()));
+		auto proto = addr.is_v4() ? ip::udp::v4() : ip::udp::v6();
+		std::vector<ip::udp::socket> socks;
+		for (int i = 0; i < 2; ++i) {
+			socks.emplace_back(io_ctx, proto);
+			auto &sock = socks.back();
+			sock.set_option(ip::udp::socket::reuse_address(true));
+			sock.bind(ip::udp::endpoint(proto, test_port));
+
+			if (addr.is_multicast()) {
+				lslboost::system::error_code ec;
+				sock.set_option(ip::multicast::join_group(addr), ec);
+				if (ec == error::no_such_device || ec == std::errc::address_not_available)
+					FAIL("Couldn't join multicast group: " + ec.message());
+			}
 		}
+		{
+			ip::udp::socket outsock(io_ctx, proto);
+			if (addr.is_multicast())
+				outsock.set_option(ip::multicast::join_group(addr));
+			else
+				outsock.set_option(ip::udp::socket::broadcast(true));
+			auto sent = outsock.send_to(hellobuf(), ip::udp::endpoint(addr, test_port));
+
+			REQUIRE(sent == sizeof(hello));
+			// outsock.close();
+		}
+		std::size_t received = 0;
+		// set a timeout
+		asio::steady_timer timeout(io_ctx, std::chrono::seconds(2));
+		timeout.async_wait([&received](err_t err) {
+			if (err == asio::error::operation_aborted) return;
+			UNSCOPED_INFO(received);
+			throw std::runtime_error("Test didn't finish in time");
+		});
+		char inbuf[sizeof(hello)] = {0};
+		for (auto &insock : socks)
+			insock.async_receive(asio::buffer(inbuf), [&](err_t err, std::size_t len) {
+				CHECK(err.value() == 0);
+				CHECK(len == sizeof(hello));
+				CHECK(hellostr == inbuf);
+				if (++received == socks.size()) timeout.cancel();
+			});
+		io_ctx.run();
+	}
 }
