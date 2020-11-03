@@ -11,7 +11,7 @@
 
 /* shared_mutex was added in C++17 so we use the boost shared_mutex when
 building for C++11 / C++14 or MSVC <= 2019 */
-#if __cpluscplus >= 201703L || _MSC_VER >= 1925
+#if __cplusplus >= 201703L || _MSC_VER >= 1925
 #include <mutex>
 #include <shared_mutex>
 using shared_mutex_t = std::shared_mutex;
