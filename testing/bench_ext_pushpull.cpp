@@ -53,18 +53,17 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 }
 
 TEMPLATE_TEST_CASE("stringconversion", "[basic][throughput]", int64_t, double) {
-	auto nchan = 16u, chunksize = 100u;
-	Streampair sp{create_streampair(lsl::stream_info(
-		"TypeConversionBench", "int2str2int", (int)nchan, chunksize, lsl::cf_string, "TypeConversion"))};
-	std::vector<TestType> data(nchan * chunksize, sample_value<TestType>::val);
-
+	const auto nchan = 16u, chunksize = 100u, nitems = chunksize * nchan;
+	Streampair sp{create_streampair(lsl::stream_info("TypeConversionBench", "int2str2int",
+		(int)nchan, chunksize, lsl::cf_string, "TypeConversion"))};
+	std::vector<TestType> data(nitems, sample_value<TestType>::val);
 
 	BENCHMARK("push") {
-		sp.out_.push_chunk_multiplexed(data.data(), chunksize * nchan);
+		sp.out_.push_chunk_multiplexed(data.data(), nitems);
 		sp.in_.flush();
 	};
 	BENCHMARK("pushpull") {
-		sp.out_.push_chunk_multiplexed(data.data(), chunksize * nchan);
-		sp.in_.pull_chunk_multiplexed(data.data(), nullptr, chunksize * nchan, 5.0);
+		sp.out_.push_chunk_multiplexed(data.data(), nitems);
+		sp.in_.pull_chunk_multiplexed(data.data(), nullptr, nitems, 0, 5.0);
 	};
 }
