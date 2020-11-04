@@ -165,7 +165,7 @@ TEST_CASE("ipaddresses", "[ipv6][network][basic]") {
 TEST_CASE("reuseport", "[network][basic][!mayfail]") {
 	// Linux: sudo ip link set lo multicast on; sudo ip mroute show table all
 
-	auto addrstr = GENERATE("224.0.0.1", "255.255.255.255", "ff03::1");
+	auto addrstr = GENERATE((const char*) "224.0.0.1", "255.255.255.255", "ff03::1");
 	SECTION(addrstr) {
 		const uint16_t test_port = port++;
 		INFO("Test port " + std::to_string(test_port))
