@@ -94,6 +94,15 @@ TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
 	remote.close();
 }
 
+TEST_CASE("unconnected streambufs don't crash", "[streambuf][basic][network]") {
+	asio::io_context io_ctx;
+	cancellable_streambuf sb_failedconnect;
+	ip::tcp::endpoint ep(ip::address_v4::loopback(), 1);
+	sb_failedconnect.connect(ep);
+	sb_failedconnect.cancel();
+	cancellable_streambuf().cancel();
+}
+
 TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
 	asio::io_context io_ctx;
 	cancellable_streambuf sb_read;
