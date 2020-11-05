@@ -29,12 +29,6 @@ set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FOR
 # Qt5
 set(CMAKE_INCLUDE_CURRENT_DIR ON) # Because the ui_mainwindow.h file.
 
-# Boost
-#SET(Boost_DEBUG OFF) #Switch this and next to ON for help debugging Boost problems.
-#SET(Boost_DETAILED_FAILURE_MSG ON)
-if(WIN32)
-	set(Boost_USE_STATIC_LIBS ON)
-endif()
 
 # LSL functions, mostly for Apps
 
@@ -240,11 +234,6 @@ endfunction()
 # default paths, versions and magic to guess it on windows
 # guess default paths for Windows / VC
 
-# Boost autoconfig:
-# Original author: Ryan Pavlik <ryan@sensics.com> <ryan.pavlik@gmail.com
-# Released with the same license as needed to integrate into CMake.
-# Modified by Chadwick Boulay Jan 2018
-
 if (CMAKE_SIZEOF_VOID_P EQUAL 8)
 	set(lslplatform 64)
 else()
@@ -255,24 +244,17 @@ if(WIN32 AND MSVC)
 	# see https://cmake.org/cmake/help/latest/variable/MSVC_VERSION.html
 	if(MSVC_VERSION EQUAL 1500)
 		set(VCYEAR 2008)
-		set(_vs_ver 9.0)
 	elseif(MSVC_VERSION EQUAL 1600)
 		set(VCYEAR 2010)
-		set(_vs_ver 10.0)
 	elseif(MSVC_VERSION EQUAL 1700)
 		set(VCYEAR 2012)
-		set(_vs_ver 11.0)
 	elseif(MSVC_VERSION EQUAL 1800)
 		set(VCYEAR 2013)
-		set(_vs_ver 12.0)
 	elseif(MSVC_VERSION EQUAL 1900)
 		set(VCYEAR 2015)
-		set(_vs_ver 14.0)
 	elseif(MSVC_VERSION GREATER 1910 AND MSVC_VERSION LESS 1929)
 		set(VCYEAR 2017)
-		set(_vs_ver 14.1)
-		# Also VS 2019, but it's binary compatible with 2017 so Boost
-		# and Qt still use the 2017 binaries
+		# Also VS 2019, but it's binary compatible with 2017 Qt still uses the 2017 binaries
 	else()
 		message(WARNING "You're using an untested Visual C++ compiler (MSVC_VERSION: ${MSVC_VERSION}).")
 	endif()
@@ -291,32 +273,6 @@ if(WIN32 AND MSVC)
 		endif()
 		message(STATUS "If this is wrong and you are building Apps that require Qt, please add the correct dir:")
 		message(STATUS "  -DQt5_DIR=/path/to/Qt5/5.x.y/msvc_${VCYEAR}_${lslplatform}/lib/cmake/Qt5")
-	endif()
-
-	if((NOT BOOST_ROOT) AND (NOT Boost_INCLUDE_DIR) AND (NOT Boost_LIBRARY_DIR))
-		message(STATUS "Attempting to find Boost, whether or not you need it.")
-		set(_libdir "lib${lslplatform}-msvc-${_vs_ver}")
-		set(_haslibs)
-		if(EXISTS "c:/local")
-			file(GLOB _possibilities "c:/local/boost*")
-			list(REVERSE _possibilities)
-			foreach(DIR ${_possibilities})
-				if(EXISTS "${DIR}/${_libdir}")
-					list(APPEND _haslibs "${DIR}")
-				endif()
-			endforeach()
-			if(_haslibs)
-				list(APPEND CMAKE_PREFIX_PATH ${_haslibs})
-				find_package(Boost QUIET)
-				if(Boost_FOUND AND NOT Boost_LIBRARY_DIR)
-					set(BOOST_ROOT "${Boost_INCLUDE_DIR}" CACHE PATH "")
-					set(BOOST_LIBRARYDIR "${Boost_INCLUDE_DIR}/${_libdir}" CACHE PATH "")
-				endif()
-			endif()
-		endif()
-	endif()
-	if(NOT BOOST_ROOT)
-		message(STATUS "Did not find Boost. If you need it then set BOOST_ROOT and/or BOOST_LIBRARYDIR")
 	endif()
 endif()
 
