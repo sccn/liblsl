@@ -31,6 +31,34 @@ extern "C" {
 	"Please do not compile this with a lslboost version older than 1.45 because the library would otherwise not be protocol-compatible with builds using other versions."
 #endif
 
+// size of a cache line
+#if defined(__s390__) || defined(__s390x__)
+#define CACHELINE_BYTES 256
+#elif defined(powerpc) || defined(__powerpc__) || defined(__ppc__)
+#define CACHELINE_BYTES 128
+#else
+#define CACHELINE_BYTES 64
+#endif
+
+// force-inline the given function, if possible
+#if defined(__clang__) || defined(__GNUC__)
+#define FORCEINLINE __attribute__((always_inline))
+#elif defined _MSC_VER
+#define FORCEINLINE __forceinline
+#else
+#define FORCEINLINE inline
+#endif
+
+// compiler hint that the given expression is likely or unlikely
+// (e.g., in conditional statements)
+#if defined(__clang__) || defined(__GNUC__)
+#define LIKELY(x)       __builtin_expect(!!(x), 1)
+#define UNLIKELY(x)     __builtin_expect(!!(x), 0)
+#else
+#define LIKELY(x)       (x)
+#define UNLIKELY(x)     (x)
+#endif
+
 // the highest supported protocol version
 // * 100 is the original version, supported by library versions 1.00+
 // * 110 is an alternative protocol that improves throughput, supported by library versions 1.10+
