@@ -157,8 +157,6 @@ private:
 	alignas(CACHELINE_BYTES) std::atomic<std::size_t> write_idx_;
 	/// current read position
 	alignas(CACHELINE_BYTES) std::atomic<std::size_t> read_idx_;
-	/// whether a pop() is waiting
-	alignas(CACHELINE_BYTES) std::atomic<bool> has_waiter_;
 	/// for use with the condition variable
 	std::mutex mut_;
 	/// condition for waiting with timeout
