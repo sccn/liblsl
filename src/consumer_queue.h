@@ -52,7 +52,7 @@ public:
 	}
 
 	/**
-	* Pop a sample from the queue. Can be called by multiple threads (multi-producer).
+	* Pop a sample from the queue. Can be called by multiple threads (multi-consumer).
 	* Blocks if empty and if a nonzero timeout is used.
 	* @param timeout Timeout for the blocking, in seconds. If expired, an empty sample is returned.
 	 */
@@ -119,8 +119,7 @@ private:
 			// check if the item is ok to pop
 			if (LIKELY(seq_state == next_idx)) {
 				// yes, try to claim slot using CAS
-				if (LIKELY(read_idx_.compare_exchange_weak(read_index, next_idx,
-												  std::memory_order_relaxed)))
+				if (LIKELY(read_idx_.compare_exchange_weak(read_index, next_idx, std::memory_order_relaxed)))
 					break;
 			} else if (LIKELY(seq_state == read_index))
 				return false;  // queue empty
