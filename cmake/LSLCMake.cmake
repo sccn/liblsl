@@ -398,6 +398,9 @@ macro(LSLGenerateCPackConfig)
 		endforeach()
 
 		message(STATUS "Installing Components: ${LSL_COMPONENTS}")
+
+		# force component install even if only one component is to be installed
+		set(CPACK_COMPONENTS_ALL ${LSL_COMPONENTS})
 		include(CPack)
 	endif()
 endmacro()
