@@ -74,9 +74,8 @@ jobs:
     - name: unit tests (internal functions)
       run: build/install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
-      continue-on-error: true
     - name: unit tests (exported functions)
       shell: bash
       run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
-      continue-on-error: true
+      if: ${{ success() || failure() }}
