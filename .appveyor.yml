@@ -22,6 +22,7 @@ build_script:
 - sh: ifconfig
 - cmd: testing\Release\lsl_test_internal.exe --wait-for-keypress never
 - cmd: set PATH=Release;%PATH% && testing\Release\lsl_test_exported.exe --wait-for-keypress never
+- sh: sudo route add -net 224.0.0.0 netmask 240.0.0.0 lo
 - sh: testing/lsl_test_internal --wait-for-keypress never
 - sh: testing/lsl_test_exported --wait-for-keypress never
 artifacts:
