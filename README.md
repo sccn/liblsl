@@ -6,19 +6,22 @@
 
 The lab streaming layer is a simple all-in-one approach to streaming experiment
 data between applications in a lab, e.g. instrument time series, event markers,
-audio, and so on. For more information, please read the online documentation:
-
-https://labstreaminglayer.readthedocs.io
+audio, and so on. For more information, please read the
+[online documentation](https://labstreaminglayer.readthedocs.io)
 
 ## Getting and using liblsl
 
-The most up-to-date instructions are in the [online documentation](https://labstreaminglayer.readthedocs.io/dev/app_dev.html).
+The most up-to-date instructions are in the
+[quick start online documentation](https://labstreaminglayer.readthedocs.io/info/getting_started.html).
 
 ## Building liblsl
 
+Precompiled packages are uploaded
+
+- to the [Release page](https://github.com/sccn/liblsl/releases)
+- the [Anaconda cloud](https://anaconda.org/tstenner/liblsl)
+
 To compile the library yourself from source please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
-NOTE: The documentation is in the middle of migrating to this location. If it's not there yet, also check [here](https://labstreaminglayer.readthedocs.io/dev/build.html),
-and [Matthew's instructions here](https://github.com/sccn/liblsl/blob/master/BUILD.md).
 
 For single board computers running linux, you can also try
 `standalone_compilation_linux.sh`.
@@ -29,21 +32,16 @@ To build language bindings (e.g. for
 the [corresponding directory in the main repository](https://github.com/sccn/labstreaminglayer/tree/master/LSL).
 
 You might also be interested in
-[apps to connect recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
-and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder).
+[apps to connect to recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
+and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder) to record streams to disk.
 
-Precompiled packages are uploaded
-
-- to the [Release page](https://github.com/sccn/liblsl/releases)
-- the [Anaconda cloud](https://anaconda.org/tstenner/liblsl)
 
 ## Boost
 
-liblsl uses boost (mainly Boost.ASIO and Boost.Thread) extensively.
-Because Windows has timing problems with newer Boost versions and embedding liblsl
-in an application that links to an other Boost version (notably Matlab) causes runtime
-errors, we bundle a subset of boost in
-`lslboost` (with patches to fix the timing behavior on Windows).
+liblsl uses boost (mainly Boost.ASIO) extensively.
+Because embedding liblsl in an application that links to an other Boost version (notably Matlab)
+causes runtime errors, we bundle a subset of boost in
+`lslboost`.
 
 To update the included lslboost, install Boost bcp and use the `update_lslboost.sh` script.
 
