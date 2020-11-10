@@ -1,4 +1,5 @@
-#include <sstream>
+#include "cast.h"
+#include <iosfwd>
 #include <unordered_map>
 
 // Reads an INI file from a stream into a map
@@ -6,16 +7,13 @@ class INI {
 	std::unordered_map<std::string, std::string> values;
 
 	template <typename T> inline T convert(const std::string &val) {
-		std::istringstream is(val);
-		T res;
-		is >> res;
-		return res;
+		return lsl::from_string<T>(val);
 	}
 
 public:
 	void load(std::istream &ini);
 
-	template <typename T> inline T get(const std::string &key, T defaultval = T()) {
+	template <typename T> inline T get(const char *key, T defaultval = T()) {
 		auto it = values.find(key);
 		if (it == values.end())
 			return defaultval;
@@ -25,6 +23,9 @@ public:
 	}
 };
 
-template <> inline const char *INI::convert(const std::string &val) { return val.c_str(); }
-
-template <> inline const std::string &INI::convert(const std::string &val) { return val; }
+// specialization for const char*, returns an empty string ("") by default instead of nullptr
+template <> inline const char *INI::get<const char *>(const char *key, const char *defaultval) {
+	static const char empty[] = "";
+	auto it = values.find(key);
+	return it == values.end() ? (defaultval ? defaultval : empty) : it->second.c_str();
+}

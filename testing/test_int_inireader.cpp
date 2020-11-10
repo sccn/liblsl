@@ -20,8 +20,9 @@ TEST_CASE("ini files are parsed correctly", "[ini][basic]") {
 	CHECK(pt.get("doesntexist", 0) == 0);
 	CHECK(pt.get<int>("defaultval") == 0);
 	CHECK(pt.get<int>("x") == 5);
-	CHECK(pt.get<std::string>("foo.foo") == "bar");
-	CHECK(pt.get<std::string>("white space.foo") == "bar");
+	CHECK(pt.get("foo.foo", "") == std::string("bar"));
+	CHECK(pt.get<const char*>("white space.foo") == std::string("bar"));
+	CHECK(pt.get<const char*>("emptydefault") == std::string(""));
 }
 
 TEST_CASE("bad ini files are rejected", "[ini][basic]") {
