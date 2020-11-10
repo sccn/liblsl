@@ -65,7 +65,7 @@ jobs:
       shell: bash
       run: |
            which ifconfig && ifconfig
-           if [ which ip ]; then
+           if [ `which ip` ]; then
               ip link
               ip addr
               ip route
