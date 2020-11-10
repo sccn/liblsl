@@ -27,4 +27,19 @@ TEST_CASE("Invalid queries are caught before sending the query", "[resolver][str
 	REQUIRE_THROWS(lsl::resolve_stream("invalid'query", 0, 0.1));
 }
 
+TEST_CASE("fullinfo", "[inlet][fullinfo][basic]") {
+	lsl::stream_info info("fullinfo", "unittest", 1, 1, lsl::cf_int8, "fullinfo1234");
+	const std::string extinfo("contents\nwith\n\tnewlines");
+	info.desc().append_child_value("info", extinfo);
+	lsl::stream_outlet outlet(info);
+	auto found_streams = lsl::resolve_stream("name", info.name(), 1, 2);
+	REQUIRE(!found_streams.empty());
+	INFO(found_streams[0].as_xml())
+	CHECK(found_streams[0].desc().first_child().empty());
+	auto fullinfo = lsl::stream_inlet(found_streams[0]).info(2);
+	INFO(fullinfo.as_xml())
+	CHECK(fullinfo.desc().child_value("info") == extinfo);
+}
+
+
 } // namespace
