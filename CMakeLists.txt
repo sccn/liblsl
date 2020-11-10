@@ -127,8 +127,6 @@ set_source_files_properties("src/loguru/loguru.cpp" PROPERTIES COMPILE_DEFINITIO
 ## create the lslboost target
 add_library(lslboost OBJECT
 	lslboost/asio_objects.cpp
-	lslboost/libs/atomic/src/lockpool.cpp
-	lslboost/libs/chrono/src/chrono.cpp
 	lslboost/serialization_objects.cpp
 )
 
