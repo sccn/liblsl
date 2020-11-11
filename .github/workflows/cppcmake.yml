@@ -12,13 +12,15 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
     strategy:
       matrix:
-        os:
-        - ubuntu-latest
-        - windows-latest
-        - macOS-latest
+        config:
+          - {name: "ubuntu-latest", os: ubuntu-latest, cmake_extra: ""}
+          - {name: "windows-x64", os: windows-latest, cmake_extra: "-T v140"}
+          - {name: "windows-32", os: windows-latest, cmake_extra: "-T v140 -A Win32"}
+          - {name: "macOS-latest", os: macOS-latest, cmake_extra: ""}
       fail-fast: false
     
     steps:
@@ -30,19 +32,11 @@ jobs:
     - name: Configure CMake
       shell: bash
       run: |
-           cmake -S . -B build -T v140 -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON -DCPACK_PACKAGE_DIRECTORY=${PWD}/build/package ..
-    
-    - name: Configure CMake Win32
-      if: matrix.os == 'windows-latest'
-      run: cmake -S . -B build32 -T v140 -A Win32 -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON -DCPACK_PACKAGE_DIRECTORY=${PWD}/build32/package ..
+           cmake -S . -B build ${{ matrix.config.cmake_extra }} -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON -DCPACK_PACKAGE_DIRECTORY=${PWD}/build/package ..
     
     - name: make
       run: cmake --build build --config Release -j --target install
       
-    - name: make Win32
-      if: matrix.os == 'windows-latest'
-      run: cmake --build build32 --config Release -j --target install
-    
     - name: package
       shell: bash
       if: "!startsWith(github.ref, 'refs/heads')"
@@ -53,33 +47,27 @@ jobs:
            # already installed packages. Therefore, we have built all
            # packages without dependencies in the previous step,
            # install them and rebuild them with dependency discovery enabled
-           if [ "${{ matrix.os }}" = "ubuntu-latest" ]; then
+           if [ "${{ matrix.config.os }}" = "ubuntu-latest" ]; then
               cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
               sudo dpkg -i build/package/*.deb
               cmake --build build --config Release -j --target package
            fi
            cmake -E remove_directory build/uploadpkgs/_CPack_Packages
            
-    - name: packate Win32
-      if: matrix.os == 'windows-latest'
-      run: cmake --build build32 --config Release -j --target package
-    
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
-        name: build-${{ matrix.os }}
+        name: build-${{ matrix.config.name }}
         path: |
             build/install
-            build32/install
 
     - name: upload package
       uses: actions/upload-artifact@master
       if: "!startsWith(github.ref, 'refs/heads')"
       with:
-        name: pkg-${{ matrix.os }}
+        name: pkg-${{ matrix.config.name }}
         path: |
             build/package
-            build32/package
     
     - name: print network config
       shell: bash
