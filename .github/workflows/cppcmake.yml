@@ -12,23 +12,24 @@ on:
 
 jobs:
   build:
-    runs-on: ${{ matrix.os }}
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
     strategy:
       matrix:
-        os:
-        - ubuntu-latest
-        - windows-latest
-        - macOS-latest
+        config:
+          - {name: "ubuntu-latest", os: ubuntu-latest, cmake_extra: ""}
+          - {name: "windows-x64", os: windows-latest, cmake_extra: "-T v140,host=x86"}
+          - {name: "windows-32", os: windows-latest, cmake_extra: "-T v140,host=x86 -A Win32"}
+          - {name: "macOS-latest", os: macOS-latest, cmake_extra: ""}
       fail-fast: false
+    
     steps:
     - uses: actions/checkout@v2
-      with:
-        ref: ${{ github.sha }}
     - name: Configure CMake
       shell: bash
       run: |
            cmake --version
-           cmake -S . -B build \
+           cmake -S . -B build ${{ matrix.config.cmake_extra }} \
                 -DLSL_UNITTESTS=ON \
                 -DLSL_BUILD_EXAMPLES=ON \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
@@ -37,6 +38,7 @@ jobs:
                 -Dlslgitbranch=${{ github.ref }}
     - name: make
       run: cmake --build build --config Release -j --target install
+  
     - name: package
       shell: bash
       run: |
@@ -46,23 +48,22 @@ jobs:
            # already installed packages. Therefore, we have built all
            # packages without dependencies in the previous step,
            # install them and rebuild them with dependency discovery enabled
-           if [[ "${{ matrix.os }}" == ubuntu-* ]]; then
+           if [[ "${{ matrix.config.os }}" == ubuntu-* ]]; then
               cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
               sudo dpkg -i package/*.deb
               cmake --build build --config Release -j --target package
            fi
-           cmake -E remove_directory build/uploadpkgs/_CPack_Packages
+           cmake -E remove_directory package/_CPack_Packages
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
-        name: build-${{ matrix.os }}
+        name: build-${{ matrix.config.name }}
         path: build/install
 
     - name: upload package
       uses: actions/upload-artifact@master
-      if: "!startsWith(github.ref, 'refs/heads')"
       with:
-        name: pkg-${{ matrix.os }}
+        name: pkg-${{ matrix.config.name }}
         path: package
     - name: print network config
       shell: bash
@@ -74,9 +75,11 @@ jobs:
               ip route
               ip -6 route
            fi
+    
     - name: unit tests (internal functions)
       run: build/install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
+    
     - name: unit tests (exported functions)
       shell: bash
       run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
