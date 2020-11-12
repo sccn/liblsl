@@ -24,22 +24,24 @@ jobs:
       fail-fast: false
     
     steps:
-    - uses: actions/checkout@v1
-    
-    - name: CMake version
-      run: cmake --version
-    
+    - uses: actions/checkout@v2
+      with:
+        ref: ${{ github.sha }}
     - name: Configure CMake
       shell: bash
       run: |
-           cmake -S . -B build ${{ matrix.config.cmake_extra }} -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON -DCPACK_PACKAGE_DIRECTORY=${PWD}/build/package ..
-    
+           cmake --version
+           cmake -S . -B build ${{ matrix.config.cmake_extra }}\
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BUILD_EXAMPLES=ON \
+                -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/build/install \
+                -Dlslgitrevision=${{ github.sha }} \
+                -Dlslgitbranch=${{ github.ref }}
     - name: make
       run: cmake --build build --config Release -j --target install
-      
     - name: package
       shell: bash
-      if: "!startsWith(github.ref, 'refs/heads')"
       run: |
            echo $GITHUB_REF
            cmake --build build --config Release -j --target package
@@ -47,9 +49,9 @@ jobs:
            # already installed packages. Therefore, we have built all
            # packages without dependencies in the previous step,
            # install them and rebuild them with dependency discovery enabled
-           if [ "${{ matrix.config.os }}" = "ubuntu-latest" ]; then
+           if [[ "${{ matrix.config.os }}" == ubuntu-* ]]; then
               cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
-              sudo dpkg -i build/package/*.deb
+              sudo dpkg -i package/*.deb
               cmake --build build --config Release -j --target package
            fi
            cmake -E remove_directory build/uploadpkgs/_CPack_Packages
@@ -66,9 +68,7 @@ jobs:
       if: "!startsWith(github.ref, 'refs/heads')"
       with:
         name: pkg-${{ matrix.config.name }}
-        path: |
-            build/package
-    
+        path: package
     - name: print network config
       shell: bash
       run: |
@@ -89,3 +89,4 @@ jobs:
       run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
       if: ${{ success() || failure() }}
+
