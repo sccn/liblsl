@@ -6,6 +6,40 @@
 macro(LSLAPP_Setup_Boilerplate)
 endmacro()
 
+function(LSL_get_target_arch)
+	if(LSL_ARCH)
+		return()
+	endif()
+	file(WRITE "${CMAKE_BINARY_DIR}/arch.c" "
+#if defined(__ARM_ARCH_ISA_A64) || defined(__aarch64__)
+#error cmake_ARCH arm64
+#elif defined(__arm__) || defined(__TARGET_ARCH_ARM)
+#error cmake_ARCH arm
+#elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
+#error cmake_ARCH i386
+#elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)
+#error cmake_ARCH amd64
+#elif defined(__ia64) || defined(__ia64__) || defined(_M_IA64)
+#error cmake_ARCH ia64
+#elif defined(__ppc__) || defined(__ppc) || defined(__powerpc__) \\
+  || defined(_ARCH_COM) || defined(_ARCH_PWR) || defined(_ARCH_PPC)  \\
+  || defined(_M_MPPC) || defined(_M_PPC)
+#if defined(__ppc64__) || defined(__powerpc64__) || defined(__64BIT__)
+#error cmake_ARCH ppc64
+#else
+#error cmake_ARCH powerpc
+#endif
+#else
+#error cmake_ARCH unknown
+#endif")
+	try_compile(dummy_result "${CMAKE_BINARY_DIR}"
+		SOURCES "${CMAKE_BINARY_DIR}/arch.c"
+		OUTPUT_VARIABLE ARCH)
+	string(REGEX REPLACE ".*cmake_ARCH ([a-z0-9]+).*" "\\1" ARCH "${ARCH}")
+	message(STATUS "Detected architecture: ${ARCH}")
+	set(LSL_ARCH "${ARCH}" CACHE INTERNAL "target architecture")
+endfunction()
+
 message(STATUS "Included LSL CMake helpers, rev. 14, ${CMAKE_CURRENT_LIST_DIR}")
 option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
 
@@ -240,6 +274,7 @@ macro(LSLGenerateCPackConfig)
 
 	# top level CMakeLists.txt?
 	if(CMAKE_SOURCE_DIR STREQUAL CMAKE_CURRENT_SOURCE_DIR)
+		LSL_get_target_arch()
 		# CPack configuration
 		set(CPACK_PACKAGE_INSTALL_DIRECTORY "lsl")
 		set(CPACK_STRIP_FILES ON)
@@ -261,9 +296,10 @@ macro(LSLGenerateCPackConfig)
 			set(CPACK_WIX_UPGRADE_GUID "ee28a351-3b27-4c2b-8b48-259c87d1b1b4")
 			set(CPACK_WIX_PROPERTY_ARPHELPLINK
 				"https://labstreaminglayer.readthedocs.io/info/getting_started.html#getting-help")
-			set(LSL_OS "Win${lslplatform}")
+			set(LSL_OS "Win")
 		elseif(UNIX)
 			set(LSL_CPACK_DEFAULT_GEN DEB)
+			set(LSL_OS "Linux")
 			set(CPACK_SET_DESTDIR 1)
 			set(CPACK_INSTALL_PREFIX "/usr")
 			set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tristan Stenner <ttstenner@gmail.com>")
@@ -280,16 +316,16 @@ macro(LSLGenerateCPackConfig)
 				OUTPUT_STRIP_TRAILING_WHITESPACE
 				RESULT_VARIABLE LSB_RELEASE_RESULT
 			)
-			if(LSB_RELEASE_RESULT)
+			if(LSB_RELEASE_CODENAME)
 				set(CPACK_DEBIAN_PACKAGE_RELEASE ${LSB_RELEASE_CODENAME})
+				set(LSL_OS "${LSB_RELEASE_CODENAME}")
 			endif()
-			set(LSL_OS "Linux${lslplatform}-${LSB_RELEASE_CODENAME}")
 		endif()
 		set(CPACK_GENERATOR ${LSL_CPACK_DEFAULT_GEN} CACHE STRING "CPack pkg type(s) to generate")
 		get_cmake_property(LSL_COMPONENTS COMPONENTS)
 		foreach(component ${LSL_COMPONENTS})
 			string(TOUPPER ${component} COMPONENT)
-			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION}-${LSL_OS}")
+			set(LSL_CPACK_FILENAME "${component}-${PROJECT_VERSION}-${LSL_OS}_${LSL_ARCH}")
 			get_property(LSLDEPENDS GLOBAL PROPERTY "LSLDEPENDS_${component}")
 			if(LSLDEPENDS)
 				list(REMOVE_DUPLICATES LSLDEPENDS)
