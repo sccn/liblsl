@@ -5,15 +5,6 @@
 
 using namespace lsl;
 
-/**
- * Add a new consumer to the send buffer.
- * Each consumer will get all samples (although the oldest samples will be dropped when the buffer
- *capacity is overrun).
- * @param max_buffered If non-zero, the queue size for this consumer will be constrained to be no
- *larger than this value. Note that the actual queue size will also never exceed the max_capacity of
- *the send_buffer (so this is a global limit).
- * @return Shared pointer to the newly created queue.
- */
 std::shared_ptr<consumer_queue> send_buffer::new_consumer(int max_buffered) {
 	max_buffered = max_buffered ? std::min(max_buffered, max_capacity_) : max_capacity_;
 	return std::make_shared<consumer_queue>(max_buffered, shared_from_this());

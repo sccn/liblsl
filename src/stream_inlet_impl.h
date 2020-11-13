@@ -33,7 +33,7 @@ public:
 	 * things), while real-time applications may want a finer (perhaps 1-sample) granularity.
 	 * @param recover Try to silently recover lost streams that are recoverable (=those that that
 	 * have a source_id set).
-	 * In all other cases (recover is false or the stream is not recoverable) a ::lost_error
+	 * In all other cases (recover is false or the stream is not recoverable) a lsl::lost_error
 	 * is thrown where indicated if the stream's source is lost (e.g. due to an app or computer
 	 * crash).
 	 */

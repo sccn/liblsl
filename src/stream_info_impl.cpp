@@ -6,9 +6,9 @@
 #include <limits>
 #include <sstream>
 
-using namespace lsl;
+namespace lsl {
+
 using namespace pugi;
-using std::string;
 using lsl::to_string;
 
 stream_info_impl::stream_info_impl()
@@ -18,8 +18,9 @@ stream_info_impl::stream_info_impl()
 	write_xml(doc_);
 }
 
-stream_info_impl::stream_info_impl(const string &name, const string &type, int channel_count,
-	double nominal_srate, lsl_channel_format_t channel_format, const string &source_id)
+stream_info_impl::stream_info_impl(const std::string &name, const std::string &type,
+	int channel_count, double nominal_srate, lsl_channel_format_t channel_format,
+	const std::string &source_id)
 	: name_(name), type_(type), channel_count_(channel_count), nominal_srate_(nominal_srate),
 	  channel_format_(channel_format), source_id_(source_id),
 	  version_(api_config::get_instance()->use_protocol_version()), v4data_port_(0),
@@ -97,7 +98,7 @@ void stream_info_impl::read_xml(xml_document &doc) {
 		get_bounded_child_val(info, "nominal_srate", nominal_srate_, 0);
 		nominal_srate_ = std::stod(info.child_value("nominal_srate"));
 
-		string fmt(info.child_value("channel_format"));
+		std::string fmt(info.child_value("channel_format"));
 		if (fmt == "float32")
 			channel_format_ = cft_float32;
 		else if (fmt == "double64")
@@ -138,13 +139,13 @@ void stream_info_impl::read_xml(xml_document &doc) {
 	} catch (std::exception &e) {
 		// reset the stream info to blank state
 		*this = stream_info_impl();
-		name_ = (string("(invalid: ") += e.what()) += ")";
+		name_ = (std::string("(invalid: ") += e.what()) += ')';
 	}
 }
 
 // === Protocol Support Operations Implementation ===
 
-string stream_info_impl::to_shortinfo_message() {
+std::string stream_info_impl::to_shortinfo_message() {
 	// make a new document (with an empty <desc> field)
 	xml_document tmp;
 	write_xml(tmp);
@@ -177,7 +178,7 @@ void stream_info_impl::from_fullinfo_message(const std::string &m) {
 	read_xml(doc_);
 }
 
-bool stream_info_impl::matches_query(const string &query, bool nocache) {
+bool stream_info_impl::matches_query(const std::string &query, bool nocache) {
 	return cached_.matches_query(doc_, query, nocache);
 }
 
@@ -326,3 +327,5 @@ stream_info_impl::stream_info_impl(const stream_info_impl &rhs)
 	  session_id_(rhs.session_id_), hostname_(rhs.hostname_) {
 	doc_.reset(rhs.doc_);
 }
+
+} // namespace lsl

@@ -7,11 +7,11 @@
 #include <sstream>
 #include <thread>
 
-using namespace lsl;
-using namespace lslboost::asio;
+namespace lsl {
+namespace ip = asio::ip;
 using err_t = const lslboost::system::error_code &;
 
-udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp protocol)
+udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io, udp protocol)
 	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
 	  time_services_enabled_(true) {
 	// open the socket for the specified protocol
@@ -29,8 +29,8 @@ udp_server::udp_server(const stream_info_impl_p &info, io_context &io, udp proto
 		(void *)this);
 }
 
-udp_server::udp_server(const stream_info_impl_p &info, io_context &io, const std::string &address,
-	uint16_t port, int ttl, const std::string &listen_address)
+udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io,
+	const std::string &address, uint16_t port, int ttl, const std::string &listen_address)
 	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
 	  time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
@@ -96,7 +96,7 @@ void udp_server::end_serving() {
 
 void udp_server::request_next_packet() {
 	DLOG_F(5, "udp_server::request_next_packet");
-	socket_->async_receive_from(lslboost::asio::buffer(buffer_), remote_endpoint_,
+	socket_->async_receive_from(asio::buffer(buffer_), remote_endpoint_,
 		[shared_this = shared_from_this()](
 			err_t err, std::size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
@@ -120,9 +120,9 @@ void udp_server::process_shortinfo_request(std::istream& request_stream)
 		udp::endpoint return_endpoint(remote_endpoint_.address(), return_port);
 		string_p replymsg(
 			std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
-		socket_->async_send_to(lslboost::asio::buffer(*replymsg), return_endpoint,
+		socket_->async_send_to(asio::buffer(*replymsg), return_endpoint,
 			[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
-				if (err_ != error::operation_aborted && err_ != error::shut_down)
+				if (err_ != asio::error::operation_aborted && err_ != asio::error::shut_down)
 					shared_this->request_next_packet();
 			});
 	} else {
@@ -142,9 +142,9 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 	reply.precision(16);
 	reply << ' ' << wave_id << ' ' << t0 << ' ' << t1 << ' ' << lsl_clock();
 	string_p replymsg(std::make_shared<std::string>(reply.str()));
-	socket_->async_send_to(lslboost::asio::buffer(*replymsg), remote_endpoint_,
+	socket_->async_send_to(asio::buffer(*replymsg), remote_endpoint_,
 		[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
-			if (err_ != error::operation_aborted && err_ != error::shut_down)
+			if (err_ != asio::error::operation_aborted && err_ != asio::error::shut_down)
 				shared_this->request_next_packet();
 		});
 }
@@ -153,7 +153,8 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err) {
 		// non-critical error? Wait for the next packet
-		if (err != error::operation_aborted || err != error::shut_down) request_next_packet();
+		if (err != asio::error::operation_aborted || err != asio::error::shut_down)
+			request_next_packet();
 		return;
 	}
 	try {
@@ -183,3 +184,4 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 	}
 	request_next_packet();
 }
+} // namespace lsl
