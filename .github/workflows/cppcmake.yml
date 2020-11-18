@@ -4,31 +4,40 @@ on:
   push:
     branches: ['*']
     tags: 
+    paths_ignore: ['docs/**', '.travis.yml']
   pull_request:
   release:
-    types: ['created', 'edited']
-  create:
-    tags: ['*']
+    types: ['created']
+  workflow_dispatch:
+    inputs:
+      cmakeextra:
+        description: 'Extra CMake options'
+        required: false
+        default: ''
+
+defaults:
+  run:
+    shell: bash
+
 
 jobs:
   build:
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     strategy:
+      fail-fast: false
       matrix:
         config:
-          - {name: "ubuntu-20.04", os: "ubuntu-20.04", cmake_extra: ""}
-#          - {name: "ubuntu-18.04", os: "ubuntu-18.04", cmake_extra: ""}
-          - {name: "ubuntu-16.04", os: "ubuntu-16.04", cmake_extra: ""}
-          - {name: "windows-x64", os: windows-latest, cmake_extra: "-T v140,host=x86"}
-          - {name: "windows-32", os: windows-latest, cmake_extra: "-T v140,host=x86 -A Win32"}
-          - {name: "macOS-latest", os: macOS-latest, cmake_extra: ""}
-      fail-fast: false
+        - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
+#        - {name: "ubuntu-18.04", os: "ubuntu-18.04", cmake_extra: ""}
+        - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
+        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
+        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "macOS-latest", os: "macOS-latest"}
     
     steps:
     - uses: actions/checkout@v2
     - name: Configure CMake
-      shell: bash
       run: |
            cmake --version
            cmake -S . -B build ${{ matrix.config.cmake_extra }} \
@@ -42,7 +51,6 @@ jobs:
       run: cmake --build build --config Release -j --target install
   
     - name: package
-      shell: bash
       run: |
            echo $GITHUB_REF
            cmake --build build --config Release -j --target package
@@ -68,7 +76,6 @@ jobs:
         name: pkg-${{ matrix.config.name }}
         path: package
     - name: print network config
-      shell: bash
       run: |
            which ifconfig && ifconfig
            if [ `which ip` ]; then
@@ -83,7 +90,25 @@ jobs:
       timeout-minutes: 5
     
     - name: unit tests (exported functions)
-      shell: bash
       run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
       if: ${{ success() || failure() }}
+    - name: upload to release page
+      if: github.event_name == 'release'
+      env:
+        TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
+        TAG: ${{ github.event.release.tag_name }}
+        UPLOAD_URL: ${{ github.event.release.upload_url }}
+      run: |
+              # Do try this at home! The REST API is documented at
+              # https://docs.github.com/en/free-pro-team@latest/rest and you can get a personal
+              # access token at https://github.com/settings/tokens
+              # (set TOKEN to "bearer abcdef1234")
+              # you can get the UPLOAD_URL with a short bash snippet; make sure to set the env var TAG:
+              # UPLOAD_URL=$(curl -H 'Accept: application/vnd.github.v3+json' $GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$TAG | jq -r .upload_url)
+              UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
+              for pkg in package/*.*; do
+                NAME=$(basename $pkg)
+                MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
+                curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
+              done
