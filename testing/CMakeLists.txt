@@ -15,6 +15,7 @@ target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO="${LSL_VERSION_IN
 if(LSL_BENCHMARKS)
 	target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 endif()
+target_include_directories(catch_main PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 
 add_executable(lsl_test_exported
 	test_ext_DataType.cpp

@@ -9,7 +9,6 @@ find_package(LSL REQUIRED
 	PATH_SUFFIXES share/LSL)
 get_filename_component(LSL_PATH ${LSL_CONFIG} DIRECTORY)
 message(STATUS "Found LSL lib in ${LSL_PATH}")
-LSLAPP_Setup_Boilerplate()
 message(STATUS "LSL BIN DIR: ${liblsl_BINARY_DIR} & ${LIBLSL_BINARY_DIR}")
 
 # convenience function to add an example file

@@ -1,4 +1,4 @@
-#include "catch.hpp"
+#include <catch.hpp>
 #include "portable_archive/portable_iarchive.hpp"
 #include "portable_archive/portable_oarchive.hpp"
 #include "sample.h"

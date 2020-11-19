@@ -1,11 +1,16 @@
 # Common functions and settings for LSL
 
-# Dummy function that should be called after find_package(LSL)
-# Does nothing at the moment, but the entire code below should be within this
-# function so it's not executed by accident
+option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
+option(LSL_COMFY_DEFAULTS "Set some quality of life options, e.g. a sensible 'install' directory" OFF)
+
 macro(LSLAPP_Setup_Boilerplate)
+	message(WARNING "This function is deprecated, set LSL_COMFY_DEFAULTS instead")
+	set(LSL_COMFY_DEFAULTS ON)
 endmacro()
 
+# helper script to determine the target architecture for package naming
+# The code below is compiled with the target compiler so it should work even
+# when cross compiling and doesn't require the executable to be run
 function(LSL_get_target_arch)
 	if(LSL_ARCH)
 		return()
@@ -40,28 +45,25 @@ function(LSL_get_target_arch)
 	set(LSL_ARCH "${ARCH}" CACHE INTERNAL "target architecture")
 endfunction()
 
-message(STATUS "Included LSL CMake helpers, rev. 14, ${CMAKE_CURRENT_LIST_DIR}")
-option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
+message(STATUS "Included LSL CMake helpers, rev. 15, ${CMAKE_CURRENT_LIST_DIR}")
 
 # set build type and default install dir if not done already or undesired
-if(NOT CMAKE_BUILD_TYPE)
+if(LSL_COMFY_DEFAULTS AND NOT CMAKE_BUILD_TYPE)
 	message(STATUS "CMAKE_BUILD_TYPE was default initialized to Release")
 	set(CMAKE_BUILD_TYPE "Release" CACHE STRING "Build type" FORCE)
 endif()
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND NOT LSL_PRESERVE_INSTALL_PREFIX)
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT AND COMFY_DEFAULTS)
 	set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH
 		"Where to put redistributable binaries" FORCE)
-	message(WARNING "CMAKE_INSTALL_PREFIX default initialized to ${CMAKE_INSTALL_PREFIX}. Set LSL_PRESERVE_INSTALL_PREFIX or CMAKE_INSTALL_PREFIX to skip this.")
 endif()
 
-# Generate folders for IDE targets (e.g., VisualStudio solutions)
-set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+if(LSL_COMFY_DEFAULTS)
+	# Generate folders for IDE targets (e.g., VisualStudio solutions)
+	set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
-
-set(CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "limited configs" FORCE)
-
-# Qt5
-set(CMAKE_INCLUDE_CURRENT_DIR ON) # Because the ui_mainwindow.h file.
+	# Qt5, include e.g. "mainwindow.h"
+	set(CMAKE_INCLUDE_CURRENT_DIR ON)
+endif()
 
 # LSL functions, mostly for Apps
 

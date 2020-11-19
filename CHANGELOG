@@ -1,5 +1,6 @@
 # Changes for liblsl 1.14
 
+* **change**: CMake doesn't set `CMAKE_INSTALL_PREFIX`and `CMAKE_BUILD_TYPE` by default unless `LSL_COMFY_DEFAULTS` is set (Tristan Stenner)
 * fix: prevent race condition when two threads modify an overflowing buffer (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
 * fix: improve latency and CPU usage (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
 * fix: various build system fixces and improvments (Chadwick Boulay, Tristan Stenner)
