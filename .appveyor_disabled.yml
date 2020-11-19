@@ -1,4 +1,4 @@
-version: 1.13.{build}
+version: 1.14.{build}
 pull_requests:
   do_not_increment_build_number: true
 shallow_clone: true
@@ -10,8 +10,8 @@ environment:
   - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
     LSLARCH: x64
 build_script:
-- cmd: cmake -Dlslgitrevision=%APPVEYOR_REPO_COMMIT% -Dlslgitbranch=%APPVEYOR_REPO_BRANCH% -S . -B build -T v140,host=x86 -A %LSLARCH%
-- sh: cmake -Dlslgitrevision=${APPVEYOR_REPO_COMMIT} -Dlslgitbranch=${APPVEYOR_REPO_BRANCH} -S . -B build
+- cmd: cmake -DCMAKE_INSTALL_PREFIX=install DCMAKE_BUILD_TYPE=Release -Dlslgitrevision=%APPVEYOR_REPO_COMMIT% -Dlslgitbranch=%APPVEYOR_REPO_BRANCH% -S . -B build -T v140,host=x86 -A %LSLARCH%
+- sh: cmake -DCMAKE_INSTALL_PREFIX=install DCMAKE_BUILD_TYPE=Release -Dlslgitrevision=${APPVEYOR_REPO_COMMIT} -Dlslgitbranch=${APPVEYOR_REPO_BRANCH} -S . -B build
 - cmake -DLSL_UNITTESTS=ON -DLSL_BUILD_EXAMPLES=ON build
 - cmd: cmake --build build --config Release -j --target package
 - sh: /usr/bin/time -v cmake --build build -j 3 --target package

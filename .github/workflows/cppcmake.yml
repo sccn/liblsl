@@ -40,13 +40,15 @@ jobs:
     - name: Configure CMake
       run: |
            cmake --version
-           cmake -S . -B build ${{ matrix.config.cmake_extra }} \
+           cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
                 -DLSL_UNITTESTS=ON \
                 -DLSL_BUILD_EXAMPLES=ON \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
-                -DCMAKE_INSTALL_PREFIX=${PWD}/build/install \
                 -Dlslgitrevision=${{ github.sha }} \
-                -Dlslgitbranch=${{ github.ref }}
+                -Dlslgitbranch=${{ github.ref }} \
+                ${{ matrix.config.cmake_extra }} 
     - name: make
       run: cmake --build build --config Release -j --target install
   
@@ -68,7 +70,7 @@ jobs:
       uses: actions/upload-artifact@master
       with:
         name: build-${{ matrix.config.name }}
-        path: build/install
+        path: install
 
     - name: upload package
       uses: actions/upload-artifact@master
@@ -86,11 +88,11 @@ jobs:
            fi
     
     - name: unit tests (internal functions)
-      run: build/install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+      run: install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
     
     - name: unit tests (exported functions)
-      run: build/install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      run: install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 5
       if: ${{ success() || failure() }}
     - name: upload to release page
