@@ -1,4 +1,4 @@
-[![AppVeyor Build status](https://ci.appveyor.com/api/projects/status/y8l55sf4n1pfnsck/branch/master?svg=true)](https://ci.appveyor.com/project/cboulay/liblsl/branch/master)
+[![GitHub Actions Status](https://github.com/sccn/liblsl/workflows/C%2FC++%20CI/badge.svg)](https://github.com/sccn/liblsl/actions)
 [![Travis Build Status](https://travis-ci.org/sccn/liblsl.svg?branch=master)](https://travis-ci.org/sccn/liblsl)
 [![Azure Build Status](https://dev.azure.com/labstreaminglayer/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/labstreaminglayer/liblsl/_build/latest?definitionId=1&branchName=master)
 
