@@ -70,6 +70,8 @@ public:
 	/// Check whether the underlying buffer is empty. This value may be inaccurate.
 	bool empty() { return sample_queue_.empty(); }
 
+	std::size_t samples_available() { return sample_queue_.read_available(); }
+
 	/// Flush the queue, return the number of dropped samples
 	uint32_t flush() noexcept { return sample_queue_.flush(); }
 
