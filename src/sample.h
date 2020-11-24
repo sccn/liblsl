@@ -7,7 +7,6 @@
 #include <boost/endian/conversion.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
-#include <boost/static_assert.hpp>
 #include <iosfwd>
 
 #ifndef BOOST_BYTE_ORDER
@@ -33,7 +32,7 @@ template <> inline void endian_reverse_inplace(float &t) {
 
 namespace lsl {
 // assert that the target CPU can represent the double-precision timestamp format required by LSL
-BOOST_STATIC_ASSERT(sizeof(double) == 8);
+static_assert(sizeof(double) == 8, "Target arch has unexpected double size (!=8)");
 
 // constants used in the network protocol
 const uint8_t TAG_DEDUCED_TIMESTAMP = 1;
