@@ -72,7 +72,7 @@ public:
 	/// which would happen anyway after some time.
 	/// As the attempt instance is owned by the handler chains
 	/// the cancellation eventually leads to the destruction of the object.
-	void cancel();
+	void cancel() override;
 
 private:
 	// === send and receive handlers ===

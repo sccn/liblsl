@@ -53,7 +53,7 @@ private:
 class cancellable_obj {
 public:
 	/// Cancel method.
-	virtual void cancel() {}
+	virtual void cancel() = 0;
 
 	/// Unregister at destruction.
 	virtual ~cancellable_obj();

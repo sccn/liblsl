@@ -63,7 +63,7 @@ public:
 	 * All blocking operations will fail after a cancel() has been issued,
 	 * and the stream buffer cannot be reused.
 	 */
-	void cancel() {
+	void cancel() override {
 		cancel_issued_ = true;
 		std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
 		cancel_started_ = false;
@@ -111,12 +111,11 @@ public:
 		return !ec_ ? this : nullptr;
 	}
 
-	/// Get the last error associated with the stream buffer.
-	/**
+	/** Get the last error associated with the stream buffer.
 	 * @return An \c error_code corresponding to the last error from the stream
 	 * buffer.
 	 */
-	const lslboost::system::error_code &puberror() const { return error(); }
+	const lslboost::system::error_code &error() const { return ec_; }
 
 protected:
 	/// Close the socket if it's open.
@@ -139,7 +138,7 @@ protected:
 		// will be processed by the run_one
 	}
 
-	int_type underflow() {
+	int_type underflow() override {
 		if (gptr() == egptr()) {
 			io_handler handler = {this};
 			this->get_service().async_receive(this->get_implementation(),
@@ -160,7 +159,7 @@ protected:
 			return traits_type::eof();
 	}
 
-	int_type overflow(int_type c) {
+	int_type overflow(int_type c) override {
 		// Send all data in the output buffer.
 		lslboost::asio::const_buffer buffer = lslboost::asio::buffer(pbase(), pptr() - pbase());
 		while (lslboost::asio::buffer_size(buffer) > 0) {
@@ -186,19 +185,12 @@ protected:
 		return c;
 	}
 
-	int sync() { return overflow(traits_type::eof()); }
+	int sync() override { return overflow(traits_type::eof()); }
 
-	std::streambuf *setbuf(char_type *, std::streamsize) {
+	std::streambuf *setbuf(char_type *, std::streamsize) override {
 		// this feature was stripped out...
 		return nullptr;
 	}
-
-	/// Get the last error associated with the stream buffer.
-	/**
-	 * @return An \c error_code corresponding to the last error from the stream
-	 * buffer.
-	 */
-	virtual const lslboost::system::error_code &error() const { return ec_; }
 
 	// private:
 	void init_buffers() {

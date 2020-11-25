@@ -111,7 +111,7 @@ TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
 	remote.listen(1);
 	INFO("Thread 0: Connecting…")
 	sb_read.connect(ep);
-	INFO("Thread 0: Connected (" << sb_read.puberror().message() << ')')
+	INFO("Thread 0: Connected (" << sb_read.error().message() << ')')
 	ip::tcp::socket sock(remote.accept());
 
 	test_cancel_thread(

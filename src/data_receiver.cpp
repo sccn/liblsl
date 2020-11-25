@@ -149,7 +149,7 @@ void data_receiver::data_thread() {
 				std::unique_ptr<eos::portable_iarchive> inarch;
 				// connect to endpoint
 				buffer.connect(conn_.get_tcp_endpoint());
-				if (buffer.puberror()) throw buffer.puberror();
+				if (buffer.error()) throw buffer.error();
 
 				// --- protocol negotiation ---
 
