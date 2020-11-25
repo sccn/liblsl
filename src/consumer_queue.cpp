@@ -1,5 +1,4 @@
 #include "consumer_queue.h"
-#include "common.h"
 #include "sample.h"
 #include "send_buffer.h"
 #include <chrono>

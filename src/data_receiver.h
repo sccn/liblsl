@@ -3,7 +3,8 @@
 
 #include "cancellation.h"
 #include "consumer_queue.h"
-#include "inlet_connection.h"
+#include "forward.h"
+#include <atomic>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -11,6 +12,8 @@
 using lslboost::asio::ip::tcp;
 
 namespace lsl {
+
+class inlet_connection; // Forward declaration
 
 /** Internal class of an inlet that's retrieving the data (the samples) of the inlet.
  *

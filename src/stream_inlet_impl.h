@@ -4,6 +4,7 @@
 #include "common.h"
 #include "data_receiver.h"
 #include "info_receiver.h"
+#include "inlet_connection.h"
 #include "time_postprocessor.h"
 #include "time_receiver.h"
 

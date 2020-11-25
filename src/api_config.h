@@ -1,10 +1,10 @@
 #ifndef API_CONFIG_H
 #define API_CONFIG_H
 
+#include "loguru/loguru.hpp"
+#include <cstdint>
 #include <string>
 #include <vector>
-
-#include "common.h"
 
 namespace lsl {
 /**

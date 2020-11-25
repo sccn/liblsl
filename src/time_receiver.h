@@ -4,8 +4,8 @@
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
-#include <boost/random/mersenne_twister.hpp>
 #include <condition_variable>
+#include <cstdint>
 #include <mutex>
 #include <thread>
 
@@ -110,8 +110,6 @@ private:
 	lslboost::asio::io_context time_io_;
 	/// a buffer to hold inbound packet contents
 	char recv_buffer_[16384];
-	/// a random number generator
-	lslboost::random::mt19937 rng_;
 	/// the socket through which the time thread communicates
 	udp::socket time_sock_;
 	/// schedule the next time estimate

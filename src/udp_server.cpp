@@ -5,7 +5,6 @@
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <sstream>
-#include <thread>
 
 namespace lsl {
 namespace ip = asio::ip;

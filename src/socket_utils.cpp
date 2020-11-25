@@ -2,7 +2,6 @@
 #include "api_config.h"
 #include "common.h"
 #include <boost/endian/conversion.hpp>
-#include <boost/system/system_error.hpp>
 
 using namespace lsl;
 

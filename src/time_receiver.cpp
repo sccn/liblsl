@@ -102,7 +102,7 @@ void time_receiver::start_time_estimation() {
 	estimate_times_.clear();
 	// generate a new wave id so that we don't confuse packets from earlier (or mis-guided)
 	// estimations
-	current_wave_id_ = rng_();
+	current_wave_id_ = std::rand();
 	// start the packet exchange chains
 	send_next_packet(1);
 	receive_next_packet();

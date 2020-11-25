@@ -4,11 +4,8 @@
 // (inefficiently converting int to bool in portable_oarchive instantiation...)
 #pragma warning(disable : 4800)
 
-#include "common.h"
 #include "forward.h"
 #include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <set>

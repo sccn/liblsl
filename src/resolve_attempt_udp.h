@@ -8,9 +8,6 @@
 #include <map>
 
 namespace lslboost {
-class mutex;
-}
-namespace lslboost {
 namespace system {
 class error_code;
 }

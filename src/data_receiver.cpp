@@ -1,6 +1,7 @@
 #include "data_receiver.h"
 #include "api_config.h"
 #include "cancellable_streambuf.h"
+#include "inlet_connection.h"
 #include "sample.h"
 #include "socket_utils.h"
 #include <iostream>

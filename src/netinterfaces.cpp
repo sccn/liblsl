@@ -74,11 +74,8 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 	return ret;
 }
 #elif defined(__APPLE__) || defined(__linux__)
-#include <arpa/inet.h>
 #include <ifaddrs.h>
-#include <map>
 #include <net/if.h>
-#include <sys/types.h>
 
 std::vector<lsl::netif> lsl::get_local_interfaces() {
 	std::vector<lsl::netif> res;

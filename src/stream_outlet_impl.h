@@ -3,8 +3,6 @@
 
 #include "common.h"
 #include "forward.h"
-#include "sample.h"
-#include "send_buffer.h"
 #include "stream_info_impl.h"
 #include <thread>
 

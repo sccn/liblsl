@@ -1,5 +1,7 @@
 #include "stream_outlet_impl.h"
 #include "api_config.h"
+#include "sample.h"
+#include "send_buffer.h"
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <memory>

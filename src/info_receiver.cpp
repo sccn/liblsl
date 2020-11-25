@@ -3,7 +3,6 @@
 #include "inlet_connection.h"
 #include <iostream>
 #include <memory>
-#include <sstream>
 
 lsl::info_receiver::info_receiver(inlet_connection &conn) : conn_(conn) {
 	conn_.register_onlost(this, &fullinfo_upd_);

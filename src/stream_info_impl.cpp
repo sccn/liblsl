@@ -2,8 +2,6 @@
 #include "api_config.h"
 #include "cast.h"
 #include <algorithm>
-#include <boost/thread/lock_guard.hpp>
-#include <limits>
 #include <sstream>
 
 namespace lsl {

@@ -1,7 +1,6 @@
 #ifndef UDP_SERVER_H
 #define UDP_SERVER_H
 
-#include "common.h"
 #include "forward.h"
 #include <boost/asio/ip/udp.hpp>
 #include <memory>
