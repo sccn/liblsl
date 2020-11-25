@@ -29,7 +29,7 @@ jobs:
       matrix:
         config:
         - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
-#        - {name: "ubuntu-18.04", os: "ubuntu-18.04", cmake_extra: ""}
+        - {name: "ubuntu-18.04", os: "ubuntu-18.04"}
         - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
         - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
         - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
