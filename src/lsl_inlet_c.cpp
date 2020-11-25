@@ -189,7 +189,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 		for (std::size_t k = 0; k < tmp.size(); k++) {
 			buffer[k] = (char *)malloc(tmp[k].size());
 			if (buffer[k] == nullptr) {
-				for (std::size_t k2 = 0; k2 < k; k++) free(buffer[k2]);
+				for (std::size_t k2 = 0; k2 < k; k2++) free(buffer[k2]);
 				if (ec) *ec = lsl_internal_error;
 				return 0.0;
 			}
@@ -326,7 +326,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 			for (uint32_t k = 0; k < tmp.size(); k++) {
 				data_buffer[k] = (char *)malloc(tmp[k].size() + 1);
 				if (data_buffer[k] == nullptr) {
-					for (uint32_t k2 = 0; k2 < k; k++) free(data_buffer[k2]);
+					for (uint32_t k2 = 0; k2 < k; k2++) free(data_buffer[k2]);
 					if (ec) *ec = lsl_internal_error;
 					return 0;
 				}
