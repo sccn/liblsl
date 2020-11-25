@@ -302,7 +302,7 @@ public:
 	 * Query the current size of the buffer, i.e. the number of samples that are buffered.
 	 * Note that this value may be inaccurate and should not be relied on for program logic.
 	 */
-	std::size_t samples_available() { return (std::size_t)(!data_receiver_.empty()); }
+	std::size_t samples_available() { return data_receiver_.samples_available(); }
 
 	/// Flush the queue, return the number of dropped samples
 	uint32_t flush() { return data_receiver_.flush(); }
