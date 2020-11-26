@@ -31,7 +31,7 @@ extern "C" {
 	"Please do not compile this with a lslboost version older than 1.45 because the library would otherwise not be protocol-compatible with builds using other versions."
 #endif
 
-extern char last_error[512];
+extern thread_local char last_error[512];
 
 // the highest supported protocol version
 // * 100 is the original version, supported by library versions 1.00+
