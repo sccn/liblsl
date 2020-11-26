@@ -12,7 +12,7 @@
 #pragma comment(lib, "winmm.lib")
 #endif
 
-char last_error[512];
+thread_local char last_error[512] = {0};
 
 extern "C" {
 
