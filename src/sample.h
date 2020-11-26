@@ -12,15 +12,8 @@
 #include <string>
 #include <type_traits>
 
-#ifndef BOOST_BYTE_ORDER
-#if BOOST_ENDIAN_BIG_BYTE
-const int BOOST_BYTE_ORDER = 4321;
-#elif BOOST_ENDIAN_LITTLE_BYTE
-const int BOOST_BYTE_ORDER = 1234;
-#elif BOOST_ENDIAN_LITTLE_WORD
-const int BOOST_BYTE_ORDER = 2134;
-#endif
-#endif
+const int BOOST_BYTE_ORDER =
+	lslboost::endian::order::native == lslboost::endian::order::little ? 4321 : 1234;
 
 // Boost.Endian has no functions to reverse floats, so we pretend they're ints of the same size.
 template <typename T> inline void endian_reverse_inplace(T &t) {
