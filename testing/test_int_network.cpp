@@ -15,7 +15,6 @@
 namespace asio = lslboost::asio;
 using namespace asio;
 using err_t = const lslboost::system::error_code &;
-typedef lsl::cancellable_streambuf cancellable_streambuf;
 
 static uint16_t port = 28812;
 static const char hello[] = "Hello World";
@@ -28,14 +27,15 @@ asio::const_buffer hellobuf() { return asio::const_buffer(hello, sizeof(hello));
 #define MINFO(str)                                                                                 \
 	{                                                                                              \
 		std::unique_lock<std::mutex> out_lock(output_mutex);                                       \
-		INFO(str)                                                                                  \
+		UNSCOPED_INFO(str);                                                                        \
 	}
 
-template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &sb) {
+// Check if a background operation (`task`) on a streambuf `sb` can be cancelled safely
+template <typename T> void cancel_streambuf(T &&task, lsl::cancellable_streambuf &sb) {
 	std::condition_variable cv;
 	std::mutex mut;
-	bool status = false;
-	auto future = std::async(std::launch::async, [&]() {
+	bool status{false};
+	std::future<void> future = std::async(std::launch::async, [&]() {
 		std::unique_lock<std::mutex> lock(mut);
 		MINFO("Thread 1: started")
 		status = true;
@@ -54,19 +54,22 @@ template <typename T> void test_cancel_thread(T &&task, cancellable_streambuf &s
 	}
 
 	if (future.wait_for(std::chrono::milliseconds(200)) == std::future_status::ready)
-		MINFO("Thread 1 finished too soon, couldn't test cancellation")
+		FAIL("Thread 1 finished too soon, couldn't test cancellation");
 	MINFO("Thread 0: Closing socket…")
 	sb.cancel();
 	// Double cancel, shouldn't do anything dramatic
 	sb.cancel();
 
 	// Allow the thread 2 seconds to finish
-	CHECK(future.wait_for(std::chrono::seconds(2)) == std::future_status::ready);
+	if (future.wait_for(std::chrono::seconds(2)) != std::future_status::ready) {
+		FAIL("Cancellation timed out");
+		sb.close();
+	}
 }
 
-TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
+TEST_CASE("streambuf cancel connect()", "[streambuf][basic][network]") {
 	asio::io_context io_ctx;
-	cancellable_streambuf sb_connect;
+	lsl::cancellable_streambuf sb_connect;
 	INFO("Thread 0: Binding remote socket and keeping it busy…")
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ip::tcp::v4());
@@ -80,32 +83,37 @@ TEST_CASE("streambufs can connect", "[streambuf][basic][network]") {
 	remote.listen(0);
 #else
 #ifdef __APPLE__
-	int backlog = 1;
+	const int backlog = 1;
 #else
-	int backlog = 0;
+	const int backlog = 0;
 #endif
 	remote.listen(backlog);
-	cancellable_streambuf busykeeper;
-	busykeeper.connect(ep);
+	lsl::cancellable_streambuf busykeeper;
+	CHECK(busykeeper.connect(ep) != nullptr);
 #endif
 	INFO("Thread 0: Remote socket should be busy")
 
-	test_cancel_thread([&sb_connect, ep]() { sb_connect.connect(ep); }, sb_connect);
-	remote.close();
+	cancel_streambuf(
+		[&sb_connect, ep]() {
+			sb_connect.connect(ep);
+			MINFO(sb_connect.error().message())
+			REQUIRE(sb_connect.sbumpc() == std::char_traits<char>::eof());
+		},
+		sb_connect);
 }
 
 TEST_CASE("unconnected streambufs don't crash", "[streambuf][basic][network]") {
 	asio::io_context io_ctx;
-	cancellable_streambuf sb_failedconnect;
+	lsl::cancellable_streambuf sb_failedconnect;
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), 1);
 	sb_failedconnect.connect(ep);
 	sb_failedconnect.cancel();
-	cancellable_streambuf().cancel();
+	lsl::cancellable_streambuf().cancel();
 }
 
-TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
+TEST_CASE("cancel streambuf reads", "[streambuf][network][!mayfail]") {
 	asio::io_context io_ctx;
-	cancellable_streambuf sb_read;
+	lsl::cancellable_streambuf sb_read;
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ep, true);
 	remote.listen(1);
@@ -113,11 +121,14 @@ TEST_CASE("streambufs can transfer data", "[streambuf][network]") {
 	sb_read.connect(ep);
 	INFO("Thread 0: Connected (" << sb_read.error().message() << ')')
 	ip::tcp::socket sock(remote.accept());
+	sock.send(asio::buffer(hello, 1));
+	REQUIRE(sb_read.sbumpc() == hello[0]);
 
-	test_cancel_thread(
+	cancel_streambuf(
 		[&sb_read]() {
-			int c = sb_read.sgetc();
-			MINFO("Thread 1: Read char " << c)
+			auto data = sb_read.sbumpc();
+			MINFO(sb_read.error().message())
+			CHECK(data == std::char_traits<char>::eof());
 		},
 		sb_read);
 }
@@ -165,7 +176,7 @@ TEST_CASE("ipaddresses", "[ipv6][network][basic]") {
 TEST_CASE("reuseport", "[network][basic][!mayfail]") {
 	// Linux: sudo ip link set lo multicast on; sudo ip mroute show table all
 
-	auto addrstr = GENERATE((const char*) "224.0.0.1", "255.255.255.255", "ff03::1");
+	auto addrstr = GENERATE((const char *)"224.0.0.1", "255.255.255.255", "ff03::1");
 	SECTION(addrstr) {
 		const uint16_t test_port = port++;
 		INFO("Test port " + std::to_string(test_port))
