@@ -4,6 +4,7 @@
 #include "send_buffer.h"
 #include "tcp_server.h"
 #include "udp_server.h"
+#include <algorithm>
 #include <memory>
 #include <sstream>
 
