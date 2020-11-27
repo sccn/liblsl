@@ -14,7 +14,6 @@
 
 #pragma once
 
-#include <boost/lexical_cast.hpp>
 #include <boost/archive/basic_archive.hpp>
 #include <boost/archive/archive_exception.hpp>
 
@@ -58,7 +57,7 @@ namespace eos {
 			: lslboost::archive::archive_exception(other_exception) 
 			, msg("requested integer size exceeds type size: ")
 		{
-			msg += lslboost::lexical_cast<std::string, int>(invalid_size);
+			msg += std::to_string(invalid_size);
 		}
 
 		//! negative number in unsigned type
@@ -74,12 +73,12 @@ namespace eos {
 			: lslboost::archive::archive_exception(other_exception) 
 			, msg("serialization of illegal floating point value: ")
 		{
-			msg += lslboost::lexical_cast<std::string>(abnormal);
+			msg += std::to_string(abnormal);
 		}
 
 		//! override the base class function with our message
-		const char* what() const throw() { return msg.c_str(); }
-		~portable_archive_exception() throw() {}
+		const char* what() const noexcept { return msg.c_str(); }
+		~portable_archive_exception() noexcept {}
 	};
 
 } // namespace eos
