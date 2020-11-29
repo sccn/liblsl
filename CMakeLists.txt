@@ -146,6 +146,9 @@ target_link_libraries(lslboost
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:bcrypt>
 		$<$<PLATFORM_ID:Windows>:iphlpapi>
+		$<$<PLATFORM_ID:Windows>:winmm>
+		$<$<PLATFORM_ID:Windows>:mswsock>
+		$<$<PLATFORM_ID:Windows>:ws2_32>
 	)
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
