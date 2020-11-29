@@ -2,8 +2,8 @@
 #define STREAM_INFO_IMPL_H
 
 #include "common.h"
-#include "pugixml/pugixml.hpp"
 #include <mutex>
+#include <pugixml.hpp>
 #include <unordered_map>
 
 namespace lsl {

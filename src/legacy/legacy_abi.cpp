@@ -1,10 +1,10 @@
-#include "../common.h"
-#include "../stream_outlet_impl.h"
-#include "../stream_inlet_impl.h"
-#include "../stream_info_impl.h"
 #include "legacy_abi.h"
+#include "../common.h"
 #include "../resolver_impl.h"
-#include "../pugixml/pugixml.hpp"
+#include "../stream_info_impl.h"
+#include "../stream_inlet_impl.h"
+#include "../stream_outlet_impl.h"
+#include <pugixml.hpp>
 #include <sstream>
 
 #define NO_EXPLICIT_TEMPLATE_INSTANTIATION

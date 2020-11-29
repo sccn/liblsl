@@ -20,6 +20,7 @@ option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
 option(LSL_BUILD_STATIC "Also build static LSL library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
+option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
@@ -60,9 +61,6 @@ add_library(lslobj OBJECT
 	src/portable_archive/portable_archive_includes.hpp
 	src/portable_archive/portable_iarchive.hpp
 	src/portable_archive/portable_oarchive.hpp
-	src/pugixml/pugiconfig.hpp
-	src/pugixml/pugixml.cpp
-	src/pugixml/pugixml.hpp
 	src/resolver_impl.cpp
 	src/resolver_impl.h
 	src/resolve_attempt_udp.cpp
@@ -98,6 +96,17 @@ add_library(lslobj OBJECT
 	include/lsl/types.h
 	include/lsl/xml.h
 )
+
+if(LSL_BUNDLED_PUGIXML)
+	message(STATUS "Using bundled pugixml")
+	target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
+	target_include_directories(lslobj
+		PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
+else()
+	message(STATUS "Using system pugixml")
+	find_package(pugixml REQUIRED)
+	target_link_libraries(lslobj PRIVATE pugixml)
+endif()
 
 # try to find out which revision is currently checked out
 find_package(Git)

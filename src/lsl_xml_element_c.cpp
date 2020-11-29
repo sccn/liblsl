@@ -1,4 +1,4 @@
-#include "pugixml/pugixml.hpp"
+#include <pugixml.hpp>
 
 extern "C" {
 #include "api_types.hpp"
