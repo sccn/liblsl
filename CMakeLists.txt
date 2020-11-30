@@ -295,6 +295,7 @@ if(LSL_BUILD_STATIC)
 	installLSLApp(lslver-static)
 endif()
 
+set(LSL_INSTALL_ROOT ${CMAKE_CURRENT_BINARY_DIR})
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
 endif()
