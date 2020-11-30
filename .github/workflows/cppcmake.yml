@@ -28,7 +28,7 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {name: "ubuntu-20.04", os: "ubuntu-20.04"}
+        - {name: "ubuntu-20.04", os: "ubuntu-20.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF"}
         - {name: "ubuntu-18.04", os: "ubuntu-18.04"}
         - {name: "ubuntu-16.04", os: "ubuntu-16.04"}
         - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
@@ -39,6 +39,9 @@ jobs:
     - uses: actions/checkout@v2
     - name: Configure CMake
       run: |
+           if [[ "${{ matrix.config.os }}" == "ubuntu-20.04" ]]; then
+                sudo apt-get install libpugixml-dev
+           fi
            cmake --version
            cmake -S . -B build \
                 -DCMAKE_BUILD_TYPE=Release \
