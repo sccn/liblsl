@@ -1,5 +1,5 @@
 #include "netinterfaces.h"
-#include "loguru/loguru.hpp"
+#include <loguru.hpp>
 
 using lslboost::asio::ip::address_v4;
 

@@ -48,8 +48,6 @@ add_library(lslobj OBJECT
 	src/inireader.cpp
 	src/inlet_connection.cpp
 	src/inlet_connection.h
-	src/loguru/loguru.hpp
-	src/loguru/loguru.cpp
 	src/lsl_resolver_c.cpp
 	src/lsl_inlet_c.cpp
 	src/lsl_outlet_c.cpp
@@ -84,6 +82,7 @@ add_library(lslobj OBJECT
 	src/time_receiver.h
 	src/udp_server.cpp
 	src/udp_server.h
+	thirdparty/loguru/loguru.cpp
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
 	# headers
 	include/lsl_c.h
@@ -131,7 +130,8 @@ else()
 	set(lslgitbranch "unknown")
 endif()
 set(LSL_VERSION_INFO "git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
-set_source_files_properties("src/loguru/loguru.cpp" PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
+set_source_files_properties("thirdparty/loguru/loguru.cpp"
+	PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
 
 ## create the lslboost target
 add_library(lslboost OBJECT
@@ -184,6 +184,7 @@ target_link_libraries(lslobj
 	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
 )
 target_compile_definitions(lslobj
 	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>

@@ -1,5 +1,5 @@
 #include "cancellation.h"
-#include "loguru/loguru.hpp"
+#include <loguru.hpp>
 
 lsl::cancellable_registry::~cancellable_registry() {}
 

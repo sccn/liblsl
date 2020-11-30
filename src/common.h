@@ -6,7 +6,7 @@ extern "C" {
 
 #include "../include/lsl/common.h"
 }
-#include "loguru/loguru.hpp"
+#include <loguru.hpp>
 #include <boost/version.hpp>
 #include <stdexcept>
 #include <string>
