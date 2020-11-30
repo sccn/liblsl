@@ -16,7 +16,7 @@ ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} ${CXXFLAGS} -Ilslboost \
 	-DLSL_LIBRARY_INFO_STR=\"${LSLGITREVISION:-"built from standalone build script"}\" \
 	src/*.cpp \
 	thirdparty/pugixml/pugixml.cpp -Ithirdparty/pugixml \
-	src/loguru/loguru.cpp \
+	thirdparty/loguru/loguru.cpp -Ithirdparty/loguru \
 	lslboost/serialization_objects.cpp \
 	${LDFLAGS} \
 	-shared -o liblsl.so -lpthread -lrt -ldl
