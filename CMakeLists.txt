@@ -145,8 +145,6 @@ target_link_libraries(lslboost
 		Threads::Threads
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:bcrypt>
-		$<$<PLATFORM_ID:Windows>:iphlpapi>
-		$<$<PLATFORM_ID:Windows>:winmm>
 		$<$<PLATFORM_ID:Windows>:mswsock>
 		$<$<PLATFORM_ID:Windows>:ws2_32>
 	)
@@ -169,6 +167,8 @@ target_include_directories(lslboost PUBLIC
 target_link_libraries(lslobj
 	PRIVATE
 		lslboost
+		$<$<PLATFORM_ID:Windows>:iphlpapi>
+		$<$<PLATFORM_ID:Windows>:winmm>
 	PUBLIC
 		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
 		$<$<BOOL:${NEEDS_LIBRT}>:rt>

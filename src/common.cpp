@@ -9,7 +9,6 @@
 #include <windows.h>
 // include mmsystem.h after windows.h
 #include <mmsystem.h>
-#pragma comment(lib, "winmm.lib")
 #endif
 
 extern "C" {
