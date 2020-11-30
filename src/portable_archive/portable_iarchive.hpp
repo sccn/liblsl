@@ -147,14 +147,14 @@ namespace eos {
 		 * to the original value by using load_little_endian.
 		 */
 		template <typename T>
-		typename lslboost::enable_if<lslboost::is_integral<T> >::type
+		typename std::enable_if<std::is_integral<T>::value >::type
 		load(T & t, dummy<2> = 0)
 		{
 			// get the number of bytes in the stream
 			if (signed char size = load_signed_char())
 			{
 				// check for negative value in unsigned type
-				if (size < 0 && lslboost::is_unsigned<T>::value)
+				if (size < 0 && std::is_unsigned<T>::value)
 					throw portable_archive_exception();
 
 				// check that our type T is large enough
@@ -201,7 +201,7 @@ namespace eos {
 		 * small rounding off errors. 
 		 */
 		template <typename T>
-		typename lslboost::enable_if<lslboost::is_floating_point<T> >::type
+		typename std::enable_if<std::is_floating_point<T>::value >::type
 		load(T & t, dummy<3> = 0)
 		{
 			typedef typename fp::detail::fp_traits<T>::type traits;
@@ -234,7 +234,7 @@ namespace eos {
 		// in boost 1.44 version_type was splitted into library_version_type and
 		// item_version_type, plus a whole bunch of additional strong typedefs.
 		template <typename T>
-		typename lslboost::disable_if<lslboost::is_arithmetic<T> >::type
+		typename std::enable_if<!std::is_arithmetic<T>::value >::type
 		load(T& t, dummy<4> = 0)
 		{
 			// we provide a generic load routine for all types that feature

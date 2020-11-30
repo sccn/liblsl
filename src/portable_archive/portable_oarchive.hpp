@@ -132,7 +132,7 @@ namespace eos {
 		 * and store non-zero bytes to the stream.
 		 */
 		template <typename T>
-		typename lslboost::enable_if<lslboost::is_integral<T> >::type
+		typename std::enable_if<std::is_integral<T>::value >::type
 		save(const T & t, dummy<2> = 0)
 		{
 			if (T temp = t)
@@ -148,7 +148,7 @@ namespace eos {
 
 				// encode the sign bit into the size
 				save_signed_char(t > 0 ? size : -size);
-				BOOST_ASSERT(t > 0 || lslboost::is_signed<T>::value);
+				BOOST_ASSERT(t > 0 || std::is_signed<T>::value);
 
 				// we choose to use little endian because this way we just
 				// save the first size bytes to the stream and skip the rest
@@ -187,10 +187,10 @@ namespace eos {
 		 * small rounding off errors. 
 		 */
 		template <typename T>
-		typename lslboost::enable_if<lslboost::is_floating_point<T> >::type
+		typename std::enable_if<std::is_floating_point<T>::value >::type
 		save(const T & t, dummy<3> = 0)
 		{
-			typedef typename fp::detail::fp_traits<T>::type traits;
+			using traits = typename fp::detail::fp_traits<T>::type;
 
 			// if the no_infnan flag is set we must throw here
 			if (get_flags() & no_infnan && !fp::isfinite(t))
@@ -210,7 +210,7 @@ namespace eos {
 			case FP_NAN: bits = traits::exponent | traits::significand; break;
 			case FP_INFINITE: bits = traits::exponent | (t<0) * traits::sign; break;
 			case FP_SUBNORMAL: assert(std::numeric_limits<T>::has_denorm); // pass
-			case FP_ZERO: // note that floats can be ±0.0
+			case FP_ZERO: // note that floats can be Â±0.0
 			case FP_NORMAL: traits::get_bits(t, bits); break;
 			default: throw portable_archive_exception(t);
 			}
@@ -221,7 +221,7 @@ namespace eos {
 		// in lslboost 1.44 version_type was splitted into library_version_type and
 		// item_version_type, plus a whole bunch of additional strong typedefs.
 		template <typename T>
-		typename lslboost::disable_if<lslboost::is_arithmetic<T> >::type
+		typename std::enable_if<!std::is_arithmetic<T>::value >::type
 		save(const T& t, dummy<4> = 0)
 		{
 			// we provide a generic save routine for all types that feature

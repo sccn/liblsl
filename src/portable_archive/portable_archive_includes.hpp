@@ -90,10 +90,6 @@
 
 #pragma once
 
-// basic headers
-#include <boost/version.hpp>
-#include <boost/utility/enable_if.hpp>
-
 // endian and fpclassify
 // disable std::fpclassify because it lacks the fp_traits::bits classes
 #define BOOST_MATH_DISABLE_STD_FPCLASSIFY
@@ -107,13 +103,8 @@ namespace fp = lslboost::math;
 namespace endian = lslboost::endian;
 
 // generic type traits for numeric types
-#include <boost/type_traits/is_integral.hpp>
-#include <boost/type_traits/is_signed.hpp>
-#include <boost/type_traits/is_unsigned.hpp>
-#include <boost/type_traits/is_arithmetic.hpp>
-#include <boost/type_traits/is_floating_point.hpp>
+#include <type_traits>
 
-#include "portable_archive_exception.hpp"
 #include <boost/cstdint.hpp>
 
 #include "portable_archive_exception.hpp"
