@@ -1,10 +1,12 @@
 #include <catch.hpp>
-#include "portable_archive/portable_iarchive.hpp"
-#include "portable_archive/portable_oarchive.hpp"
 #include "sample.h"
 #include <fstream>
 #include <sstream>
 #include <type_traits>
+
+#define NO_EXPLICIT_TEMPLATE_INSTANTIATION
+#include "portable_archive/portable_iarchive.hpp"
+#include "portable_archive/portable_oarchive.hpp"
 
 struct Testclass {
 	std::string teststr;
