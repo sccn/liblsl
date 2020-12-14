@@ -41,7 +41,7 @@
 // #define PUGIXML_MEMORY_XPATH_PAGE_SIZE 4096
 
 // Tune this constant to adjust max nesting for XPath queries
-#define PUGIXML_XPATH_DEPTH_LIMIT 8
+#define PUGIXML_XPATH_DEPTH_LIMIT 64
 
 // Uncomment this to switch to header-only version
 // #define PUGIXML_HEADER_ONLY
