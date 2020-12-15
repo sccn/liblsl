@@ -1,6 +1,7 @@
 #include "common.h"
 #include "api_config.h"
 #include <algorithm>
+#include <cstdlib>
 #include <cctype>
 #include <chrono>
 
@@ -21,10 +22,17 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
+int64_t lsl_local_clock_ns() {
+	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 LIBLSL_C_API double lsl_local_clock() {
-	return std::chrono::nanoseconds(std::chrono::high_resolution_clock::now().time_since_epoch())
-			   .count() /
-		   1000000000.0;
+	const auto ns_per_s = 1000000000;
+	const auto seconds_since_epoch = std::lldiv(lsl_local_clock_ns(), ns_per_s);
+	/* For large timestamps, converting to double and then dividing by 1e9 loses precision
+	   because double has only 53 bits of precision.
+	   So we calculate everything we can as integer and only cast to double at the end */
+	return seconds_since_epoch.quot + static_cast<double>(seconds_since_epoch.rem) / ns_per_s;
 }
 
 LIBLSL_C_API void lsl_destroy_string(char *s) {
