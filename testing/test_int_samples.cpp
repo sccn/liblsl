@@ -51,3 +51,22 @@ TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
 	CHECK(pulled == size);
 	pusher.join();
 }
+
+TEST_CASE("sample conversion", "[basic]") {
+	lsl::factory fac(lsl_channel_format_t::cft_int64, 2, 1);
+	double values[2] = {1, -1};
+	int64_t buf[2];
+	std::string strbuf[2];
+	for (int i = 0; i < 30; ++i) {
+		auto sample = fac.new_sample(0.0, true);
+		sample->assign_typed(values);
+		sample->retrieve_untyped(buf);
+		sample->retrieve_typed(strbuf);
+		for (int j = 0; j < 1; ++j) {
+			CHECK(values[j] == static_cast<int64_t>(buf[j]));
+			CHECK(strbuf[j] == std::to_string(buf[j]));
+		}
+		values[0] = buf[0] << 1;
+		values[1] = -buf[0];
+	}
+}
