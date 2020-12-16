@@ -100,14 +100,30 @@ sample &sample::retrieve_typed(std::string *d) {
 	return *this;
 }
 
-void sample::save_raw(std::streambuf &sb, const void *address, std::size_t count) {
+/// Helper function to save raw binary data to a stream buffer.
+void save_raw(std::streambuf &sb, const void *address, std::size_t count) {
 	if ((std::size_t)sb.sputn((const char *)address, (std::streamsize)count) != count)
 		throw std::runtime_error("Output stream error.");
 }
 
-void sample::load_raw(std::streambuf &sb, void *address, std::size_t count) {
+/// Helper function to load raw binary data from a stream buffer.
+void load_raw(std::streambuf &sb, void *address, std::size_t count) {
 	if ((std::size_t)sb.sgetn((char *)address, (std::streamsize)count) != count)
 		throw std::runtime_error("Input stream error.");
+}
+
+/// Load a value from a stream buffer with correct endian treatment.
+template <typename T> T load_value(std::streambuf &sb, int use_byte_order) {
+	T tmp;
+	load_raw(sb, &tmp, sizeof(T));
+	if (sizeof(T) > 1 && use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(tmp);
+	return tmp;
+}
+
+/// Save a value to a stream buffer with correct endian treatment.
+template <typename T> void save_value(std::streambuf &sb, T v, int use_byte_order) {
+	if (use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(v);
+	save_raw(sb, &v, sizeof(T));
 }
 
 void sample::save_streambuf(
@@ -157,47 +173,29 @@ void sample::save_streambuf(
 
 void sample::load_streambuf(std::streambuf &sb, int, int use_byte_order, bool suppress_subnormals) {
 	// read sample header
-	uint8_t tag;
-	load_value(sb, tag, use_byte_order);
-	if (tag == TAG_DEDUCED_TIMESTAMP) {
+	if (load_value<uint8_t>(sb, use_byte_order) == TAG_DEDUCED_TIMESTAMP)
 		// deduce the timestamp
 		timestamp = DEDUCED_TIMESTAMP;
-	} else {
+	else
 		// read the time stamp
-		load_value(sb, timestamp, use_byte_order);
-	}
+		timestamp = load_value<double>(sb, use_byte_order);
+
 	// read channel data
 	if (format_ == cft_string) {
 		for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e; p++) {
 			// read string length as variable-length integer
 			std::size_t len = 0;
-			uint8_t lenbytes;
-			load_value(sb, lenbytes, use_byte_order);
+			auto lenbytes = load_value<uint8_t>(sb, use_byte_order);
+
 			if (sizeof(std::size_t) < 8 && lenbytes > sizeof(std::size_t))
 				throw std::runtime_error(
 					"This platform does not support strings of 64-bit length.");
 			switch (lenbytes) {
-			case sizeof(uint8_t): {
-				uint8_t tmp;
-				load_value(sb, tmp, use_byte_order);
-				len = tmp;
-			}; break;
-			case sizeof(uint16_t): {
-				uint16_t tmp;
-				load_value(sb, tmp, use_byte_order);
-				len = tmp;
-			}; break;
-			case sizeof(uint32_t): {
-				uint32_t tmp;
-				load_value(sb, tmp, use_byte_order);
-				len = tmp;
-			}; break;
+			case sizeof(uint8_t): len = load_value<uint8_t>(sb, use_byte_order); break;
+			case sizeof(uint16_t): len = load_value<uint16_t>(sb, use_byte_order); break;
+			case sizeof(uint32_t): len = load_value<uint32_t>(sb, use_byte_order); break;
 #ifndef BOOST_NO_INT64_T
-			case sizeof(uint64_t): {
-				uint64_t tmp;
-				load_value(sb, tmp, use_byte_order);
-				len = tmp;
-			}; break;
+			case sizeof(uint64_t): len = load_value<uint64_t>(sb, use_byte_order); break;
 #endif
 			default: throw std::runtime_error("Stream contents corrupted (invalid varlen int).");
 			}

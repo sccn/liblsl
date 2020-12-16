@@ -282,29 +282,6 @@ public:
 
 	// === serialization functions ===
 
-	/// Helper function to save raw binary data to a stream buffer.
-	static void save_raw(std::streambuf &sb, const void *address, std::size_t count);
-
-	/// Helper function to load raw binary data from a stream buffer.
-	static void load_raw(std::streambuf &sb, void *address, std::size_t count);
-
-	/// Save a value to a stream buffer with correct endian treatment.
-	template <typename T> static void save_value(std::streambuf &sb, T v, int use_byte_order) {
-		if (use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(v);
-		save_raw(sb, &v, sizeof(T));
-	}
-
-	/// Load a value from a stream buffer with correct endian treatment.
-	template <typename T> static void load_value(std::streambuf &sb, T &v, int use_byte_order) {
-		load_raw(sb, &v, sizeof(v));
-		if (use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(v);
-	}
-
-	/// Load a value from a stream buffer; specialization of the above.
-	void load_value(std::streambuf &sb, uint8_t &v, int) {
-		load_raw(sb, &v, sizeof(v));
-	}
-
 	/// Serialize a sample to a stream buffer (protocol 1.10).
 	void save_streambuf(std::streambuf &sb, int protocol_version, int use_byte_order,
 		void *scratchpad = nullptr) const;
