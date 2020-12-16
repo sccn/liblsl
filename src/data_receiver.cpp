@@ -1,3 +1,4 @@
+#include "cast.h"
 #include "data_receiver.h"
 #include "api_config.h"
 #include "cancellable_streambuf.h"
@@ -232,7 +233,7 @@ void data_receiver::data_thread() {
 										"not supported.");
 							}
 							if (type == "suppress-subnormals")
-								suppress_subnormals = from_string<bool>(rest);
+								suppress_subnormals = lsl::from_string<bool>(rest);
 							if (type == "uid" && rest != conn_.current_uid())
 								throw lost_error("The received UID does not match the current "
 												 "connection's UID.");
