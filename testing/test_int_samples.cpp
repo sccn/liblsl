@@ -24,21 +24,30 @@ TEST_CASE("consumer_queue", "[queue][basic]") {
 }
 
 TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
-	const int size = 10000;
+	const int size = 100000;
 	lsl::factory fac(lsl_channel_format_t::cft_int8, 4, 1);
 	auto sample = fac.new_sample(0.0, true);
 	lsl::consumer_queue queue(size);
 	std::atomic<bool> done{false};
 
 	std::thread pusher([&]() {
-		for (int i = 0; i < size; ++i) queue.push_sample(sample);
-		INFO(queue.read_available());
+		for (unsigned int i = 0; i < size; ++i) queue.push_sample(sample);
 		done = true;
 	});
 
-	unsigned int n = 0, total = 0;
+	unsigned flushes = 0, pulled = 0;
 	// Pull samples until the pusher is done and the queue is empty
-	while ((n = queue.flush()) != 0 || !done) total += n;
-	CHECK(total == size);
+	while (true) {
+		unsigned int n = queue.flush();
+		if (n) {
+			flushes++;
+			pulled += n;
+		} else {
+			if(done && queue.read_available() == 0) break;
+			std::this_thread::yield();
+		}
+	}
+	INFO(flushes)
+	CHECK(pulled == size);
 	pusher.join();
 }
