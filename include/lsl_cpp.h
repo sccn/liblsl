@@ -24,6 +24,15 @@
 #include <string>
 #include <vector>
 
+#ifndef LSL_CPP11
+#if __cplusplus > 199711L || _MSC_VER >= 1900 || defined(LSL_DOXYGEN)
+/// Feature macro to conditionally enable C++11 features
+#define LSL_CPP11 1
+#else
+#define LSL_CPP11 0
+#endif
+#endif
+
 extern "C" {
 #include "lsl_c.h"
 }
@@ -363,7 +372,7 @@ public:
 		return *this;
 	}
 
-#if __cplusplus > 199711L || _MSC_VER >= 1900
+#if LSL_CPP11
 	stream_info(stream_info &&rhs) noexcept : obj(rhs.obj) { rhs.obj = nullptr; }
 
 	stream_info &operator=(stream_info &&rhs) noexcept {
@@ -845,6 +854,7 @@ public:
 		lsl_push_chunk_ctnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
 			(timestamp_buffer), pushthrough);
 	}
+
 	void push_chunk_multiplexed(const std::string *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
 		if (data_buffer_elements) {
@@ -889,7 +899,7 @@ public:
 		if (obj) lsl_destroy_outlet(obj);
 	}
 
-#if __cplusplus > 199711L || _MSC_VER >= 1900
+#if LSL_CPP11
 	/// stream_outlet move constructor
 	stream_outlet(stream_outlet &&res) noexcept : channel_count(res.channel_count), obj(res.obj) {
 		res.obj = nullptr;
@@ -1031,7 +1041,7 @@ public:
 		if (obj) lsl_destroy_inlet(obj);
 	}
 
-#if __cplusplus > 199711L || _MSC_VER >= 1900
+#if LSL_CPP11
 	/// Move constructor for stream_inlet
 	stream_inlet(stream_inlet &&rhs) noexcept : channel_count(rhs.channel_count), obj(rhs.obj) {
 		rhs.obj = nullptr;
@@ -1491,7 +1501,7 @@ public:
 		chunk.reserve(chunk.size() + target * this->channel_count);
 		if (timestamps) timestamps->reserve(timestamps->size() + target);
 		while ((ts = pull_sample(sample, 0.0)) != 0.0) {
-#if __cplusplus > 199711L || _MSC_VER >= 1900
+#if LSL_CPP11
 			chunk.insert(chunk.end(), std::make_move_iterator(sample.begin()),
 				std::make_move_iterator(sample.end()));
 #else
@@ -1806,7 +1816,7 @@ public:
 		if (obj) lsl_destroy_continuous_resolver(obj);
 	}
 
-#if __cplusplus > 199711L || _MSC_VER >= 1900
+#if LSL_CPP11
 	/// Move constructor for stream_inlet
 	continuous_resolver(continuous_resolver &&rhs) noexcept : obj(rhs.obj) { rhs.obj = nullptr; }
 	continuous_resolver &operator=(continuous_resolver &&rhs) noexcept {
