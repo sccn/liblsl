@@ -766,6 +766,11 @@ public:
 	 */
 	stream_info info() const { return stream_info(lsl_get_info(obj.get())); }
 
+	/// Return a shared pointer to pass to C-API functions that aren't wrapped yet
+	///
+	/// Example: @code lsl_push_chunk_buft(outlet.handle().get(), data, …); @endcode
+	std::shared_ptr<lsl_outlet_struct_> handle() { return obj; }
+
 	/** Destructor.
 	 * The stream will no longer be discoverable after destruction and all paired inlets will stop
 	 * delivering data.
@@ -898,6 +903,11 @@ public:
 		bool recover = true)
 		: channel_count(info.channel_count()),
 		  obj(lsl_create_inlet(info.handle().get(), max_buflen, max_chunklen, recover), &lsl_destroy_inlet) {}
+
+	/// Return a shared pointer to pass to C-API functions that aren't wrapped yet
+	///
+	/// Example: @code lsl_pull_sample_buf(inlet.handle().get(), buf, …); @endcode
+	std::shared_ptr<lsl_inlet_struct_> handle() { return obj; }
 
 	/// Move constructor for stream_inlet
 	stream_inlet(stream_inlet &&rhs) noexcept = default;
