@@ -416,6 +416,7 @@ public:
 	 */
 	stream_outlet(const stream_info &info, int32_t chunk_size = 0, int32_t max_buffered = 360)
 		: channel_count(info.channel_count()),
+		  sample_rate(info.nominal_srate()),
 		  obj(lsl_create_outlet(info.handle(), chunk_size, max_buffered)) {}
 
 	// ========================================
@@ -578,8 +579,8 @@ public:
 		const std::vector<T> &samples, double timestamp = 0.0, bool pushthrough = true) {
 		if (!samples.empty()) {
 			if (timestamp == 0.0) timestamp = local_clock();
-			if (info().nominal_srate() != IRREGULAR_RATE)
-				timestamp = timestamp - (samples.size() - 1) / info().nominal_srate();
+			if (sample_rate != IRREGULAR_RATE)
+				timestamp = timestamp - (samples.size() - 1) / sample_rate;
 			push_sample(samples[0], timestamp, pushthrough && samples.size() == 1);
 			for (std::size_t k = 1; k < samples.size(); k++)
 				push_sample(samples[k], DEDUCED_TIMESTAMP, pushthrough && k == samples.size() - 1);
@@ -618,8 +619,8 @@ public:
 		const std::vector<T> &samples, double timestamp = 0.0, bool pushthrough = true) {
 		if (!samples.empty()) {
 			if (timestamp == 0.0) timestamp = local_clock();
-			if (info().nominal_srate() != IRREGULAR_RATE)
-				timestamp = timestamp - (samples.size() - 1) / info().nominal_srate();
+			if (sample_rate != IRREGULAR_RATE)
+				timestamp = timestamp - (samples.size() - 1) / sample_rate;
 			push_numeric_struct(samples[0], timestamp, pushthrough && samples.size() == 1);
 			for (std::size_t k = 1; k < samples.size(); k++)
 				push_numeric_struct(
@@ -901,12 +902,13 @@ public:
 
 #if LSL_CPP11
 	/// stream_outlet move constructor
-	stream_outlet(stream_outlet &&res) noexcept : channel_count(res.channel_count), obj(res.obj) {
+	stream_outlet(stream_outlet &&res) noexcept : channel_count(res.channel_count), sample_rate(res.sample_rate), obj(res.obj) {
 		res.obj = nullptr;
 	}
 
 	stream_outlet &operator=(stream_outlet &&rhs) noexcept {
 		channel_count = rhs.channel_count;
+		sample_rate = rhs.sample_rate;
 		obj = rhs.obj;
 		rhs.obj = nullptr;
 		return *this;
@@ -927,6 +929,7 @@ private:
 	}
 
 	int32_t channel_count;
+	double sample_rate;
 	lsl_outlet obj;
 };
 
