@@ -2,6 +2,7 @@
 #include "cancellable_streambuf.h"
 #include "inlet_connection.h"
 #include <iostream>
+#include <sstream>
 #include <memory>
 
 lsl::info_receiver::info_receiver(inlet_connection &conn) : conn_(conn) {
