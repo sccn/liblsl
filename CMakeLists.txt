@@ -236,7 +236,6 @@ else()
 	set(CMAKE_INSTALL_BINDIR LSL)
 	set(CMAKE_INSTALL_LIBDIR LSL)
 	set(CMAKE_INSTALL_INCLUDEDIR LSL/include)
-	set(CMAKE_INSTALL_DATAROOTDIR LSL/share)
 endif()
 
 include(CMakePackageConfigHelpers)
@@ -264,7 +263,7 @@ install(EXPORT LSLTargets
 	FILE LSLTargets.cmake
 	COMPONENT liblsl
 	NAMESPACE "LSL::"
-	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/LSL
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LSL
 )
 configure_file(cmake/LSLConfig.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake" COPYONLY)
 configure_file(cmake/LSLCMake.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLCMake.cmake" COPYONLY)
@@ -281,7 +280,7 @@ install(FILES
 	${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
 	${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake
 	COMPONENT liblsl
-	DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/LSL
+	DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LSL
 )
 
 include(cmake/LSLCMake.cmake)
