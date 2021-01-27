@@ -1,5 +1,5 @@
 #define CATCH_CONFIG_RUNNER
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 extern "C" {
 const char *lsl_library_info() { return LSL_VERSION_INFO; }

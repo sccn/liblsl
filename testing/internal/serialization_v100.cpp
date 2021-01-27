@@ -1,5 +1,5 @@
-#include <catch.hpp>
 #include "sample.h"
+#include <catch2/catch.hpp>
 #include <fstream>
 #include <sstream>
 #include <type_traits>

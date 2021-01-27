@@ -1,6 +1,6 @@
 #include "../src/common.h"
 #include "../src/inireader.h"
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 
 using vec = std::vector<std::string>;
 

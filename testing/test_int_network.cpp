@@ -1,10 +1,10 @@
 #include "../src/cancellable_streambuf.h"
-#include "catch.hpp"
 #include <boost/asio/io_context.hpp>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/ip/v6_only.hpp>
+#include <catch2/catch.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <future>

@@ -1,5 +1,5 @@
-#include "catch.hpp"
 #include "helpers.h"
+#include <catch2/catch.hpp>
 #include <lsl_cpp.h>
 
 TEST_CASE("bounce", "[basic][latency]") {

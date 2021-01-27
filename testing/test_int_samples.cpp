@@ -1,7 +1,7 @@
 #include "../src/consumer_queue.h"
 #include "../src/sample.h"
-#include "catch.hpp"
 #include <atomic>
+#include <catch2/catch.hpp>
 #include <thread>
 
 TEST_CASE("consumer_queue", "[queue][basic]") {

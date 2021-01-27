@@ -1,7 +1,7 @@
-#include "catch.hpp"
 #include "helper_type.hpp"
 #include "helpers.h"
 #include <atomic>
+#include <catch2/catch.hpp>
 #include <list>
 #include <lsl_cpp.h>
 #include <string>

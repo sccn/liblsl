@@ -1,6 +1,6 @@
-#include "catch.hpp"
 #include "helpers.h"
 #include <atomic>
+#include <catch2/catch.hpp>
 #include <lsl_cpp.h>
 #include <thread>
 

@@ -1,5 +1,5 @@
 #include "../src/inireader.h"
-#include "catch.hpp"
+#include <catch2/catch.hpp>
 #include <sstream>
 
 void try_load(INI &pt, const char *contents) {
