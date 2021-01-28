@@ -20,18 +20,10 @@
  * this header. Under Visual Studio the library is linked in automatically.
  */
 
+#include <memory>
 #include <stdexcept>
 #include <string>
 #include <vector>
-
-#ifndef LSL_CPP11
-#if __cplusplus > 199711L || _MSC_VER >= 1900 || defined(LSL_DOXYGEN)
-/// Feature macro to conditionally enable C++11 features
-#define LSL_CPP11 1
-#else
-#define LSL_CPP11 0
-#endif
-#endif
 
 extern "C" {
 #include "lsl_c.h"
@@ -189,10 +181,19 @@ public:
 		double nominal_srate = IRREGULAR_RATE, channel_format_t channel_format = cf_float32,
 		const std::string &source_id = std::string())
 		: obj(lsl_create_streaminfo((name.c_str()), (type.c_str()), channel_count, nominal_srate,
-			  (lsl_channel_format_t)channel_format, (source_id.c_str()))) {
+			  (lsl_channel_format_t)channel_format, (source_id.c_str())), &lsl_destroy_streaminfo) {
 		if (obj == nullptr) throw std::invalid_argument(lsl_last_error());
 	}
-	stream_info(lsl_streaminfo handle) : obj(handle) {}
+
+	/// Default contructor.
+	stream_info(): stream_info("untitled", "", 0, 0, cf_undefined, ""){}
+
+	/// Copy constructor. Only increments the reference count! @see clone()
+	stream_info(const stream_info &) noexcept = default;
+	stream_info(lsl_streaminfo handle) : obj(handle, &lsl_destroy_streaminfo) {}
+
+	/// Clones a streaminfo object.
+	stream_info clone() { return stream_info(lsl_copy_streaminfo(obj.get())); }
 
 
 	// ========================
@@ -209,7 +210,7 @@ public:
 	 * same name can coexist, though potentially at the cost of ambiguity (for the recording app or
 	 * experimenter).
 	 */
-	std::string name() const { return lsl_get_name(obj); }
+	std::string name() const { return lsl_get_name(obj.get()); }
 
 	/**
 	 * Content type of the stream.
@@ -221,14 +222,14 @@ public:
 	 * types usually follow those pre-defined in https://github.com/sccn/xdf/wiki/Meta-Data (or web
 	 * search for: XDF meta-data).
 	 */
-	std::string type() const { return lsl_get_type(obj); }
+	std::string type() const { return lsl_get_type(obj.get()); }
 
 	/**
 	 * Number of channels of the stream.
 	 *
 	 * A stream has at least one channel; the channel count stays constant for all samples.
 	 */
-	int32_t channel_count() const { return lsl_get_channel_count(obj); }
+	int32_t channel_count() const { return lsl_get_channel_count(obj.get()); }
 
 	/**
 	 * Sampling rate of the stream, according to the source (in Hz).
@@ -241,7 +242,7 @@ public:
 	 * may correct such errors more accurately if the advertised sampling rate was close to the
 	 * specs of the device.
 	 */
-	double nominal_srate() const { return lsl_get_nominal_srate(obj); }
+	double nominal_srate() const { return lsl_get_nominal_srate(obj.get()); }
 
 	/**
 	 * Channel format of the stream.
@@ -250,7 +251,7 @@ public:
 	 * time-synched streams each with its own format.
 	 */
 	channel_format_t channel_format() const {
-		return (channel_format_t)lsl_get_channel_format(obj);
+		return static_cast<channel_format_t>(lsl_get_channel_format(obj.get()));
 	}
 
 	/**
@@ -260,7 +261,7 @@ public:
 	 * available, allows that endpoints (such as the recording program) can re-acquire a stream
 	 * automatically once it is back online.
 	 */
-	std::string source_id() const { return lsl_get_source_id(obj); }
+	std::string source_id() const { return lsl_get_source_id(obj.get()); }
 
 
 	// ======================================
@@ -269,7 +270,7 @@ public:
 	// (these fields are implicitly assigned once bound to an outlet/inlet)
 
 	/// Protocol version used to deliver the stream.
-	int32_t version() const { return lsl_get_version(obj); }
+	int32_t version() const { return lsl_get_version(obj.get()); }
 
 	/**
 	 * Creation time stamp of the stream.
@@ -277,7 +278,7 @@ public:
 	 * This is the time stamp when the stream was first created
 	 * (as determined via #lsl::local_clock() on the providing machine).
 	 */
-	double created_at() const { return lsl_get_created_at(obj); }
+	double created_at() const { return lsl_get_created_at(obj.get()); }
 
 	/**
 	 * Unique ID of the stream outlet instance (once assigned).
@@ -285,7 +286,7 @@ public:
 	 * This is a unique identifier of the stream outlet, and is guaranteed to be different
 	 * across multiple instantiations of the same outlet (e.g., after a re-start).
 	 */
-	std::string uid() const { return lsl_get_uid(obj); }
+	std::string uid() const { return lsl_get_uid(obj.get()); }
 
 	/**
 	 * Session ID for the given stream.
@@ -296,10 +297,10 @@ public:
 	 * (assigned via a configuration file by the experimenter, see Network Connectivity in the LSL
 	 * wiki).
 	 */
-	std::string session_id() const { return lsl_get_session_id(obj); }
+	std::string session_id() const { return lsl_get_session_id(obj.get()); }
 
 	/// Hostname of the providing machine.
-	std::string hostname() const { return lsl_get_hostname(obj); }
+	std::string hostname() const { return lsl_get_hostname(obj.get()); }
 
 
 	// ========================
@@ -323,7 +324,7 @@ public:
 
 	/// lsl_stream_info_matches_query
 	bool matches_query(const char *query) const {
-		return lsl_stream_info_matches_query(obj, query);
+		return lsl_stream_info_matches_query(obj.get(), query);
 	}
 
 
@@ -343,49 +344,30 @@ public:
 	 *   - the extended description element `<desc>` with user-defined sub-elements.
 	 */
 	std::string as_xml() const {
-		char *tmp = lsl_get_xml(obj);
+		char *tmp = lsl_get_xml(obj.get());
 		std::string result(tmp);
 		lsl_destroy_string(tmp);
 		return result;
 	}
 
 	/// Number of bytes occupied by a channel (0 for string-typed channels).
-	int32_t channel_bytes() const { return lsl_get_channel_bytes(obj); }
+	int32_t channel_bytes() const { return lsl_get_channel_bytes(obj.get()); }
 
 	/// Number of bytes occupied by a sample (0 for string-typed channels).
-	int32_t sample_bytes() const { return lsl_get_sample_bytes(obj); }
+	int32_t sample_bytes() const { return lsl_get_sample_bytes(obj.get()); }
 
 	/// Get the implementation handle.
-	lsl_streaminfo handle() const { return obj; }
-
-	/// Default contructor.
-	stream_info()
-		: obj(lsl_create_streaminfo("untitled", "", 0, 0, (lsl_channel_format_t)cf_undefined, "")) {
-	}
-
-	/// Copy constructor.
-	stream_info(const stream_info &rhs) : obj(lsl_copy_streaminfo((lsl_streaminfo)rhs.obj)) {}
+	std::shared_ptr<lsl_streaminfo_struct_> handle() const { return obj; }
 
 	/// Assignment operator.
 	stream_info &operator=(const stream_info &rhs) {
-		if (this != &rhs) obj = lsl_copy_streaminfo(rhs.obj);
+		if (this != &rhs) obj = stream_info(rhs).handle();
 		return *this;
 	}
 
-#if LSL_CPP11
-	stream_info(stream_info &&rhs) noexcept : obj(rhs.obj) { rhs.obj = nullptr; }
+	stream_info(stream_info &&rhs) noexcept = default;
 
-	stream_info &operator=(stream_info &&rhs) noexcept {
-		obj = rhs.obj;
-		rhs.obj = nullptr;
-		return *this;
-	}
-#endif
-
-	/// Destructor.
-	~stream_info() {
-		if (obj) lsl_destroy_streaminfo(obj);
-	}
+	stream_info &operator=(stream_info &&rhs) noexcept = default;
 
 	/// Utility function to create a stream_info from an XML representation
 	static stream_info from_xml(const std::string &xml) {
@@ -393,7 +375,7 @@ public:
 	}
 
 private:
-	mutable lsl_streaminfo obj;
+	std::shared_ptr<lsl_streaminfo_struct_> obj;
 };
 
 
@@ -417,7 +399,7 @@ public:
 	stream_outlet(const stream_info &info, int32_t chunk_size = 0, int32_t max_buffered = 360)
 		: channel_count(info.channel_count()),
 		  sample_rate(info.nominal_srate()),
-		  obj(lsl_create_outlet(info.handle(), chunk_size, max_buffered)) {}
+		  obj(lsl_create_outlet(info.handle().get(), chunk_size, max_buffered), &lsl_destroy_outlet) {}
 
 	// ========================================
 	// === Pushing a sample into the outlet ===
@@ -450,40 +432,11 @@ public:
 	 * it with subsequent samples. Note that the chunk_size, if specified at outlet construction,
 	 * takes precedence over the pushthrough flag.
 	 */
+	template<typename T>
 	void push_sample(
-		const std::vector<float> &data, double timestamp = 0.0, bool pushthrough = true) {
+		const std::vector<T> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan(data.size());
-		lsl_push_sample_ftp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<double> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		lsl_push_sample_dtp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<int64_t> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		lsl_push_sample_ltp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<int32_t> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		lsl_push_sample_itp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<int16_t> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		lsl_push_sample_stp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<char> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		lsl_push_sample_ctp(obj, (&data[0]), timestamp, pushthrough);
-	}
-	void push_sample(
-		const std::vector<std::string> &data, double timestamp = 0.0, bool pushthrough = true) {
-		check_numchan(data.size());
-		push_sample(&data[0], timestamp, pushthrough);
+		push_sample(data.data(), timestamp, pushthrough);
 	}
 
 	/** Push a pointer to some values as a sample into the outlet.
@@ -498,22 +451,22 @@ public:
 	 * takes precedence over the pushthrough flag.
 	 */
 	void push_sample(const float *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_ftp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_ftp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const double *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_dtp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_dtp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const int64_t *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_ltp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_ltp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const int32_t *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_itp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_itp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const int16_t *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_stp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_stp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const char *data, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_ctp(obj, (data), timestamp, pushthrough);
+		lsl_push_sample_ctp(obj.get(), (data), timestamp, pushthrough);
 	}
 	void push_sample(const std::string *data, double timestamp = 0.0, bool pushthrough = true) {
 		std::vector<uint32_t> lengths(channel_count);
@@ -522,7 +475,7 @@ public:
 			pointers[k] = data[k].c_str();
 			lengths[k] = (uint32_t)data[k].size();
 		}
-		lsl_push_sample_buftp(obj, (&pointers[0]), &lengths[0], timestamp, pushthrough);
+		lsl_push_sample_buftp(obj.get(), pointers.data(), lengths.data(), timestamp, pushthrough);
 	}
 
 	/** Push a packed C struct (of numeric data) as one sample into the outlet (search for
@@ -556,7 +509,7 @@ public:
 	 * takes precedence over the pushthrough flag.
 	 */
 	void push_numeric_raw(const void *sample, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_vtp(obj, (sample), timestamp, pushthrough);
+		lsl_push_sample_vtp(obj.get(), (sample), timestamp, pushthrough);
 	}
 
 
@@ -655,51 +608,14 @@ public:
 	 * @param pushthrough Whether to push the chunk through to the receivers instead of buffering it
 	 * with subsequent samples. Note that the chunk_size, if specified at outlet construction, takes
 	 * precedence over the pushthrough flag.
-	 * @{
 	 */
+	template<typename T>
 	void push_chunk_multiplexed(
-		const std::vector<float> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_ftp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<double> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_dtp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<int64_t> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_ltp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<int32_t> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_itp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<int16_t> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_stp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<char> &buffer, double timestamp = 0.0, bool pushthrough = true) {
-		if (!buffer.empty())
-			lsl_push_chunk_ctp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), timestamp, pushthrough);
-	}
-	void push_chunk_multiplexed(
-		const std::vector<std::string> &buffer, double timestamp = 0.0, bool pushthrough = true) {
+		const std::vector<T> &buffer, double timestamp = 0.0, bool pushthrough = true) {
 		if (!buffer.empty())
 			push_chunk_multiplexed(
-				&buffer[0], (unsigned long)buffer.size(), timestamp, pushthrough);
+				buffer.data(), static_cast<unsigned long>(buffer.size()), timestamp, pushthrough);
 	}
-	///@}
 
 	/** Push a chunk of multiplexed data into the outlet. One timestamp per sample is provided.
 	 * Allows to specify a separate time stamp for each sample (for irregular-rate streams).
@@ -711,54 +627,12 @@ public:
 	 * with subsequent samples. Note that the chunk_size, if specified at outlet construction, takes
 	 * precedence over the pushthrough flag.
 	 */
-	void push_chunk_multiplexed(const std::vector<float> &buffer,
+	template<typename T>
+	void push_chunk_multiplexed(const std::vector<T> &buffer,
 		const std::vector<double> &timestamps, bool pushthrough = true) {
 		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_ftnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<double> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_dtnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<int64_t> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_ltnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<int32_t> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_itnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<int16_t> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_stnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<char> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty() && !timestamps.empty())
-			lsl_push_chunk_ctnp(
-				obj, (&buffer[0]), (unsigned long)buffer.size(), (&timestamps[0]), pushthrough);
-	}
-	void push_chunk_multiplexed(const std::vector<std::string> &buffer,
-		const std::vector<double> &timestamps, bool pushthrough = true) {
-		if (!buffer.empty()) {
-			std::vector<uint32_t> lengths(buffer.size());
-			std::vector<const char *> pointers(buffer.size());
-			for (std::size_t k = 0; k < buffer.size(); k++) {
-				pointers[k] = buffer[k].c_str();
-				lengths[k] = (uint32_t)buffer[k].size();
-			}
-			lsl_push_chunk_buftnp(obj, (&pointers[0]), &lengths[0], (unsigned long)buffer.size(),
-				(&timestamps[0]), pushthrough);
-		}
+			push_chunk_multiplexed(
+				buffer.data(), static_cast<unsigned long>(buffer.size()), timestamps.data(), pushthrough);
 	}
 
 	/** Push a chunk of multiplexed samples into the outlet. Single timestamp provided.
@@ -776,27 +650,27 @@ public:
 	 */
 	void push_chunk_multiplexed(const float *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_ftp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_ftp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const double *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_dtp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_dtp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const int64_t *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_ltp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_ltp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const int32_t *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_itp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_itp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const int16_t *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_stp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_stp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const char *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_chunk_ctp(obj, (buffer), (unsigned long)buffer_elements, timestamp, pushthrough);
+		lsl_push_chunk_ctp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const std::string *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
@@ -807,8 +681,8 @@ public:
 				pointers[k] = buffer[k].c_str();
 				lengths[k] = (uint32_t)buffer[k].size();
 			}
-			lsl_push_chunk_buftp(obj, (&pointers[0]), &lengths[0], (unsigned long)buffer_elements,
-				timestamp, pushthrough);
+			lsl_push_chunk_buftp(obj.get(), pointers.data(), lengths.data(),
+				static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 		}
 	}
 
@@ -827,32 +701,32 @@ public:
 	 */
 	void push_chunk_multiplexed(const float *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_ftnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_ftnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 	void push_chunk_multiplexed(const double *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_dtnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_dtnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 	void push_chunk_multiplexed(const int64_t *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_ltnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_ltnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 	void push_chunk_multiplexed(const int32_t *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_itnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_itnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 	void push_chunk_multiplexed(const int16_t *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_stnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_stnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 	void push_chunk_multiplexed(const char *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
-		lsl_push_chunk_ctnp(obj, (data_buffer), (unsigned long)data_buffer_elements,
+		lsl_push_chunk_ctnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
 
@@ -865,8 +739,8 @@ public:
 				pointers[k] = data_buffer[k].c_str();
 				lengths[k] = (uint32_t)data_buffer[k].size();
 			}
-			lsl_push_chunk_buftnp(obj, (&pointers[0]), &lengths[0],
-				(unsigned long)data_buffer_elements, (&timestamp_buffer[0]), pushthrough);
+			lsl_push_chunk_buftnp(obj.get(), pointers.data(), lengths.data(),
+				static_cast<unsigned long>(data_buffer_elements), timestamp_buffer, pushthrough);
 		}
 	}
 
@@ -879,41 +753,30 @@ public:
 	 * While it does not hurt, there is technically no reason to push samples if there is no
 	 * consumer.
 	 */
-	bool have_consumers() { return lsl_have_consumers(obj) != 0; }
+	bool have_consumers() { return lsl_have_consumers(obj.get()) != 0; }
 
 	/** Wait until some consumer shows up (without wasting resources).
 	 * @return True if the wait was successful, false if the timeout expired.
 	 */
-	bool wait_for_consumers(double timeout) { return lsl_wait_for_consumers(obj, timeout) != 0; }
+	bool wait_for_consumers(double timeout) { return lsl_wait_for_consumers(obj.get(), timeout) != 0; }
 
 	/** Retrieve the stream info provided by this outlet.
 	 * This is what was used to create the stream (and also has the Additional Network Information
 	 * fields assigned).
 	 */
-	stream_info info() const { return stream_info(lsl_get_info(obj)); }
+	stream_info info() const { return stream_info(lsl_get_info(obj.get())); }
 
 	/** Destructor.
 	 * The stream will no longer be discoverable after destruction and all paired inlets will stop
 	 * delivering data.
 	 */
-	~stream_outlet() {
-		if (obj) lsl_destroy_outlet(obj);
-	}
+	~stream_outlet() = default;
 
-#if LSL_CPP11
 	/// stream_outlet move constructor
-	stream_outlet(stream_outlet &&res) noexcept : channel_count(res.channel_count), sample_rate(res.sample_rate), obj(res.obj) {
-		res.obj = nullptr;
-	}
+	stream_outlet(stream_outlet &&res) noexcept  = default;
 
-	stream_outlet &operator=(stream_outlet &&rhs) noexcept {
-		channel_count = rhs.channel_count;
-		sample_rate = rhs.sample_rate;
-		obj = rhs.obj;
-		rhs.obj = nullptr;
-		return *this;
-	}
-#endif
+	stream_outlet &operator=(stream_outlet &&rhs) noexcept = default;
+
 
 private:
 	// The outlet is a non-copyable object.
@@ -930,7 +793,7 @@ private:
 
 	int32_t channel_count;
 	double sample_rate;
-	lsl_outlet obj;
+	std::shared_ptr<lsl_outlet_struct_> obj;
 };
 
 
@@ -1034,28 +897,12 @@ public:
 	stream_inlet(const stream_info &info, int32_t max_buflen = 360, int32_t max_chunklen = 0,
 		bool recover = true)
 		: channel_count(info.channel_count()),
-		  obj(lsl_create_inlet(info.handle(), max_buflen, max_chunklen, recover)) {}
+		  obj(lsl_create_inlet(info.handle().get(), max_buflen, max_chunklen, recover), &lsl_destroy_inlet) {}
 
-	/**
-	 * Destructor.
-	 * The inlet will automatically disconnect if destroyed.
-	 */
-	~stream_inlet() {
-		if (obj) lsl_destroy_inlet(obj);
-	}
-
-#if LSL_CPP11
 	/// Move constructor for stream_inlet
-	stream_inlet(stream_inlet &&rhs) noexcept : channel_count(rhs.channel_count), obj(rhs.obj) {
-		rhs.obj = nullptr;
-	}
-	stream_inlet &operator=(stream_inlet &&rhs) noexcept {
-		channel_count = rhs.channel_count;
-		obj = rhs.obj;
-		rhs.obj = nullptr;
-		return *this;
-	}
-#endif
+	stream_inlet(stream_inlet &&rhs) noexcept = default;
+	stream_inlet &operator=(stream_inlet &&rhs) noexcept= default;
+
 
 	/** Retrieve the complete information of the given stream, including the extended description.
 	 * Can be invoked at any time of the stream's lifetime.
@@ -1065,7 +912,7 @@ public:
 	 */
 	stream_info info(double timeout = FOREVER) {
 		int32_t ec = 0;
-		lsl_streaminfo res = lsl_get_fullinfo(obj, timeout, &ec);
+		lsl_streaminfo res = lsl_get_fullinfo(obj.get(), timeout, &ec);
 		check_error(ec);
 		return stream_info(res);
 	}
@@ -1081,7 +928,7 @@ public:
 	 */
 	void open_stream(double timeout = FOREVER) {
 		int32_t ec = 0;
-		lsl_open_stream(obj, timeout, &ec);
+		lsl_open_stream(obj.get(), timeout, &ec);
 		check_error(ec);
 	}
 
@@ -1093,7 +940,7 @@ public:
 	 * it should call close_stream() to not waste unnecessary system and network
 	 * resources.
 	 */
-	void close_stream() { lsl_close_stream(obj); }
+	void close_stream() { lsl_close_stream(obj.get()); }
 
 	/** Retrieve an estimated time correction offset for the given stream.
 	 *
@@ -1118,7 +965,7 @@ public:
 
 	double time_correction(double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_time_correction(obj, timeout, &ec);
+		double res = lsl_time_correction(obj.get(), timeout, &ec);
 		check_error(ec);
 		return res;
 	}
@@ -1130,7 +977,7 @@ public:
 	 */
 	double time_correction(double *remote_time, double *uncertainty, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_time_correction_ex(obj, remote_time, uncertainty, timeout, &ec);
+		double res = lsl_time_correction_ex(obj.get(), remote_time, uncertainty, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
@@ -1148,7 +995,7 @@ public:
 	 * enable all options.
 	 */
 	void set_postprocessing(uint32_t flags = post_ALL) {
-		check_error(lsl_set_postprocessing(obj, flags));
+		check_error(lsl_set_postprocessing(obj.get(), flags));
 	}
 
 	// =======================================
@@ -1223,37 +1070,37 @@ public:
 	 */
 	double pull_sample(float *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_f(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_f(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
 	double pull_sample(double *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_d(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_d(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
 	double pull_sample(int64_t *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_l(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_l(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
 	double pull_sample(int32_t *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_i(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_i(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
 	double pull_sample(int16_t *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_s(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_s(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
 	double pull_sample(char *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_c(obj, buffer, buffer_elements, timeout, &ec);
+		double res = lsl_pull_sample_c(obj.get(), buffer, buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
@@ -1263,7 +1110,7 @@ public:
 			std::vector<char *> result_strings(buffer_elements);
 			std::vector<uint32_t> result_lengths(buffer_elements);
 			double res = lsl_pull_sample_buf(
-				obj, &result_strings[0], &result_lengths[0], buffer_elements, timeout, &ec);
+				obj.get(), result_strings.data(), result_lengths.data(), buffer_elements, timeout, &ec);
 			check_error(ec);
 			for (int32_t k = 0; k < buffer_elements; k++) {
 				buffer[k].assign(result_strings[k], result_lengths[k]);
@@ -1311,7 +1158,7 @@ public:
 	 */
 	double pull_numeric_raw(void *sample, int32_t buffer_bytes, double timeout = FOREVER) {
 		int32_t ec = 0;
-		double res = lsl_pull_sample_v(obj, sample, buffer_bytes, timeout, &ec);
+		double res = lsl_pull_sample_v(obj.get(), sample, buffer_bytes, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
@@ -1400,7 +1247,7 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_f(obj, data_buffer, timestamp_buffer,
+		std::size_t res = lsl_pull_chunk_f(obj.get(), data_buffer, timestamp_buffer,
 			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
 			&ec);
 		check_error(ec);
@@ -1410,7 +1257,7 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_d(obj, data_buffer, timestamp_buffer,
+		std::size_t res = lsl_pull_chunk_d(obj.get(), data_buffer, timestamp_buffer,
 			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
 			&ec);
 		check_error(ec);
@@ -1420,7 +1267,7 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_l(obj, data_buffer, timestamp_buffer,
+		std::size_t res = lsl_pull_chunk_l(obj.get(), data_buffer, timestamp_buffer,
 			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
 			&ec);
 		check_error(ec);
@@ -1430,7 +1277,7 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_i(obj, data_buffer, timestamp_buffer,
+		std::size_t res = lsl_pull_chunk_i(obj.get(), data_buffer, timestamp_buffer,
 			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
 			&ec);
 		check_error(ec);
@@ -1440,7 +1287,7 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_s(obj, data_buffer, timestamp_buffer,
+		std::size_t res = lsl_pull_chunk_s(obj.get(), data_buffer, timestamp_buffer,
 			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
 			&ec);
 		check_error(ec);
@@ -1450,8 +1297,8 @@ public:
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
-		std::size_t res = lsl_pull_chunk_c(obj, data_buffer, timestamp_buffer,
-			(unsigned long)data_buffer_elements, (unsigned long)timestamp_buffer_elements, timeout,
+		std::size_t res = lsl_pull_chunk_c(obj.get(), data_buffer, timestamp_buffer,
+			static_cast<unsigned long>(data_buffer_elements), static_cast<unsigned long>(timestamp_buffer_elements), timeout,
 			&ec);
 		check_error(ec);
 		return res;
@@ -1463,9 +1310,9 @@ public:
 		if (data_buffer_elements) {
 			std::vector<char *> result_strings(data_buffer_elements);
 			std::vector<uint32_t> result_lengths(data_buffer_elements);
-			std::size_t num = lsl_pull_chunk_buf(obj, &result_strings[0], &result_lengths[0],
-				timestamp_buffer, (unsigned long)data_buffer_elements,
-				(unsigned long)timestamp_buffer_elements, timeout, &ec);
+			std::size_t num = lsl_pull_chunk_buf(obj.get(), result_strings.data(), result_lengths.data(),
+				timestamp_buffer, static_cast<unsigned long>(data_buffer_elements),
+				static_cast<unsigned long>(timestamp_buffer_elements), timeout, &ec);
 			check_error(ec);
 			for (std::size_t k = 0; k < num; k++) {
 				data_buffer[k].assign(result_strings[k], result_lengths[k]);
@@ -1578,10 +1425,10 @@ public:
 	 * low value. If the underlying implementation supports it, the value will be the number of
 	 * samples available (otherwise it will be 1 or 0).
 	 */
-	std::size_t samples_available() { return lsl_samples_available(obj); }
+	std::size_t samples_available() { return lsl_samples_available(obj.get()); }
 
 	/// Drop all queued not-yet pulled samples, return the nr of dropped samples
-	uint32_t flush() noexcept { return lsl_inlet_flush(obj); }
+	uint32_t flush() noexcept { return lsl_inlet_flush(obj.get()); }
 
 	/**
 	 * Query whether the clock was potentially reset since the last call to was_clock_reset().
@@ -1590,7 +1437,7 @@ public:
 	 * time_correction values to estimate precise clock drift; it allows to tolerate cases where the
 	 * source machine was hot-swapped or restarted in between two measurements.
 	 */
-	bool was_clock_reset() { return lsl_was_clock_reset(obj) != 0; }
+	bool was_clock_reset() { return lsl_was_clock_reset(obj.get()) != 0; }
 
 	/**
 	 * Override the half-time (forget factor) of the time-stamp smoothing.
@@ -1601,7 +1448,7 @@ public:
 	 * temperature changes); the default is able to track changes up to 10
 	 * degrees C per minute sufficiently well.
 	 */
-	void smoothing_halftime(float value) { check_error(lsl_smoothing_halftime(obj, value)); }
+	void smoothing_halftime(float value) { check_error(lsl_smoothing_halftime(obj.get(), value)); }
 
 	int get_channel_count() const { return channel_count; }
 
@@ -1611,7 +1458,7 @@ private:
 	stream_inlet &operator=(const stream_inlet &rhs);
 
 	int32_t channel_count;
-	lsl_inlet obj;
+	std::shared_ptr<lsl_inlet_struct_> obj;
 };
 
 
@@ -1714,17 +1561,17 @@ public:
 	 * Set the element's name.
 	 * @return False if the node is empty (or if out of memory).
 	 */
-	bool set_name(const std::string &rhs) { return lsl_set_name(obj, (rhs.c_str())) != 0; }
+	bool set_name(const std::string &rhs) { return lsl_set_name(obj, rhs.c_str()) != 0; }
 
 	/**
 	 * Set the element's value.
 	 * @return False if the node is empty (or if out of memory).
 	 */
-	bool set_value(const std::string &rhs) { return lsl_set_value(obj, (rhs.c_str())) != 0; }
+	bool set_value(const std::string &rhs) { return lsl_set_value(obj, rhs.c_str()) != 0; }
 
 	/// Append a child element with the specified name.
 	xml_element append_child(const std::string &name) {
-		return lsl_append_child(obj, (name.c_str()));
+		return lsl_append_child(obj, name.c_str());
 	}
 
 	/// Prepend a child element with the specified name.
@@ -1745,10 +1592,10 @@ public:
 	void remove_child(const xml_element &e) { lsl_remove_child(obj, e.obj); }
 
 private:
-	mutable lsl_xml_ptr obj;
+	lsl_xml_ptr obj;
 };
 
-inline xml_element stream_info::desc() { return lsl_get_desc(obj); }
+inline xml_element stream_info::desc() { return lsl_get_desc(obj.get()); }
 
 
 // =============================
@@ -1770,7 +1617,7 @@ public:
 	 * shut down), this is the time in seconds after which it is no longer reported by the resolver.
 	 */
 	continuous_resolver(double forget_after = 5.0)
-		: obj(lsl_create_continuous_resolver(forget_after)) {}
+		: obj(lsl_create_continuous_resolver(forget_after), &lsl_destroy_continuous_resolver) {}
 
 	/**
 	 * Construct a new continuous_resolver that resolves all streams with a specific value for a
@@ -1786,8 +1633,8 @@ public:
 	 */
 	continuous_resolver(
 		const std::string &prop, const std::string &value, double forget_after = 5.0)
-		: obj(lsl_create_continuous_resolver_byprop(
-			  (prop.c_str()), (value.c_str()), forget_after)) {}
+		: obj(lsl_create_continuous_resolver_byprop((prop.c_str()), (value.c_str()), forget_after),
+			  &lsl_destroy_continuous_resolver) {}
 
 	/**
 	 * Construct a new continuous_resolver that resolves all streams that match a given XPath 1.0
@@ -1801,7 +1648,7 @@ public:
 	 * shut down), this is the time in seconds after which it is no longer reported by the resolver.
 	 */
 	continuous_resolver(const std::string &pred, double forget_after = 5.0)
-		: obj(lsl_create_continuous_resolver_bypred((pred.c_str()), forget_after)) {}
+		: obj(lsl_create_continuous_resolver_bypred((pred.c_str()), forget_after), &lsl_destroy_continuous_resolver) {}
 
 	/**
 	 * Obtain the set of currently present streams on the network (i.e. resolve result).
@@ -1811,26 +1658,15 @@ public:
 	std::vector<stream_info> results() {
 		lsl_streaminfo buffer[1024];
 		return std::vector<stream_info>(
-			&buffer[0], &buffer[lsl_resolver_results(obj, buffer, sizeof(buffer))]);
+			buffer, buffer + lsl_resolver_results(obj.get(), buffer, sizeof(buffer)));
 	}
 
-	/// Destructor.
-	~continuous_resolver() {
-		if (obj) lsl_destroy_continuous_resolver(obj);
-	}
-
-#if LSL_CPP11
 	/// Move constructor for stream_inlet
-	continuous_resolver(continuous_resolver &&rhs) noexcept : obj(rhs.obj) { rhs.obj = nullptr; }
-	continuous_resolver &operator=(continuous_resolver &&rhs) noexcept {
-		obj = rhs.obj;
-		rhs.obj = nullptr;
-		return *this;
-	}
-#endif
+	continuous_resolver(continuous_resolver &&rhs) noexcept = default;
+	continuous_resolver &operator=(continuous_resolver &&rhs) noexcept = default;
 
 private:
-	lsl_continuous_resolver obj;
+	std::unique_ptr<lsl_continuous_resolver_, void(*)(lsl_continuous_resolver_*)> obj;
 };
 
 

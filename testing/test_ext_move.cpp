@@ -61,6 +61,12 @@ TEST_CASE("move C++ API types", "[move][basic]") {
 	// be there any more
 	found_stream_info = lsl::resolve_stream("name", "movetest", 1, 2.0);
 	REQUIRE(found_stream_info.empty());
+
+	// stream_info copies are cheap, for independent copies clone() has to be used
+	lsl::stream_info copy1(info), copy2(info), clone(info.clone());
+	copy1.desc().append_child("Dummy");
+	REQUIRE(copy2.desc().first_child().name() == std::string("Dummy"));
+	REQUIRE(clone.desc().first_child().empty());
 }
 
 } // namespace
