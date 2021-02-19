@@ -51,8 +51,11 @@ const double DEDUCED_TIMESTAMP = -1.0;
 /// Constant to indicate that a stream has variable sampling rate.
 const double IRREGULAR_RATE = 0.0;
 
+/// Obtain a local system time stamp in nanoseconds.
+int64_t lsl_local_clock_ns();
+
 /// Obtain a local system time stamp in seconds.
-double lsl_clock();
+inline double lsl_clock() { return lsl_local_clock(); }
 
 /// Ensure that LSL is initialized.
 void ensure_lsl_initialized();

@@ -14,6 +14,10 @@
 
 thread_local char last_error[512] = {0};
 
+int64_t lsl::lsl_local_clock_ns() {
+	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
 extern "C" {
 
 LIBLSL_C_API int32_t lsl_protocol_version() {
@@ -22,13 +26,9 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
-int64_t lsl_local_clock_ns() {
-	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
-}
-
 LIBLSL_C_API double lsl_local_clock() {
 	const auto ns_per_s = 1000000000;
-	const auto seconds_since_epoch = std::lldiv(lsl_local_clock_ns(), ns_per_s);
+	const auto seconds_since_epoch = std::lldiv(lsl::lsl_local_clock_ns(), ns_per_s);
 	/* For large timestamps, converting to double and then dividing by 1e9 loses precision
 	   because double has only 53 bits of precision.
 	   So we calculate everything we can as integer and only cast to double at the end */
@@ -43,7 +43,6 @@ LIBLSL_C_API const char *lsl_last_error(void) { return last_error; }
 }
 
 // === implementation of misc functions ===
-double lsl::lsl_clock() { return lsl_local_clock(); }
 
 void lsl::ensure_lsl_initialized() {
 	static bool is_initialized = false;
