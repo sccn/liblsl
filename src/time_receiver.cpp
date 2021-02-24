@@ -9,7 +9,7 @@
 const double NOT_ASSIGNED = std::numeric_limits<double>::max();
 
 using namespace lsl;
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
 using err_t = const lslboost::system::error_code &;
 
 time_receiver::time_receiver(inlet_connection &conn)
@@ -113,7 +113,7 @@ void time_receiver::start_time_estimation() {
 	// schedule the next estimation step
 	next_estimate_.expires_after(timeout_sec(cfg_->time_update_interval()));
 	next_estimate_.async_wait([this](err_t err) {
-		if (err != error::operation_aborted) start_time_estimation();
+		if (err != asio::error::operation_aborted) start_time_estimation();
 	});
 }
 
@@ -170,7 +170,7 @@ void time_receiver::handle_receive_outcome(error_code err, std::size_t len) {
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Error while processing a time estimation return packet: %s", e.what());
 	}
-	if (err != error::operation_aborted) receive_next_packet();
+	if (err != asio::error::operation_aborted) receive_next_packet();
 }
 
 void time_receiver::result_aggregation_scheduled(error_code err) {

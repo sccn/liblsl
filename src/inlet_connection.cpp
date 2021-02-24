@@ -4,7 +4,8 @@
 #include <sstream>
 
 using namespace lsl;
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
+namespace ip = asio::ip;
 
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
@@ -110,7 +111,7 @@ ip::address resolve_v6_addr(const std::string &addr) {
 
 	// This more complicated procedure is required when the address is an ipv6 link-local address.
 	// Simplified from https://stackoverflow.com/a/10303761/73299
-	io_context io;
+	asio::io_context io;
 	auto res = ip::tcp::resolver(io).resolve(addr, "");
 	if (res.empty()) throw lost_error("Unable to resolve tcp stream at address: " + addr);
 	return res.begin()->endpoint().address();

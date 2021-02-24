@@ -6,10 +6,10 @@
 #include <sstream>
 
 using namespace lsl;
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
 using err_t = const lslboost::system::error_code &;
 
-resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
+resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protocol,
 	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
 	std::mutex &results_mut, double cancel_after, cancellable_registry *registry)
 	: io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after),
@@ -28,14 +28,14 @@ resolve_attempt_udp::resolve_attempt_udp(io_context &io, const udp &protocol,
 	unicast_socket_.open(protocol);
 	try {
 		broadcast_socket_.open(protocol);
-		broadcast_socket_.set_option(socket_base::broadcast(true));
+		broadcast_socket_.set_option(asio::socket_base::broadcast(true));
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Cannot open UDP broadcast socket for resolves: %s", e.what());
 	}
 	try {
 		multicast_socket_.open(protocol);
 		multicast_socket_.set_option(
-			ip::multicast::hops(api_config::get_instance()->multicast_ttl()));
+			asio::ip::multicast::hops(api_config::get_instance()->multicast_ttl()));
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Cannot open UDP multicast socket for resolves: %s", e.what());
 	}
@@ -87,14 +87,14 @@ void resolve_attempt_udp::cancel() {
 // === receive loop ===
 
 void resolve_attempt_udp::receive_next_result() {
-	recv_socket_.async_receive_from(buffer(resultbuf_), remote_endpoint_,
+	recv_socket_.async_receive_from(asio::buffer(resultbuf_), remote_endpoint_,
 		[shared_this = shared_from_this()](
 			err_t err, size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
 
 void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len) {
-	if (cancelled_ || err == error::operation_aborted || err == error::not_connected ||
-		err == error::not_socket)
+	if (cancelled_ || err == asio::error::operation_aborted || err == asio::error::not_connected ||
+		err == asio::error::not_socket)
 		return;
 
 	if (!err) {
@@ -150,14 +150,14 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
 	if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
 		// select socket to use
 		udp::socket &sock =
-			(ep.address() == ip::address_v4::broadcast())
+			(ep.address() == asio::ip::address_v4::broadcast())
 				? broadcast_socket_
 				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 		// and send the query over it
 		sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
 			[shared_this = shared_from_this(), next](err_t err, size_t) {
-				if (!shared_this->cancelled_ && err != error::operation_aborted &&
-					err != error::not_connected && err != error::not_socket)
+				if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
+					err != asio::error::not_connected && err != asio::error::not_socket)
 					shared_this->send_next_query(next);
 			});
 	} else

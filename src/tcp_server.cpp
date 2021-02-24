@@ -23,7 +23,7 @@
 #define NO_EXPLICIT_TEMPLATE_INSTANTIATION
 #include "portable_archive/portable_oarchive.hpp"
 
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
 using err_t = const lslboost::system::error_code &;
 
 namespace lsl {
@@ -158,7 +158,7 @@ tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->uid(lslboost::uuids::to_string(lslboost::uuids::random_generator()()));
 	info_->created_at(lsl_clock());
-	info_->hostname(ip::host_name());
+	info_->hostname(asio::ip::host_name());
 	if (protocol == tcp::v4())
 		info_->v4data_port(port);
 	else
@@ -200,7 +200,7 @@ void tcp_server::accept_next_connection() {
 			std::make_shared<client_session>(shared_from_this())};
 		// accept a connection on the session's socket
 		acceptor_->async_accept(
-			*newsession->socket(), [shared_this = shared_from_this(), newsession, this](err_t err) {
+			*newsession->socket(), [shared_this = shared_from_this(), newsession](err_t err) {
 				shared_this->handle_accept_outcome(newsession, err);
 			});
 	} catch (std::exception &e) {
@@ -209,7 +209,7 @@ void tcp_server::accept_next_connection() {
 }
 
 void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsession, error_code err) {
-	if (err == error::operation_aborted || err == error::shut_down || shutdown_) return;
+	if (err == asio::error::operation_aborted || err == asio::error::shut_down || shutdown_) return;
 
 	// no error: start processing the new connection
 	if (!err) newsession->begin_processing();

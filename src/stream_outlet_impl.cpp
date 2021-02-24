@@ -7,7 +7,7 @@
 #include <memory>
 #include <sstream>
 
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
 
 namespace lsl {
 
@@ -69,17 +69,17 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
 	// create TCP data server
-	ios_.push_back(std::make_shared<io_context>());
+	ios_.push_back(std::make_shared<asio::io_context>());
 	tcp_servers_.push_back(std::make_shared<tcp_server>(
 		info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_));
 	// create UDP time server
-	ios_.push_back(std::make_shared<io_context>());
+	ios_.push_back(std::make_shared<asio::io_context>());
 	udp_servers_.push_back(std::make_shared<udp_server>(info_, *ios_.back(), udp_protocol));
 	// create UDP multicast responders
 	for (const auto &mcastaddr : cfg->multicast_addresses()) {
 		try {
 			// use only addresses for the protocol that we're supposed to use here
-			ip::address address(ip::make_address(mcastaddr));
+			auto address = asio::ip::make_address(mcastaddr);
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
 				responders_.push_back(std::make_shared<udp_server>(
 					info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address));

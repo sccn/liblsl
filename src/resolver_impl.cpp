@@ -10,12 +10,13 @@
 // === implementation of the resolver_impl class ===
 
 using namespace lsl;
-using namespace lslboost::asio;
+namespace asio = lslboost::asio;
+namespace ip = asio::ip;
 using err_t = const lslboost::system::error_code &;
 
 resolver_impl::resolver_impl()
 	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
-	  fast_mode_(true), io_(std::make_shared<io_context>()), resolve_timeout_expired_(*io_),
+	  fast_mode_(true), io_(std::make_shared<asio::io_context>()), resolve_timeout_expired_(*io_),
 	  wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
 	uint16_t mcast_port = cfg_->multicast_port();
@@ -101,7 +102,7 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
 	if (timeout != FOREVER) {
 		resolve_timeout_expired_.expires_after(timeout_sec(timeout));
 		resolve_timeout_expired_.async_wait([this](err_t err) {
-			if (err != error::operation_aborted) cancel_ongoing_resolve();
+			if (err != asio::error::operation_aborted) cancel_ongoing_resolve();
 		});
 	}
 
@@ -179,7 +180,7 @@ void resolver_impl::next_resolve_wave() {
 		}
 		wave_timer_.expires_after(timeout_sec(wave_timer_timeout));
 		wave_timer_.async_wait([this](err_t err) {
-			if (err != error::operation_aborted) next_resolve_wave();
+			if (err != asio::error::operation_aborted) next_resolve_wave();
 		});
 	}
 }
@@ -203,7 +204,7 @@ void resolver_impl::udp_multicast_burst() {
 }
 
 void resolver_impl::udp_unicast_burst(error_code err) {
-	if (err == error::operation_aborted) return;
+	if (err == asio::error::operation_aborted) return;
 
 	int failures = 0;
 	// start one per IP stack under consideration
