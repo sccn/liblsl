@@ -89,7 +89,7 @@ endfunction()
 # specified, e.g. 	installLSLApp(FooApp libXY libZ)
 function(installLSLApp target)
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
-	string(REGEX MATCH ";Qt5::" qtapp ";${TARGET_LIBRARIES}")
+	string(REGEX MATCH ";Qt\\d?::" qtapp ";${TARGET_LIBRARIES}")
 	if(qtapp)
 		# Enable automatic compilation of .cpp->.moc, xy.ui->ui_xy.h and resource files
 		set_target_properties(${target} PROPERTIES
@@ -210,7 +210,7 @@ function(installLSLApp target)
 			message(STATUS \"qml directory: \${qml_dir}\")
 			execute_process(
 				COMMAND \"${QT_DEPLOYQT_EXECUTABLE}\"
-				\$<\$<BOOL:\${qml_dir}>:--qmldir \${qml_dir}>
+				\$<\$<BOOL:\${qml_dir}>:--qmldir \"\${qml_dir}\">
 				--no-translations
 				--no-system-d3d-compiler --no-opengl-sw
 				--no-compiler-runtime --dry-run --list mapping
@@ -255,7 +255,7 @@ function(findQtInstallationTool qtdeploytoolname)
 	if(QT_DEPLOYQT_EXECUTABLE)
 		return()
 	endif()
-	get_target_property(QT_QMAKE_EXE Qt5::qmake IMPORTED_LOCATION)
+	get_target_property(QT_QMAKE_EXE Qt::qmake IMPORTED_LOCATION)
 	get_filename_component(QT_BIN_DIR "${QT_QMAKE_EXE}" DIRECTORY)
 	find_program (QT_DEPLOYQT_EXECUTABLE ${qtdeploytoolname} HINTS "${QT_BIN_DIR}")
 	if (QT_DEPLOYQT_EXECUTABLE)
