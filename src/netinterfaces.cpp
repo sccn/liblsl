@@ -73,7 +73,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 	delete[]((char *)ifaddrs);
 	return ret;
 }
-#elif defined(__APPLE__) || defined(__linux__)
+#elif defined(__APPLE__) || defined(__linux__) && (!defined(__ANDROID_API__) || __ANDROID_API__ >= 24)
 #include <ifaddrs.h>
 #include <net/if.h>
 
@@ -116,7 +116,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 #else
 
 std::vector<lsl::netif> get_interface_addresses() {
-	LOG_F(WARN, "No implementation to enumerate network interfaces found.");
+	LOG_F(WARNING, "No implementation to enumerate network interfaces found.");
 	return std::vector<lsl::netif>();
 }
 #endif
