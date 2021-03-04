@@ -56,6 +56,7 @@ if(LSL_BENCHMARKS)
 		bench_int_sleep.cpp
 	)
 	target_link_libraries(lsl_bench_internal PRIVATE lslobj lslboost catch_main)
+	target_include_directories(lsl_test_internal PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src/)
 	installLSLApp(lsl_bench_internal)
 endif()
 

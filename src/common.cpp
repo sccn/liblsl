@@ -1,17 +1,25 @@
 #include "common.h"
 #include "api_config.h"
 #include <algorithm>
+#include <cstdlib>
 #include <cctype>
 #include <chrono>
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#error "MSVC 2013's std::chrono isn't supported. Please upgrade to VS2015 or later"
+#endif
 #include <windows.h>
 // include mmsystem.h after windows.h
 #include <mmsystem.h>
 #endif
 
 thread_local char last_error[512] = {0};
+
+int64_t lsl::lsl_local_clock_ns() {
+	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
 
 extern "C" {
 
@@ -22,9 +30,12 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
 LIBLSL_C_API double lsl_local_clock() {
-	return std::chrono::nanoseconds(std::chrono::high_resolution_clock::now().time_since_epoch())
-			   .count() /
-		   1000000000.0;
+	const auto ns_per_s = 1000000000;
+	const auto seconds_since_epoch = std::lldiv(lsl::lsl_local_clock_ns(), ns_per_s);
+	/* For large timestamps, converting to double and then dividing by 1e9 loses precision
+	   because double has only 53 bits of precision.
+	   So we calculate everything we can as integer and only cast to double at the end */
+	return seconds_since_epoch.quot + static_cast<double>(seconds_since_epoch.rem) / ns_per_s;
 }
 
 LIBLSL_C_API void lsl_destroy_string(char *s) {
@@ -35,7 +46,6 @@ LIBLSL_C_API const char *lsl_last_error(void) { return last_error; }
 }
 
 // === implementation of misc functions ===
-double lsl::lsl_clock() { return lsl_local_clock(); }
 
 void lsl::ensure_lsl_initialized() {
 	static bool is_initialized = false;
