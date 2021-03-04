@@ -7,6 +7,9 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#if defined(_MSC_VER) && _MSC_VER < 1900
+#error "MSVC 2013's std::chrono isn't supported. Please upgrade to VS2015 or later"
+#endif
 #include <windows.h>
 // include mmsystem.h after windows.h
 #include <mmsystem.h>
