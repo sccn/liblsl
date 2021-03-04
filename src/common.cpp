@@ -43,7 +43,6 @@ void lsl::ensure_lsl_initialized() {
 	if (!is_initialized) {
 		is_initialized = true;
 
-		loguru::g_stderr_verbosity = loguru::Verbosity_INFO;
 #if LOGURU_DEBUG_LOGGING
 		// Initialize loguru, mainly to print stacktraces on segmentation faults
 		int argc = 1;

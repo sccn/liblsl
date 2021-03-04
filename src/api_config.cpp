@@ -78,7 +78,6 @@ void api_config::load_from_file(const std::string &filename) {
 		if (!filename.empty()) {
 			std::ifstream infile(filename);
 			if (infile.good()) {
-				LOG_F(INFO, "Loading configuration from %s", filename.c_str());
 				pt.load(infile);
 			}
 		}
@@ -222,6 +221,9 @@ void api_config::load_from_file(const std::string &filename) {
 		} else
 			loguru::g_stderr_verbosity = log_level;
 
+        // log config filename only after setting the verbosity level
+		LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
+
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
 			filename.c_str(), e.what());
@@ -230,6 +232,7 @@ void api_config::load_from_file(const std::string &filename) {
 		// and rethrow
 		throw e;
 	}
+
 }
 
 static std::once_flag api_config_once_flag;
