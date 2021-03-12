@@ -55,7 +55,11 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 	try {
 		std::string tmp = info->to_fullinfo_message();
 		char *result = (char *)malloc(tmp.size() + 1);
-		strcpy(result, tmp.c_str());
+		if (result == nullptr) {
+			LOG_F(ERROR, "Error allocating memory for xmlinfo");
+			return nullptr;
+		}
+		memcpy(result, tmp.c_str(), tmp.size());
 		return result;
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_xml: %s", e.what());
