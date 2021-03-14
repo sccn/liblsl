@@ -24,7 +24,7 @@ TEST_CASE("consumer_queue", "[queue][basic]") {
 }
 
 TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
-	const int size = 100000;
+	const unsigned int size = 100000;
 	lsl::factory fac(lsl_channel_format_t::cft_int8, 4, 1);
 	auto sample = fac.new_sample(0.0, true);
 	lsl::consumer_queue queue(size);

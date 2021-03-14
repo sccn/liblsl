@@ -60,7 +60,7 @@ public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv)
 		: io_(serv->io_), serv_(serv), sock_(std::make_shared<tcp::socket>(*serv->io_)),
-		  requeststream_(&requestbuf_), data_protocol_version_(100) {}
+		  requeststream_(&requestbuf_) {}
 
 	/// Destructor. Unregisters the session from the server.
 	~client_session();
@@ -121,14 +121,14 @@ private:
 	/// scratchpad memory (e.g., for endianness conversion)
 	char *scratch_{nullptr};
 	/// protocol version to use for transmission
-	int data_protocol_version_;
+	int data_protocol_version_{100};
 	/// byte order to use (0=portable, 1234=little endian, 4321=big endian, 2134=PDP endian,
 	/// unsupported)
-	int use_byte_order_{0};
+	int use_byte_order_{BOOST_BYTE_ORDER};
 	/// our chunk granularity
-	int chunk_granularity_;
+	int chunk_granularity_{0};
 	/// maximum number of samples buffered
-	int max_buffered_;
+	int max_buffered_{0};
 
 	// data exchanged between the transfer completion handler and the transfer thread
 	/// whether the current transfer has finished (possibly with an error)

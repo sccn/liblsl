@@ -78,7 +78,7 @@ private:
 	udp_socket_p socket_;
 
 	/// a buffer of data (we're receiving on it)
-	char buffer_[65536];
+	char buffer_[65536]{0};
 	bool time_services_enabled_;
 	/// the endpoint that we're currently talking to)
 	udp::endpoint remote_endpoint_;

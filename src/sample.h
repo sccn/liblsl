@@ -112,9 +112,9 @@ class sample {
 public:
 	friend class factory;
 	/// time-stamp of the sample
-	double timestamp;
+	double timestamp{0.0};
 	/// whether the sample shall be buffered or pushed through
-	bool pushthrough;
+	bool pushthrough{false};
 
 private:
 	/// the channel format
@@ -128,7 +128,7 @@ private:
 	/// the factory used to reclaim this sample, if any
 	factory *factory_;
 	/// the data payload begins here
-	alignas(8) char data_;
+	alignas(8) char data_{0};
 
 public:
 	// === Construction ===
@@ -154,7 +154,7 @@ public:
 	/// Test for equality with another sample.
 	bool operator==(const sample &rhs) const noexcept;
 
-	std::size_t datasize() const { return format_sizes[format_] * num_channels_; }
+	std::size_t datasize() const { return format_sizes[format_] * static_cast<std::size_t>(num_channels_); }
 
 	// === type-safe accessors ===
 

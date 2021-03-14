@@ -109,7 +109,7 @@ private:
 	/// an IO service for async time operations
 	lslboost::asio::io_context time_io_;
 	/// a buffer to hold inbound packet contents
-	char recv_buffer_[16384];
+	char recv_buffer_[16384]{0};
 	/// the socket through which the time thread communicates
 	udp::socket time_sock_;
 	/// schedule the next time estimate
@@ -125,7 +125,7 @@ private:
 	/// a vector of the local time and the remote time at a given estimate
 	estimate_list estimate_times_;
 	/// an id for the current wave of time packets
-	int current_wave_id_;
+	int current_wave_id_{0};
 };
 } // namespace lsl
 

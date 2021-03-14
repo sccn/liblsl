@@ -10,11 +10,11 @@
 
 struct Testclass {
 	std::string teststr;
-	double testdouble;
-	uint64_t testbigint;
-	int32_t negativeint, testint;
 	std::unique_ptr<lsl::sample> s1 = nullptr, s2 = nullptr;
-	char testchar;
+	double testdouble{0};
+	uint64_t testbigint{0};
+	int32_t negativeint{0}, testint{0};
+	char testchar{0};
 	template <typename Archive> void serialize(Archive &a, const uint32_t) {
 		a &testchar &testint &negativeint &testbigint &testdouble &teststr &*s1 &*s2;
 	}

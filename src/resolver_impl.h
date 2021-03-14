@@ -155,12 +155,12 @@ private:
 	/// our current query string
 	std::string query_;
 	/// the minimum number of results that we want
-	int minimum_;
+	int minimum_{0};
 	/// forget results that are older than this (continuous operation only)
 	double forget_after_;
 	/// wait until this point in time before returning results (optional to allow for returning
 	/// potentially more than a minimum number of results)
-	double wait_until_;
+	double wait_until_{0};
 	/// whether this is a fast resolve: determines the rate at which the query is repeated
 	bool fast_mode_;
 	/// results are stored here
