@@ -99,8 +99,8 @@ add_library(lslobj OBJECT
 if(LSL_BUNDLED_PUGIXML)
 	message(STATUS "Using bundled pugixml")
 	target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
-	target_include_directories(lslobj
-		PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
+	target_include_directories(lslobj SYSTEM PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
 else()
 	message(STATUS "Using system pugixml")
 	find_package(pugixml REQUIRED)
@@ -169,7 +169,7 @@ target_compile_definitions(lslboost
 	PRIVATE
 		$<$<PLATFORM_ID:Windows>:BOOST_THREAD_BUILD_DLL>
 )
-target_include_directories(lslboost PUBLIC
+target_include_directories(lslboost SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 
@@ -184,6 +184,8 @@ target_link_libraries(lslobj
 	)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	)
+target_include_directories(lslobj SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
 )
 target_compile_definitions(lslobj
