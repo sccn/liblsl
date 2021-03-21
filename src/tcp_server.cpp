@@ -468,18 +468,17 @@ void client_session::handle_read_feedparams(
 		}
 
 		// send test pattern samples
-		std::unique_ptr<sample> temp(factory::new_sample_unmanaged(
-			serv_->info_->channel_format(), serv_->info_->channel_count(), 0.0, false));
-		temp->assign_test_pattern(4);
-		if (data_protocol_version_ >= 110)
-			temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
-		else
-			*outarch_ << *temp;
-		temp->assign_test_pattern(2);
-		if (data_protocol_version_ >= 110)
-			temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
-		else
-			*outarch_ << *temp;
+		lsl::factory fac(serv_->info_->channel_format(), serv_->info_->channel_count(), 4);
+
+		for (int test_pattern : {4, 2}) {
+			lsl::sample_p temp(fac.new_sample(0.0, false));
+			temp->assign_test_pattern(test_pattern);
+			if (data_protocol_version_ >= 110)
+				temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
+			else
+				*outarch_ << *temp;
+		}
+
 		// send off the newly created feedheader
 		async_write(
 			*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {

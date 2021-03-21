@@ -8,13 +8,16 @@
 #include "portable_archive/portable_iarchive.hpp"
 #include "portable_archive/portable_oarchive.hpp"
 
+static lsl::factory doublefac{cft_double64, 4, 1}, strfac{cft_string, 4, 1};
+
 struct Testclass {
 	std::string teststr;
-	std::unique_ptr<lsl::sample> s1 = nullptr, s2 = nullptr;
 	double testdouble{0};
 	uint64_t testbigint{0};
 	int32_t negativeint{0}, testint{0};
+	lsl::sample_p s1, s2;
 	char testchar{0};
+
 	template <typename Archive> void serialize(Archive &a, const uint32_t) {
 		a &testchar &testint &negativeint &testbigint &testdouble &teststr &*s1 &*s2;
 	}
@@ -25,12 +28,11 @@ struct Testclass {
 		const_cast<Testclass *>(this)->serialize(a, archive_version);
 	}
 
-	Testclass(): s1(lsl::factory::new_sample_unmanaged(cft_double64, 4, 0.0, false)),
-		s2(lsl::factory::new_sample_unmanaged(cft_string, 4, 0.0, false)) {}
+	Testclass() : s1(doublefac.new_sample(0.0, false)), s2(strfac.new_sample(0.0, false)) {}
 	Testclass(bool /*dummy*/)
 		: teststr("String\x00with\x00nulls"), testdouble(17.3), testbigint(0xff), negativeint(-1),
-		  testint(0x00abcdef), s1(lsl::factory::new_sample_unmanaged(cft_double64, 4, 17.3, true)),
-		  s2(lsl::factory::new_sample_unmanaged(cft_string, 4, 18.3, true)), testchar('a') {
+		  testint(0x00abcdef), s1(doublefac.new_sample(17.3, true)),
+		  s2(strfac.new_sample(18.3, true)), testchar('a') {
 		s1->assign_test_pattern(2);
 		s2->assign_test_pattern(4);
 	}
@@ -101,10 +103,8 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		REQUIRE(in1.testint == out1.testint);
 		REQUIRE(in1.teststr == out1.teststr);
 
-		if(!(*in1.s1 == *out1.s1))
-			FAIL("Sample 1 serialization mismatch");
-		if(!(*in1.s2 == *out1.s2))
-			FAIL("Sample 2 serialization mismatch");
+		if (*in1.s1 != *out1.s1) FAIL("Sample 1 serialization mismatch");
+		if (*in1.s2 != *out1.s2) FAIL("Sample 2 serialization mismatch");
 	} catch (std::exception &e) { FAIL(e.what()); }
 }
 

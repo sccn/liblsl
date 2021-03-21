@@ -153,6 +153,7 @@ public:
 
 	/// Test for equality with another sample.
 	bool operator==(const sample &rhs) const noexcept;
+	bool operator!=(const sample &rhs) const noexcept { return !(*this == rhs); }
 
 	std::size_t datasize() const { return format_sizes[format_] * static_cast<std::size_t>(num_channels_); }
 

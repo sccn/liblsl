@@ -1,7 +1,7 @@
-#include "cast.h"
 #include "data_receiver.h"
 #include "api_config.h"
 #include "cancellable_streambuf.h"
+#include "cast.h"
 #include "inlet_connection.h"
 #include "sample.h"
 #include "socket_utils.h"
@@ -272,27 +272,24 @@ void data_receiver::data_thread() {
 				{
 					// receive and parse two subsequent test-pattern samples and check if they are
 					// formatted as expected
-					std::unique_ptr<sample> temp[4];
-					for (int k = 0; k < 4; temp[k++].reset(
-							 factory::new_sample_unmanaged(conn_.type_info().channel_format(),
-								 conn_.type_info().channel_count(), 0.0, false)))
-						;
-					temp[0]->assign_test_pattern(4);
-					if (data_protocol_version >= 110)
-						temp[1]->load_streambuf(
-							buffer, data_protocol_version, use_byte_order, suppress_subnormals);
-					else
-						*inarch >> *temp[1];
-					temp[2]->assign_test_pattern(2);
-					if (data_protocol_version >= 110)
-						temp[3]->load_streambuf(
-							buffer, data_protocol_version, use_byte_order, suppress_subnormals);
-					else
-						*inarch >> *temp[3];
-					if (!(*temp[0].get() == *temp[1].get()) || !(*temp[2].get() == *temp[3].get()))
-						throw std::runtime_error(
-							"The received test-pattern samples do not match the specification. The "
-							"protocol formats are likely incompatible.");
+					lsl::factory fac(
+						conn_.type_info().channel_format(), conn_.type_info().channel_count(), 4);
+
+					for (int test_pattern : {4, 2}) {
+						lsl::sample_p expected(fac.new_sample(0.0, false)),
+							received(fac.new_sample(0.0, false));
+						expected->assign_test_pattern(test_pattern);
+						if (data_protocol_version >= 110)
+							received->load_streambuf(
+								buffer, data_protocol_version, use_byte_order, suppress_subnormals);
+						else
+							*inarch >> *received;
+
+						if (*expected.get() != *received.get())
+							throw std::runtime_error(
+								"The received test-pattern samples do not match the specification."
+								" The protocol formats are likely incompatible.");
+					}
 				}
 
 				// signal to accessor functions on other threads that the protocol negotiation has
