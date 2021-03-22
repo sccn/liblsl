@@ -116,7 +116,7 @@ LIBLSL_C_API double lsl_pull_sample_str(
 				if (ec) *ec = lsl_internal_error;
 				return 0.0;
 			}
-			strcpy(buffer[k], tmp[k].c_str());
+			memcpy(buffer[k], tmp[k].c_str(), tmp[k].size());
 		}
 		return result;
 	} LSL_STORE_EXCEPTION_IN(ec)
@@ -218,7 +218,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 					if (ec) *ec = lsl_internal_error;
 					return 0;
 				}
-				strcpy(data_buffer[k], tmp[k].c_str());
+				memcpy(data_buffer[k], tmp[k].c_str(), tmp[k].size());
 			}
 			return result;
 		} else
@@ -246,7 +246,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 					return 0;
 				}
 				lengths_buffer[k] = (uint32_t)tmp[k].size();
-				strcpy(data_buffer[k], tmp[k].c_str());
+				memcpy(data_buffer[k], tmp[k].c_str(), tmp[k].size());
 			}
 			return result;
 		} else
