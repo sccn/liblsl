@@ -15,7 +15,6 @@ void sample::operator delete(void *x) noexcept {
 	if(x == nullptr) return;
 
 	lsl::factory *factory = reinterpret_cast<sample *>(x)->factory_;
-	if (factory == nullptr) return;
 
 	// delete the underlying memory only if it wasn't allocated in the factory's storage area
 	if (x < factory->storage_ || x >= factory->storage_ + factory->storage_size_)
@@ -358,14 +357,16 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 	: fmt_(fmt), num_chans_(num_chans),
 	  sample_size_(
 		  ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
-	  storage_size_(sample_size_ * std::max(1u, num_reserve)), storage_(new char[storage_size_]),
-	  sentinel_(new_sample_unmanaged(fmt, num_chans, 0.0, false)), head_(sentinel_),
-	  tail_(sentinel_) {
+	  storage_size_(sample_size_ * std::max(1u, num_reserve)),
+	  storage_(new char[storage_size_ + sample_size_]), // +1 sample for the sentinel
+	  sentinel_(new(reinterpret_cast<sample*>(storage_ + storage_size_)) sample(fmt, num_chans, this)),
+	  head_(sentinel_), tail_(sentinel_)
+	  {
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	sample *s = nullptr;
-	for (char const *p = storage_, *e = p + storage_size_; p < e;) {
+	for (char *p = storage_, *e = p + storage_size_; p < e;) {
 #pragma warning(suppress : 4291)
-		s = new ((sample *)p) sample(fmt, num_chans, this);
+		s = new (reinterpret_cast<sample *>(p)) sample(fmt, num_chans, this);
 		s->next_ = (sample *)(p += sample_size_);
 	}
 	s->next_ = nullptr;
@@ -381,17 +382,6 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	result->timestamp = timestamp;
 	result->pushthrough = pushthrough;
 	return sample_p(result);
-}
-
-sample *factory::new_sample_unmanaged(
-	lsl_channel_format_t fmt, uint32_t num_chans, double timestamp, bool pushthrough) {
-#pragma warning(suppress : 4291)
-	sample *result = new (new char[ensure_multiple(
-		sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)])
-		sample(fmt, num_chans, nullptr);
-	result->timestamp = timestamp;
-	result->pushthrough = pushthrough;
-	return result;
 }
 
 sample *factory::pop_freelist() {
@@ -420,7 +410,6 @@ sample *factory::pop_freelist() {
 factory::~factory() {
 	if (sample *cur = head_)
 		for (sample *next = cur->next_; next; cur = next, next = next->next_) delete cur;
-	delete sentinel_;
 	delete[] storage_;
 }
 

@@ -71,10 +71,6 @@ public:
 	/// Reclaim a sample that's no longer used.
 	void reclaim_sample(sample *s);
 
-	/// Create a new sample whose memory is not managed by the factory.
-	static sample *new_sample_unmanaged(
-		lsl_channel_format_t fmt, uint32_t num_chans, double timestamp, bool pushthrough);
-
 private:
 	/// ensure that a given value is a multiple of some base, round up if necessary
 	static uint32_t ensure_multiple(uint32_t v, unsigned base) {
