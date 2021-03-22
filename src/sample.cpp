@@ -346,7 +346,7 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 	  tail_(sentinel_) {
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	sample *s = nullptr;
-	for (char *p = storage_, *e = p + storage_size_; p < e;) {
+	for (char const *p = storage_, *e = p + storage_size_; p < e;) {
 #pragma warning(suppress : 4291)
 		s = new ((sample *)p) sample(fmt, num_chans, this);
 		s->next_ = (sample *)(p += sample_size_);

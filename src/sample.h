@@ -86,15 +86,15 @@ private:
 
 	friend class sample;
 	/// the channel format to construct samples with
-	lsl_channel_format_t fmt_;
+	const lsl_channel_format_t fmt_;
 	/// the number of channels to construct samples with
 	const uint32_t num_chans_;
 	/// size of a sample, in bytes
 	const uint32_t sample_size_;
 	/// size of the allocated storage, in bytes
-	uint32_t storage_size_;
+	const uint32_t storage_size_;
 	/// a slab of storage for pre-allocated samples
-	char *storage_;
+	char *const storage_;
 	/// a sentinel element for our freelist
 	sample *sentinel_;
 	/// head of the freelist
@@ -118,9 +118,9 @@ public:
 
 private:
 	/// the channel format
-	lsl_channel_format_t format_;
+	const lsl_channel_format_t format_;
 	/// number of channels
-	uint32_t num_channels_;
+	const uint32_t num_channels_;
 	/// reference count used by sample_p
 	std::atomic<int> refcount_;
 	/// linked list of samples, for use in a freelist
