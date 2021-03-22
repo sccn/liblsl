@@ -5,6 +5,23 @@
 
 using namespace lsl;
 
+sample::~sample() noexcept{
+	if (format_ != cft_string) return;
+	for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e; ++p)
+		p->~basic_string<char>();
+}
+
+void sample::operator delete(void *x) noexcept {
+	if(x == nullptr) return;
+
+	lsl::factory *factory = reinterpret_cast<sample *>(x)->factory_;
+	if (factory == nullptr) return;
+
+	// delete the underlying memory only if it wasn't allocated in the factory's storage area
+	if (x < factory->storage_ || x >= factory->storage_ + factory->storage_size_)
+		delete[](char *) x;
+}
+
 bool sample::operator==(const sample &rhs) const noexcept {
 	if ((timestamp != rhs.timestamp) || (format_ != rhs.format_) ||
 		(num_channels_ != rhs.num_channels_))

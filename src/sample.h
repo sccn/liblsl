@@ -134,22 +134,10 @@ public:
 	// === Construction ===
 
 	/// Destructor for a sample.
-	~sample() {
-		if (format_ == cft_string)
-			for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e;
-				 (p++)->~basic_string<char>())
-				;
-	}
+	~sample() noexcept;
 
 	/// Delete a sample.
-	void operator delete(void *x) {
-		// delete the underlying memory only if it wasn't allocated in the factory's storage area
-		sample *s = (sample *)x;
-		if (s && !(s->factory_ &&
-					 (((char *)s) >= s->factory_->storage_ &&
-						 ((char *)s) <= s->factory_->storage_ + s->factory_->storage_size_)))
-			delete[](char *) x;
-	}
+	void operator delete(void *x) noexcept;
 
 	/// Test for equality with another sample.
 	bool operator==(const sample &rhs) const noexcept;
