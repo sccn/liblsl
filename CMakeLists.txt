@@ -7,23 +7,29 @@ project (liblsl
 	)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
-set(CMAKE_POSITION_INDEPENDENT_CODE On)
 if(NOT MSVC_VERSION VERSION_LESS 1700)
 	set(CMAKE_CXX_STANDARD 14)
 endif()
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(LSL_LIB_TYPE SHARED)
 
 option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" OFF)
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
 option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF)
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
-option(LSL_BUILD_STATIC "Also build static LSL library." OFF)
+option(LSL_BUILD_STATIC "Build LSL as static library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
+
+if(LSL_BUILD_STATIC)
+	set(LSL_LIB_TYPE STATIC)
+else()
+	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+endif()
 
 # Add an object library so all files are only compiled once
 add_library(lslobj OBJECT
@@ -194,27 +200,24 @@ target_compile_definitions(lslobj
 	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 )
 
-# shared library
-add_library(lsl SHARED src/buildinfo.cpp)
-target_compile_definitions(lsl PRIVATE
-	LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:shared"
-	LIBLSL_EXPORTS)
+add_library(lsl ${LSL_LIB_TYPE} src/buildinfo.cpp)
+
+# defines for LSL_CPP_API export header (shared: dllimport/dllexport)
+target_compile_definitions(lsl PUBLIC
+	$<IF:$<BOOL:${LSL_BUILD_STATIC}>,LIBLSL_STATIC,LIBLSL_EXPORTS>
+)
+
+set_source_files_properties("src/buildinfo.cpp"
+	PROPERTIES COMPILE_DEFINITIONS
+	LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:${LSL_LIB_TYPE}"
+)
+
 target_link_libraries(lsl
 	PUBLIC lslobj
 	PRIVATE lslboost)
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
-
-set(LSL_EXPORT_TARGETS lsl lslobj lslboost)
-if(LSL_BUILD_STATIC)
-	add_library(lsl-static STATIC src/buildinfo.cpp)
-	target_compile_definitions(lsl-static PRIVATE LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:static")
-	target_link_libraries(lsl-static PUBLIC lslobj PRIVATE lslboost)
-	list(APPEND LSL_EXPORT_TARGETS lsl-static)
-	# for LSL_CPP_API export header
-	target_compile_definitions(lsl-static PUBLIC LIBLSL_STATIC)
-endif()
 
 if(LSL_FORCE_FANCY_LIBNAME)
 	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
@@ -223,13 +226,6 @@ if(LSL_FORCE_FANCY_LIBNAME)
 		OUTPUT_NAME "liblsl${lslplatform}"
 		DEBUG_POSTFIX "-debug"
 	)
-	if(LSL_BUILD_STATIC)
-		set_target_properties(lsl-static PROPERTIES
-			PREFIX ""
-			OUTPUT_NAME "liblsl${lslplatform}-static"
-			DEBUG_POSTFIX "-debug"
-		)
-	endif()
 endif()
 
 if(LSL_UNIXFOLDERS)
@@ -247,7 +243,7 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS ${LSL_EXPORT_TARGETS}
+install(TARGETS lsl lslobj lslboost
 	EXPORT LSLTargets
 	COMPONENT liblsl
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
@@ -290,11 +286,6 @@ include(cmake/LSLCMake.cmake)
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 installLSLApp(lslver)
-if(LSL_BUILD_STATIC)
-	add_executable(lslver-static testing/lslver.c)
-	target_link_libraries(lslver-static PRIVATE lsl-static)
-	installLSLApp(lslver-static)
-endif()
 
 set(LSL_INSTALL_ROOT ${CMAKE_CURRENT_BINARY_DIR})
 if(LSL_UNITTESTS)
