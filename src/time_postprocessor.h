@@ -38,6 +38,9 @@ public:
 	/// Override the half-time (forget factor) of the time-stamp smoothing.
 	void smoothing_halftime(float value) { halftime_ = value; }
 
+	/// Inform the post processor some samples were skipped
+	void skip_samples(uint32_t skipped_samples);
+
 private:
 	/// Internal function to process a time stamp.
 	double process_internal(double value);

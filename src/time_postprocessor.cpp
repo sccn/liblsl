@@ -23,6 +23,13 @@ double time_postprocessor::process_timestamp(double value) {
 		return process_internal(value);
 }
 
+void time_postprocessor::skip_samples(uint32_t skipped_samples)
+{
+	if(options_ & proc_dejitter && smoothing_initialized_ && smoothing_applicable_) {
+		samples_seen_ += skipped_samples;
+	}
+}
+
 double time_postprocessor::process_internal(double value) {
 	// --- clock synchronization ---
 	if (options_ & proc_clocksync) {
