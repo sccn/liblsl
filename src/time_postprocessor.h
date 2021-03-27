@@ -53,7 +53,7 @@ public:
 	 * processing_options_t together (e.g., proc_clocksync|proc_dejitter); the default is to enable
 	 * all options.
 	 */
-	void set_options(uint32_t options = proc_ALL) { options_ = options; }
+	void set_options(uint32_t options = proc_ALL);
 
 	/// Post-process the given time stamp and return the new time-stamp.
 	double process_timestamp(double value);

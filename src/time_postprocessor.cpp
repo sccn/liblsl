@@ -20,6 +20,22 @@ time_postprocessor::time_postprocessor(const postproc_callback_t &query_correcti
 	  query_correction_(query_correction), query_reset_(query_reset), next_query_time_(0.0),
 	  last_offset_(0.0), last_value_(std::numeric_limits<double>::lowest()) {}
 
+void time_postprocessor::set_options(uint32_t options)
+{
+	// bitmask which options actually changed (XOR)
+	auto changed = options_ ^ options;
+
+	// dejitter option changed? -> Reset it
+	// in case it got enabled, it'll be initialized with the correct t0 when
+	// the next sample comes in
+	if(changed & proc_dejitter)
+		dejitter = postproc_dejitterer();
+
+	if(changed & proc_monotonize)
+		last_value_ = std::numeric_limits<double>::lowest();
+
+	options_ = options;
+}
 
 double time_postprocessor::process_timestamp(double value) {
 	if (options_ & proc_threadsafe) {
