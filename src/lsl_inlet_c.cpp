@@ -11,7 +11,7 @@ using namespace lsl;
 LIBLSL_C_API lsl_inlet lsl_create_inlet(
 	lsl_streaminfo info, int32_t max_buflen, int32_t max_chunklen, int32_t recover) {
 	return create_object_noexcept<stream_inlet_impl>(*info,
-		info->nominal_srate() ? (int)(info->nominal_srate() * max_buflen) : max_buflen * 100,
+		(info->nominal_srate() ? (int)(info->nominal_srate() * max_buflen) : max_buflen * 100) + 1,
 		max_chunklen, recover != 0);
 }
 
