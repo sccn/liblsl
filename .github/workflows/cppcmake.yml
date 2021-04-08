@@ -52,13 +52,16 @@ jobs:
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 ${{ matrix.config.cmake_extra }} 
+            echo ${PWD}
     - name: make
-      run: cmake --build build --config Release -j --target install
+      run: cmake --build build --target install --config Release -j
   
     - name: package
       run: |
            echo $GITHUB_REF
-           cmake --build build --config Release -j --target package
+           cmake --build build --target package --config Release -j
+           echo $PWD
+           ls -la
            # On Debian / Ubuntu the dependencies can only be resolved for
            # already installed packages. Therefore, we have built all
            # packages without dependencies in the previous step,
@@ -66,7 +69,7 @@ jobs:
            if [[ "${{ matrix.config.os }}" == ubuntu-* ]]; then
               cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
               sudo dpkg -i package/*.deb
-              cmake --build build --config Release -j --target package
+              cmake --build build --target package --config Release -j
            fi
            cmake -E remove_directory package/_CPack_Packages
     - name: upload install dir
