@@ -29,10 +29,9 @@ public:
 	/**
 	 * Construct a new data receiver from an info connection.
 	 * @param conn An inlet connection object.
-	 * @param max_buflen Optionally the maximum amount of data to buffer (in seconds if there is a
-	 * nominal sampling rate, otherwise x 100 in samples). Recording applications want to use a
-	 * fairly large buffer size here, while real-time applications want to only buffer as much as
-	 * they need to perform their next calculation.
+	 * @param max_buflen Optionally the maximum amount of data to buffer in samples (per-channel).
+	 * Recording applications want to use a fairly large buffer size here, while real-time
+	 * applications want to only buffer as much as they need to perform their next calculation.
 	 * @param max_chunklen Optionally the maximum size, in samples, at which chunks are transmitted
 	 * (the default corresponds to the chunk sizes used by the sender). Recording applications can
 	 * use a generous size here (leaving it to the network how to pack things), while real-time
