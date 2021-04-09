@@ -3,6 +3,7 @@
 #include <catch2/catch.hpp>
 #include <cstdint>
 #include <lsl_cpp.h>
+#include <thread>
 
 TEMPLATE_TEST_CASE(
 	"datatransfer", "[datatransfer][basic]", char, int16_t, int32_t, int64_t, float, double) {
@@ -68,4 +69,36 @@ TEST_CASE("TypeConversion", "[datatransfer][types][basic]") {
 		sp.in_.pull_sample(&result, 1, 1.);
 		CHECK(result == val);
 	}
+}
+
+TEST_CASE("Flush", "[datatransfer][basic]") {
+	Streampair sp{create_streampair(
+		lsl::stream_info("FlushTest", "flush", 1, 1, lsl::cf_double64, "FlushTest"))};
+	sp.in_.set_postprocessing(lsl::post_dejitter);
+
+	const int n=20;
+
+	std::thread pusher([&](){
+		double data = lsl::local_clock();
+		for(int i=0; i<n; ++i) {
+			sp.out_.push_sample(&data, data, true);
+			std::this_thread::sleep_for(std::chrono::milliseconds(100));
+			data+=.1;
+		}
+	});
+
+	double data_in, ts_in;
+	ts_in = sp.in_.pull_sample(&data_in, 1.);
+	REQUIRE(ts_in == Approx(data_in));
+	std::this_thread::sleep_for(std::chrono::milliseconds(700));
+	int pulled = sp.in_.flush() + 1;
+
+	for(; pulled < n; ++pulled) {
+		INFO(pulled);
+		ts_in = sp.in_.pull_sample(&data_in, 1.);
+		REQUIRE(ts_in == Approx(data_in));
+	}
+
+	pusher.join();
+	//sp.in_.set_postprocessing(lsl::post_none);
 }

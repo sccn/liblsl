@@ -45,6 +45,11 @@ double time_postprocessor::process_timestamp(double value) {
 		return process_internal(value);
 }
 
+void time_postprocessor::skip_samples(uint32_t skipped_samples) {
+	if (options_ & proc_dejitter && dejitter.smoothing_applicable())
+		dejitter.samples_since_t0_ += skipped_samples;
+}
+
 double time_postprocessor::process_internal(double value) {
 	// --- clock synchronization ---
 	if (options_ & proc_clocksync) {
