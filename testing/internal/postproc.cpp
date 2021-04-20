@@ -1,5 +1,6 @@
 #include "time_postprocessor.h"
 #include <catch2/catch.hpp>
+#include <random>
 #include <thread>
 
 template <std::size_t N>
@@ -47,11 +48,29 @@ TEST_CASE("postprocessing", "[basic]") {
 		pp.set_options(proc_none);
 		test_postproc_array(pp, nopostproc, nopostproc);
 	}
-	{
-		INFO("proc_dejitter")
-		pp.set_options(proc_dejitter);
-		/// ground truth timestamps as dejittered by liblsl 1.14
-		double dejittered[] = {2.00405, 3.1, 3.1978, 4.6113, 5.7418, 6.9168};
-		test_postproc_array(pp, nopostproc, dejittered);
+}
+
+TEST_CASE("rls_smoothing", "[basic]") {
+	const int n = 100000, warmup_samples = 1000;
+	const double t0 = 5000, latency = 0.05, srate = 100., halftime = 90;
+	lsl::postproc_dejitterer pp(t0, srate, halftime);
+
+	std::default_random_engine rng;
+	std::normal_distribution<double> jitter(latency, .005);
+
+	pp.dejitter(t0);
+	int n_outlier = 0;
+
+	for (int i = 0; i < n; ++i) {
+		const double t = t0 + i / srate, e = jitter(rng), dejittered = pp.dejitter(t + e),
+					 est_error = dejittered - t - latency;
+		if (i > warmup_samples && fabs(est_error) > std::max(e, .001)) n_outlier++;
 	}
+	LOG_F(INFO, "\nP:\t%f\t%f\n\t%f\t%f\nw:\t%f\t%f", pp.P00_, pp.P01_, pp.P01_, pp.P11_, pp.w0_,
+		pp.w1_);
+	CHECK(n_outlier < n / 100);
+
+	CHECK(pp.dejitter(t0 + latency + n / srate) == Approx(t0 + latency + n / srate));
+	CHECK(fabs(pp.w0_ - latency) < .1);
+	CHECK(fabs(pp.w1_ - 1 / srate) < 1e-6);
 }
