@@ -305,7 +305,11 @@ public:
 	std::size_t samples_available() { return data_receiver_.samples_available(); }
 
 	/// Flush the queue, return the number of dropped samples
-	uint32_t flush() { return data_receiver_.flush(); }
+	uint32_t flush() {
+		int nskipped = data_receiver_.flush();
+		postprocessor_.skip_samples(nskipped);
+		return nskipped;
+	}
 
 	/** Query whether the clock was potentially reset since the last call to was_clock_reset().
 	 *
