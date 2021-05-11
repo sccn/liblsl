@@ -60,6 +60,7 @@ LIBLSL_C_API char *lsl_get_xml(lsl_streaminfo info) {
 			return nullptr;
 		}
 		memcpy(result, tmp.c_str(), tmp.size());
+		result[tmp.size()] = '\0';
 		return result;
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in lsl_get_xml: %s", e.what());
