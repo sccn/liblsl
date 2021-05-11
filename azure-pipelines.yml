@@ -15,4 +15,11 @@ stages:
     - bash: strip --strip-unneeded liblsl.so
     - publish: liblsl.so
       artifact: manylinux2010
-
+  - job: manylinux1
+    pool: { vmImage: 'ubuntu-latest' }
+    container: quay.io/pypa/manylinux1_x86_64:latest
+    steps:
+    - bash: CFLAGS="-flto -static-libstdc++ -std=c++11" ./standalone_compilation_linux.sh
+    - bash: strip --strip-unneeded liblsl.so
+    - publish: liblsl.so
+      artifact: manylinux1
