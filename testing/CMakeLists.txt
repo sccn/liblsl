@@ -1,5 +1,5 @@
 project(lsltests
-	VERSION 1.14.0
+	VERSION 1.14.1b1
 	LANGUAGES CXX
 	DESCRIPTION "Unit tests for liblsl"
 	)
