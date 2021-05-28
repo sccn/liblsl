@@ -247,7 +247,7 @@ function(installLSLApp target)
 			if(\${DEPLOYSTATUS})
 				message(WARNING \"\${DEPLOYOUTPUT}\")
 			endif()
-		")
+			" COMPONENT ${PROJECT_NAME})
 	endif()
 endfunction()
 
