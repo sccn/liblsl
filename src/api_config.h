@@ -1,7 +1,6 @@
 #ifndef API_CONFIG_H
 #define API_CONFIG_H
 
-#include <loguru.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>

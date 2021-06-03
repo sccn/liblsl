@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <set>
+#include <stdexcept>
 
 namespace lsl {
 /// Exception class that indicates that an operation was performed on an registry that is being shut

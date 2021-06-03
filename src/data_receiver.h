@@ -2,6 +2,7 @@
 #define DATA_RECEIVER_H
 
 #include "cancellation.h"
+#include "common.h"
 #include "consumer_queue.h"
 #include "forward.h"
 #include <atomic>

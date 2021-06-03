@@ -7,7 +7,7 @@
 #include "inlet_connection.h"
 #include "time_postprocessor.h"
 #include "time_receiver.h"
-
+#include <loguru.hpp>
 
 namespace lsl {
 

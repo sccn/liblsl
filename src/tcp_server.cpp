@@ -14,6 +14,7 @@
 #include <boost/asio/write.hpp>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <loguru.hpp>
 #include <memory>
 #include <thread>
 

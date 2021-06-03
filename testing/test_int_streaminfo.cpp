@@ -1,5 +1,7 @@
 #include "../src/api_config.h"
 #include "../src/stream_info_impl.h"
+#include <loguru.hpp>
+
 #include <catch2/catch.hpp>
 
 TEST_CASE("streaminfo matching via XPath", "[basic][streaminfo][xml]") {

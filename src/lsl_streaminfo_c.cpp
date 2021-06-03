@@ -1,6 +1,8 @@
 #include "lsl_c_api_helpers.hpp"
 #include "stream_info_impl.h"
+#include <chrono>
 #include <cstring>
+#include <loguru.hpp>
 #include <string>
 
 extern "C" {

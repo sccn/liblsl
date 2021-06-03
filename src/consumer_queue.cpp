@@ -2,6 +2,7 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include <chrono>
+#include <loguru.hpp>
 
 using namespace lsl;
 

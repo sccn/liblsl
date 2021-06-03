@@ -4,6 +4,7 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <loguru.hpp>
 #include <thread>
 
 using lslboost::asio::ip::tcp;

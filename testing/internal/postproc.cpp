@@ -1,7 +1,9 @@
 #include "time_postprocessor.h"
-#include <catch2/catch.hpp>
+#include <loguru.hpp>
 #include <random>
 #include <thread>
+
+#include <catch2/catch.hpp>
 
 template <std::size_t N>
 inline void test_postproc_array(

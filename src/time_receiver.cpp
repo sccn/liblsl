@@ -3,6 +3,7 @@
 #include "inlet_connection.h"
 #include "socket_utils.h"
 #include <limits>
+#include <loguru.hpp>
 #include <sstream>
 
 /// internally used constant to represent an unassigned time offset

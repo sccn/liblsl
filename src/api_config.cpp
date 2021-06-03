@@ -2,8 +2,11 @@
 #include "common.h"
 #include "inireader.h"
 #include <algorithm>
+#include <cstdlib>
 #include <fstream>
+#include <loguru.hpp>
 #include <mutex>
+#include <stdexcept>
 
 using namespace lsl;
 

@@ -3,10 +3,9 @@
 
 extern "C" {
 #include "api_types.hpp"
-
+// api_types.h defines LSL_TYPES so it needs to be included before the next header
 #include "../include/lsl/common.h"
 }
-#include <loguru.hpp>
 #include <boost/version.hpp>
 #include <stdexcept>
 #include <string>

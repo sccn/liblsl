@@ -2,6 +2,7 @@
 #include "api_config.h"
 #include "cast.h"
 #include <algorithm>
+#include <loguru.hpp>
 #include <sstream>
 
 namespace lsl {

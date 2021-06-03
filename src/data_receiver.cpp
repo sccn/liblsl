@@ -6,7 +6,9 @@
 #include "sample.h"
 #include "socket_utils.h"
 #include <iostream>
+#include <loguru.hpp>
 #include <memory>
+#include <sstream>
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads

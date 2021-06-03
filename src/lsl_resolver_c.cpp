@@ -1,6 +1,7 @@
 #include "api_config.h"
 #include "lsl_c_api_helpers.hpp"
 #include "resolver_impl.h"
+#include <loguru.hpp>
 
 extern "C" {
 #include "api_types.hpp"

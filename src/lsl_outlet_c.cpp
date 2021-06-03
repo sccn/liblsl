@@ -1,5 +1,6 @@
 #include "lsl_c_api_helpers.hpp"
 #include "stream_outlet_impl.h"
+#include <loguru.hpp>
 
 #pragma warning(disable : 4800)
 

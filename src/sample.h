@@ -6,8 +6,11 @@
 #include <atomic>
 #include <boost/endian/conversion.hpp>
 #include <boost/serialization/split_member.hpp>
-#include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <iosfwd>
+#include <limits>
+#include <stdexcept>
+#include <string>
+#include <type_traits>
 
 #ifndef BOOST_BYTE_ORDER
 #if BOOST_ENDIAN_BIG_BYTE

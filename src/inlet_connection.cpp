@@ -1,6 +1,7 @@
 #include "inlet_connection.h"
 #include "api_config.h"
 #include <functional>
+#include <loguru.hpp>
 #include <sstream>
 
 using namespace lsl;

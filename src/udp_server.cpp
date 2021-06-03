@@ -4,6 +4,7 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/udp.hpp>
+#include <loguru.hpp>
 #include <sstream>
 
 namespace lsl {

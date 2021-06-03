@@ -1,7 +1,7 @@
 #include "send_buffer.h"
 #include "consumer_queue.h"
+#include <loguru.hpp>
 #include <memory>
-
 
 using namespace lsl;
 
