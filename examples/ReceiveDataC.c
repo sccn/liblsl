@@ -16,7 +16,7 @@ int main(int argc, char* argv[]) {
 
 	/* resolve the stream of interest (result array: info, array capacity: 1 element, type shall be EEG, resolve at least 1 stream, wait forever if necessary) */
 	printf("Now waiting for an EEG stream...\n");
-	lsl_resolve_byprop(&info,1, "type","EEG", 1, LSL_FOREVER);
+	lsl_resolve_byprop(&info, 1, "type","EEG", 1, LSL_FOREVER);
 
 	/* make an inlet to read data from the stream (buffer max. 300 seconds of data, no preference regarding chunking, automatic recovery enabled) */
 	inlet = lsl_create_inlet(info, 300, LSL_NO_PREFERENCE, 1);

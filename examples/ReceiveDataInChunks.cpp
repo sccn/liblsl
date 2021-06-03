@@ -13,7 +13,7 @@ int main(int, char* []) {
 	try {
 
 		// resolve the stream of interest & make an inlet
-		lsl::stream_inlet inlet(lsl::resolve_stream("name", "MyAudioStream")[0]);
+		lsl::stream_inlet inlet(lsl::resolve_stream("name", "MyAudioStream").at(0));
 
 		// and retrieve the chunks (note: this can of course also be done with pure std::vectors
 		// instead of stereo_samples)

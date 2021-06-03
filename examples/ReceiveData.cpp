@@ -39,6 +39,7 @@ int main(int argc, char* argv[]) {
 	// resolve the stream of interet
 	std::cout << "Now resolving streams..." << std::endl;
 	std::vector<lsl::stream_info> results = lsl::resolve_stream(field, value);
+	if(results.empty()) throw std::runtime_error("No stream found");
 
 	std::cout << "Here is what was resolved: " << std::endl;
 	std::cout << results[0].as_xml() << std::endl;

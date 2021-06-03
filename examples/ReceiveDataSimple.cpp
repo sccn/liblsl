@@ -11,7 +11,7 @@ int main(int argc, char** argv) {
 
 	// resolve the stream of interest & make an inlet to get data from the first result
 	std::vector<stream_info> results = resolve_stream("name", argc > 1 ? argv[1] : "SimpleStream");
-	stream_inlet inlet(results[0]);
+	stream_inlet inlet(results.at(0));
 
 	// receive data & time stamps forever (not displaying them here)
 	std::vector<float> sample;
