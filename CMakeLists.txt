@@ -110,7 +110,10 @@ if(LSL_BUNDLED_PUGIXML)
 else()
 	message(STATUS "Using system pugixml")
 	find_package(pugixml REQUIRED)
-	target_link_libraries(lslobj PRIVATE pugixml)
+	if(NOT TARGET pugixml::pugixml)
+		add_library(pugixml::pugixml ALIAS pugixml)
+	endif()
+	target_link_libraries(lslobj PUBLIC pugixml::pugixml)
 endif()
 
 # try to find out which revision is currently checked out
