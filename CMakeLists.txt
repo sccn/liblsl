@@ -10,8 +10,8 @@ set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 if(NOT MSVC_VERSION VERSION_LESS 1700)
 	set(CMAKE_CXX_STANDARD 14)
 endif()
+# generate a compilation database (compile_commands.json) for clang tooling
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(LSL_LIB_TYPE SHARED)
 
 option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" OFF)
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" On)
@@ -28,6 +28,8 @@ set(LSL_WINVER "0x0601" CACHE STRING
 if(LSL_BUILD_STATIC)
 	set(LSL_LIB_TYPE STATIC)
 else()
+	set(LSL_LIB_TYPE SHARED)
+	# shared libraries require relocatable symbols so we enable them by default
 	set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
@@ -106,7 +108,7 @@ if(LSL_BUNDLED_PUGIXML)
 	message(STATUS "Using bundled pugixml")
 	target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
 	target_include_directories(lslobj SYSTEM PUBLIC
-		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
+		${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml)
 else()
 	message(STATUS "Using system pugixml")
 	find_package(pugixml REQUIRED)
@@ -138,34 +140,25 @@ else()
 	set(lslgitrevision "unknown")
 	set(lslgitbranch "unknown")
 endif()
+
+# generate a version information string that can be retrieved with the exported
+# lsl_library_info() function
 set(LSL_VERSION_INFO "git:${lslgitrevision}/branch:${lslgitbranch}/build:${CMAKE_BUILD_TYPE}/compiler:${CMAKE_CXX_COMPILER_ID}-${CMAKE_CXX_COMPILER_VERSION}")
+set_source_files_properties("src/buildinfo.cpp"
+	PROPERTIES COMPILE_DEFINITIONS
+	LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:${LSL_LIB_TYPE}"
+)
 set_source_files_properties("thirdparty/loguru/loguru.cpp"
 	PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
 
-## create the lslboost target
+find_package(Threads REQUIRED)
+
+# create the lslboost target
 add_library(lslboost OBJECT
 	lslboost/asio_objects.cpp
 	lslboost/serialization_objects.cpp
 )
-
-if(UNIX)
-	include(CheckSymbolExists)
-	# look for clock_gettime, if not we need to link against librt
-	check_symbol_exists(clock_gettime time.h HAS_GETTIME)
-	if(NOT HAS_GETTIME)
-		set(NEEDS_LIBRT ON CACHE INTERNAL "Link to librt")
-	endif()
-endif()
-
-find_package(Threads REQUIRED)
-target_link_libraries(lslboost
-	PUBLIC
-		Threads::Threads
-	PRIVATE
-		$<$<PLATFORM_ID:Windows>:bcrypt>
-		$<$<PLATFORM_ID:Windows>:mswsock>
-		$<$<PLATFORM_ID:Windows>:ws2_32>
-	)
+target_link_libraries(lslboost PUBLIC Threads::Threads)
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 target_compile_definitions(lslboost
@@ -174,50 +167,62 @@ target_compile_definitions(lslboost
 		BOOST_ASIO_STANDALONE
 		BOOST_ASIO_SEPARATE_COMPILATION
 		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
-		$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
-	PRIVATE
-		$<$<PLATFORM_ID:Windows>:BOOST_THREAD_BUILD_DLL>
 )
 target_include_directories(lslboost SYSTEM PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
+	${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
 
-
-target_link_libraries(lslobj
-	PRIVATE
-		lslboost
-		$<$<PLATFORM_ID:Windows>:iphlpapi>
-		$<$<PLATFORM_ID:Windows>:winmm>
-	PUBLIC
-		$<$<AND:$<BOOL:${LSL_DEBUGLOG}>,$<PLATFORM_ID:Linux>>:dl>
-		$<$<BOOL:${NEEDS_LIBRT}>:rt>
-	)
+# target configuration for the internal lslobj target
+target_link_libraries(lslobj PRIVATE lslboost)
 target_include_directories(lslobj
 	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 	)
 target_include_directories(lslobj SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
 )
-target_compile_definitions(lslobj
-	PRIVATE LIBLSL_EXPORTS $<$<PLATFORM_ID:Windows>:_CRT_SECURE_NO_WARNINGS>
-		LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
-	INTERFACE LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
+target_compile_definitions(lslobj PRIVATE
+	LIBLSL_EXPORTS
+	LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
 )
 
+# platform specific configuration
+if(UNIX)
+	include(CheckSymbolExists)
+	# check that clock_gettime is present in the stdlib, link against librt otherwise
+	check_symbol_exists(clock_gettime time.h HAS_GETTIME)
+	if(NOT HAS_GETTIME)
+		target_link_libraries(lslobj PRIVATE rt)
+	endif()
+	if(LSL_DEBUGLOG AND NOT APPLE)
+		target_link_libraries(lslobj PRIVATE dl)
+	endif()
+elseif(WIN32)
+	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
+	target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+	target_compile_definitions(lslobj
+		PRIVATE _CRT_SECURE_NO_WARNINGS
+		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
+		)
+	target_compile_definitions(lslboost
+		PUBLIC _WIN32_WINNT=${LSL_WINVER}
+		PRIVATE BOOST_THREAD_BUILD_DLL
+		)
+endif()
+
+# the "real" liblsl library. It contains one source with the version info
+# string because some generators require it. The remaining source code is
+# built in the lslobj target and later linked into this library
 add_library(lsl ${LSL_LIB_TYPE} src/buildinfo.cpp)
 
 # defines for LSL_CPP_API export header (shared: dllimport/dllexport)
 target_compile_definitions(lsl PUBLIC
 	$<IF:$<BOOL:${LSL_BUILD_STATIC}>,LIBLSL_STATIC,LIBLSL_EXPORTS>
+	$<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK> # don't use #pragma(lib) in CMake builds
 )
-
-set_source_files_properties("src/buildinfo.cpp"
-	PROPERTIES COMPILE_DEFINITIONS
-	LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:${LSL_LIB_TYPE}"
+target_link_libraries(lsl PRIVATE lslobj lslboost)
+target_include_directories(lsl INTERFACE
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+	$<INSTALL_INTERFACE:include>
 )
-
-target_link_libraries(lsl
-	PUBLIC lslobj
-	PRIVATE lslboost)
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
@@ -246,7 +251,7 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS lsl lslobj lslboost
+install(TARGETS lsl
 	EXPORT LSLTargets
 	COMPONENT liblsl
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

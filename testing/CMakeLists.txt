@@ -25,7 +25,8 @@ add_executable(lsl_test_exported
 	test_ext_streaminfo.cpp
 	test_ext_time.cpp
 )
-target_link_libraries(lsl_test_exported PRIVATE lsl catch_main)
+
+target_link_libraries(lsl_test_exported PRIVATE lsl catch_main Threads::Threads)
 
 find_package(Threads REQUIRED)
 
