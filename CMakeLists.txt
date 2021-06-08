@@ -20,6 +20,7 @@ option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF
 option(LSL_BUILD_EXAMPLES "Build example programs in examples/" OFF)
 option(LSL_BUILD_STATIC "Build LSL as static library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
+option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 
@@ -156,7 +157,6 @@ find_package(Threads REQUIRED)
 
 # create the lslboost target
 add_library(lslboost OBJECT
-	lslboost/asio_objects.cpp
 	lslboost/serialization_objects.cpp
 )
 target_link_libraries(lslboost PUBLIC Threads::Threads)
@@ -166,7 +166,6 @@ target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
 		BOOST_ASIO_STANDALONE
-		BOOST_ASIO_SEPARATE_COMPILATION
 		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 )
 target_include_directories(lslboost SYSTEM PUBLIC
@@ -227,6 +226,19 @@ target_include_directories(lsl INTERFACE
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
 )
+
+# enable some additional expensive compiler optimizations
+if(LSL_OPTIMIZATIONS)
+	# enable LTO (https://en.wikipedia.org/wiki/Interprocedural_optimization
+	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+else()
+	# build one object file for Asio instead of once every time an Asio function is called. See
+	# https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
+	target_sources(lslboost PRIVATE lslboost/asio_objects.cpp)
+	target_compile_definitions(lslboost PUBLIC BOOST_ASIO_SEPARATE_COMPILATION)
+endif()
+
+
 
 if(LSL_FORCE_FANCY_LIBNAME)
 	math(EXPR lslplatform "8 * ${CMAKE_SIZEOF_VOID_P}")
