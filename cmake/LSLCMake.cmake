@@ -89,7 +89,7 @@ endfunction()
 # specified, e.g. 	installLSLApp(FooApp libXY libZ)
 function(installLSLApp target)
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
-	string(REGEX MATCH ";Qt\\d?::" qtapp ";${TARGET_LIBRARIES}")
+	string(REGEX MATCH ";Qt[56]?::" qtapp ";${TARGET_LIBRARIES}")
 	if(qtapp)
 		# Enable automatic compilation of .cpp->.moc, xy.ui->ui_xy.h and resource files
 		set_target_properties(${target} PROPERTIES
