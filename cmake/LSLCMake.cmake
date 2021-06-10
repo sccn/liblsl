@@ -106,10 +106,10 @@ function(installLSLApp target)
 	else()
 		set(LIBDIR "../LSL/lib")
 	endif()
-	if(APPLE)
+	if(APPLE AND NOT CMAKE_INSTALL_RPATH)
 		set_property(TARGET ${target} APPEND
 			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR}")
-	elseif(UNIX)
+	elseif(UNIX AND NOT CMAKE_INSTALL_RPATH)
 		set_property(TARGET ${target}
 			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
 	endif()
