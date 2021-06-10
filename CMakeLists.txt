@@ -185,14 +185,14 @@ target_compile_definitions(lslobj PRIVATE
 )
 
 # platform specific configuration
-if(UNIX)
+if(UNIX AND NOT APPLE)
 	include(CheckSymbolExists)
 	# check that clock_gettime is present in the stdlib, link against librt otherwise
 	check_symbol_exists(clock_gettime time.h HAS_GETTIME)
 	if(NOT HAS_GETTIME)
 		target_link_libraries(lslobj PRIVATE rt)
 	endif()
-	if(LSL_DEBUGLOG AND NOT APPLE)
+	if(LSL_DEBUGLOG)
 		target_link_libraries(lslobj PRIVATE dl)
 	endif()
 elseif(WIN32)
