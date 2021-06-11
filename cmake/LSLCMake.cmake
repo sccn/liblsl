@@ -108,7 +108,7 @@ function(installLSLApp target)
 	endif()
 	if(APPLE AND NOT CMAKE_INSTALL_RPATH)
 		set_property(TARGET ${target} APPEND
-			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR}")
+			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR};@executable_path/../Frameworks")
 	elseif(UNIX AND NOT CMAKE_INSTALL_RPATH)
 		set_property(TARGET ${target}
 			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
@@ -182,7 +182,8 @@ function(installLSLApp target)
 		endif(APPLE AND target_is_bundle)
 	endif(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
 	# Mac bundles need further fixup (mostly for 3rd party libs)
-	# fixup_bundle appears to be broken for Qt apps. Use only for non-Qt.
+	# Only use fixup_bundle for non-Qt, as it is too complicated to provide all Qt libs
+	#  to the third argument of fixup_bundle, especially when macdeployqt can do it for us.
 	if(APPLE AND target_is_bundle AND NOT qtapp)
 		install(CODE
 			"
