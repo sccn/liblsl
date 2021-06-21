@@ -3,8 +3,12 @@
 #include <ostream>
 #include "portable_archive_includes.hpp"
 
+#ifdef SLIMARCHIVE
+#include "slimarchive.hpp"
+#else
 #include <boost/archive/basic_binary_oprimitive.hpp>
 #include <boost/archive/basic_binary_oarchive.hpp>
+#endif
 
 
 namespace eos {
