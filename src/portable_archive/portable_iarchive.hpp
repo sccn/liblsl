@@ -3,10 +3,14 @@
 #include <istream>
 #include "portable_archive_includes.hpp"
 
+#ifdef SLIMARCHIVE
+#include "slimarchive.hpp"
+#else
 #include <boost/archive/basic_binary_iprimitive.hpp>
 #include <boost/archive/basic_binary_iarchive.hpp>
 
 #include <boost/archive/detail/polymorphic_iarchive_route.hpp>
+#endif
 
 
 namespace eos {

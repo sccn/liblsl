@@ -23,6 +23,9 @@ option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
+option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
+
+mark_as_advanced(LSL_SLIMARCHIVE LSL_FORCE_FANCY_LIBNAME)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
@@ -161,6 +164,11 @@ add_library(lslboost OBJECT
 	lslboost/serialization_objects.cpp
 )
 target_link_libraries(lslboost PUBLIC Threads::Threads)
+
+if(LSL_SLIMARCHIVE)
+	message(STATUS "Using shim instead of full Boost.Archive")
+	target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
+endif()
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 target_compile_definitions(lslboost
