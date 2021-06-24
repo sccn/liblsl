@@ -1,13 +1,30 @@
-# Changes for liblsl 1.14
+# Changes for liblsl 1.15
 
-* **change**: CMake doesn't set `CMAKE_INSTALL_PREFIX`and `CMAKE_BUILD_TYPE` by default unless `LSL_COMFY_DEFAULTS` is set (Tristan Stenner)
+* add: thread-safe `lsl_last_error()` function, returns a description of the last error
+  (https://github.com/sccn/liblsl/pull/75, Tristan Stenner)
 * change: object handles in the C++ API use smart pointers internally.
   The smart pointer to the object can be retrieved with the `handle()` function
 * **change**: The `stream_info` copy constructor creates a shallow copy.
   Use `stream_info::clone()` for the previous behavior (deep copy).
+* change: replace more Boost libraries with C++11 counterparts (Tristan Stenner)
+* change: speed up `push_chunk_*` calls by caching the sampling rate (Chadwick Boulay)
+* change: postprocessing parameters are reset after dis- and re-enabling postprocessing (Tristan Stenner)
+* fix: postprocessing now works even when flushing samples (Tristan Stenner)
+* fix: pulling strings with embedded NULL chars now works (Tristan Stenner, Chadwick Boulay)
+* fix: various build system and deployment fixes (Chadwick Boulay, Tristan Stenner)
+* fix: building with MinGW now works (Tobias Herzke)
+* fix: `max_buflen` documentation and edge cases (Chadwick Boulay)
+* fix: preliminary support for deploying Qt6 apps with CMake (Chadwick Boulay, Tristan Stenner)
+* fix: packages for Ubuntu 18.04 no longer depend on the unavailable libgcc_s1 package
+  (Tristan Stenner, many thanks to Tobias Herzke for reporting the issue)
+
+
+# Changes for liblsl 1.14
+
+* **change**: CMake doesn't set `CMAKE_INSTALL_PREFIX`and `CMAKE_BUILD_TYPE` by default unless `LSL_COMFY_DEFAULTS` is set (Tristan Stenner)
 * fix: prevent race condition when two threads modify an overflowing buffer (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
 * fix: improve latency and CPU usage (https://github.com/sccn/liblsl/pull/71, Jérémy Frey)
-* fix: various build system fixces and improvments (Chadwick Boulay, Tristan Stenner)
+* fix: various build system fixes and improvments (Chadwick Boulay, Tristan Stenner)
 * added: enumerate network interfaces on startup, for now unused. Requires Android SDK >=26 (Tristan Stenner)
 * added: lsl_inlet_flush() to drop all outstanding samples from an inlet to avoid the pull_ overhead in realtime applications (Tristan Stenner)
 * change: the binary names are changed so that the OS resolver (e.g. `find_library(lsl)`) searches
@@ -45,7 +62,8 @@
 * fix: Added an optional time_correction prototype to return uncertainty and remote_time as well as offset. (Matthew Grivich)
 * fix: merged memory leak fixes (thanks to xloem)
 
-Changes for liblsl 1.12
+# Changes for liblsl 1.12
+
 * Added support for iOS. (Matthew Grivich; de3f1318)
 * changed constructor of lsl::xml_element to have default (David Medine; fd6a87b7)
 * Add support for gcc 5 / MinGW (BorisMansencal)
