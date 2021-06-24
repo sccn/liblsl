@@ -1,9 +1,6 @@
 #ifndef TCP_SERVER_H
 #define TCP_SERVER_H
 
-// (inefficiently converting int to bool in portable_oarchive instantiation...)
-#pragma warning(disable : 4800)
-
 #include "forward.h"
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
@@ -51,8 +48,8 @@ public:
 	 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines
 	 * the effective chunking.
 	 */
-	tcp_server(const stream_info_impl_p &info, const io_context_p &io, const send_buffer_p &sendbuf,
-		const factory_p &factory, tcp protocol, int chunk_size);
+	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
+		tcp protocol, int chunk_size);
 
 	/**
 	 * Begin serving TCP connections.

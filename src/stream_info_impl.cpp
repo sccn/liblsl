@@ -4,6 +4,7 @@
 #include <algorithm>
 #include <loguru.hpp>
 #include <sstream>
+#include <utility>
 
 namespace lsl {
 
@@ -17,11 +18,11 @@ stream_info_impl::stream_info_impl()
 	write_xml(doc_);
 }
 
-stream_info_impl::stream_info_impl(const std::string &name, const std::string &type,
-	int channel_count, double nominal_srate, lsl_channel_format_t channel_format,
-	const std::string &source_id)
-	: name_(name), type_(type), channel_count_(channel_count), nominal_srate_(nominal_srate),
-	  channel_format_(channel_format), source_id_(source_id),
+stream_info_impl::stream_info_impl(const std::string &name, std::string type, int channel_count,
+	double nominal_srate, lsl_channel_format_t channel_format, std::string source_id)
+	: name_(name), type_(std::move(type)), channel_count_(channel_count),
+	  nominal_srate_(nominal_srate), channel_format_(channel_format),
+	  source_id_(std::move(source_id)),
 	  version_(api_config::get_instance()->use_protocol_version()), v4data_port_(0),
 	  v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
 	if (name.empty()) throw std::invalid_argument("The name of a stream must be non-empty.");
@@ -71,7 +72,7 @@ void stream_info_impl::write_xml(xml_document &doc) {
 
 template <typename T>
 void get_bounded_child_val(xml_node &node, const char *child_name, T &target, int min, int max = 0) {
-	auto value = node.child_value(child_name);
+	const auto *value = node.child_value(child_name);
 	int intval = std::stoi(value);
 	if (intval < min || (max != 0 && intval > max)) {
 		std::string errmsg{child_name};
@@ -181,8 +182,8 @@ bool stream_info_impl::matches_query(const std::string &query, bool nocache) {
 	return cached_.matches_query(doc_, query, nocache);
 }
 
-bool query_cache::matches_query(const xml_document &doc, const std::string query, bool nocache) {
-	if(query == "") return true;
+bool query_cache::matches_query(const xml_document &doc, const std::string &query, bool nocache) {
+	if (query.empty()) return true;
 	std::lock_guard<std::mutex> lock(cache_mut_);
 
 	decltype(cache)::iterator it;

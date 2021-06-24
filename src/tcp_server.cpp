@@ -17,6 +17,12 @@
 #include <loguru.hpp>
 #include <memory>
 #include <thread>
+#include <utility>
+
+#ifdef _MSC_VER
+// (inefficiently converting int to bool in portable_oarchive instantiation...)
+#pragma warning(disable : 4800)
+#endif
 
 // a convention that applies when including portable_oarchive.h in multiple .cpp files.
 // otherwise, the templates are instantiated in this file and sample.cpp which leads
@@ -53,9 +59,7 @@ namespace lsl {
  * it for the duration of the execution.
  */
 class client_session : public std::enable_shared_from_this<client_session> {
-	typedef std::shared_ptr<
-		lslboost::asio::executor_work_guard<lslboost::asio::io_context::executor_type>>
-		work_p;
+	using work_p = std::shared_ptr<asio::executor_work_guard<asio::io_context::executor_type>>;
 
 public:
 	/// Instantiate a new session & its socket.
@@ -144,10 +148,11 @@ private:
 	std::condition_variable completion_cond_;
 };
 
-tcp_server::tcp_server(const stream_info_impl_p &info, const io_context_p &io,
-	const send_buffer_p &sendbuf, const factory_p &factory, tcp protocol, int chunk_size)
-	: chunk_size_(chunk_size), shutdown_(false), info_(info), io_(io), factory_(factory),
-	  send_buffer_(sendbuf), acceptor_(std::make_shared<tcp::acceptor>(*io)) {
+tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
+	factory_p factory, tcp protocol, int chunk_size)
+	: chunk_size_(chunk_size), shutdown_(false), info_(std::move(info)), io_(std::move(io)),
+	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)),
+	  acceptor_(std::make_shared<tcp::acceptor>(*io_)) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -232,7 +237,7 @@ void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
 
 void tcp_server::close_inflight_sockets() {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	for (auto sock : inflight_)
+	for (const auto &sock : inflight_)
 		post(*io_, [sock]() {
 			try {
 				if (sock->is_open()) {
@@ -257,7 +262,7 @@ client_session::~client_session() {
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error in client_session destructor: %s", e.what());
 	} catch (...) { LOG_F(ERROR, "Severe error during client session shutdown."); }
-	if (scratch_) delete[] scratch_;
+	delete[] scratch_;
 }
 
 void client_session::begin_processing() {
@@ -268,10 +273,9 @@ void client_session::begin_processing() {
 		serv_->register_inflight_socket(sock_);
 		registered_ = true;
 		// read the request line
-		async_read_until(
-			*sock_, requestbuf_, "\r\n", [shared_this = shared_from_this()](err_t err, size_t) {
-				shared_this->handle_read_command_outcome(err);
-			});
+		async_read_until(*sock_, requestbuf_, "\r\n",
+			[shared_this = shared_from_this()](
+				err_t err, size_t /*unused*/) { shared_this->handle_read_command_outcome(err); });
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
@@ -287,24 +291,27 @@ void client_session::handle_read_command_outcome(error_code read_err) {
 		if (method == "LSL:shortinfo")
 			// shortinfo request: read the content query string
 			async_read_until(*sock_, requestbuf_, "\r\n",
-				[shared_this = shared_from_this()](
-					err_t err, std::size_t) { shared_this->handle_read_query_outcome(err); });
+				[shared_this = shared_from_this()](err_t err, std::size_t /*unused*/) {
+					shared_this->handle_read_query_outcome(err);
+				});
 		else if (method == "LSL:fullinfo")
 			// fullinfo request: reply right away
 			async_write(*sock_, lslboost::asio::buffer(serv_->fullinfo_msg_),
-				[shared_this = shared_from_this()](err_t, std::size_t) {});
+				[shared_this = shared_from_this()](err_t /*unused*/, std::size_t /*unused*/) {});
 		else if (method == "LSL:streamfeed")
 			// streamfeed request (1.00): read feed parameters
 			async_read_until(*sock_, requestbuf_, "\r\n",
-				[shared_this = shared_from_this()](
-					err_t err, std::size_t) { shared_this->handle_read_feedparams(100, "", err); });
+				[shared_this = shared_from_this()](err_t err, std::size_t /*unused*/) {
+					shared_this->handle_read_feedparams(100, "", err);
+				});
 		else if (method.compare(0, 15, "LSL:streamfeed/") == 0) {
 			// streamfeed request with version: read feed parameters
 			std::vector<std::string> parts = splitandtrim(method, ' ', true);
 			async_read_until(*sock_, requestbuf_, "\r\n\r\n",
 				[shared_this = shared_from_this(),
 					request_protocol_version = std::stoi(parts[0].substr(15)),
-					request_uid = (parts.size() > 1) ? parts[1] : ""](err_t err, std::size_t) {
+					request_uid = (parts.size() > 1) ? parts[1] : ""](
+					err_t err, std::size_t /*unused*/) {
 					shared_this->handle_read_feedparams(request_protocol_version, request_uid, err);
 				});
 		}
@@ -323,11 +330,12 @@ void client_session::handle_read_query_outcome(error_code err) {
 		if (serv_->info_->matches_query(query)) {
 			// matches: reply (otherwise just close the stream)
 			async_write(*sock_, lslboost::asio::buffer(serv_->shortinfo_msg_),
-				[shared_this = shared_from_this()](err_t, std::size_t) {
+				[shared_this = shared_from_this() /*unused*/](err_t, std::size_t /*unused*/) {
 					/* keep the client_session alive until the shortinfo is sent completely*/
 				});
-		} else
+		} else {
 			DLOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);
+		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while parsing a client request: %s", e.what());
 	}
@@ -336,8 +344,8 @@ void client_session::handle_read_query_outcome(error_code err) {
 void client_session::send_status_message(const std::string &str) {
 	auto msg(std::make_shared<std::string>(str));
 	async_write(*sock_, lslboost::asio::buffer(*msg),
-		[msg, shared_this = shared_from_this()](
-			err_t, std::size_t) { /* keep objects alive until the message is sent */ });
+		[msg, shared_this = shared_from_this()](err_t /*unused*/,
+			std::size_t /*unused*/) { /* keep objects alive until the message is sent */ });
 }
 
 void client_session::handle_read_feedparams(
@@ -505,7 +513,7 @@ void client_session::handle_send_feedheader_outcome(error_code err, std::size_t 
 	}
 }
 
-void client_session::transfer_samples_thread(std::shared_ptr<client_session>) {
+void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*keepalive*/) {
 	if (max_buffered_ <= 0) return;
 	try {
 		// make a new consumer queue

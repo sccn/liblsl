@@ -39,16 +39,16 @@ const std::string all_ports_bound_msg(
 	"https://labstreaminglayer.readthedocs.io/info/network-connectivity.html"
 	") or you have a problem with your network configuration.");
 
-uint16_t lsl::bind_port_in_range(asio::ip::udp::socket &acc, asio::ip::udp protocol) {
-	uint16_t port = bind_port_in_range_(acc, protocol);
+uint16_t lsl::bind_port_in_range(asio::ip::udp::socket &sock, asio::ip::udp protocol) {
+	uint16_t port = bind_port_in_range_(sock, protocol);
 	if (!port) throw std::runtime_error(all_ports_bound_msg);
 	return port;
 }
 
 uint16_t lsl::bind_and_listen_to_port_in_range(
-	asio::ip::tcp::acceptor &sock, asio::ip::tcp protocol, int backlog) {
-	uint16_t port = bind_port_in_range_(sock, protocol);
+	asio::ip::tcp::acceptor &acc, asio::ip::tcp protocol, int backlog) {
+	uint16_t port = bind_port_in_range_(acc, protocol);
 	if (!port) throw std::runtime_error(all_ports_bound_msg);
-	sock.listen(backlog);
+	acc.listen(backlog);
 	return port;
 }

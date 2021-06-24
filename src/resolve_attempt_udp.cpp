@@ -156,7 +156,7 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
 				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 		// and send the query over it
 		sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
-			[shared_this = shared_from_this(), next](err_t err, size_t) {
+			[shared_this = shared_from_this(), next](err_t err, size_t /*unused*/) {
 				if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
 					err != asio::error::not_connected && err != asio::error::not_socket)
 					shared_this->send_next_query(next);

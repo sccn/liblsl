@@ -78,7 +78,7 @@ LIBLSL_C_API int32_t lsl_stream_info_matches_query(lsl_streaminfo info, const ch
 
 LIBLSL_C_API lsl_streaminfo lsl_streaminfo_from_xml(const char *xml) {
 	try {
-		stream_info_impl *impl = new stream_info_impl();
+		auto *impl = new stream_info_impl();
 		impl->from_fullinfo_message(xml);
 		return impl;
 	} catch (std::exception &e) {

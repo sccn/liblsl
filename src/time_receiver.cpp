@@ -126,7 +126,7 @@ void time_receiver::send_next_packet(int packet_num) {
 		request << "LSL:timedata\r\n" << current_wave_id_ << " " << lsl_clock() << "\r\n";
 		auto msg_buffer = std::make_shared<std::string>(request.str());
 		time_sock_.async_send_to(lslboost::asio::buffer(*msg_buffer), conn_.get_udp_endpoint(),
-			[msg_buffer](err_t, std::size_t) {
+			[msg_buffer](err_t /*unused*/, std::size_t /*unused*/) {
 				/* Do nothing, but keep the msg_buffer alive until async_send is completed */
 			});
 	} catch (std::exception &e) {

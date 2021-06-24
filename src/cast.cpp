@@ -5,17 +5,17 @@
 
 namespace lsl {
 
-template <> std::string to_string(double str) {
+template <> std::string to_string(double val) {
 	std::ostringstream os;
 	os.imbue(std::locale::classic());
-	os << std::setprecision(16) << std::showpoint << str;
+	os << std::setprecision(16) << std::showpoint << val;
 	return os.str();
 }
 
-template <> std::string to_string(float str) {
+template <> std::string to_string(float val) {
 	std::ostringstream os;
 	os.imbue(std::locale::classic());
-	os << std::setprecision(8) << std::showpoint << str;
+	os << std::setprecision(8) << std::showpoint << val;
 	return os.str();
 }
 

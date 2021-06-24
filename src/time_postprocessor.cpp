@@ -2,9 +2,12 @@
 #include "api_config.h"
 
 #include <cmath>
+#include <utility>
 
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
-#pragma GCC diagnostic ignored "-Wimplicit-int-float-conversion"
+#ifdef __clang__
+#pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
+#endif
 
 // === implementation of the time_postprocessor class ===
 
@@ -13,12 +16,14 @@ using namespace lsl;
 /// how many samples have to be seen between clocksyncs?
 const uint8_t samples_between_clocksyncs = 50;
 
-time_postprocessor::time_postprocessor(const postproc_callback_t &query_correction,
-	const postproc_callback_t &query_srate, const reset_callback_t &query_reset)
-	: samples_since_last_clocksync(samples_between_clocksyncs), query_srate_(query_srate),
-	  options_(proc_none), halftime_(api_config::get_instance()->smoothing_halftime()),
-	  query_correction_(query_correction), query_reset_(query_reset), next_query_time_(0.0),
-	  last_offset_(0.0), last_value_(std::numeric_limits<double>::lowest()) {}
+time_postprocessor::time_postprocessor(postproc_callback_t query_correction,
+	postproc_callback_t query_srate, reset_callback_t query_reset)
+	: samples_since_last_clocksync(samples_between_clocksyncs),
+	  query_srate_(std::move(query_srate)), options_(proc_none),
+	  halftime_(api_config::get_instance()->smoothing_halftime()),
+	  query_correction_(std::move(query_correction)), query_reset_(std::move(query_reset)),
+	  next_query_time_(0.0), last_offset_(0.0), last_value_(std::numeric_limits<double>::lowest()) {
+}
 
 void time_postprocessor::set_options(uint32_t options)
 {

@@ -174,10 +174,8 @@ void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
 			// timedata request: parse time of original transmission
 			process_timedata_request(request_stream, t1);
 			return;
-		} else {
-			DLOG_F(INFO, "%p Unknown method '%s' received by udp-server", (void *)this,
-				method.c_str());
 		}
+		DLOG_F(INFO, "%p Unknown method '%s' received by udp-server", (void *)this, method.c_str());
 	} catch (std::exception &e) {
 		LOG_F(
 			WARNING, "%p udp_server: hiccup during request processing: %s", (void *)this, e.what());

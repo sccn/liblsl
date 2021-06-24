@@ -128,7 +128,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(25));
 			if (std::all_of(io_threads_.begin(), io_threads_.end(),
-					[](thread_p thread) { return thread->joinable(); })) {
+					[](const thread_p &thread) { return thread->joinable(); })) {
 				for (auto &thread : io_threads_) thread->join();
 				DLOG_F(INFO, "All of %s's IO threads were joined succesfully", name);
 				break;

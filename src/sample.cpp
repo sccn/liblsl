@@ -5,6 +5,10 @@
 
 using namespace lsl;
 
+#ifdef _MSC_VER
+#pragma warning(suppress : 4291)
+#endif
+
 sample::~sample() noexcept{
 	if (format_ != cft_string) return;
 	for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e; ++p)
@@ -187,7 +191,8 @@ void sample::save_streambuf(
 	}
 }
 
-void sample::load_streambuf(std::streambuf &sb, int, int use_byte_order, bool suppress_subnormals) {
+void sample::load_streambuf(
+	std::streambuf &sb, int /*unused*/, int use_byte_order, bool suppress_subnormals) {
 	// read sample header
 	if (load_value<uint8_t>(sb, use_byte_order) == TAG_DEDUCED_TIMESTAMP)
 		// deduce the timestamp
@@ -239,7 +244,7 @@ void sample::load_streambuf(std::streambuf &sb, int, int use_byte_order, bool su
 	}
 }
 
-template <class Archive> void sample::serialize_channels(Archive &ar, const uint32_t) {
+template <class Archive> void sample::serialize_channels(Archive &ar, const uint32_t /*unused*/) {
 	switch (format_) {
 	case cft_float32:
 		for (float *p = (float *)&data_, *e = p + num_channels_; p < e; ar & *p++)
@@ -311,7 +316,7 @@ template <typename T> void test_pattern(T *data, uint32_t num_channels, int offs
 }
 
 sample &sample::assign_test_pattern(int offset) {
-	pushthrough = 1;
+	pushthrough = true;
 	timestamp = 123456.789;
 
 	switch (format_) {
@@ -365,7 +370,6 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	sample *s = nullptr;
 	for (char *p = storage_, *e = p + storage_size_; p < e;) {
-#pragma warning(suppress : 4291)
 		s = new (reinterpret_cast<sample *>(p)) sample(fmt, num_chans, this);
 		s->next_ = (sample *)(p += sample_size_);
 	}
@@ -377,7 +381,6 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	sample *result = pop_freelist();
 	if (!result)
-#pragma warning(suppress : 4291)
 		result = new (new char[sample_size_]) sample(fmt_, num_chans_, this);
 	result->timestamp = timestamp;
 	result->pushthrough = pushthrough;

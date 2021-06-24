@@ -2,8 +2,6 @@
 #include "stream_outlet_impl.h"
 #include <loguru.hpp>
 
-#pragma warning(disable : 4800)
-
 extern "C" {
 #include "api_types.hpp"
 // include api_types before public API header
@@ -14,8 +12,10 @@ using namespace lsl;
 // boilerplate wrapper code
 LIBLSL_C_API lsl_outlet lsl_create_outlet(
 	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered) {
-	return create_object_noexcept<stream_outlet_impl>(*info, chunk_size,
-		info->nominal_srate() ? (int)(info->nominal_srate() * max_buffered) : max_buffered * 100);
+	double buftime = info->nominal_srate();
+	if (buftime <= 0) buftime = 100;
+	return create_object_noexcept<stream_outlet_impl>(
+		*info, chunk_size, static_cast<int>(buftime * max_buffered));
 }
 
 LIBLSL_C_API void lsl_destroy_outlet(lsl_outlet out) {

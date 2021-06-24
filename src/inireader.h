@@ -11,7 +11,7 @@ class INI {
 	}
 
 public:
-	void load(std::istream &ini);
+	void load(std::istream &infile);
 
 	template <typename T> inline T get(const char *key, T defaultval = T()) {
 		auto it = values.find(key);

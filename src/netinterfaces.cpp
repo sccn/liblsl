@@ -84,7 +84,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 		LOG_F(ERROR, "Couldn't enumerate network interfaces: %d", errno);
 		return res;
 	}
-	for (auto addr = ifs; addr != nullptr; addr = addr->ifa_next) {
+	for (auto *addr = ifs; addr != nullptr; addr = addr->ifa_next) {
 		// No address? Skip.
 		if (addr->ifa_addr == nullptr) continue;
 		LOG_F(INFO, "netif '%s' (status: %d, multicast: %d, broadcast: %d)", addr->ifa_name,

@@ -15,7 +15,7 @@ class query_cache {
 	std::mutex cache_mut_;
 
 public:
-	bool matches_query(const pugi::xml_document &doc, const std::string query, bool nocache);
+	bool matches_query(const pugi::xml_document &doc, const std::string &query, bool nocache);
 };
 
 /**
@@ -46,8 +46,8 @@ public:
 	 * @param source_id Unique identifier of the source or device if available (e.g., serial
 	 * number). Allows for advanced failure recovery.
 	 */
-	stream_info_impl(const std::string &name, const std::string &type, int channel_count,
-		double nominal_srate, lsl_channel_format_t channel_format, const std::string &source_id);
+	stream_info_impl(const std::string &name, std::string type, int channel_count,
+		double nominal_srate, lsl_channel_format_t channel_format, std::string source_id);
 
 	/// Copy constructor. Needs special handling because xml_document is non-copyable.
 	stream_info_impl(const stream_info_impl &rhs);

@@ -3,11 +3,12 @@
 #include "send_buffer.h"
 #include <chrono>
 #include <loguru.hpp>
+#include <utility>
 
 using namespace lsl;
 
 consumer_queue::consumer_queue(std::size_t max_capacity, send_buffer_p registry)
-	: registry_(registry), buffer_(max_capacity) {
+	: registry_(std::move(registry)), buffer_(max_capacity) {
 	if (registry_) registry_->register_consumer(this);
 }
 

@@ -22,7 +22,11 @@ LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) {
 }
 
 LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout, int32_t *ec) {
-	return create_object_noexcept<stream_info_impl>(in->info(timeout));
+	try {
+		return new stream_info_impl(in->info(timeout));
+	}
+	LSL_STORE_EXCEPTION_IN(ec)
+	return nullptr;
 }
 
 LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *ec) {

@@ -78,7 +78,7 @@ private:
 	void receive_next_result();
 
 	/// Thos function starts an async send operation for the given current endpoint.
-	void send_next_query(endpoint_list::const_iterator i);
+	void send_next_query(endpoint_list::const_iterator next);
 
 	/// Handler that gets called when a receive has completed.
 	void handle_receive_outcome(error_code err, std::size_t len);
