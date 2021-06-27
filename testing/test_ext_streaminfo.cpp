@@ -20,8 +20,8 @@ TEST_CASE("multithreaded lsl_last_error", "[threading][basic]") {
 
 /// Ensure that an overly long error message won't overflow the buffer
 TEST_CASE("lsl_last_error size", "[basic]") {
-	std::string invalidquery(512, '\'');
+	std::string invalidquery(511, '\'');
 	CHECK_THROWS(lsl::resolve_stream(invalidquery, 1, 0.1));
-	REQUIRE(lsl_last_error()[512] == 0);
+	REQUIRE(lsl_last_error()[511] == 0);
 }
 } // namespace
