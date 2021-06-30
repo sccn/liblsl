@@ -7,7 +7,7 @@
 /// Helper for LSL_STORE_EXCEPTION_IN
 #define LSLCATCHANDSTORE(ecvar, Exception, code)                                                   \
 	catch (Exception & e) {                                                                        \
-		strncpy(last_error, e.what(), sizeof(last_error) - 1);                                     \
+		strncpy(const_cast<char *>(lsl_last_error()), e.what(), LAST_ERROR_SIZE - 1);              \
 		int32_t *__ec = ecvar;                                                                     \
 		if (__ec != nullptr) *__ec = code;                                                         \
 	}
@@ -15,7 +15,7 @@
 /// Helper for LSL_STORE_EXCEPTION_IN
 #define LSLCATCHANDRETURN(Exception, code)                                                         \
 	catch (Exception & e) {                                                                        \
-		strncpy(last_error, e.what(), sizeof(last_error) - 1);                                     \
+		strncpy(const_cast<char *>(lsl_last_error()), e.what(), LAST_ERROR_SIZE - 1);              \
 		return code;                                                                               \
 	}
 

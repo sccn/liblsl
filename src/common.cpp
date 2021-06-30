@@ -16,8 +16,6 @@
 #include <mmsystem.h>
 #endif
 
-thread_local char last_error[512] = {0};
-
 int64_t lsl::lsl_local_clock_ns() {
 	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
 }
@@ -43,7 +41,10 @@ LIBLSL_C_API void lsl_destroy_string(char *s) {
 	if (s) free(s);
 }
 
-LIBLSL_C_API const char *lsl_last_error(void) { return last_error; }
+LIBLSL_C_API const char *lsl_last_error(void) {
+	thread_local char last_error[LAST_ERROR_SIZE] = {0};
+	return last_error;
+}
 }
 
 // === implementation of misc functions ===
