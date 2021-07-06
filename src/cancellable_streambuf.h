@@ -32,9 +32,11 @@
 #include <set>
 #include <streambuf>
 
-using lslboost::asio::basic_socket;
-using lslboost::asio::io_context;
-using lslboost::asio::ip::tcp;
+namespace asio = lslboost::asio;
+using lslboost::system::error_code;
+using asio::basic_socket;
+using asio::io_context;
+using asio::ip::tcp;
 
 namespace lsl {
 typedef tcp Protocol;
@@ -46,7 +48,7 @@ class cancellable_streambuf : public std::streambuf,
 public:
 	/// Construct a cancellable_streambuf without establishing a connection.
 	cancellable_streambuf()
-		: basic_socket<Protocol>(lslboost::base_from_member<lslboost::asio::io_context>::member),
+		: basic_socket<Protocol>(lslboost::base_from_member<asio::io_context>::member),
 		  cancel_issued_(false), cancel_started_(false) {
 		init_buffers();
 	}
@@ -92,10 +94,10 @@ public:
 			this->basic_socket<Protocol>::async_connect(endpoint, handler);
 			this->get_service().get_io_context().reset();
 		}
-		ec_ = lslboost::asio::error::would_block;
+		ec_ = asio::error::would_block;
 		do
 			this->get_service().get_io_context().run_one();
-		while (!cancel_issued_ && ec_ == lslboost::asio::error::would_block);
+		while (!cancel_issued_ && ec_ == asio::error::would_block);
 		return !ec_ ? this : nullptr;
 	}
 
@@ -115,7 +117,7 @@ public:
 	 * @return An \c error_code corresponding to the last error from the stream
 	 * buffer.
 	 */
-	const lslboost::system::error_code &error() const { return ec_; }
+	const error_code &error() const { return ec_; }
 
 protected:
 	/// Close the socket if it's open.
@@ -142,14 +144,14 @@ protected:
 		if (gptr() == egptr()) {
 			io_handler handler = {this};
 			this->get_service().async_receive(this->get_implementation(),
-				lslboost::asio::buffer(lslboost::asio::buffer(get_buffer_) + putback_max), 0,
+				asio::buffer(asio::buffer(get_buffer_) + putback_max), 0,
 				handler);
 
-			ec_ = lslboost::asio::error::would_block;
+			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
 			do
 				this->get_service().get_io_context().run_one();
-			while (ec_ == lslboost::asio::error::would_block);
+			while (ec_ == asio::error::would_block);
 			if (ec_) return traits_type::eof();
 
 			setg(&get_buffer_[0], &get_buffer_[0] + putback_max,
@@ -161,16 +163,16 @@ protected:
 
 	int_type overflow(int_type c) override {
 		// Send all data in the output buffer.
-		lslboost::asio::const_buffer buffer = lslboost::asio::buffer(pbase(), pptr() - pbase());
-		while (lslboost::asio::buffer_size(buffer) > 0) {
+		asio::const_buffer buffer = asio::buffer(pbase(), pptr() - pbase());
+		while (asio::buffer_size(buffer) > 0) {
 			io_handler handler = {this};
 			this->get_service().async_send(
-				this->get_implementation(), lslboost::asio::buffer(buffer), 0, handler);
-			ec_ = lslboost::asio::error::would_block;
+				this->get_implementation(), asio::buffer(buffer), 0, handler);
+			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
 			do
 				this->get_service().get_io_context().run_one();
-			while (ec_ == lslboost::asio::error::would_block);
+			while (ec_ == asio::error::would_block);
 			if (ec_) return traits_type::eof();
 			buffer = buffer + bytes_transferred_;
 		}
@@ -202,7 +204,7 @@ protected:
 	friend struct io_handler;
 	struct io_handler {
 		cancellable_streambuf *this_;
-		void operator()(const lslboost::system::error_code &ec, std::size_t bytes_transferred = 0) {
+		void operator()(const error_code & ec, std::size_t bytes_transferred = 0) {
 			this_->ec_ = ec;
 			this_->bytes_transferred_ = bytes_transferred;
 		}
@@ -210,9 +212,9 @@ protected:
 
 	enum { putback_max = 8 };
 	enum { buffer_size = 512 };
-	lslboost::asio::detail::array<char, buffer_size> get_buffer_;
-	lslboost::asio::detail::array<char, buffer_size> put_buffer_;
-	lslboost::system::error_code ec_;
+	asio::detail::array<char, buffer_size> get_buffer_;
+	asio::detail::array<char, buffer_size> put_buffer_;
+	error_code ec_;
 	std::size_t bytes_transferred_;
 	std::atomic<bool> cancel_issued_;
 	bool cancel_started_;
