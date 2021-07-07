@@ -94,7 +94,7 @@ private:
 	// Returns true if successful or false if queue full.
 	template <class T> bool try_push(T &&sample) {
 		std::size_t write_index = write_idx_.load(std::memory_order_acquire);
-		std::size_t next_idx = add_wrap(write_index, 1);
+		std::size_t next_idx = add1_wrap(write_index);
 		item_t &item = buffer_[write_index % size_];
 		if (UNLIKELY(write_index != item.seq_state.load(std::memory_order_acquire)))
 			return false; // item currently occupied, queue full
@@ -112,7 +112,7 @@ private:
 		for (;;) {
 			item = &buffer_[read_index % size_];
 			const std::size_t seq_state = item->seq_state.load(std::memory_order_acquire);
-			const std::size_t next_idx = add_wrap(read_index, 1);
+			const std::size_t next_idx = add1_wrap(read_index);
 			// check if the item is ok to pop
 			if (LIKELY(seq_state == next_idx)) {
 				// yes, try to claim slot using CAS
@@ -137,10 +137,16 @@ private:
 	// helper to either move or drop a value, depending on whether a dst argument is given
 	inline static void move_or_drop(sample_p &src) { src.~sample_p(); }
 	inline static void move_or_drop(sample_p &src, sample_p &dst) { dst = std::move(src); }
-	// helper to add a delta to the given index and wrap correctly
+
+	/// helper to add a delta to the given index and wrap correctly
 	FORCEINLINE std::size_t add_wrap(std::size_t x, std::size_t delta) const {
 		const std::size_t xp = x + delta;
 		return xp >= wrap_at_ ? xp - wrap_at_ : xp;
+	}
+
+	/// helper to increment the given index, wrapping it if necessary
+	inline std::size_t add1_wrap(std::size_t x) const {
+		return ++x == wrap_at_ ? 0 : x;
 	}
 
 	/// optional consumer registry
