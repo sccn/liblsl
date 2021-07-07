@@ -25,6 +25,7 @@ option(LSL_BUILD_STATIC "Build LSL as static library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
+option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
 
@@ -165,26 +166,33 @@ set_source_files_properties("thirdparty/loguru/loguru.cpp"
 find_package(Threads REQUIRED)
 
 # create the lslboost target
-add_library(lslboost OBJECT
-	lslboost/serialization_objects.cpp
-)
-target_link_libraries(lslboost PUBLIC Threads::Threads)
-
-if(LSL_SLIMARCHIVE)
-	message(STATUS "Using shim instead of full Boost.Archive")
-	target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
+add_library(lslboost INTERFACE)
+if(LSL_BUNDLED_BOOST)
+	message(STATUS "Using bundled Boost")
+	target_include_directories(lslboost SYSTEM INTERFACE
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
+else()
+	message(STATUS "Using system Boost")
+	find_package(Boost REQUIRED)
+	target_compile_definitions(lslboost
+		INTERFACE
+			lslboost=boost # allows the LSL code base to work with the original Boost namespace/headers
+	)
+	target_link_libraries(lslboost INTERFACE Boost::boost Boost::disable_autolinking)
 endif()
-target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
-target_compile_definitions(lslboost
-	PUBLIC
-		BOOST_ALL_NO_LIB
-)
-target_include_directories(lslboost SYSTEM PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
+if(LSL_SLIMARCHIVE OR NOT LSL_BUNDLED_BOOST)
+	message(STATUS "Using shim instead of full Boost.Archive")
+	target_compile_definitions(lslboost INTERFACE SLIMARCHIVE)
+elseif(LSL_BUNDLED_BOOST)
+	# compile Boost.Serialization objects as part of lslobj
+	target_sources(lslobj PRIVATE lslboost/serialization_objects.cpp)
+endif()
+target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
 
 # target configuration for the internal lslobj target
-target_link_libraries(lslobj PRIVATE lslboost)
+target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
+target_compile_features(lslobj PUBLIC cxx_std_11 cxx_lambda_init_captures)
 target_include_directories(lslobj
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
