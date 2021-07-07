@@ -5,6 +5,7 @@
 #include "forward.h"
 #include <atomic>
 #include <boost/endian/conversion.hpp>
+#include <boost/predef/other/endian.h>
 #include <boost/serialization/split_member.hpp>
 #include <iosfwd>
 #include <limits>

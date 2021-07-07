@@ -22,6 +22,7 @@ option(LSL_BUILD_STATIC "Build LSL as static library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
+option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 
 set(LSL_WINVER "0x0601" CACHE STRING
@@ -156,20 +157,49 @@ set_source_files_properties("thirdparty/loguru/loguru.cpp"
 find_package(Threads REQUIRED)
 
 # create the lslboost target
-add_library(lslboost OBJECT
-	lslboost/serialization_objects.cpp
-)
-target_link_libraries(lslboost PUBLIC Threads::Threads)
-target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
+if(LSL_BUNDLED_BOOST)
+	message(STATUS "Using bundled Boost")
+		
+	add_library(lslboost OBJECT
+		lslboost/serialization_objects.cpp
+	)
+	target_link_libraries(lslboost PUBLIC Threads::Threads)
+	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
-target_compile_definitions(lslboost
-	PUBLIC
-		BOOST_ALL_NO_LIB
-		BOOST_ASIO_STANDALONE
-		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
-)
-target_include_directories(lslboost SYSTEM PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
+	target_compile_definitions(lslboost
+		PUBLIC
+			BOOST_ALL_NO_LIB
+			BOOST_ASIO_STANDALONE
+			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
+	)
+	target_include_directories(lslboost SYSTEM PUBLIC
+		${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
+else()
+	message(STATUS "Using system Boost")
+
+	find_package(Boost REQUIRED
+		COMPONENTS
+			serialization
+	)
+	add_library(lslboost INTERFACE)
+	target_compile_definitions(lslboost
+		INTERFACE
+			BOOST_ALL_NO_LIB
+			BOOST_ARCHIVE_SOURCE
+			BOOST_ASIO_STANDALONE
+			#BOOST_ASIO_SEPARATE_COMPILATION
+			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
+			$<$<PLATFORM_ID:Windows>:_WIN32_WINNT=${LSL_WINVER}>
+			lslboost=boost # allows the LSL code base to work with the original Boost namespace/headers
+	)
+	target_link_libraries(lslboost
+	    INTERFACE
+	        Boost::boost Boost::serialization
+			$<$<PLATFORM_ID:Windows>:bcrypt>
+			$<$<PLATFORM_ID:Windows>:mswsock>
+			$<$<PLATFORM_ID:Windows>:ws2_32>
+	)
+endif()
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
