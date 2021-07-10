@@ -5,14 +5,10 @@
 #include <boost/asio/ip/udp.hpp>
 #include <memory>
 
-using lslboost::asio::ip::udp;
-using lslboost::system::error_code;
-namespace asio = lslboost::asio;
+using asio::ip::udp;
+using err_t = const lslboost::system::error_code &;
 
 namespace lsl {
-
-/// shared pointer to a string
-using string_p = std::shared_ptr<std::string>;
 /// shared pointer to a socket
 using udp_socket_p = std::shared_ptr<udp::socket>;
 
@@ -63,7 +59,7 @@ private:
 	void request_next_packet();
 
 	/// Handler that gets called when a the next packet was received (or the op was cancelled).
-	void handle_receive_outcome(error_code err, std::size_t len);
+	void handle_receive_outcome(err_t err, std::size_t len);
 
 	/// Parse and process a LSL::shortinfo request
 	void process_shortinfo_request(std::istream& request_stream);

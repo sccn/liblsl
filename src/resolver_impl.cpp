@@ -11,9 +11,6 @@
 // === implementation of the resolver_impl class ===
 
 using namespace lsl;
-namespace asio = lslboost::asio;
-namespace ip = asio::ip;
-using err_t = const lslboost::system::error_code &;
 
 resolver_impl::resolver_impl()
 	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
@@ -23,7 +20,7 @@ resolver_impl::resolver_impl()
 	uint16_t mcast_port = cfg_->multicast_port();
 	for (const auto &mcast_addr : cfg_->multicast_addresses()) {
 		try {
-			mcast_endpoints_.emplace_back(ip::make_address(mcast_addr), (uint16_t)mcast_port);
+			mcast_endpoints_.emplace_back(asio::ip::make_address(mcast_addr), mcast_port);
 		} catch (std::exception &) {}
 	}
 
@@ -204,7 +201,7 @@ void resolver_impl::udp_multicast_burst() {
 	}
 }
 
-void resolver_impl::udp_unicast_burst(error_code err) {
+void resolver_impl::udp_unicast_burst(err_t err) {
 	if (err == asio::error::operation_aborted) return;
 
 	int failures = 0;

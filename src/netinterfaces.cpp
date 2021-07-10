@@ -1,12 +1,12 @@
 #include "netinterfaces.h"
 #include <loguru.hpp>
 
-using lslboost::asio::ip::address_v4;
+using asio::ip::address_v4;
 
-lslboost::asio::ip::address_v6 sinaddr_to_asio(sockaddr_in6 *addr) {
-	lslboost::asio::ip::address_v6::bytes_type buf;
+asio::ip::address_v6 sinaddr_to_asio(sockaddr_in6 *addr) {
+	asio::ip::address_v6::bytes_type buf;
 	memcpy(buf.data(), addr->sin6_addr.s6_addr, sizeof(addr->sin6_addr));
-	return lslboost::asio::ip::make_address_v6(buf, addr->sin6_scope_id);
+	return asio::ip::make_address_v6(buf, addr->sin6_scope_id);
 }
 
 #if defined(_WIN32)
@@ -47,7 +47,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 				for (Addr *uaddr = addr->FirstUnicastAddress; uaddr != 0; uaddr = uaddr->Next) {
 					if (uaddr->Address.lpSockaddr->sa_family != AF_INET) continue;
 
-					if_.addr = lslboost::asio::ip::make_address_v4(
+					if_.addr = asio::ip::make_address_v4(
 						ntohl(reinterpret_cast<sockaddr_in *>(uaddr->Address.lpSockaddr)
 								  ->sin_addr.s_addr));
 					ret.emplace_back(std::move(if_));
@@ -98,7 +98,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 		lsl::netif if_;
 
 		if (addr->ifa_addr->sa_family == AF_INET) {
-			if_.addr = lslboost::asio::ip::make_address_v4(
+			if_.addr = asio::ip::make_address_v4(
 				ntohl(reinterpret_cast<sockaddr_in *>(addr->ifa_addr)->sin_addr.s_addr));
 			LOG_F(INFO, "\tIPv4 addr: %x", if_.addr.to_v4().to_uint());
 		} else if (addr->ifa_addr->sa_family == AF_INET6) {
