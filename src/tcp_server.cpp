@@ -12,8 +12,6 @@
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
-#include <boost/uuid/random_generator.hpp>
-#include <boost/uuid/uuid_io.hpp>
 #include <loguru.hpp>
 #include <memory>
 #include <thread>
@@ -158,7 +156,7 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	// and assign connection-dependent fields
 	// (note: this may be assigned multiple times by multiple TCPs during setup but does not matter)
 	info_->session_id(api_config::get_instance()->session_id());
-	info_->uid(lslboost::uuids::to_string(lslboost::uuids::random_generator()()));
+	info_->reset_uid();
 	info_->created_at(lsl_clock());
 	info_->hostname(asio::ip::host_name());
 	if (protocol == tcp::v4())

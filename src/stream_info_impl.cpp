@@ -2,6 +2,8 @@
 #include "api_config.h"
 #include "cast.h"
 #include <algorithm>
+#include <boost/uuid/random_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 #include <loguru.hpp>
 #include <sstream>
 #include <utility>
@@ -252,6 +254,12 @@ void stream_info_impl::created_at(double v) {
 void stream_info_impl::uid(const std::string &v) {
 	uid_ = v;
 	doc_.child("info").child("uid").first_child().set_value(uid_.c_str());
+}
+
+const std::string& stream_info_impl::reset_uid()
+{
+	uid(lslboost::uuids::to_string(lslboost::uuids::random_generator()()));
+	return uid_;
 }
 
 void stream_info_impl::session_id(const std::string &v) {
