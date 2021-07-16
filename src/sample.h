@@ -1,8 +1,8 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
-#include "cast.h"
 #include "common.h"
 #include "forward.h"
+#include "util/cast.hpp"
 #include <atomic>
 #include <boost/endian/conversion.hpp>
 #include <boost/serialization/split_member.hpp>

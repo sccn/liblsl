@@ -1,6 +1,6 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
-#include "cast.h"
+#include "util/cast.hpp"
 #include <algorithm>
 #include <boost/uuid/random_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>

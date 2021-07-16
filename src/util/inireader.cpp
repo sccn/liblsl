@@ -1,4 +1,4 @@
-#include "inireader.h"
+#include "inireader.hpp"
 #include <istream>
 #include <stdexcept>
 
