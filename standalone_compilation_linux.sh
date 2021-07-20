@@ -14,7 +14,7 @@ ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} ${CXXFLAGS} -Ilslboost \
 	-DBOOST_ASIO_STANDALONE \
 	-DLOGURU_DEBUG_LOGGING=0 \
 	-DLSL_LIBRARY_INFO_STR=\"${LSLGITREVISION:-"built from standalone build script"}\" \
-	src/*.cpp \
+	src/*.cpp src/util/*.cpp \
 	thirdparty/pugixml/pugixml.cpp -Ithirdparty/pugixml \
 	thirdparty/loguru/loguru.cpp -Ithirdparty/loguru \
 	lslboost/serialization_objects.cpp \
