@@ -2,6 +2,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <memory>
+#include <string>
 
 namespace lslboost {
 class thread;
