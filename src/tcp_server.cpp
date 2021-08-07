@@ -123,7 +123,7 @@ private:
 	int data_protocol_version_{100};
 	/// byte order to use (0=portable, 1234=little endian, 4321=big endian, 2134=PDP endian,
 	/// unsupported)
-	int use_byte_order_{BOOST_BYTE_ORDER};
+	int use_byte_order_{LSL_BYTE_ORDER};
 	/// our chunk granularity
 	int chunk_granularity_{0};
 	/// maximum number of samples buffered
@@ -425,20 +425,20 @@ void client_session::handle_read_feedparams(
 				data_protocol_version_ = 100;
 			if (data_protocol_version_ >= 110) {
 				// decide on the byte order if conflicting
-				if (BOOST_BYTE_ORDER != client_byte_order) {
+				if (LSL_BYTE_ORDER != client_byte_order) {
 					if (client_byte_order == 2134 && client_value_size >= 8) {
 						// since we have no implementation for this byte order conversion let
 						// the client do it
-						use_byte_order_ = BOOST_BYTE_ORDER;
+						use_byte_order_ = LSL_BYTE_ORDER;
 					} else {
 						// let the faster party perform the endian conversion
 						use_byte_order_ = (client_value_size <= 1 || (measure_endian_performance() >
 																		 client_endian_performance))
 											  ? client_byte_order
-											  : BOOST_BYTE_ORDER;
+											  : LSL_BYTE_ORDER;
 					}
 				} else
-					use_byte_order_ = BOOST_BYTE_ORDER;
+					use_byte_order_ = LSL_BYTE_ORDER;
 				// determine if subnormal suppression needs to be enabled
 				client_suppress_subnormals =
 					(format_subnormal[format] && !client_supports_subnormals);

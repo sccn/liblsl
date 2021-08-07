@@ -136,13 +136,13 @@ void load_raw(std::streambuf &sb, void *address, std::size_t count) {
 template <typename T> T load_value(std::streambuf &sb, int use_byte_order) {
 	T tmp;
 	load_raw(sb, &tmp, sizeof(T));
-	if (sizeof(T) > 1 && use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(tmp);
+	if (sizeof(T) > 1 && use_byte_order != LSL_BYTE_ORDER) endian_reverse_inplace(tmp);
 	return tmp;
 }
 
 /// Save a value to a stream buffer with correct endian treatment.
 template <typename T> void save_value(std::streambuf &sb, T v, int use_byte_order) {
-	if (use_byte_order != BOOST_BYTE_ORDER) endian_reverse_inplace(v);
+	if (use_byte_order != LSL_BYTE_ORDER) endian_reverse_inplace(v);
 	save_raw(sb, &v, sizeof(T));
 }
 
@@ -181,7 +181,7 @@ void sample::save_streambuf(
 		}
 	} else {
 		// write numeric data in binary
-		if (use_byte_order == BOOST_BYTE_ORDER || format_sizes[format_] == 1) {
+		if (use_byte_order == LSL_BYTE_ORDER || format_sizes[format_] == 1) {
 			save_raw(sb, &data_, datasize());
 		} else {
 			memcpy(scratchpad, &data_, datasize());
@@ -227,7 +227,7 @@ void sample::load_streambuf(
 	} else {
 		// read numeric channel data
 		load_raw(sb, &data_, datasize());
-		if (use_byte_order != BOOST_BYTE_ORDER && format_sizes[format_] > 1) convert_endian(&data_);
+		if (use_byte_order != LSL_BYTE_ORDER && format_sizes[format_] > 1) convert_endian(&data_);
 		if (suppress_subnormals && format_float[format_]) {
 			if (format_ == cft_float32) {
 				for (uint32_t *p = (uint32_t *)&data_, *e = p + num_channels_; p < e; p++)
