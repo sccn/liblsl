@@ -7,15 +7,15 @@
  * resolve functions only includes the core information otherwise.
  */
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	std::string field, value;
 	if (argc != 3) {
 		std::cout << "This connects to a stream which has a particular value for a given field and "
-		             "displays its full stream_info contentss."
-		          << std::endl;
+					 "displays its full stream_info contentss."
+				  << std::endl;
 		std::cout << "Please enter a field name and the desired value (e.g. \"type EEG\" (without "
-		             "the quotes)):"
-		          << std::endl;
+					 "the quotes)):"
+				  << std::endl;
 		std::cin >> field >> value;
 	} else {
 		field = argv[1];
@@ -36,11 +36,11 @@ int main(int argc, char* argv[]) {
 
 		// get & display the info
 		std::cout << "The information about this stream is displayed in the following: "
-		          << std::endl;
+				  << std::endl;
 		lsl::stream_info info = inlet.info();
 		std::cout << info.as_xml() << std::endl;
 
-	} catch (std::exception& e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
+	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;
 	std::cin.get();
 	return 0;

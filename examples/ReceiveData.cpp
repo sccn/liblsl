@@ -1,7 +1,7 @@
-#include <thread>
 #include <iostream>
 #include <lsl_cpp.h>
 #include <string>
+#include <thread>
 
 
 /**
@@ -9,27 +9,25 @@
  * network and how to connect to it in order to receive data.
  */
 
-void printChunk(const std::vector<float>& chunk, std::size_t n_channels) {
-	for(std::size_t i=0; i < chunk.size(); ++i) {
+void printChunk(const std::vector<float> &chunk, std::size_t n_channels) {
+	for (std::size_t i = 0; i < chunk.size(); ++i) {
 		std::cout << chunk[i] << ' ';
-		if (i % n_channels == n_channels - 1)
-			std::cout << '\n';
+		if (i % n_channels == n_channels - 1) std::cout << '\n';
 	}
 }
 
-void printChunk(const std::vector<std::vector<float>>& chunk) {
-	for(const auto& vec: chunk)
-		printChunk(vec, vec.size());
+void printChunk(const std::vector<std::vector<float>> &chunk) {
+	for (const auto &vec : chunk) printChunk(vec, vec.size());
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	std::string field, value;
 	const int max_samples = argc > 3 ? std::stoi(argv[3]) : 10;
 	if (argc < 3) {
 		std::cout << "This connects to a stream which has a particular value for a "
-		             "given field and receives data.\nPlease enter a field name and the desired "
-		             "value (e.g. \"type EEG\" (without the quotes)):"
-		          << std::endl;
+					 "given field and receives data.\nPlease enter a field name and the desired "
+					 "value (e.g. \"type EEG\" (without the quotes)):"
+				  << std::endl;
 		std::cin >> field >> value;
 	} else {
 		field = argv[1];
@@ -39,7 +37,7 @@ int main(int argc, char* argv[]) {
 	// resolve the stream of interet
 	std::cout << "Now resolving streams..." << std::endl;
 	std::vector<lsl::stream_info> results = lsl::resolve_stream(field, value);
-	if(results.empty()) throw std::runtime_error("No stream found");
+	if (results.empty()) throw std::runtime_error("No stream found");
 
 	std::cout << "Here is what was resolved: " << std::endl;
 	std::cout << results[0].as_xml() << std::endl;
@@ -54,7 +52,7 @@ int main(int argc, char* argv[]) {
 	std::vector<float> sample;
 	std::vector<std::vector<float>> chunk_nested_vector;
 
-	for(int i=0; i < max_samples; ++i) {
+	for (int i = 0; i < max_samples; ++i) {
 		// pull a single sample
 		inlet.pull_sample(sample);
 		printChunk(sample, inlet.get_channel_count());
@@ -73,7 +71,7 @@ int main(int argc, char* argv[]) {
 		printChunk(sample, inlet.get_channel_count());
 	}
 
-	if(argc == 1) {
+	if (argc == 1) {
 		std::cout << "Press any key to exit. " << std::endl;
 		std::cin.get();
 	}

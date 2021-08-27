@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 			outlet.push_chunk_numeric_structs(mychunk);
 		}
 
-	} catch (std::exception& e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
+	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;
 	std::cin.get();
 	return 0;
