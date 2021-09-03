@@ -2,11 +2,12 @@
 #include <vector>
 
 /**
- * This is a minimal example that demonstrates how a multi-channel stream (here 128ch) of a particular name (here: SimpleStream) can be 
- * resolved into an inlet, and how the raw sample data & time stamps are pulled from the inlet. This example does not display the obtained data.
+ * This is a minimal example that demonstrates how a multi-channel stream (here 128ch) of a
+ * particular name (here: SimpleStream) can be resolved into an inlet, and how the raw sample data &
+ * time stamps are pulled from the inlet. This example does not display the obtained data.
  */
 
-int main(int argc, char** argv) {
+int main(int argc, char **argv) {
 	using namespace lsl;
 
 	// resolve the stream of interest & make an inlet to get data from the first result

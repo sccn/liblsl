@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.12)
 project (liblsl
-	VERSION 1.15
+	VERSION 1.15.0
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
@@ -43,8 +43,6 @@ add_library(lslobj OBJECT
 	src/cancellable_streambuf.h
 	src/cancellation.h
 	src/cancellation.cpp
-	src/cast.h
-	src/cast.cpp
 	src/common.cpp
 	src/common.h
 	src/consumer_queue.cpp
@@ -54,8 +52,6 @@ add_library(lslobj OBJECT
 	src/forward.h
 	src/info_receiver.cpp
 	src/info_receiver.h
-	src/inireader.h
-	src/inireader.cpp
 	src/inlet_connection.cpp
 	src/inlet_connection.h
 	src/lsl_resolver_c.cpp
@@ -92,6 +88,11 @@ add_library(lslobj OBJECT
 	src/time_receiver.h
 	src/udp_server.cpp
 	src/udp_server.h
+	src/util/cast.hpp
+	src/util/cast.cpp
+	src/util/inireader.hpp
+	src/util/inireader.cpp
+	src/util/uuid.hpp
 	thirdparty/loguru/loguru.cpp
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
 	# headers

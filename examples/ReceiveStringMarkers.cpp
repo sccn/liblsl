@@ -9,14 +9,14 @@
  * pulled from their source
  */
 
-int main(int, char**) {
+int main(int, char **) {
 	// resolve the stream of interet
 	std::vector<std::unique_ptr<lsl::stream_inlet>> inlets;
 
-	for (auto& stream_info : lsl::resolve_stream("type", "Markers")) {
+	for (auto &stream_info : lsl::resolve_stream("type", "Markers")) {
 		if (stream_info.channel_count() != 1)
 			std::cerr << "Skipping stream " << stream_info.name()
-			          << " because it has more than one channel" << std::endl;
+					  << " because it has more than one channel" << std::endl;
 		else {
 			inlets.emplace_back(new lsl::stream_inlet(stream_info));
 			std::cout << "Listening to " << stream_info.name() << std::endl;
@@ -30,10 +30,10 @@ int main(int, char**) {
 	std::string sample;
 	double starttime = lsl::local_clock();
 	while (true) {
-		for (auto& inlet : inlets)
+		for (auto &inlet : inlets)
 			if (double ts = inlet->pull_sample(&sample, 1, .2))
 				std::cout << (ts - inlet->time_correction(1) - starttime) << '\t' << sample
-				          << std::endl;
+						  << std::endl;
 	}
 	return 0;
 }

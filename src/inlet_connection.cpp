@@ -5,8 +5,8 @@
 #include <sstream>
 
 using namespace lsl;
-namespace asio = lslboost::asio;
 namespace ip = asio::ip;
+using lslboost::system::error_code;
 
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
@@ -106,7 +106,7 @@ void inlet_connection::disengage() {
 /// convert a IPv6 address or hostname into an non-link-local address
 ip::address resolve_v6_addr(const std::string &addr) {
 	// Try to parse the IPv6 address
-	lslboost::system::error_code ec;
+	error_code ec;
 	auto v6addr = ip::make_address_v6(addr, ec);
 	if (!ec && !v6addr.is_link_local()) return v6addr;
 

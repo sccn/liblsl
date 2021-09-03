@@ -152,6 +152,9 @@ public:
 	const std::string &uid() const { return uid_; }
 	void uid(const std::string &v);
 
+	/// Reset the UID to a randomly generated UUID4
+	const std::string &reset_uid();
+
 	/**
 	 * Get/Set the session id for the given stream.
 	 *

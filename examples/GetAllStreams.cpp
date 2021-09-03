@@ -10,7 +10,7 @@
  * resolved and displayed. This is useful for browsing applications.
  */
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	try {
 		std::cout << "Here is a one-shot resolve of all current streams:" << std::endl;
 
@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
 			std::this_thread::sleep_for(std::chrono::seconds(1));
 		}
 
-	} catch (std::exception& e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
+	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;
 	std::cin.get();
 	return 0;

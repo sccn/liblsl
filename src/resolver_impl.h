@@ -11,9 +11,9 @@
 #include <mutex>
 #include <thread>
 
-using lslboost::asio::ip::tcp;
-using lslboost::asio::ip::udp;
-using lslboost::system::error_code;
+using asio::ip::tcp;
+using asio::ip::udp;
+using err_t = const lslboost::system::error_code &;
 
 namespace lsl {
 class api_config;
@@ -127,7 +127,7 @@ private:
 	void udp_multicast_burst();
 
 	/// Start a new resolver attempt on the known peers.
-	void udp_unicast_burst(error_code err);
+	void udp_unicast_burst(err_t err);
 
 	/// Cancel the currently ongoing resolve, if any.
 	void cancel_ongoing_resolve();
@@ -174,11 +174,11 @@ private:
 	/// a thread that runs background IO if we are performing a resolve_continuous
 	std::shared_ptr<std::thread> background_io_;
 	/// the overall timeout for a query
-	lslboost::asio::steady_timer resolve_timeout_expired_;
+	asio::steady_timer resolve_timeout_expired_;
 	/// a timer that fires when a new wave should be scheduled
-	lslboost::asio::steady_timer wave_timer_;
+	asio::steady_timer wave_timer_;
 	/// a timer that fires when the unicast wave should be scheduled
-	lslboost::asio::steady_timer unicast_timer_;
+	asio::steady_timer unicast_timer_;
 };
 
 } // namespace lsl

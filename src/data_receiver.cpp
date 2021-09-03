@@ -1,10 +1,10 @@
 #include "data_receiver.h"
 #include "api_config.h"
 #include "cancellable_streambuf.h"
-#include "cast.h"
 #include "inlet_connection.h"
 #include "sample.h"
 #include "socket_utils.h"
+#include "util/cast.hpp"
 #include <iostream>
 #include <loguru.hpp>
 #include <memory>
@@ -171,7 +171,7 @@ void data_receiver::data_thread() {
 					server_stream << "LSL:streamfeed/" << proposed_protocol_version << " "
 								  << conn_.current_uid() << "\r\n";
 					// transmit request parameters
-					server_stream << "Native-Byte-Order: " << BOOST_BYTE_ORDER << "\r\n";
+					server_stream << "Native-Byte-Order: " << LSL_BYTE_ORDER << "\r\n";
 					server_stream << "Endian-Performance: "
 								  << std::floor(measure_endian_performance()) << "\r\n";
 					server_stream << "Has-IEEE754-Floats: "
@@ -228,7 +228,7 @@ void data_receiver::data_thread() {
 							// get the header information
 							if (type == "byte-order") {
 								use_byte_order = std::stoi(rest);
-								if (use_byte_order == 2134 && BOOST_BYTE_ORDER != 2134 &&
+								if (use_byte_order == 2134 && LSL_BYTE_ORDER != 2134 &&
 									format_sizes[conn_.type_info().channel_format()] >= 8)
 									throw std::runtime_error(
 										"The byte order conversion requested by the other party is "

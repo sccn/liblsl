@@ -7,8 +7,6 @@
 #include <sstream>
 
 using namespace lsl;
-namespace asio = lslboost::asio;
-using err_t = const lslboost::system::error_code &;
 
 resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protocol,
 	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
@@ -93,7 +91,7 @@ void resolve_attempt_udp::receive_next_result() {
 			err_t err, size_t len) { shared_this->handle_receive_outcome(err, len); });
 }
 
-void resolve_attempt_udp::handle_receive_outcome(error_code err, std::size_t len) {
+void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 	if (cancelled_ || err == asio::error::operation_aborted || err == asio::error::not_connected ||
 		err == asio::error::not_socket)
 		return;
@@ -155,7 +153,7 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
 				? broadcast_socket_
 				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
 		// and send the query over it
-		sock.async_send_to(lslboost::asio::buffer(query_msg_), ep,
+		sock.async_send_to(asio::buffer(query_msg_), ep,
 			[shared_this = shared_from_this(), next](err_t err, size_t /*unused*/) {
 				if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
 					err != asio::error::not_connected && err != asio::error::not_socket)

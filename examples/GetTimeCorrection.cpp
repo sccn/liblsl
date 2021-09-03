@@ -9,15 +9,15 @@
  * should be approx. 0 (up to some tolerance).
  */
 
-int main(int argc, char* argv[]) {
+int main(int argc, char *argv[]) {
 	std::string field, value;
 	if (argc != 3) {
 		std::cout << "This connects to a stream which has a particular value for a given field and "
-		             "gets the time-synchronization information for it."
-		          << std::endl;
+					 "gets the time-synchronization information for it."
+				  << std::endl;
 		std::cout << "Please enter a field name and the desired value (e.g. \"type EEG\" (without "
-		             "the quotes)):"
-		          << std::endl;
+					 "the quotes)):"
+				  << std::endl;
 		std::cin >> field >> value;
 	} else {
 		field = argv[1];
@@ -38,13 +38,13 @@ int main(int argc, char* argv[]) {
 
 		// start receiving & displaying the data
 		std::cout << "Press [Enter] to query a new correction value (clocks may drift)..."
-		          << std::endl;
+				  << std::endl;
 		while (true) {
 			std::cout << inlet.time_correction() << std::endl;
 			std::cin.get();
 		}
 
-	} catch (std::exception& e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
+	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;
 	std::cin.get();
 	return 0;
