@@ -3,24 +3,33 @@
 #include <stdint.h>
 
 
-// define a packed sample struct (here a stereo sample).
-#pragma pack(1)
-struct stereo_sample {
-	int16_t l, r;
-};
-
-int main(int, char *[]) {
+int main(int argc, char **argv) {
 	try {
 
+		std::string name{argc > 1 ? argv[1] : "MyAudioStream"};
 		// resolve the stream of interest & make an inlet
-		lsl::stream_inlet inlet(lsl::resolve_stream("name", "MyAudioStream").at(0));
+		lsl::stream_inlet inlet(lsl::resolve_stream("name", name).at(0));
 
-		// and retrieve the chunks (note: this can of course also be done with pure std::vectors
-		// instead of stereo_samples)
+		inlet.flush();
+
+		double starttime = lsl::local_clock(), next_display = starttime + 1;
+
+		// and retrieve the chunks
+		uint64_t k = 0, num_samples = 0;
 		while (true) {
-			std::vector<stereo_sample> result;
-			if (double timestamp = inlet.pull_chunk_numeric_structs(result))
-				std::cout << timestamp << std::endl; // only showing the time stamps here
+			std::vector < std::vector<int16_t> > result;
+			if (double timestamp = inlet.pull_chunk(result))
+				num_samples += result.size();
+			k++;
+
+			// display code
+			if (k % 50 == 0) {
+				double now = lsl::local_clock();
+				if (now > next_display) {
+					std::cout << num_samples / (now - starttime) << " samples/sec" << std::endl;
+					next_display = now + 1;
+				}
+			}
 		}
 
 	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
