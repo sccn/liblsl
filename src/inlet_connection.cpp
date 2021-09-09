@@ -1,8 +1,16 @@
 #include "inlet_connection.h"
 #include "api_config.h"
+#include "resolver_impl.h"
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/basic_resolver.hpp>
+#include <chrono>
+#include <exception>
 #include <functional>
 #include <loguru.hpp>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 
 using namespace lsl;
 namespace ip = asio::ip;

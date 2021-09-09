@@ -2,11 +2,12 @@
 #include "api_config.h"
 #include "sample.h"
 #include "send_buffer.h"
+#include "stream_info_impl.h"
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <algorithm>
+#include <chrono>
 #include <memory>
-#include <sstream>
 
 namespace lsl {
 

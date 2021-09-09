@@ -1,4 +1,5 @@
 #include "cancellation.h"
+#include <exception>
 #include <loguru.hpp>
 
 lsl::cancellable_registry::~cancellable_registry() = default;

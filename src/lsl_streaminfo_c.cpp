@@ -1,8 +1,12 @@
 #include "lsl_c_api_helpers.hpp"
+#include "common.h"
 #include "stream_info_impl.h"
-#include <chrono>
+#include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <exception>
 #include <loguru.hpp>
+#include <stdexcept>
 #include <string>
 
 extern "C" {

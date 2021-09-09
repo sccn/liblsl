@@ -9,6 +9,7 @@
 
 namespace lsl {
 class inlet_connection;
+class stream_info_impl;
 
 /** Internal class of an inlet that is responsible for retrieving the info of the inlet.
  *

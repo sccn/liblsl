@@ -2,9 +2,15 @@
 #include "api_config.h"
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
+#include "stream_info_impl.h"
 #include <boost/asio/ip/udp.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/basic_resolver.hpp>
 #include <loguru.hpp>
 #include <memory>
+#include <exception>
+#include <pugixml.hpp>
+#include <stdexcept>
 #include <thread>
 
 

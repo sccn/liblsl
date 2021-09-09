@@ -6,6 +6,7 @@
 #include <atomic>
 #include <boost/endian/conversion.hpp>
 #include <boost/serialization/split_member.hpp>
+#include <cstdint>
 #include <iosfwd>
 #include <limits>
 #include <stdexcept>

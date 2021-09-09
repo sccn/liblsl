@@ -3,8 +3,12 @@
 #include "util/cast.hpp"
 #include "util/uuid.hpp"
 #include <algorithm>
+#include <cstdlib>
+#include <exception>
 #include <loguru.hpp>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 #include <utility>
 
 namespace lsl {

@@ -1,4 +1,5 @@
 #include "netinterfaces.h"
+#include <cstring>
 #include <loguru.hpp>
 
 using asio::ip::address_v4;

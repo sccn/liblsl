@@ -2,6 +2,7 @@
 #define TIME_POSTPROCESSOR_H
 
 #include "common.h"
+#include <cstdint>
 #include <functional>
 #include <mutex>
 
