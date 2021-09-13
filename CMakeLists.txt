@@ -198,7 +198,7 @@ if(UNIX AND NOT APPLE)
 	endif()
 elseif(WIN32)
 	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+	target_link_libraries(lslboost PRIVATE mswsock ws2_32)
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
