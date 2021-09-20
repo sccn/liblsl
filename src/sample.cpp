@@ -280,7 +280,7 @@ template <class Archive> void sample::serialize_channels(Archive &ar, const uint
 	}
 }
 
-void sample::save(eos::portable_oarchive &ar, const uint32_t archive_version) const {
+void lsl::sample::serialize(eos::portable_oarchive &ar, const uint32_t archive_version) const {
 	// write sample header
 	if (timestamp == DEDUCED_TIMESTAMP) {
 		ar &TAG_DEDUCED_TIMESTAMP;
@@ -291,7 +291,7 @@ void sample::save(eos::portable_oarchive &ar, const uint32_t archive_version) co
 	const_cast<sample *>(this)->serialize_channels(ar, archive_version);
 }
 
-void sample::load(eos::portable_iarchive &ar, const uint32_t archive_version) {
+void lsl::sample::serialize(eos::portable_iarchive &ar, const uint32_t archive_version) {
 	// read sample header
 	char tag;
 	ar &tag;

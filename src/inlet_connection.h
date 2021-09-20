@@ -3,10 +3,14 @@
 
 #include "cancellation.h"
 #include "resolver_impl.h"
+#include "stream_info_impl.h"
+#include <atomic>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <condition_variable>
 #include <map>
+#include <mutex>
+#include <string>
 #include <thread>
 
 /* shared_mutex was added in C++17 so we use the boost shared_mutex when

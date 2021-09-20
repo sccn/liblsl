@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.12)
 project (liblsl
-	VERSION 1.15.0
+	VERSION 1.15.2
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
@@ -23,6 +23,9 @@ option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
+option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
+
+mark_as_advanced(LSL_SLIMARCHIVE LSL_FORCE_FANCY_LIBNAME)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
@@ -161,6 +164,11 @@ add_library(lslboost OBJECT
 	lslboost/serialization_objects.cpp
 )
 target_link_libraries(lslboost PUBLIC Threads::Threads)
+
+if(LSL_SLIMARCHIVE)
+	message(STATUS "Using shim instead of full Boost.Archive")
+	target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
+endif()
 target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 target_compile_definitions(lslboost
@@ -198,7 +206,7 @@ if(UNIX AND NOT APPLE)
 	endif()
 elseif(WIN32)
 	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+	target_link_libraries(lslboost PRIVATE mswsock ws2_32)
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds

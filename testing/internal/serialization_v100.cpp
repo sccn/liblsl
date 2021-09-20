@@ -18,14 +18,13 @@ struct Testclass {
 	lsl::sample_p s1, s2;
 	char testchar{0};
 
-	template <typename Archive> void serialize(Archive &a, const uint32_t) {
+	template <typename Archive> void serialize_(Archive &a) {
 		a &testchar &testint &negativeint &testbigint &testdouble &teststr &*s1 &*s2;
 	}
-	template <typename Archive> void load(Archive &a, const uint32_t archive_version) {
-		serialize(a, archive_version);
-	}
-	template <typename Archive> void save(Archive &a, const uint32_t archive_version) const {
-		const_cast<Testclass *>(this)->serialize(a, archive_version);
+	void serialize(eos::portable_iarchive &a, uint32_t) { serialize_(a); }
+
+	void serialize(eos::portable_oarchive &a, uint32_t) const {
+		const_cast<Testclass *>(this)->serialize_(a);
 	}
 
 	Testclass() : s1(doublefac.new_sample(0.0, false)), s2(strfac.new_sample(0.0, false)) {}
@@ -41,13 +40,8 @@ struct Testclass {
 struct Testclass2 {
 	uint64_t i;
 
-	template <typename Archive> void serialize(Archive &a, const uint32_t) { a &i; }
-	template <typename Archive> void load(Archive &a, const uint32_t archive_version) {
-		serialize(a, archive_version);
-	}
-	template <typename Archive> void save(Archive &a, const uint32_t archive_version) const {
-		const_cast<Testclass2 *>(this)->serialize(a, archive_version);
-	}
+	void serialize(eos::portable_iarchive &a, uint32_t) { a &i; }
+	void serialize(eos::portable_oarchive &a, uint32_t) const { a &i; }
 };
 
 TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
@@ -107,5 +101,3 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		if (*in1.s2 != *out1.s2) FAIL("Sample 2 serialization mismatch");
 	} catch (std::exception &e) { FAIL(e.what()); }
 }
-
-TEST_CASE("read v100 protocol samples", "[basic][serialization]") {}

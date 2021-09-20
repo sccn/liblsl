@@ -1,5 +1,6 @@
 #include "cast.hpp"
 #include <iosfwd>
+#include <string>
 #include <unordered_map>
 
 // Reads an INI file from a stream into a map

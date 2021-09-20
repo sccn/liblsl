@@ -5,9 +5,9 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <condition_variable>
-#include <cstdint>
 #include <mutex>
 #include <thread>
+#include <vector>
 
 namespace asio = lslboost::asio;
 using asio::ip::udp;

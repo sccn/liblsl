@@ -1,5 +1,11 @@
 #include "lsl_c_api_helpers.hpp"
 #include "stream_inlet_impl.h"
+#include <cstdlib>
+#include <exception>
+#include <loguru.hpp>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 extern "C" {
 #include "api_types.hpp"
