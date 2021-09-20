@@ -114,7 +114,7 @@ if(LSL_BUNDLED_PUGIXML)
 	message(STATUS "Using bundled pugixml")
 	target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
 	target_include_directories(lslobj SYSTEM PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml)
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
 else()
 	message(STATUS "Using system pugixml")
 	find_package(pugixml REQUIRED)
@@ -178,7 +178,7 @@ target_compile_definitions(lslboost
 		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 )
 target_include_directories(lslboost SYSTEM PUBLIC
-	${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
@@ -273,7 +273,12 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS lsl
+set(LSLTargets lsl)
+if(LSL_BUILD_STATIC)
+	list(APPEND LSLTargets lslobj lslboost)
+endif()
+
+install(TARGETS ${LSLTargets}
 	EXPORT LSLTargets
 	COMPONENT liblsl
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
