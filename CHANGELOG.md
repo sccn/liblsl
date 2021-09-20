@@ -1,3 +1,14 @@
+# Changes for liblsl 1.15.2
+
+* fix: bump artifact / soname version
+
+# Changes for liblsl 1.15.1
+
+* change: update Boost / Boost.Asio to 1.75 (Tristan Stenner)
+* change: replace Boost.UUID generator
+* fix: work around faulty MinGW code generation for thread local variables (Tristan Stenner, Tobias Herzke)
+
+
 # Changes for liblsl 1.15
 
 * add: thread-safe `lsl_last_error()` function, returns a description of the last error

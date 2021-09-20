@@ -3,6 +3,7 @@
 #include "util/inireader.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <loguru.hpp>
 #include <mutex>

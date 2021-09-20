@@ -1,6 +1,7 @@
 #include "send_buffer.h"
 #include "consumer_queue.h"
 #include <algorithm>
+#include <chrono>
 #include <loguru.hpp>
 #include <memory>
 

@@ -2,9 +2,14 @@
 #include "api_config.h"
 #include "inlet_connection.h"
 #include "socket_utils.h"
+#include <boost/asio/io_context.hpp>
+#include <chrono>
+#include <exception>
 #include <limits>
 #include <loguru.hpp>
+#include <memory>
 #include <sstream>
+#include <string>
 
 /// internally used constant to represent an unassigned time offset
 const double NOT_ASSIGNED = std::numeric_limits<double>::max();

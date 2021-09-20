@@ -1,11 +1,14 @@
 #include "info_receiver.h"
 #include "cancellable_streambuf.h"
 #include "inlet_connection.h"
+#include "stream_info_impl.h"
 #include <chrono>
-#include <iostream>
+#include <exception>
+#include <istream>
 #include <loguru.hpp>
 #include <memory>
 #include <sstream>
+#include <string>
 
 lsl::info_receiver::info_receiver(inlet_connection &conn) : conn_(conn) {
 	conn_.register_onlost(this, &fullinfo_upd_);

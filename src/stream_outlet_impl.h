@@ -4,8 +4,12 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <cstdint>
 #include <loguru.hpp>
+#include <memory>
+#include <string>
 #include <thread>
+#include <vector>
 
 using asio::ip::tcp;
 using asio::ip::udp;
