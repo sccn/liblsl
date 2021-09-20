@@ -1,0 +1,55 @@
+name: MinGW Windows static test
+
+on:
+  push:
+    branches: ['*']
+    tags: 
+    paths_ignore: ['docs/**', '.travis.yml']
+  pull_request:
+
+jobs:
+  build:
+    name: MinGW batteries-included
+    runs-on: windows-latest
+    
+    defaults:
+      run:
+        shell: 'msys2 {0}'
+
+    steps:
+    - uses: actions/checkout@v2
+    - uses: msys2/setup-msys2@v2
+      with:
+        release: false
+    - name: Configure CMake
+      run: |
+           cmake --version
+           cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BUILD_EXAMPLES=ON \
+                -DLSL_BUILD_STATIC=ON \
+                -Dlslgitrevision=${{ github.sha }} \
+                -Dlslgitbranch=${{ github.ref }} \
+                -DLSL_OPTIMIZATIONS=OFF \
+                -G 'MSYS Makefiles'
+
+    - name: make
+      run: cmake --build build --target install --config Release -j --verbose
+  
+    - name: upload install dir
+      uses: actions/upload-artifact@master
+      with:
+        name: mingw_artifacts
+        path: install
+
+    # run internal tests, ignore test failures on docker (missing IPv6 connectivity)
+    - name: unit tests (internal functions)
+      run: 'install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes'
+      timeout-minutes: 5
+    
+    - name: unit tests (exported functions)
+      run: install/bin/lsl_test_exported --wait-for-keypress never --durations yes
+      timeout-minutes: 5
+
