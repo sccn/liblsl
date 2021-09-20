@@ -5,11 +5,16 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <atomic>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
+#include <map>
+#include <memory>
 #include <mutex>
+#include <string>
 #include <thread>
+#include <vector>
 
 using asio::ip::tcp;
 using asio::ip::udp;

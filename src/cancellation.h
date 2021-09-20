@@ -4,8 +4,11 @@
 #include <mutex>
 #include <set>
 #include <stdexcept>
+#include <string>
 
 namespace lsl {
+class cancellable_object;
+
 /// Exception class that indicates that an operation was performed on an registry that is being shut
 /// down.
 class shutdown_error : public std::runtime_error {

@@ -7,6 +7,9 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using asio::ip::udp;
 using err_t = const lslboost::system::error_code &;

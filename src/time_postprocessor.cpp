@@ -1,7 +1,7 @@
 #include "time_postprocessor.h"
 #include "api_config.h"
-
 #include <cmath>
+#include <limits>
 #include <utility>
 
 #pragma GCC diagnostic ignored "-Wdouble-promotion"

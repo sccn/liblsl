@@ -12,10 +12,15 @@
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/streambuf.hpp>
 #include <boost/asio/write.hpp>
+#include <condition_variable>
+#include <cstdint>
+#include <exception>
+#include <istream>
 #include <loguru.hpp>
 #include <memory>
 #include <thread>
 #include <utility>
+#include <vector>
 
 #ifdef _MSC_VER
 // (inefficiently converting int to bool in portable_oarchive instantiation...)
@@ -269,7 +274,7 @@ void client_session::begin_processing() {
 		// read the request line
 		async_read_until(*sock_, requestbuf_, "\r\n",
 			[shared_this = shared_from_this()](
-				err_t err, size_t /*unused*/) { shared_this->handle_read_command_outcome(err); });
+				err_t err, std::size_t /*unused*/) { shared_this->handle_read_command_outcome(err); });
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
@@ -484,7 +489,7 @@ void client_session::handle_read_feedparams(
 
 		// send off the newly created feedheader
 		async_write(
-			*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, size_t len) {
+			*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, std::size_t len) {
 				shared_this->handle_send_feedheader_outcome(err, len);
 			});
 		DLOG_F(2, "%p sent test pattern samples", this);
@@ -540,7 +545,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*k
 					std::unique_lock<std::mutex> lock(completion_mut_);
 					transfer_completed_ = false;
 					async_write(*sock_, feedbuf_.data(),
-						[shared_this = shared_from_this()](err_t err, size_t len) {
+						[shared_this = shared_from_this()](err_t err, std::size_t len) {
 							shared_this->handle_chunk_transfer_outcome(err, len);
 						});
 					// wait for the completion condition

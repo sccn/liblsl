@@ -3,7 +3,10 @@
 
 #include "forward.h"
 #include <boost/asio/ip/udp.hpp>
+#include <cstdint>
+#include <exception>
 #include <memory>
+#include <string>
 
 using asio::ip::udp;
 using err_t = const lslboost::system::error_code &;
