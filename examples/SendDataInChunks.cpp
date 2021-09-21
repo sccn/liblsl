@@ -1,6 +1,7 @@
 #include <cmath>
 #include <iostream>
 #include <map>
+#include <cstring>
 #include <lsl_cpp.h>
 #include <thread>
 #include <algorithm>
@@ -48,7 +49,7 @@ struct fake_device {
 					magnitude * static_cast<int16_t>(sin(M_PI * chan_ix * sample_ix / n_channels)));
 			}
 		}
-		last_time = std::chrono::high_resolution_clock::now();
+		last_time = std::chrono::steady_clock::now();
 	}
 
 	std::vector<int16_t> get_data() {
