@@ -17,7 +17,15 @@ int main(int argc, char **argv) {
 		// resolve the stream of interest & make an inlet
 		lsl::stream_inlet inlet(lsl::resolve_stream("name", name).at(0), max_buflen);
 
-		inlet.flush();
+		// Use set_postprocessing to get the timestamps in a common base clock.
+		// Do not use if this application will record timestamps to disk -- it is better to 
+		//  do posthoc synchronization.
+		inlet.set_postprocessing(lsl::post_ALL);
+
+		// Inlet opening is implicit when doing pull_sample or pull_chunk.
+		// Here we open the stream explicitly because we might be doing
+		//  `flush` only.
+		inlet.open_stream();
 
 		double starttime = lsl::local_clock(), next_display = starttime + 1,
 			   next_reset = starttime + 10;
