@@ -9,6 +9,16 @@
 #include <thread>
 
 namespace lsl {
+
+// size of a cache line
+#if defined(__s390__) || defined(__s390x__)
+constexpr int CACHELINE_BYTES = 256;
+#elif defined(powerpc) || defined(__powerpc__) || defined(__ppc__)
+constexpr int CACHELINE_BYTES = 128;
+#else
+constexpr int CACHELINE_BYTES = 64;
+#endif
+
 /**
  * A thread-safe producer/consumer queue of unread samples.
  *
@@ -139,13 +149,13 @@ private:
 	inline static void move_or_drop(sample_p &src, sample_p &dst) { dst = std::move(src); }
 
 	/// helper to add a delta to the given index and wrap correctly
-	FORCEINLINE std::size_t add_wrap(std::size_t x, std::size_t delta) const {
+	inline std::size_t add_wrap(std::size_t x, std::size_t delta) const noexcept {
 		const std::size_t xp = x + delta;
 		return xp >= wrap_at_ ? xp - wrap_at_ : xp;
 	}
 
 	/// helper to increment the given index, wrapping it if necessary
-	inline std::size_t add1_wrap(std::size_t x) const {
+	inline std::size_t add1_wrap(std::size_t x) const noexcept {
 		return ++x == wrap_at_ ? 0 : x;
 	}
 
