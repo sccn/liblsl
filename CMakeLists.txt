@@ -183,10 +183,15 @@ target_include_directories(lslboost SYSTEM PUBLIC
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
 target_include_directories(lslobj
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+	INTERFACE # for unit tests
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>
 	)
-target_include_directories(lslobj SYSTEM PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
+target_include_directories(lslobj
+	SYSTEM PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
 )
 target_compile_definitions(lslobj PRIVATE
 	LIBLSL_EXPORTS
