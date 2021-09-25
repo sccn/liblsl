@@ -166,6 +166,12 @@ if(LSL_BUNDLED_BOOST)
 	target_link_libraries(lslboost PUBLIC Threads::Threads)
 	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
+	target_compile_definitions(lslboost
+		PUBLIC
+			BOOST_ALL_NO_LIB
+			BOOST_ASIO_STANDALONE
+			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
+	)
 	target_include_directories(lslboost SYSTEM PUBLIC
 		${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
 else()
@@ -178,8 +184,11 @@ else()
 	add_library(lslboost INTERFACE)
 	target_compile_definitions(lslboost
 		INTERFACE
+			BOOST_ALL_NO_LIB
 			BOOST_ARCHIVE_SOURCE
+			BOOST_ASIO_STANDALONE
 			#BOOST_ASIO_SEPARATE_COMPILATION
+			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 			lslboost=boost # allows the LSL code base to work with the original Boost namespace/headers
 	)
 	target_link_libraries(lslboost
@@ -187,13 +196,6 @@ else()
 	        Boost::boost Boost::serialization
 	)
 endif()
-
-target_compile_definitions(lslboost
-	PUBLIC
-		BOOST_ALL_NO_LIB
-		BOOST_ASIO_STANDALONE
-		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
-)
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
@@ -221,15 +223,27 @@ if(UNIX AND NOT APPLE)
 	endif()
 elseif(WIN32)
 	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+	if(LSL_BUNDLED_BOOST)
+		target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+	else()
+		target_link_libraries(lslboost INTERFACE bcrypt mswsock ws2_32)
+	endif()
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
 	)
-	target_compile_definitions(lslboost
-		PUBLIC _WIN32_WINNT=${LSL_WINVER}
-		PRIVATE BOOST_THREAD_BUILD_DLL
-	)
+	if(LSL_BUNDLED_BOOST)
+		target_compile_definitions(lslboost
+			PUBLIC _WIN32_WINNT=${LSL_WINVER}
+			PRIVATE BOOST_THREAD_BUILD_DLL
+		)
+	else()
+		target_compile_definitions(lslboost
+			INTERFACE
+			    _WIN32_WINNT=${LSL_WINVER}
+			    BOOST_THREAD_BUILD_DLL
+		)
+	endif()
 endif()
 
 # the "real" liblsl library. It contains one source with the version info
