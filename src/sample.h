@@ -1,11 +1,11 @@
 #ifndef SAMPLE_H
 #define SAMPLE_H
-#include "cast.h"
 #include "common.h"
 #include "forward.h"
+#include "util/cast.hpp"
 #include <atomic>
-#include <boost/endian/conversion.hpp>
-#include <boost/predef/other/endian.h>
+#include <cstdint>
+#include <boost/endian/detail/order.hpp>
 #include <boost/serialization/split_member.hpp>
 #include <iosfwd>
 #include <limits>
@@ -13,19 +13,10 @@
 #include <string>
 #include <type_traits>
 
-const int BOOST_BYTE_ORDER =
-	lslboost::endian::order::native == lslboost::endian::order::little ? 4321 : 1234;
-
-// Boost.Endian has no functions to reverse floats, so we pretend they're ints of the same size.
-template <typename T> inline void endian_reverse_inplace(T &t) {
-	lslboost::endian::endian_reverse_inplace(t);
-}
-template <> inline void endian_reverse_inplace(double &t) {
-	endian_reverse_inplace(*((uint64_t *)&t));
-}
-template <> inline void endian_reverse_inplace(float &t) {
-	endian_reverse_inplace(*((uint32_t *)&t));
-}
+// Determine target byte order / endianness
+using byteorder = lslboost::endian::order;
+static_assert(byteorder::native == byteorder::little || byteorder::native == byteorder::big, "Unsupported byteorder");
+const int LSL_BYTE_ORDER = (byteorder::native == byteorder::little) ? 1234 : 4321;
 
 namespace lsl {
 // assert that the target CPU can represent the double-precision timestamp format required by LSL
@@ -36,8 +27,8 @@ const uint8_t TAG_DEDUCED_TIMESTAMP = 1;
 const uint8_t TAG_TRANSMITTED_TIMESTAMP = 2;
 
 /// channel format properties
-const uint8_t format_sizes[] = {0, sizeof(float), sizeof(double), sizeof(std::string), sizeof(int32_t),
-	sizeof(int16_t), sizeof(int8_t), 8};
+const uint8_t format_sizes[] = {0, sizeof(float), sizeof(double), sizeof(std::string),
+	sizeof(int32_t), sizeof(int16_t), sizeof(int8_t), 8};
 const bool format_ieee754[] = {false, std::numeric_limits<float>::is_iec559,
 	std::numeric_limits<double>::is_iec559, false, false, false, false, false};
 const bool format_subnormal[] = {false,
@@ -69,11 +60,6 @@ public:
 	void reclaim_sample(sample *s);
 
 private:
-	/// ensure that a given value is a multiple of some base, round up if necessary
-	static uint32_t ensure_multiple(uint32_t v, unsigned base) {
-		return (v % base) ? v - (v % base) + base : v;
-	}
-
 	/// Pop a sample from the freelist (multi-producer/single-consumer queue by Dmitry Vjukov)
 	sample *pop_freelist();
 
@@ -121,7 +107,7 @@ private:
 	/// the factory used to reclaim this sample, if any
 	factory *factory_;
 	/// the data payload begins here
-	alignas(8) char data_{0};
+	alignas(8) int32_t data_{0};
 
 public:
 	// === Construction ===
@@ -138,129 +124,23 @@ public:
 
 	std::size_t datasize() const { return format_sizes[format_] * static_cast<std::size_t>(num_channels_); }
 
+	uint32_t num_channels() const { return num_channels_; }
+
 	// === type-safe accessors ===
 
 	/// Assign an array of numeric values (with type conversions).
-	template <class T> sample &assign_typed(const T *s) {
-		if ((sizeof(T) == format_sizes[format_]) &&
-			((std::is_integral<T>::value && format_integral[format_]) ||
-				(std::is_floating_point<T>::value && format_float[format_]))) {
-			memcpy(&data_, s, datasize());
-		} else {
-			switch (format_) {
-			case cft_float32:
-				for (float *p = (float *)&data_, *e = p + num_channels_; p < e; *p++ = (float)*s++)
-					;
-				break;
-			case cft_double64:
-				for (double *p = (double *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = (double)*s++)
-					;
-				break;
-			case cft_int8:
-				for (int8_t *p = (int8_t *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = (int8_t)*s++)
-					;
-				break;
-			case cft_int16:
-				for (int16_t *p = (int16_t *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = (int16_t)*s++)
-					;
-				break;
-			case cft_int32:
-				for (int32_t *p = (int32_t *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = (int32_t)*s++)
-					;
-				break;
-#ifndef BOOST_NO_INT64_T
-			case cft_int64:
-				for (int64_t *p = (int64_t *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = (int64_t)*s++)
-					;
-				break;
-#endif
-			case cft_string:
-				for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e;
-					 *p++ = to_string(*s++))
-					;
-				break;
-			default: throw std::invalid_argument("Unsupported channel format.");
-			}
-		}
-		return *this;
-	}
+	template <class T> void assign_typed(const T *s);
 
 	/// Retrieve an array of numeric values (with type conversions).
-	template <class T> sample &retrieve_typed(T *d) {
-		if ((sizeof(T) == format_sizes[format_]) &&
-			((std::is_integral<T>::value && format_integral[format_]) ||
-				(std::is_floating_point<T>::value && format_float[format_]))) {
-			memcpy(d, &data_, datasize());
-		} else {
-			switch (format_) {
-			case cft_float32:
-				for (float *p = (float *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-			case cft_double64:
-				for (double *p = (double *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-			case cft_int8:
-				for (int8_t *p = (int8_t *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-			case cft_int16:
-				for (int16_t *p = (int16_t *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-			case cft_int32:
-				for (int32_t *p = (int32_t *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-#ifndef BOOST_NO_INT64_T
-			case cft_int64:
-				for (int64_t *p = (int64_t *)&data_, *e = p + num_channels_; p < e; *d++ = (T)*p++)
-					;
-				break;
-#endif
-			case cft_string:
-				for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e;
-					 *d++ = from_string<T>(*p++))
-					;
-				break;
-			default: throw std::invalid_argument("Unsupported channel format.");
-			}
-		}
-		return *this;
-	}
-
-	/// Assign an array of string values to the sample.
-	sample &assign_typed(const std::string *s);
-
-	/// Retrieve an array of string values from the sample.
-	sample &retrieve_typed(std::string *d);
+	template <class T> void retrieve_typed(T *d);
 
 	// === untyped accessors ===
 
 	/// Assign numeric data to the sample.
-	sample &assign_untyped(const void *newdata) {
-		if (format_ != cft_string)
-			memcpy(&data_, newdata, datasize());
-		else
-			throw std::invalid_argument("Cannot assign untyped data to a string-formatted sample.");
-		return *this;
-	}
+	void assign_untyped(const void *newdata);
 
 	/// Retrieve numeric data from the sample.
-	sample &retrieve_untyped(void *newdata) {
-		if (format_ != cft_string)
-			memcpy(newdata, &data_, datasize());
-		else
-			throw std::invalid_argument(
-				"Cannot retrieve untyped data from a string-formatted sample.");
-		return *this;
-	}
+	void retrieve_untyped(void *newdata);
 
 	// === serialization functions ===
 
@@ -273,58 +153,23 @@ public:
 		std::streambuf &sb, int protocol_version, int use_byte_order, bool suppress_subnormals);
 
 	/// Convert the endianness of channel data in-place.
-	void convert_endian(void *data) const {
-		switch (format_sizes[format_]) {
-		case 1: break;
-		case sizeof(int16_t):
-			for (int16_t *p = (int16_t *)data, *e = p + num_channels_; p < e;
-				 endian_reverse_inplace(*p++))
-				;
-			break;
-		case sizeof(int32_t):
-			for (int32_t *p = (int32_t *)data, *e = p + num_channels_; p < e;
-				 endian_reverse_inplace(*p++))
-				;
-			break;
-#ifndef BOOST_NO_INT64_T
-		case sizeof(int64_t):
-			for (int64_t *p = (int64_t *)data, *e = p + num_channels_; p < e;
-				 endian_reverse_inplace(*p++))
-				;
-			break;
-#else
-		case sizeof(double):
-			for (double *p = (double *)data, *e = p + num_channels_; p < e;
-				 endian_reverse_inplace(*p++))
-				;
-			break;
-#endif
-		default: throw std::runtime_error("Unsupported channel format for endian conversion.");
-		}
-	}
+	static void convert_endian(void *data, uint32_t n, uint32_t width);
+
 	/// Serialize a sample into a portable archive (protocol 1.00).
-	void save(eos::portable_oarchive &ar, const uint32_t archive_version) const;
+	void serialize(eos::portable_oarchive &ar, const uint32_t archive_version) const;
 
 	/// Deserialize a sample from a portable archive (protocol 1.00).
-	void load(eos::portable_iarchive &ar, const uint32_t archive_version);
+	void serialize(eos::portable_iarchive &ar, const uint32_t archive_version);
 
 	/// Serialize (read/write) the channel data.
 	template <class Archive> void serialize_channels(Archive &ar, const uint32_t archive_version);
-
-	BOOST_SERIALIZATION_SPLIT_MEMBER()
 
 	/// Assign a test pattern to the sample (for protocol validation)
 	sample &assign_test_pattern(int offset = 1);
 
 private:
 	/// Construct a new sample for a given channel format/count combination.
-	sample(lsl_channel_format_t fmt, uint32_t num_channels, factory *fact)
-		: format_(fmt), num_channels_(num_channels), refcount_(0), next_(nullptr), factory_(fact) {
-		if (format_ == cft_string)
-			for (std::string *p = (std::string *)&data_, *e = p + num_channels_; p < e;
-				 new (p++) std::string())
-				;
-	}
+	sample(lsl_channel_format_t fmt, uint32_t num_channels, factory *fact);
 
 	/// Increment ref count.
 	friend void intrusive_ptr_add_ref(sample *s) {
@@ -338,6 +183,14 @@ private:
 			s->factory_->reclaim_sample(s);
 		}
 	}
+
+	friend void *iterhelper(sample &s) noexcept { return reinterpret_cast<void *>(&s.data_); }
+	friend const void *iterhelper(const sample &s) noexcept {
+		return reinterpret_cast<const void *>(&s.data_);
+	}
+
+	template <typename T, typename U> void conv_from(const U *src);
+	template <typename T, typename U> void conv_into(U *dst);
 };
 
 } // namespace lsl

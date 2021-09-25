@@ -2,13 +2,12 @@
 #include "api_config.h"
 #include "sample.h"
 #include "send_buffer.h"
+#include "stream_info_impl.h"
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <algorithm>
+#include <chrono>
 #include <memory>
-#include <sstream>
-
-namespace asio = lslboost::asio;
 
 namespace lsl {
 
@@ -106,7 +105,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 		// 4. waiting a bit and
 		// 5. detaching thread, i.e. letting it hang and continue tearing down
 		//    the outlet
-		for (auto &ios : ios_) lslboost::asio::post(*ios, [ios]() { ios->stop(); });
+		for (auto &ios : ios_) asio::post(*ios, [ios]() { ios->stop(); });
 		const char *name = this->info().name().c_str();
 		for (int try_nr = 0; try_nr <= 100; ++try_nr) {
 			switch (try_nr) {

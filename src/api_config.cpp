@@ -1,8 +1,9 @@
 #include "api_config.h"
 #include "common.h"
-#include "inireader.h"
+#include "util/inireader.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <exception>
 #include <fstream>
 #include <loguru.hpp>
 #include <mutex>

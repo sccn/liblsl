@@ -1,9 +1,14 @@
 #include "stream_info_impl.h"
 #include "api_config.h"
-#include "cast.h"
+#include "util/cast.hpp"
+#include "util/uuid.hpp"
 #include <algorithm>
+#include <cstdlib>
+#include <exception>
 #include <loguru.hpp>
 #include <sstream>
+#include <stdexcept>
+#include <vector>
 #include <utility>
 
 namespace lsl {
@@ -252,6 +257,12 @@ void stream_info_impl::created_at(double v) {
 void stream_info_impl::uid(const std::string &v) {
 	uid_ = v;
 	doc_.child("info").child("uid").first_child().set_value(uid_.c_str());
+}
+
+const std::string& stream_info_impl::reset_uid()
+{
+	uid(UUID::random().to_string());
+	return uid_;
 }
 
 void stream_info_impl::session_id(const std::string &v) {

@@ -2,18 +2,19 @@
 #define TCP_SERVER_H
 
 #include "forward.h"
+#include <atomic>
 #include <boost/asio/ip/tcp.hpp>
 #include <memory>
 #include <mutex>
 #include <set>
+#include <string>
 
-using lslboost::asio::ip::tcp;
+using asio::ip::tcp;
 using lslboost::system::error_code;
+using err_t = const error_code &;
 
 namespace lsl {
 
-/// shared pointer to a string
-using string_p = std::shared_ptr<std::string>;
 /// shared pointer to a socket
 using tcp_socket_p = std::shared_ptr<tcp::socket>;
 /// shared pointer to an acceptor socket
@@ -73,7 +74,7 @@ private:
 	void accept_next_connection();
 
 	/// Handler that is called when the accept has finished.
-	void handle_accept_outcome(std::shared_ptr<class client_session> newsession, error_code err);
+	void handle_accept_outcome(std::shared_ptr<class client_session> newsession, err_t err);
 
 	/// Register an in-flight (active) session socket with the server (so that we can close it when
 	/// a shutdown is requested externally).

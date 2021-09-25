@@ -2,16 +2,19 @@
 #include "api_config.h"
 #include "inlet_connection.h"
 #include "socket_utils.h"
+#include <boost/asio/io_context.hpp>
+#include <chrono>
+#include <exception>
 #include <limits>
 #include <loguru.hpp>
+#include <memory>
 #include <sstream>
+#include <string>
 
 /// internally used constant to represent an unassigned time offset
 const double NOT_ASSIGNED = std::numeric_limits<double>::max();
 
 using namespace lsl;
-namespace asio = lslboost::asio;
-using err_t = const lslboost::system::error_code &;
 
 time_receiver::time_receiver(inlet_connection &conn)
 	: conn_(conn), was_reset_(false), timeoffset_(std::numeric_limits<double>::max()),
@@ -125,7 +128,7 @@ void time_receiver::send_next_packet(int packet_num) {
 		request.precision(16);
 		request << "LSL:timedata\r\n" << current_wave_id_ << " " << lsl_clock() << "\r\n";
 		auto msg_buffer = std::make_shared<std::string>(request.str());
-		time_sock_.async_send_to(lslboost::asio::buffer(*msg_buffer), conn_.get_udp_endpoint(),
+		time_sock_.async_send_to(asio::buffer(*msg_buffer), conn_.get_udp_endpoint(),
 			[msg_buffer](err_t /*unused*/, std::size_t /*unused*/) {
 				/* Do nothing, but keep the msg_buffer alive until async_send is completed */
 			});
@@ -142,7 +145,7 @@ void time_receiver::send_next_packet(int packet_num) {
 }
 
 void time_receiver::receive_next_packet() {
-	time_sock_.async_receive_from(lslboost::asio::buffer(recv_buffer_), remote_endpoint_,
+	time_sock_.async_receive_from(asio::buffer(recv_buffer_), remote_endpoint_,
 		[this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
 }
 

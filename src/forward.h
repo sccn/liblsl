@@ -2,6 +2,7 @@
 
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 #include <memory>
+#include <string>
 
 namespace lslboost {
 class thread;
@@ -22,13 +23,16 @@ class portable_oarchive;
 class portable_iarchive;
 } // namespace eos
 
+namespace asio = lslboost::asio;
+
 namespace lsl {
 /// shared pointers to various classes
 using factory_p = std::shared_ptr<class factory>;
 using sample_p = lslboost::intrusive_ptr<class sample>;
 using send_buffer_p = std::shared_ptr<class send_buffer>;
 using stream_info_impl_p = std::shared_ptr<class stream_info_impl>;
-using io_context_p = std::shared_ptr<lslboost::asio::io_context>;
+using io_context_p = std::shared_ptr<asio::io_context>;
+using string_p = std::shared_ptr<std::string>;
 using tcp_server_p = std::shared_ptr<class tcp_server>;
 using udp_server_p = std::shared_ptr<class udp_server>;
 } // namespace lsl

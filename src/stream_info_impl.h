@@ -2,8 +2,10 @@
 #define STREAM_INFO_IMPL_H
 
 #include "common.h"
+#include <cstdint>
 #include <mutex>
 #include <pugixml.hpp>
+#include <string>
 #include <unordered_map>
 
 namespace lsl {
@@ -151,6 +153,9 @@ public:
 	 */
 	const std::string &uid() const { return uid_; }
 	void uid(const std::string &v);
+
+	/// Reset the UID to a randomly generated UUID4
+	const std::string &reset_uid();
 
 	/**
 	 * Get/Set the session id for the given stream.

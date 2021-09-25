@@ -16,7 +16,8 @@ if(LSL_BENCHMARKS)
 	target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 endif()
 target_include_directories(catch_main PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty>)
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty>
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>)
 
 add_executable(lsl_test_exported
 	test_ext_DataType.cpp
@@ -41,7 +42,6 @@ add_executable(lsl_test_internal
 	internal/serialization_v100.cpp
 )
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
-target_include_directories(lsl_test_internal PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src/)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:

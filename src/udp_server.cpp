@@ -4,12 +4,15 @@
 #include <boost/asio/ip/address.hpp>
 #include <boost/asio/ip/multicast.hpp>
 #include <boost/asio/ip/udp.hpp>
+#include <boost/asio/io_context.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <exception>
 #include <loguru.hpp>
 #include <sstream>
 
-namespace lsl {
 namespace ip = asio::ip;
-using err_t = const lslboost::system::error_code &;
+
+namespace lsl {
 
 udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io, udp protocol)
 	: info_(info), io_(io), socket_(std::make_shared<udp::socket>(io)),
@@ -149,7 +152,7 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 		});
 }
 
-void udp_server::handle_receive_outcome(error_code err, std::size_t len) {
+void udp_server::handle_receive_outcome(err_t err, std::size_t len) {
 	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err) {
 		// non-critical error? Wait for the next packet

@@ -43,13 +43,13 @@ const int LAST_ERROR_SIZE = 512;
 
 namespace lsl {
 /// A very large time duration (> 1 year) for timeout values.
-const double FOREVER = 32000000.0;
+const double FOREVER = LSL_FOREVER;
 
 /// Constant to indicate that a sample has the next successive time stamp.
-const double DEDUCED_TIMESTAMP = -1.0;
+const double DEDUCED_TIMESTAMP = LSL_DEDUCED_TIMESTAMP;
 
 /// Constant to indicate that a stream has variable sampling rate.
-const double IRREGULAR_RATE = 0.0;
+const double IRREGULAR_RATE = LSL_IRREGULAR_RATE;
 
 /// Obtain a local system time stamp in nanoseconds.
 int64_t lsl_local_clock_ns();

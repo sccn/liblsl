@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.12)
 project (liblsl
-	VERSION 1.15
+	VERSION 1.15.2
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
@@ -24,6 +24,9 @@ option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
+option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
+
+mark_as_advanced(LSL_SLIMARCHIVE LSL_FORCE_FANCY_LIBNAME)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
@@ -44,8 +47,6 @@ add_library(lslobj OBJECT
 	src/cancellable_streambuf.h
 	src/cancellation.h
 	src/cancellation.cpp
-	src/cast.h
-	src/cast.cpp
 	src/common.cpp
 	src/common.h
 	src/consumer_queue.cpp
@@ -55,8 +56,6 @@ add_library(lslobj OBJECT
 	src/forward.h
 	src/info_receiver.cpp
 	src/info_receiver.h
-	src/inireader.h
-	src/inireader.cpp
 	src/inlet_connection.cpp
 	src/inlet_connection.h
 	src/lsl_resolver_c.cpp
@@ -93,6 +92,11 @@ add_library(lslobj OBJECT
 	src/time_receiver.h
 	src/udp_server.cpp
 	src/udp_server.h
+	src/util/cast.hpp
+	src/util/cast.cpp
+	src/util/inireader.hpp
+	src/util/inireader.cpp
+	src/util/uuid.hpp
 	thirdparty/loguru/loguru.cpp
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
 	# headers
@@ -111,7 +115,7 @@ if(LSL_BUNDLED_PUGIXML)
 	message(STATUS "Using bundled pugixml")
 	target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
 	target_include_directories(lslobj SYSTEM PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml)
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>)
 else()
 	message(STATUS "Using system pugixml")
 	find_package(pugixml REQUIRED)
@@ -164,6 +168,10 @@ if(LSL_BUNDLED_BOOST)
 		lslboost/serialization_objects.cpp
 	)
 	target_link_libraries(lslboost PUBLIC Threads::Threads)
+	if(LSL_SLIMARCHIVE)
+		message(STATUS "Using shim instead of full Boost.Archive")
+		target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
+	endif()
 	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 
 	target_compile_definitions(lslboost
@@ -200,10 +208,15 @@ endif()
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
 target_include_directories(lslobj
-	PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+	PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+		$<INSTALL_INTERFACE:include>
+	INTERFACE # for unit tests
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>
 	)
-target_include_directories(lslobj SYSTEM PUBLIC
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
+target_include_directories(lslobj
+	SYSTEM PUBLIC
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
 )
 target_compile_definitions(lslobj PRIVATE
 	LIBLSL_EXPORTS
@@ -224,9 +237,9 @@ if(UNIX AND NOT APPLE)
 elseif(WIN32)
 	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
 	if(LSL_BUNDLED_BOOST)
-		target_link_libraries(lslboost PRIVATE bcrypt mswsock ws2_32)
+		target_link_libraries(lslboost PRIVATE mswsock ws2_32)
 	else()
-		target_link_libraries(lslboost INTERFACE bcrypt mswsock ws2_32)
+		target_link_libraries(lslboost INTERFACE mswsock ws2_32)
 	endif()
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
@@ -302,7 +315,12 @@ write_basic_package_version_file(
 	COMPATIBILITY AnyNewerVersion
 )
 
-install(TARGETS lsl
+set(LSLTargets lsl)
+if(LSL_BUILD_STATIC)
+	list(APPEND LSLTargets lslobj lslboost)
+endif()
+
+install(TARGETS ${LSLTargets}
 	EXPORT LSLTargets
 	COMPONENT liblsl
 	RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}

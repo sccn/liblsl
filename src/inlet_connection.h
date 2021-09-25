@@ -3,10 +3,14 @@
 
 #include "cancellation.h"
 #include "resolver_impl.h"
+#include "stream_info_impl.h"
+#include <atomic>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ip/udp.hpp>
 #include <condition_variable>
 #include <map>
+#include <mutex>
+#include <string>
 #include <thread>
 
 /* shared_mutex was added in C++17 so we use the boost shared_mutex when
@@ -25,8 +29,9 @@ using shared_lock_t = lslboost::shared_lock<lslboost::shared_mutex>;
 using unique_lock_t = lslboost::unique_lock<lslboost::shared_mutex>;
 #endif
 
-using lslboost::asio::ip::tcp;
-using lslboost::asio::ip::udp;
+namespace asio = lslboost::asio;
+using asio::ip::tcp;
+using asio::ip::udp;
 
 namespace lsl {
 
