@@ -69,7 +69,7 @@ struct fake_device {
 		auto elapsed_nano =
 			std::chrono::duration_cast<std::chrono::nanoseconds>(now - last_time).count();
 		int64_t elapsed_samples = std::size_t(elapsed_nano * srate * 1e-9); // truncate OK.
-		elapsed_samples = std::min(elapsed_samples, (int64_t)buffer.size());
+		elapsed_samples = std::min(elapsed_samples, (int64_t)(buffer.size() / n_channels));
 		if (false) {
 			// The fastest but no patterns.
 			memset(&buffer[0], 23, buffer.size() * sizeof buffer[0]);
@@ -119,19 +119,18 @@ int main(int argc, char **argv) {
 		fake_device my_device(n_channels, (float)samplingrate);
 
 		// Prepare buffer to get data from 'device'.
-		//  The buffer should be largery than you think you need. Here we make it twice as large.
-		std::vector<int16_t> chunk_buffer(2 * chunk_samples * n_channels);
+		//  The buffer should be larger than you think you need. Here we make it 4x as large.
+		std::vector<int16_t> chunk_buffer(4 * chunk_samples * n_channels);
 
 		std::cout << "Now sending data..." << std::endl;
 
 		// Your device might have its own timer. Or you can decide how often to poll
 		//  your device, as we do here.
-		auto nextsample = std::chrono::high_resolution_clock::now();
-		uint64_t sample_counter = 0;
+		auto next_chunk_time = std::chrono::high_resolution_clock::now();
 		for (unsigned c = 0;; c++) {
 			// wait a bit
-			nextsample += std::chrono::milliseconds(chunk_duration);
-			std::this_thread::sleep_until(nextsample);
+			next_chunk_time += std::chrono::milliseconds(chunk_duration);
+			std::this_thread::sleep_until(next_chunk_time);
 
 			// Get data from device
 			std::size_t returned_samples = my_device.get_data(chunk_buffer);
