@@ -6,6 +6,9 @@ project (liblsl
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
 	)
 
+# API version, to be incremented on backwards-incompatible ABI changes
+set(LSL_ABI_VERSION 2)
+
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 if(NOT MSVC_VERSION VERSION_LESS 1700)
@@ -239,6 +242,7 @@ target_include_directories(lsl INTERFACE
 )
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
+	SOVERSION ${LSL_ABI_VERSION}
 )
 
 # enable some additional expensive compiler optimizations
