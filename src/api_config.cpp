@@ -207,8 +207,10 @@ void api_config::load_from_file(const std::string &filename) {
 		time_probe_max_rtt_ = pt.get("tuning.TimeProbeMaxRTT", 0.128);
 		outlet_buffer_reserve_ms_ = pt.get("tuning.OutletBufferReserveMs", 5000);
 		outlet_buffer_reserve_samples_ = pt.get("tuning.OutletBufferReserveSamples", 128);
+		socket_send_buffer_size_ = pt.get("tuning.SendSocketBufferSize", 0);
 		inlet_buffer_reserve_ms_ = pt.get("tuning.InletBufferReserveMs", 5000);
 		inlet_buffer_reserve_samples_ = pt.get("tuning.InletBufferReserveSamples", 128);
+		socket_receive_buffer_size_ = pt.get("tuning.ReceiveSocketBufferSize", 0);
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 

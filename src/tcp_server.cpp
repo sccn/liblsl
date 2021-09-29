@@ -267,6 +267,10 @@ client_session::~client_session() {
 void client_session::begin_processing() {
 	try {
 		sock_->set_option(asio::ip::tcp::no_delay(true));
+		if (api_config::get_instance()->socket_send_buffer_size() > 0)
+			sock_->set_option(asio::socket_base::send_buffer_size(api_config::get_instance()->socket_send_buffer_size()));
+		if (api_config::get_instance()->socket_receive_buffer_size() > 0)
+			sock_->set_option(asio::socket_base::receive_buffer_size (api_config::get_instance()->socket_receive_buffer_size()));
 		// register this socket as "in-flight" with the server (so that any subsequent ops on it can
 		// be aborted if necessary)
 		serv_->register_inflight_socket(sock_);
