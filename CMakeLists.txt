@@ -178,7 +178,6 @@ target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
 		BOOST_ASIO_STANDALONE
-		BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
 )
 target_include_directories(lslboost SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
@@ -221,7 +220,6 @@ elseif(WIN32)
 		)
 	target_compile_definitions(lslboost
 		PUBLIC _WIN32_WINNT=${LSL_WINVER}
-		PRIVATE BOOST_THREAD_BUILD_DLL
 		)
 endif()
 
