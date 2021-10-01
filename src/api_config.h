@@ -1,9 +1,11 @@
 #ifndef API_CONFIG_H
 #define API_CONFIG_H
 
+#include "common.h"
 #include <cstdint>
 #include <string>
 #include <vector>
+
 
 namespace lsl {
 /**
@@ -71,14 +73,6 @@ public:
 	 */
 	bool allow_ipv6() const { return allow_ipv6_; }
 	bool allow_ipv4() const { return allow_ipv4_; }
-
-	/**
-	 * @brief The range or scope of stream lookup when using multicast-based discovery
-	 *
-	 * determines the output of the member functions multicast_addresses() and multicast_ttl().
-	 * Can take the values "machine", "link", "site", "organization", or "global".
-	 */
-	const std::string &resolve_scope() const { return resolve_scope_; }
 
 	/**
 	 * @brief List of multicast addresses on which inlets / outlets advertise/discover streams.
@@ -194,6 +188,9 @@ public:
 	api_config &operator=(const api_config &rhs) = delete;
 
 private:
+	/// unit test function that may access api config internals
+	friend void test_api_config();
+
 	/// Get the api_config singleton after thread-safe initialization if needed
 	static api_config *get_instance_internal();
 
@@ -201,7 +198,7 @@ private:
 	 * Constructor.
 	 * Applies default settings and overrides them based on a config file (if present).
 	 */
-	api_config();
+	api_config(bool skip_load_settings = false);
 
 	/**
 	 * @brief Load a configuration file (or use defaults if a filename is empty).
@@ -209,42 +206,66 @@ private:
 	 */
 	void load_from_file(const std::string &filename = std::string());
 
+	void set_option(const std::string &section, const std::string &key, const std::string &value);
+	void update_multicast_groups();
+
 	// core parameters
-	bool allow_ipv6_, allow_ipv4_;
-	uint16_t base_port_;
-	uint16_t port_range_;
-	bool allow_random_ports_;
-	uint16_t multicast_port_;
-	std::string resolve_scope_;
+	bool allow_ipv6_ = true, allow_ipv4_ = true;
+	uint16_t base_port_ = 16572;
+	uint16_t port_range_ = 32;
+	bool allow_random_ports_ = true;
+	uint16_t multicast_port_ = 16571;
+
+	/** The range or scope of stream lookup when using multicast-based discovery
+	 *
+	 * It determines the output of the member functions
+	 * `multicast_addresses()` and `multicast_ttl()`.
+	 * Can take the values `machine`, `link`, `site`, `organization`, or `global`.
+	 */
+	enum { machine = 0, link, site, organization, global } resolve_scope_ = site;
+	/** Configured multicast group addresses. Default addresses are:
+	 *
+	 * - link: 224.0.0.1 / all directory connected hosts (RFC1112)
+	 * - site: a multicast group from the 239.192.0.0 / 14 subnet(RFC2365) */
+	std::vector<std::string> multicast_group_addresses_[5] = {
+		{"127.0.0.1"},
+		{"255.255.255.255", "224.0.0.1", "224.0.0.183"},
+		{"239.255.172.215"},
+		{},
+		{}};
+	/** suffix for IPv6 multicast.
+	 * Note about multicast addresses: IPv6 multicast addresses should be
+	 * FF0x::1 (see RFC2373, RFC1884) or a predefined multicast group*/
+	std::string ipv6_multicast_group_ = "113D:6FDD:2C17:A643:FFE2:1BD1:3CD2";
 	std::vector<std::string> multicast_addresses_;
-	int multicast_ttl_;
+	int multicast_ttl_ = 2;
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
-	std::string session_id_;
+	std::string session_id_ = "default";
 	// tuning parameters
-	int use_protocol_version_;
-	double watchdog_time_threshold_;
-	double watchdog_check_interval_;
-	double multicast_min_rtt_;
-	double multicast_max_rtt_;
-	double unicast_min_rtt_;
-	double unicast_max_rtt_;
-	double continuous_resolve_interval_;
-	int timer_resolution_;
-	int max_cached_queries_;
-	double time_update_interval_;
-	int time_update_minprobes_;
-	int time_probe_count_;
-	double time_probe_interval_;
-	double time_probe_max_rtt_;
-	int outlet_buffer_reserve_ms_;
-	int outlet_buffer_reserve_samples_;
+	int use_protocol_version_ = LSL_PROTOCOL_VERSION;
+	double watchdog_time_threshold_ = 15.0;
+	double watchdog_check_interval_ = 15.0;
+	double multicast_min_rtt_ = .5;
+	double multicast_max_rtt_ = 3.;
+	double unicast_min_rtt_ = .75;
+	double unicast_max_rtt_ = 5.;
+	double continuous_resolve_interval_ = .5;
+	int timer_resolution_ = 1;
+	int max_cached_queries_ = 100;
+	double time_update_interval_ = 2.;
+	int time_update_minprobes_ = 6;
+	int time_probe_count_ = 8;
+	double time_probe_interval_ = .064;
+	double time_probe_max_rtt_ = .128;
+	int outlet_buffer_reserve_ms_ = 5000;
+	int outlet_buffer_reserve_samples_ = 128;
 	int socket_send_buffer_size_;
-	int inlet_buffer_reserve_ms_;
-	int inlet_buffer_reserve_samples_;
+	int inlet_buffer_reserve_ms_ = 5000;
+	int inlet_buffer_reserve_samples_ = 128;
 	int socket_receive_buffer_size_;
-	float smoothing_halftime_;
-	bool force_default_timestamps_;
+	float smoothing_halftime_ = 90.F;
+	bool force_default_timestamps_ = false;
 };
 } // namespace lsl
 

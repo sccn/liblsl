@@ -38,6 +38,7 @@ add_executable(lsl_test_internal
 	test_int_stringfuncs.cpp
 	test_int_streaminfo.cpp
 	test_int_samples.cpp
+	internal/api_config.cpp
 	internal/postproc.cpp
 	internal/serialization_v100.cpp
 )

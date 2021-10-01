@@ -3,9 +3,12 @@
 #include "util/inireader.hpp"
 #include <algorithm>
 #include <cstdlib>
+#include <cstring>
 #include <exception>
 #include <fstream>
+#include <functional>
 #include <loguru.hpp>
+#include <map>
 #include <mutex>
 #include <stdexcept>
 
@@ -46,7 +49,9 @@ bool file_is_readable(const std::string &filename) {
 	return f.good();
 }
 
-api_config::api_config() {
+api_config::api_config(bool skip_load_settings) {
+	if (skip_load_settings) return;
+
 	// for each config file location under consideration...
 	std::vector<std::string> filenames;
 	if (getenv("LSLAPICFG")) {
@@ -75,157 +80,17 @@ api_config::api_config() {
 	load_from_file();
 }
 
-
 void api_config::load_from_file(const std::string &filename) {
+	if(filename.empty()) return;
 	try {
-		INI pt;
-		if (!filename.empty()) {
-			std::ifstream infile(filename);
-			if (infile.good()) {
-				pt.load(infile);
-			}
-		}
+		std::ifstream infile(filename);
+		if (!infile.good())
+			return;
 
-		// read out the [ports] parameters
-		multicast_port_ = pt.get("ports.MulticastPort", 16571);
-		base_port_ = pt.get("ports.BasePort", 16572);
-		port_range_ = pt.get("ports.PortRange", 32);
-		allow_random_ports_ = pt.get("ports.AllowRandomPorts", true);
-		std::string ipv6_str = pt.get("ports.IPv6",
-#ifdef __APPLE__
-			"disable"); // on Mac OS (10.7) there's a bug in the IPv6 implementation that breaks LSL
-						// when it tries to use both v4 and v6
-#else
-			"allow");
-#endif
-		allow_ipv4_ = true;
-		allow_ipv6_ = true;
-		// fix some common mis-spellings
-		if (ipv6_str == "disabled" || ipv6_str == "disable")
-			allow_ipv6_ = false;
-		else if (ipv6_str == "allowed" || ipv6_str == "allow")
-			allow_ipv6_ = true;
-		else if (ipv6_str == "forced" || ipv6_str == "force")
-			allow_ipv4_ = false;
-		else
-			throw std::runtime_error("Unsupported setting for the IPv6 parameter.");
+		load_ini_file(infile, [this](const std::string &section, const std::string &key,
+								  const std::string &value) { set_option(section, key, value); });
 
-		// read the [multicast] parameters
-		resolve_scope_ = pt.get("multicast.ResolveScope", "site");
-		listen_address_ = pt.get("multicast.ListenAddress", "");
-		// Note about multicast addresses: IPv6 multicast addresses should be
-		// FF0x::1 (see RFC2373, RFC1884) or a predefined multicast group
-		std::string ipv6_multicast_group =
-			pt.get("multicast.IPv6MulticastGroup", "113D:6FDD:2C17:A643:FFE2:1BD1:3CD2");
-		std::vector<std::string> machine_group =
-			parse_set(pt.get("multicast.MachineAddresses", "{127.0.0.1}"));
-		// 224.0.0.1 is the group for all directly connected hosts (RFC1112)
-		std::vector<std::string> link_group = parse_set(
-			pt.get("multicast.LinkAddresses", "{255.255.255.255, 224.0.0.1, 224.0.0.183}"));
-		// Multicast groups defined by the organization (and therefore subject
-		// to filtering / forwarding are in the 239.192.0.0/14 subnet (RFC2365)
-		std::vector<std::string> site_group =
-			parse_set(pt.get("multicast.SiteAddresses", "{239.255.172.215}"));
-		// Organization groups use the same broadcast addresses (IPv4), but
-		// have a larger TTL. On the network site, it requires the routers
-		// to forward the broadcast packets (both IGMP and UDP)
-		std::vector<std::string> organization_group =
-			parse_set(pt.get("multicast.OrganizationAddresses", "{}"));
-		std::vector<std::string> global_group =
-			parse_set(pt.get("multicast.GlobalAddresses", "{}"));
-		enum { machine = 0, link, site, organization, global } scope;
-		// construct list of addresses & TTL according to the ResolveScope.
-		if (resolve_scope_ == "machine")
-			scope = machine;
-		else if (resolve_scope_ == "link")
-			scope = link;
-		else if (resolve_scope_ == "site")
-			scope = site;
-		else if (resolve_scope_ == "organization")
-			scope = organization;
-		else if (resolve_scope_ == "global")
-			scope = global;
-		else
-			throw std::runtime_error("This ResolveScope setting is unsupported.");
 
-		multicast_addresses_.insert(
-			multicast_addresses_.end(), machine_group.begin(), machine_group.end());
-		multicast_ttl_ = 0;
-
-		if (scope >= link) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), link_group.begin(), link_group.end());
-			multicast_addresses_.push_back("FF02:" + ipv6_multicast_group);
-			multicast_ttl_ = 1;
-		}
-		if (scope >= site) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), site_group.begin(), site_group.end());
-			multicast_addresses_.push_back("FF05:" + ipv6_multicast_group);
-			multicast_ttl_ = 24;
-		}
-		if (scope >= organization) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), organization_group.begin(), organization_group.end());
-			multicast_addresses_.push_back("FF08:" + ipv6_multicast_group);
-			multicast_ttl_ = 32;
-		}
-		if (scope >= global) {
-			multicast_addresses_.insert(
-				multicast_addresses_.end(), global_group.begin(), global_group.end());
-			multicast_addresses_.push_back("FF0E:" + ipv6_multicast_group);
-			multicast_ttl_ = 255;
-		}
-
-		// apply overrides, if any
-		int ttl_override = pt.get("multicast.TTLOverride", -1);
-		std::vector<std::string> address_override =
-			parse_set(pt.get("multicast.AddressesOverride", "{}"));
-		if (ttl_override >= 0) multicast_ttl_ = ttl_override;
-		if (!address_override.empty()) multicast_addresses_ = address_override;
-
-		// read the [lab] settings
-		known_peers_ = parse_set(pt.get("lab.KnownPeers", "{}"));
-		session_id_ = pt.get("lab.SessionID", "default");
-
-		// read the [tuning] settings
-		use_protocol_version_ = std::min(
-			LSL_PROTOCOL_VERSION, pt.get("tuning.UseProtocolVersion", LSL_PROTOCOL_VERSION));
-		watchdog_check_interval_ = pt.get("tuning.WatchdogCheckInterval", 15.0);
-		watchdog_time_threshold_ = pt.get("tuning.WatchdogTimeThreshold", 15.0);
-		multicast_min_rtt_ = pt.get("tuning.MulticastMinRTT", 0.5);
-		multicast_max_rtt_ = pt.get("tuning.MulticastMaxRTT", 3.0);
-		unicast_min_rtt_ = pt.get("tuning.UnicastMinRTT", 0.75);
-		unicast_max_rtt_ = pt.get("tuning.UnicastMaxRTT", 5.0);
-		continuous_resolve_interval_ = pt.get("tuning.ContinuousResolveInterval", 0.5);
-		timer_resolution_ = pt.get("tuning.TimerResolution", 1);
-		max_cached_queries_ = pt.get("tuning.MaxCachedQueries", 100);
-		time_update_interval_ = pt.get("tuning.TimeUpdateInterval", 2.0);
-		time_update_minprobes_ = pt.get("tuning.TimeUpdateMinProbes", 6);
-		time_probe_count_ = pt.get("tuning.TimeProbeCount", 8);
-		time_probe_interval_ = pt.get("tuning.TimeProbeInterval", 0.064);
-		time_probe_max_rtt_ = pt.get("tuning.TimeProbeMaxRTT", 0.128);
-		outlet_buffer_reserve_ms_ = pt.get("tuning.OutletBufferReserveMs", 5000);
-		outlet_buffer_reserve_samples_ = pt.get("tuning.OutletBufferReserveSamples", 128);
-		socket_send_buffer_size_ = pt.get("tuning.SendSocketBufferSize", 0);
-		inlet_buffer_reserve_ms_ = pt.get("tuning.InletBufferReserveMs", 5000);
-		inlet_buffer_reserve_samples_ = pt.get("tuning.InletBufferReserveSamples", 128);
-		socket_receive_buffer_size_ = pt.get("tuning.ReceiveSocketBufferSize", 0);
-		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
-		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
-
-		// read the [log] settings
-		int log_level = pt.get("log.level", (int) loguru::Verbosity_INFO);
-		if (log_level < -3 || log_level > 9)
-			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
-
-		std::string log_file = pt.get("log.file", "");
-		if (!log_file.empty()) {
-			loguru::add_file(log_file.c_str(), loguru::Append, log_level);
-			// don't duplicate log to stderr
-			loguru::g_stderr_verbosity = -9;
-		} else
-			loguru::g_stderr_verbosity = log_level;
 
 		// log config filename only after setting the verbosity level
 		if (!filename.empty())
@@ -241,6 +106,183 @@ void api_config::load_from_file(const std::string &filename) {
 		// and rethrow
 		throw e;
 	}
+}
+
+void lsl::api_config::update_multicast_groups() {
+	int ttls[] = {0, 1, 24, 32, 255};
+	multicast_ttl_ = ttls[resolve_scope_];
+
+	const char IPv6_multicast_scopes[] = {'\0', '2', '5', '8', 'E'};
+
+	multicast_addresses_.clear();
+	std::string v6_multicast_group = "FF0?" + ipv6_multicast_group_;
+	for (int scope = machine; scope <= resolve_scope_; ++scope) {
+		const auto &grpaddrs = multicast_group_addresses_[scope];
+		multicast_addresses_.insert(multicast_addresses_.end(), grpaddrs.begin(), grpaddrs.end());
+		if (IPv6_multicast_scopes[scope]) {
+			v6_multicast_group[4] = IPv6_multicast_scopes[scope];
+			multicast_addresses_.push_back(v6_multicast_group);
+		}
+	}
+}
+
+template <typename T>
+inline void set_from_string(
+	T &var, const std::string &val, T (*converter)(const std::string &) = from_string<T>) {
+	var = converter(val);
+}
+
+bool lsl::api_config::set_option(
+	const std::string &section, const std::string &key, const std::string &value) {
+
+	// [ports]
+	if (section == "ports") {
+		if (key == "MulticastPort")
+			set_from_string(multicast_port_, value);
+		else if (key == "BasePort")
+			set_from_string(base_port_, value);
+		else if (key == "PortRange")
+			set_from_string(port_range_, value);
+		else if (key == "AllowRandomPorts")
+			set_from_string(allow_random_ports_, value);
+		else if (key == "IPv6") {
+			allow_ipv4_ = true;
+			allow_ipv6_ = true;
+			if (value == "disabled" || value == "disable")
+				allow_ipv6_ = false;
+			else if (value == "allowed" || value == "allow")
+				allow_ipv6_ = true;
+			else if (value == "forced" || value == "force")
+				allow_ipv4_ = false;
+			else
+				throw std::runtime_error("Unsupported setting for the IPv6 parameter.");
+		} else if (key == "MachineAddresses")
+			multicast_group_addresses_[machine] = parse_set(value);
+		else if (key == "LinkAddresses")
+			multicast_group_addresses_[link] = parse_set(value);
+		else if (key == "SiteAddresses")
+			multicast_group_addresses_[site] = parse_set(value);
+		else if (key == "OrganizationAddresses")
+			multicast_group_addresses_[organization] = parse_set(value);
+		else if (key == "GlobalAddresses")
+			multicast_group_addresses_[global] = parse_set(value);
+	}
+	// [multicast]
+	else if (section == "multicast") {
+		if (key == "ResolveScope") {
+			if (value == "machine")
+				resolve_scope_ = machine;
+			else if (value == "link")
+				resolve_scope_ = link;
+			else if (value == "site")
+				resolve_scope_ = site;
+			else if (value == "organization")
+				resolve_scope_ = organization;
+			else if (value == "global")
+				resolve_scope_ = global;
+			else
+				throw std::runtime_error("This ResolveScope setting is unsupported.");
+			update_multicast_groups();
+		} else if (key == "ListenAddress")
+			listen_address_ = value;
+		else if (value == "TTLOverride") {
+			// apply overrides, if any
+			int ttl_override = from_string<int>(value);
+			if (ttl_override < 0 || ttl_override > 255)
+				throw std::runtime_error("Invalid TTLOverride value");
+			multicast_ttl_ = ttl_override;
+		}
+		/*std::vector<std::string> address_override =
+			parse_set(pt.get("multicast.AddressesOverride", "{}"));
+		if (!address_override.empty()) multicast_addresses_ = address_override;*/
+
+	}
+	// [lab]
+	else if (section == "lab") {
+		if (key == "KnownPeers")
+			known_peers_ = parse_set(value);
+		else if (key == "SessionID")
+			session_id_ = value;
+	}
+	// [log]
+	else if(section=="log") {
+		// read the [log] settings
+		if(key=="level") {
+			int8_t log_level = from_string<int>(value);
+			if (log_level < -3 || log_level > 9)
+				throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
+			log_level_ = log_level;
+		}
+		else if(key == "file") {
+		if (!value.empty()) {
+			loguru::add_file(value.c_str(), loguru::Append, log_level_);
+			// don't duplicate log to stderr
+			loguru::g_stderr_verbosity = -9;
+		} else
+			loguru::g_stderr_verbosity = log_level_;
+		}
+
+	}
+	// [tuning]
+	else if (section == "tuning") {
+		if (key == "UseProtocolVersion") {
+			int tmpversion = from_string<int>(value);
+			if (tmpversion > LSL_PROTOCOL_VERSION)
+				throw std::runtime_error("Requested protocol version " + value +
+										 " too new; this library supports up to " +
+										 std::to_string(LSL_PROTOCOL_VERSION));
+			use_protocol_version_ = tmpversion;
+		} else if (key == "ContinuousResolveInterval")
+			set_from_string(continuous_resolve_interval_, value);
+		else if (key == "ForceDefaultTimestamps")
+			set_from_string(force_default_timestamps_, value);
+		else if (key == "InletBufferReserveMs")
+			set_from_string(inlet_buffer_reserve_ms_, value);
+		else if (key == "InletBufferReserveSamples")
+			set_from_string(inlet_buffer_reserve_samples_, value);
+		else if (key == "MaxCachedQueries")
+			set_from_string(max_cached_queries_, value);
+		else if (key == "MulticastMaxRTT")
+			set_from_string(multicast_max_rtt_, value);
+		else if (key == "MulticastMinRTT")
+			set_from_string(multicast_min_rtt_, value);
+		else if (key == "OutletBufferReserveMs")
+			set_from_string(outlet_buffer_reserve_ms_, value);
+		else if (key == "OutletBufferReserveSamples")
+			set_from_string(outlet_buffer_reserve_samples_, value);
+		else if (key == "ReceiveSocketBufferSize")
+			set_from_string(socket_receive_buffer_size_, value);
+		else if (key == "SendSocketBufferSize")
+			set_from_string(socket_send_buffer_size_, value);
+		else if (key == "SmoothingHalftime")
+			set_from_string(smoothing_halftime_, value);
+		else if (key == "TimeProbeCount")
+			set_from_string(time_probe_count_, value);
+		else if (key == "TimeProbeInterval")
+			set_from_string(time_probe_interval_, value);
+		else if (key == "TimeProbeMaxRTT")
+			set_from_string(time_probe_max_rtt_, value);
+		else if (key == "TimeUpdateInterval")
+			set_from_string(time_update_interval_, value);
+		else if (key == "TimeUpdateMinProbes")
+			set_from_string(time_update_minprobes_, value);
+		else if (key == "TimerResolution")
+			set_from_string(timer_resolution_, value);
+		else if (key == "UnicastMaxRTT")
+			set_from_string(unicast_max_rtt_, value);
+		else if (key == "UnicastMinRTT")
+			set_from_string(unicast_min_rtt_, value);
+		else if (key == "WatchdogCheckInterval")
+			set_from_string(watchdog_check_interval_, value);
+		else if (key == "WatchdogTimeThreshold")
+			set_from_string(watchdog_time_threshold_, value);
+	}
+	else {
+		LOG_F(ERROR, "Unknown configuration option %s.%s = %s", section.c_str(), key.c_str(), value.c_str());
+		return false;
+	}
+
+	return true;
 }
 
 static std::once_flag api_config_once_flag;
