@@ -124,6 +124,10 @@ public:
 	 */
 	void cancel();
 
+	enum class resolver_status {
+		empty, started_oneshot, running_continuous
+	};
+
 private:
 	/// This function starts a new wave of resolves.
 	void next_resolve_wave();
@@ -157,6 +161,7 @@ private:
 	std::atomic<bool> expired_;
 
 	// reinitialized for each query
+	resolver_status status{resolver_status::empty};
 	/// our current query string
 	std::string query_;
 	/// the minimum number of results that we want

@@ -1668,7 +1668,7 @@ public:
 	std::vector<stream_info> results() {
 		lsl_streaminfo buffer[1024];
 		return std::vector<stream_info>(
-			buffer, buffer + lsl_resolver_results(obj.get(), buffer, sizeof(buffer)));
+			buffer, buffer + check_error(lsl_resolver_results(obj.get(), buffer, sizeof(buffer))));
 	}
 
 	/// Move constructor for stream_inlet

@@ -90,6 +90,9 @@ resolver_impl *resolver_impl::create_resolver(
 
 std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
 	const std::string &query, int minimum, double timeout, double minimum_time) {
+	if(status == resolver_status::running_continuous)
+		throw std::logic_error("resolve_oneshot called during continuous operation");
+
 	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
@@ -113,6 +116,8 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
 	// start the first wave of resolve packets
 	next_resolve_wave();
 
+	status = resolver_status::started_oneshot;
+
 	// run the IO operations until finished
 	if (!cancelled_) {
 		io_->run();
@@ -125,6 +130,9 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
 }
 
 void resolver_impl::resolve_continuous(const std::string &query, double forget_after) {
+	if(status == resolver_status::running_continuous)
+		throw std::logic_error("resolve_continuous called during another continuous operation");
+
 	check_query(query);
 	// reset the IO service & set up the query parameters
 	io_->restart();
@@ -139,9 +147,13 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	next_resolve_wave();
 	// spawn a thread that runs the IO operations
 	background_io_ = std::make_shared<std::thread>([shared_io = io_]() { shared_io->run(); });
+	status = resolver_status::running_continuous;
 }
 
 std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
+	if (status == resolver_status::empty)
+		throw std::logic_error("results() called before starting a resolve operation");
+
 	std::vector<stream_info_impl> output;
 	std::lock_guard<std::mutex> lock(results_mut_);
 	double expired_before = lsl_clock() - forget_after_;
