@@ -129,6 +129,8 @@ public:
 	};
 
 private:
+	friend class resolve_attempt_udp;
+
 	/// This function starts a new wave of resolves.
 	void next_resolve_wave();
 
