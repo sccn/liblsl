@@ -53,8 +53,7 @@ public:
 	 */
 	resolve_attempt_udp(asio::io_context &io, const udp &protocol,
 		const std::vector<udp::endpoint> &targets, const std::string &query,
-		result_container &results, std::mutex &results_mut, double cancel_after = 5.0,
-		cancellable_registry *registry = nullptr);
+		resolver_impl &resolver, double cancel_after = 5.0);
 
 	/// Destructor
 	~resolve_attempt_udp();
@@ -90,10 +89,8 @@ private:
 	// data shared with the resolver_impl
 	/// reference to the IO service that executes our actions
 	asio::io_context &io_;
-	/// shared result container
-	result_container &results_;
-	/// shared mutex that protects the results
-	std::mutex &results_mut_;
+	/// the resolver associated with this attempt
+	resolver_impl &resolver_;
 
 	// constant over the lifetime of this attempt
 	/// the timeout for giving up

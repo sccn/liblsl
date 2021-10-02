@@ -13,11 +13,11 @@
 using namespace lsl;
 
 resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protocol,
-	const std::vector<udp::endpoint> &targets, const std::string &query, result_container &results,
-	std::mutex &results_mut, double cancel_after, cancellable_registry *registry)
-	: io_(io), results_(results), results_mut_(results_mut), cancel_after_(cancel_after),
-	  cancelled_(false), targets_(targets), query_(query), unicast_socket_(io),
-	  broadcast_socket_(io), multicast_socket_(io), recv_socket_(io), cancel_timer_(io) {
+	const std::vector<udp::endpoint> &targets, const std::string &query, resolver_impl &resolver,
+	double cancel_after)
+	: io_(io), resolver_(resolver), cancel_after_(cancel_after), cancelled_(false),
+	  targets_(targets), query_(query), unicast_socket_(io), broadcast_socket_(io),
+	  multicast_socket_(io), recv_socket_(io), cancel_timer_(io) {
 	// open the sockets that we might need
 	recv_socket_.open(protocol);
 	try {
@@ -57,7 +57,7 @@ resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protoc
 		query_msg_.c_str());
 
 	// register ourselves as a candidate for cancellation
-	if (registry) register_at(registry);
+	register_at(&resolver);
 }
 
 resolve_attempt_udp::~resolve_attempt_udp() {
@@ -116,20 +116,24 @@ void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 				std::string uid = info.uid();
 				{
 					// update the results
-					std::lock_guard<std::mutex> lock(results_mut_);
-					if (results_.find(uid) == results_.end())
-						results_[uid] = std::make_pair(info, lsl_clock()); // insert new result
+					std::lock_guard<std::mutex> lock(resolver_.results_mut_);
+					auto it = resolver_.results_.find(uid);
+					if (it == resolver_.results_.end())
+						// insert new result, store iterator in it
+						it = resolver_.results_.emplace(uid, std::make_pair(info, lsl_clock()))
+								 .first;
 					else
-						results_[uid].second = lsl_clock(); // update only the receive time
+						it->second.second = lsl_clock(); // update only the receive time
+					auto &stored_info = it->second.first;
 					// ... also update the address associated with the result (but don't
 					// override the address of an earlier record for this stream since this
 					// would be the faster route)
 					if (remote_endpoint_.address().is_v4()) {
-						if (results_[uid].first.v4address().empty())
-							results_[uid].first.v4address(remote_endpoint_.address().to_string());
+						if (stored_info.v4address().empty())
+							stored_info.v4address(remote_endpoint_.address().to_string());
 					} else {
-						if (results_[uid].first.v6address().empty())
-							results_[uid].first.v6address(remote_endpoint_.address().to_string());
+						if (stored_info.v6address().empty())
+							stored_info.v6address(remote_endpoint_.address().to_string());
 					}
 				}
 			}
