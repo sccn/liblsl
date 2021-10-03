@@ -5,6 +5,7 @@
 #include "sample.h"
 #include "socket_utils.h"
 #include "util/cast.hpp"
+#include "util/endian.hpp"
 #include "util/strfuns.hpp"
 #include <chrono>
 #include <exception>
@@ -155,7 +156,7 @@ void data_receiver::data_thread() {
 
 				// --- protocol negotiation ---
 
-				int use_byte_order = 0; // which byte order we shall use (0=portable byte order)
+				bool reverse_byte_order = false; // perform little <-> big endian conversion?
 				int data_protocol_version = 100;  // which protocol version we shall use for data
 												  // transmission (100=version 1.00)
 				bool suppress_subnormals = false; // whether we shall suppress subnormal numbers
@@ -225,12 +226,13 @@ void data_receiver::data_thread() {
 										rest = trim(hdrline.substr(colon + 1));
 							// get the header information
 							if (type == "byte-order") {
-								use_byte_order = std::stoi(rest);
-								if (use_byte_order == 2134 && LSL_BYTE_ORDER != 2134 &&
-									format_sizes[conn_.type_info().channel_format()] >= 8)
+								int use_byte_order = std::stoi(rest);
+								auto value_size = format_sizes[conn_.type_info().channel_format()];
+								if (!lsl::can_convert_endian(use_byte_order, value_size))
 									throw std::runtime_error(
 										"The byte order conversion requested by the other party is "
 										"not supported.");
+								reverse_byte_order = use_byte_order != LSL_BYTE_ORDER;
 							}
 							if (type == "suppress-subnormals")
 								suppress_subnormals = lsl::from_string<bool>(rest);
@@ -280,8 +282,8 @@ void data_receiver::data_thread() {
 							received(fac.new_sample(0.0, false));
 						expected->assign_test_pattern(test_pattern);
 						if (data_protocol_version >= 110)
-							received->load_streambuf(
-								buffer, data_protocol_version, use_byte_order, suppress_subnormals);
+							received->load_streambuf(buffer, data_protocol_version,
+								reverse_byte_order, suppress_subnormals);
 						else
 							*inarch >> *received;
 
@@ -310,7 +312,7 @@ void data_receiver::data_thread() {
 					sample_p samp(factory->new_sample(0.0, false));
 					if (data_protocol_version >= 110)
 						samp->load_streambuf(
-							buffer, data_protocol_version, use_byte_order, suppress_subnormals);
+							buffer, data_protocol_version, reverse_byte_order, suppress_subnormals);
 					else
 						*inarch >> *samp;
 					// deduce timestamp if necessary

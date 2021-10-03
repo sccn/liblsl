@@ -3,19 +3,15 @@
 #include "common.h"
 #include "forward.h"
 #include "util/cast.hpp"
+#include "util/endian.hpp"
 #include <atomic>
 #include <cstdint>
-#include <boost/endian/detail/order.hpp>
 #include <iosfwd>
 #include <limits>
 #include <stdexcept>
 #include <string>
 #include <type_traits>
 
-// Determine target byte order / endianness
-using byteorder = lslboost::endian::order;
-static_assert(byteorder::native == byteorder::little || byteorder::native == byteorder::big, "Unsupported byteorder");
-const int LSL_BYTE_ORDER = (byteorder::native == byteorder::little) ? 1234 : 4321;
 
 namespace lsl {
 // assert that the target CPU can represent the double-precision timestamp format required by LSL
@@ -144,12 +140,12 @@ public:
 	// === serialization functions ===
 
 	/// Serialize a sample to a stream buffer (protocol 1.10).
-	void save_streambuf(std::streambuf &sb, int protocol_version, int use_byte_order,
+	void save_streambuf(std::streambuf &sb, int protocol_version, bool reverse_byte_order,
 		void *scratchpad = nullptr) const;
 
 	/// Deserialize a sample from a stream buffer (protocol 1.10).
-	void load_streambuf(
-		std::streambuf &sb, int protocol_version, int use_byte_order, bool suppress_subnormals);
+	void load_streambuf(std::streambuf &sb, int protocol_version, bool reverse_byte_order,
+		bool suppress_subnormals);
 
 	/// Convert the endianness of channel data in-place.
 	static void convert_endian(void *data, uint32_t n, uint32_t width);
