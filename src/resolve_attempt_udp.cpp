@@ -135,6 +135,10 @@ void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 							stored_info.v6address(remote_endpoint_.address().to_string());
 					}
 				}
+				// prepone the next cancellation check, i.e. when all needed streams are found,
+				// cancel immediately rather than when a wave timer is due half a second later
+				if (resolver_.check_cancellation_criteria())
+					resolver_.cancel_ongoing_resolve();
 			}
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "resolve_attempt_udp: hiccup while processing the received data: %s",
