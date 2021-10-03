@@ -203,7 +203,7 @@ void resolver_impl::next_resolve_wave() {
 
 void resolver_impl::udp_multicast_burst() {
 	// start one per IP stack under consideration
-	int failures = 0;
+	unsigned int failures = 0;
 	for (auto protocol: udp_protocols_) {
 		try {
 			std::make_shared<resolve_attempt_udp>(
@@ -222,7 +222,7 @@ void resolver_impl::udp_multicast_burst() {
 void resolver_impl::udp_unicast_burst(err_t err) {
 	if (err == asio::error::operation_aborted) return;
 
-	int failures = 0;
+	unsigned int failures = 0;
 	// start one per IP stack under consideration
 	for (auto protocol: udp_protocols_) {
 		try {
