@@ -37,7 +37,7 @@ TEMPLATE_TEST_CASE(
 }
 
 TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
-	const std::size_t numChannels = 2;
+	const std::size_t numChannels = 3;
 
 	Streampair sp(create_streampair(lsl::stream_info(
 		"cf_string", "DataType", numChannels, lsl::IRREGULAR_RATE, lsl::cf_string, "streamid")));
@@ -45,6 +45,7 @@ TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 	std::vector<std::string> sent_data, received_data(numChannels);
 	const char nullstr[] = "\0Test\0string\0with\0nulls";
 	sent_data.emplace_back(nullstr, sizeof(nullstr));
+	sent_data.emplace_back(200, 'x');
 	sent_data.emplace_back(1 << 20, 'x');
 
 	sp.out_.push_sample(sent_data);

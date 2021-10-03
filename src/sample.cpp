@@ -154,49 +154,61 @@ void save_raw(std::streambuf &sb, const void *address, std::size_t count) {
 		throw std::runtime_error("Output stream error.");
 }
 
+void save_byte(std::streambuf& sb, uint8_t v) {
+	if (sb.sputc(*reinterpret_cast<const char *>(&v)) == std::streambuf::traits_type::eof())
+		throw std::runtime_error("Output stream error.");
+}
+
 /// Helper function to load raw binary data from a stream buffer.
 void load_raw(std::streambuf &sb, void *address, std::size_t count) {
 	if ((std::size_t)sb.sgetn((char *)address, (std::streamsize)count) != count)
 		throw std::runtime_error("Input stream error.");
 }
 
+uint8_t load_byte(std::streambuf &sb) {
+	auto res = sb.sbumpc();
+	if(res == std::streambuf::traits_type::eof())
+		throw std::runtime_error("Input stream error.");
+	return static_cast<uint8_t>(res);
+}
+
 /// Load a value from a stream buffer with correct endian treatment.
-template <typename T> T load_value(std::streambuf &sb, int use_byte_order) {
+template <typename T> T load_value(std::streambuf &sb, bool reverse_byte_order) {
 	T tmp;
 	load_raw(sb, &tmp, sizeof(T));
-	if (sizeof(T) > 1 && use_byte_order != LSL_BYTE_ORDER) endian_reverse_inplace(tmp);
+	if (sizeof(T) > 1 && reverse_byte_order) endian_reverse_inplace(tmp);
 	return tmp;
 }
 
 /// Save a value to a stream buffer with correct endian treatment.
-template <typename T> void save_value(std::streambuf &sb, T v, int use_byte_order) {
-	if (use_byte_order != LSL_BYTE_ORDER) endian_reverse_inplace(v);
+template <typename T> void save_value(std::streambuf &sb, T v, bool reverse_byte_order) {
+	if (sizeof(T) > 1 && reverse_byte_order) endian_reverse_inplace(v);
 	save_raw(sb, &v, sizeof(T));
 }
 
 void sample::save_streambuf(
-	std::streambuf &sb, int /*protocol_version*/, int use_byte_order, void *scratchpad) const {
+	std::streambuf &sb, int /*protocol_version*/, bool reverse_byte_order, void *scratchpad) const {
 	// write sample header
 	if (timestamp == DEDUCED_TIMESTAMP) {
-		save_value(sb, TAG_DEDUCED_TIMESTAMP, use_byte_order);
+		save_byte(sb, TAG_DEDUCED_TIMESTAMP);
 	} else {
-		save_value(sb, TAG_TRANSMITTED_TIMESTAMP, use_byte_order);
-		save_value(sb, timestamp, use_byte_order);
+		save_byte(sb, TAG_TRANSMITTED_TIMESTAMP);
+		save_value(sb, timestamp, reverse_byte_order);
 	}
 	// write channel data
 	if (format_ == cft_string) {
 		for (const auto &str : samplevals<std::string>(*this)) {
 			// write string length as variable-length integer
 			if (str.size() <= 0xFF) {
-				save_value(sb, (uint8_t)sizeof(uint8_t), use_byte_order);
-				save_value(sb, static_cast<uint8_t>(str.size()), use_byte_order);
+				save_byte(sb, static_cast<uint8_t>(sizeof(uint8_t)));
+				save_byte(sb, static_cast<uint8_t>(str.size()));
 			} else {
 				if (str.size() <= 0xFFFFFFFF) {
-					save_value(sb, (uint8_t)sizeof(uint32_t), use_byte_order);
-					save_value(sb, static_cast<uint32_t>(str.size()), use_byte_order);
+					save_byte(sb, static_cast<uint8_t>(sizeof(uint32_t)));
+					save_value(sb, static_cast<uint32_t>(str.size()), reverse_byte_order);
 				} else {
-					save_value(sb, (uint8_t)sizeof(uint64_t), use_byte_order);
-					save_value(sb, static_cast<std::size_t>(str.size()), use_byte_order);
+					save_byte(sb, static_cast<uint8_t>(sizeof(uint64_t)));
+					save_value(sb, static_cast<std::size_t>(str.size()), reverse_byte_order);
 				}
 			}
 			// write string contents
@@ -204,7 +216,7 @@ void sample::save_streambuf(
 		}
 	} else {
 		// write numeric data in binary
-		if (use_byte_order == LSL_BYTE_ORDER || format_sizes[format_] == 1) {
+		if (!reverse_byte_order || format_sizes[format_] == 1) {
 			save_raw(sb, &data_, datasize());
 		} else {
 			memcpy(scratchpad, &data_, datasize());
@@ -215,31 +227,31 @@ void sample::save_streambuf(
 }
 
 void sample::load_streambuf(
-	std::streambuf &sb, int /*unused*/, int use_byte_order, bool suppress_subnormals) {
+	std::streambuf &sb, int /*unused*/, bool reverse_byte_order, bool suppress_subnormals) {
 	// read sample header
-	if (load_value<uint8_t>(sb, use_byte_order) == TAG_DEDUCED_TIMESTAMP)
+	if (load_byte(sb) == TAG_DEDUCED_TIMESTAMP)
 		// deduce the timestamp
 		timestamp = DEDUCED_TIMESTAMP;
 	else
 		// read the time stamp
-		timestamp = load_value<double>(sb, use_byte_order);
+		timestamp = load_value<double>(sb, reverse_byte_order);
 
 	// read channel data
 	if (format_ == cft_string) {
 		for (auto &str : samplevals<std::string>(*this)) {
 			// read string length as variable-length integer
 			std::size_t len = 0;
-			auto lenbytes = load_value<uint8_t>(sb, use_byte_order);
+			auto lenbytes = load_byte(sb);
 
 			if (sizeof(std::size_t) < 8 && lenbytes > sizeof(std::size_t))
 				throw std::runtime_error(
 					"This platform does not support strings of 64-bit length.");
 			switch (lenbytes) {
-			case sizeof(uint8_t): len = load_value<uint8_t>(sb, use_byte_order); break;
-			case sizeof(uint16_t): len = load_value<uint16_t>(sb, use_byte_order); break;
-			case sizeof(uint32_t): len = load_value<uint32_t>(sb, use_byte_order); break;
+			case sizeof(uint8_t): len = load_byte(sb); break;
+			case sizeof(uint16_t): len = load_value<uint16_t>(sb, reverse_byte_order); break;
+			case sizeof(uint32_t): len = load_value<uint32_t>(sb, reverse_byte_order); break;
 #ifndef BOOST_NO_INT64_T
-			case sizeof(uint64_t): len = load_value<uint64_t>(sb, use_byte_order); break;
+			case sizeof(uint64_t): len = load_value<uint64_t>(sb, reverse_byte_order); break;
 #endif
 			default: throw std::runtime_error("Stream contents corrupted (invalid varlen int).");
 			}
@@ -250,8 +262,8 @@ void sample::load_streambuf(
 	} else {
 		// read numeric channel data
 		load_raw(sb, &data_, datasize());
-		if (use_byte_order != LSL_BYTE_ORDER && format_sizes[format_] > 1)
-			convert_endian(&data_, num_channels_, format_sizes[format_]);
+		if (reverse_byte_order && format_sizes[format_] > 1)
+			convert_endian(&data_, num_channels(), format_sizes[format_]);
 		if (suppress_subnormals && format_float[format_]) {
 			if (format_ == cft_float32) {
 				for (auto &val : samplevals<uint32_t>(*this))

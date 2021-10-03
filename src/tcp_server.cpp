@@ -6,6 +6,7 @@
 #include "socket_utils.h"
 #include "stream_info_impl.h"
 #include "util/cast.hpp"
+#include "util/endian.hpp"
 #include "util/strfuns.hpp"
 #include <asio/io_context.hpp>
 #include <asio/ip/host_name.hpp>
@@ -33,6 +34,8 @@
 // to errors like "multiple definition of `typeinfo name"
 #define NO_EXPLICIT_TEMPLATE_INSTANTIATION
 #include "portable_archive/portable_oarchive.hpp"
+
+using std::size_t;
 
 namespace lsl {
 /**
@@ -127,9 +130,8 @@ private:
 	char *scratch_{nullptr};
 	/// protocol version to use for transmission
 	int data_protocol_version_{100};
-	/// byte order to use (0=portable, 1234=little endian, 4321=big endian, 2134=PDP endian,
-	/// unsupported)
-	int use_byte_order_{LSL_BYTE_ORDER};
+	/// is the client's endianness reversed (big<->little endian)
+	bool reverse_byte_order_{false};
 	/// our chunk granularity
 	int chunk_granularity_{0};
 	/// maximum number of samples buffered
@@ -423,6 +425,9 @@ void client_session::handle_read_feedparams(
 
 			// determine the parameters for data transmission
 			bool client_suppress_subnormals = false;
+
+			lsl::Endianness use_byte_order = LSL_BYTE_ORDER;
+
 			// use least common denominator data protocol version
 			data_protocol_version_ = std::min(
 				api_config::get_instance()->use_protocol_version(), client_protocol_version);
@@ -436,21 +441,21 @@ void client_session::handle_read_feedparams(
 				!client_has_ieee754_floats)
 				data_protocol_version_ = 100;
 			if (data_protocol_version_ >= 110) {
-				// decide on the byte order if conflicting
-				if (LSL_BYTE_ORDER != client_byte_order) {
-					if (client_byte_order == 2134 && client_value_size >= 8) {
-						// since we have no implementation for this byte order conversion let
-						// the client do it
-						use_byte_order_ = LSL_BYTE_ORDER;
-					} else {
-						// let the faster party perform the endian conversion
-						use_byte_order_ = (client_value_size <= 1 || (measure_endian_performance() >
-																		 client_endian_performance))
-											  ? client_byte_order
-											  : LSL_BYTE_ORDER;
-					}
-				} else
-					use_byte_order_ = LSL_BYTE_ORDER;
+
+				// enable endian conversion when
+				// 1. our byte ordering is different from the client's *and*
+				// 2. we can actually perform the conversion *and*
+				// 3. the sample format is wide enough for endianness to matter *and*
+				// 4. we're faster at converting than the client
+				if (LSL_BYTE_ORDER != client_byte_order &&						  // (1)
+					lsl::can_convert_endian(client_byte_order, client_value_size) // (2)
+					&& client_value_size > 1 &&									  // (3)
+					(measure_endian_performance() > client_endian_performance))	  // (4)
+				{
+					use_byte_order = static_cast<lsl::Endianness>(client_byte_order);
+					reverse_byte_order_ = true;
+				}
+
 				// determine if subnormal suppression needs to be enabled
 				client_suppress_subnormals =
 					(format_subnormal[format] && !client_supports_subnormals);
@@ -461,7 +466,7 @@ void client_session::handle_read_feedparams(
 			response_stream << "LSL/" << api_config::get_instance()->use_protocol_version()
 							<< " 200 OK\r\n";
 			response_stream << "UID: " << serv_->info_->uid() << "\r\n";
-			response_stream << "Byte-Order: " << use_byte_order_ << "\r\n";
+			response_stream << "Byte-Order: " << use_byte_order << "\r\n";
 			response_stream << "Suppress-Subnormals: " << client_suppress_subnormals << "\r\n";
 			response_stream << "Data-Protocol-Version: " << data_protocol_version_ << "\r\n";
 			response_stream << "\r\n" << std::flush;
@@ -489,7 +494,8 @@ void client_session::handle_read_feedparams(
 			lsl::sample_p temp(fac.new_sample(0.0, false));
 			temp->assign_test_pattern(test_pattern);
 			if (data_protocol_version_ >= 110)
-				temp->save_streambuf(feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
+				temp->save_streambuf(
+					feedbuf_, data_protocol_version_, reverse_byte_order_, scratch_);
 			else
 				*outarch_ << *temp;
 		}
@@ -543,7 +549,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*k
 				// serialize the sample into the stream
 				if (data_protocol_version_ >= 110)
 					samp->save_streambuf(
-						feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
+						feedbuf_, data_protocol_version_, reverse_byte_order_, scratch_);
 				else
 					*outarch_ << *samp;
 				// if the sample is marked as force-push or the configured chunk size is reached

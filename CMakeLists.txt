@@ -97,6 +97,8 @@ add_library(lslobj OBJECT
 	src/udp_server.h
 	src/util/cast.hpp
 	src/util/cast.cpp
+	src/util/endian.cpp
+	src/util/endian.hpp
 	src/util/inireader.hpp
 	src/util/inireader.cpp
 	src/util/strfuns.hpp
