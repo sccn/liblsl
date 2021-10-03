@@ -170,13 +170,7 @@ std::vector<stream_info_impl> resolver_impl::results(uint32_t max_results) {
 // === timer-driven async handlers ===
 
 void resolver_impl::next_resolve_wave() {
-	std::size_t num_results = 0;
-	{
-		std::lock_guard<std::mutex> lock(results_mut_);
-		num_results = results_.size();
-	}
-	if (cancelled_ || expired_ ||
-		(minimum_ && (num_results >= (std::size_t)minimum_) && lsl_clock() >= wait_until_)) {
+	if (check_cancellation_criteria()) {
 		// stopping criteria satisfied: cancel the ongoing operations
 		cancel_ongoing_resolve();
 	} else {
@@ -242,6 +236,19 @@ void resolver_impl::udp_unicast_burst(err_t err) {
 void resolver_impl::cancel() {
 	cancelled_ = true;
 	cancel_ongoing_resolve();
+}
+
+bool resolver_impl::check_cancellation_criteria()
+{
+	std::size_t num_results = 0;
+	{
+		std::lock_guard<std::mutex> lock(results_mut_);
+		num_results = results_.size();
+	}
+	if (cancelled_ || expired_) return true;
+	if (minimum_ && (num_results >= (std::size_t)minimum_) && lsl_clock() >= wait_until_)
+		return true;
+	return false;
 }
 
 void resolver_impl::cancel_ongoing_resolve() {

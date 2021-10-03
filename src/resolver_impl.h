@@ -140,6 +140,9 @@ private:
 	/// Start a new resolver attempt on the known peers.
 	void udp_unicast_burst(err_t err);
 
+	/// Check if cancellation criteria (minimum number of results, timeout) are met
+	bool check_cancellation_criteria();
+
 	/// Cancel the currently ongoing resolve, if any.
 	void cancel_ongoing_resolve();
 
