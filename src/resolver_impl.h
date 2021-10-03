@@ -149,8 +149,6 @@ private:
 	const api_config *cfg_;
 	/// UDP protocols under consideration
 	std::vector<udp> udp_protocols_;
-	/// TCP protocols under consideration
-	std::vector<tcp> tcp_protocols_;
 	/// the list of multicast endpoints under consideration
 	std::vector<udp::endpoint> mcast_endpoints_;
 	/// the list of per-host UDP endpoints under consideration

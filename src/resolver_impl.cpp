@@ -49,11 +49,9 @@ resolver_impl::resolver_impl()
 	// generate the list of protocols to use
 	if (cfg_->allow_ipv6()) {
 		udp_protocols_.push_back(udp::v6());
-		tcp_protocols_.push_back(tcp::v6());
 	}
 	if (cfg_->allow_ipv4()) {
 		udp_protocols_.push_back(udp::v4());
-		tcp_protocols_.push_back(tcp::v4());
 	}
 }
 
