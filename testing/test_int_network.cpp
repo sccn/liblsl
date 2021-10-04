@@ -230,3 +230,10 @@ TEST_CASE("reuseport", "[network][basic][!mayfail]") {
 		io_ctx.run();
 	}
 }
+
+TEST_CASE("bindzero", "[network][basic]") {
+	asio::io_context ctx;
+	asio::ip::udp::socket sock(ctx, asio::ip::udp::v4());
+	sock.bind(asio::ip::udp::endpoint(asio::ip::address_v4::any(), 0));
+	REQUIRE(sock.local_endpoint().port() != 0);
+}
