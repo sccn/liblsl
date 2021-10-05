@@ -6,10 +6,10 @@ TMPPATH=/tmp/lslboost
 
 # copy all needed boost files and rename all mentions of boost to lslboost
 mkdir -p $TMPPATH
-bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` lslboost/asio_objects.cpp $TMPPATH
+bcp --unix-lines --boost=$BOOSTPATH --namespace=lslboost --scan `find src -regex ".+\.[ch]p*"` $TMPPATH
 # remove superfluous directories:
 rm $TMPPATH/Jamroot
-find $TMPPATH -type d -and \( -name build -o -name test -o -name edg -o -name dmc -o -name msvc70 -o -name msvc60 -o -name bcc* \) -print0 | xargs -0 rm -rf
+find $TMPPATH -type d -and \( -name build -o -name test -o -name edg -o -name dmc -o -name msvc?0 -o -name bcc* \) -print0 | xargs -0 rm -rf
 
 rsync -HAXavr --del $TMPPATH/{boost,libs} lslboost
 
