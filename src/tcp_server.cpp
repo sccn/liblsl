@@ -7,12 +7,12 @@
 #include "stream_info_impl.h"
 #include "util/cast.hpp"
 #include "util/strfuns.hpp"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/host_name.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/asio/write.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/host_name.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/read_until.hpp>
+#include <asio/streambuf.hpp>
+#include <asio/write.hpp>
 #include <condition_variable>
 #include <cstdint>
 #include <exception>
@@ -139,7 +139,7 @@ private:
 	/// whether the current transfer has finished (possibly with an error)
 	bool transfer_completed_;
 	/// the outcome of the last chunk transfer
-	error_code transfer_error_;
+	asio::error_code transfer_error_;
 	/// the amount of bytes transferred
 	std::size_t transfer_amount_;
 	/// a mutex that protects the completion data
