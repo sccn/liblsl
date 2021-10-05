@@ -81,6 +81,8 @@ private:
 	/// The data reader thread.
 	void data_thread();
 
+	sample_p try_get_next_sample(double timeout);
+
 	/// the underlying connection
 	inlet_connection &conn_;
 

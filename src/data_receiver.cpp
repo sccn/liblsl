@@ -78,8 +78,8 @@ void data_receiver::close_stream() {
 	cancel_all_registered();
 }
 
-template <class T>
-double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, double timeout) {
+sample_p lsl::data_receiver::try_get_next_sample(double timeout)
+{
 	if (conn_.lost())
 		throw lost_error("The stream read by this outlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
@@ -89,18 +89,25 @@ double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, dou
 		check_thread_start_ = false;
 	}
 	// get the sample with timeout
-	if (sample_p s = sample_queue_.pop_sample(timeout)) {
+	if (sample_p s = sample_queue_.pop_sample(timeout))
+		return s;
+	else if (conn_.lost())
+			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
+							"re-resolve the source and re-create the inlet.");
+	return nullptr;
+}
+
+
+template <class T>
+double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, double timeout) {
+	if(sample_p s = try_get_next_sample(timeout))
+	{
 		if (buffer_elements != conn_.type_info().channel_count())
 			throw std::range_error("The number of buffer elements provided does not match the "
 								   "number of channels in the sample.");
 		s->retrieve_typed(buffer);
 		return s->timestamp;
-	} else {
-		if (conn_.lost())
-			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
-							 "re-resolve the source and re-create the inlet.");
-		return 0.0;
-	}
+	} else return 0.0;
 }
 
 template double data_receiver::pull_sample_typed<char>(char *, uint32_t, double);
@@ -112,27 +119,14 @@ template double data_receiver::pull_sample_typed<double>(double *, uint32_t, dou
 template double data_receiver::pull_sample_typed<std::string>(std::string *, uint32_t, double);
 
 double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double timeout) {
-	if (conn_.lost())
-		throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
-						 "re-resolve the source and re-create the inlet.");
-	// start data thread implicitly if necessary
-	if (check_thread_start_ && !data_thread_.joinable()) {
-		data_thread_ = std::thread(&data_receiver::data_thread, this);
-		check_thread_start_ = false;
-	}
-	// get the sample with timeout
-	if (sample_p s = sample_queue_.pop_sample(timeout)) {
+	if(sample_p s = try_get_next_sample(timeout)) {
 		if (buffer_bytes != conn_.type_info().sample_bytes())
 			throw std::range_error("The size of the provided buffer does not match the number of "
 								   "bytes in the sample.");
 		s->retrieve_untyped(buffer);
 		return s->timestamp;
-	} else {
-		if (conn_.lost())
-			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
-							 "re-resolve the source and re-create the inlet.");
-		return 0.0;
 	}
+	else return 0.0;
 }
 
 
