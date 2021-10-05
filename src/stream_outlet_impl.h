@@ -317,8 +317,8 @@ private:
 	stream_info_impl_p info_;
 	/// the single-producer, multiple-receiver send buffer
 	send_buffer_p send_buffer_;
-	/// the IO service objects (two per stack: one for UDP and one for TCP)
-	std::vector<io_context_p> ios_;
+	/// the IO service objects
+	io_context_p io_ctx_data_, io_ctx_service_;
 
 	/// the threaded TCP data server(s); two if using both IP stacks
 	std::vector<tcp_server_p> tcp_servers_;

@@ -20,7 +20,9 @@ stream_outlet_impl::stream_outlet_impl(
 						1000
 				  : api_config::get_instance()->outlet_buffer_reserve_samples()))),
 	  chunk_size_(chunk_size), info_(std::make_shared<stream_info_impl>(info)),
-	  send_buffer_(std::make_shared<send_buffer>(max_capacity)) {
+	  send_buffer_(std::make_shared<send_buffer>(max_capacity)),
+	  io_ctx_data_(std::make_shared<asio::io_context>(1)),
+	  io_ctx_service_(std::make_shared<asio::io_context>(1)) {
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
 
@@ -47,7 +49,7 @@ stream_outlet_impl::stream_outlet_impl(
 
 	// and start the IO threads to handle them
 	const std::string name{"IO_" + this->info().name().substr(0, 11)};
-	for (const auto &io : ios_)
+	for (const auto &io : {io_ctx_data_, io_ctx_service_})
 		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
 			loguru::set_thread_name(name.c_str());
 			while (true) {
@@ -69,12 +71,10 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
 	// create TCP data server
-	ios_.push_back(std::make_shared<asio::io_context>());
 	tcp_servers_.push_back(std::make_shared<tcp_server>(
-		info_, ios_.back(), send_buffer_, sample_factory_, tcp_protocol, chunk_size_));
+		info_, io_ctx_data_, send_buffer_, sample_factory_, tcp_protocol, chunk_size_));
 	// create UDP time server
-	ios_.push_back(std::make_shared<asio::io_context>());
-	udp_servers_.push_back(std::make_shared<udp_server>(info_, *ios_.back(), udp_protocol));
+	udp_servers_.push_back(std::make_shared<udp_server>(info_, *io_ctx_service_, udp_protocol));
 	// create UDP multicast responders
 	for (const auto &mcastaddr : cfg->multicast_addresses()) {
 		try {
@@ -82,7 +82,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 			auto address = asio::ip::make_address(mcastaddr);
 			if (udp_protocol == udp::v4() ? address.is_v4() : address.is_v6())
 				responders_.push_back(std::make_shared<udp_server>(
-					info_, *ios_.back(), mcastaddr, multicast_port, multicast_ttl, listen_address));
+					info_, *io_ctx_service_, mcastaddr, multicast_port, multicast_ttl, listen_address));
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Couldn't create multicast responder for %s (%s)", mcastaddr.c_str(),
 				e.what());
@@ -105,7 +105,8 @@ stream_outlet_impl::~stream_outlet_impl() {
 		// 4. waiting a bit and
 		// 5. detaching thread, i.e. letting it hang and continue tearing down
 		//    the outlet
-		for (auto &ios : ios_) asio::post(*ios, [ios]() { ios->stop(); });
+		asio::post(*io_ctx_data_, [io = io_ctx_data_]() { io->stop(); });
+		asio::post(*io_ctx_service_, [io = io_ctx_service_]() { io->stop(); });
 		const char *name = this->info().name().c_str();
 		for (int try_nr = 0; try_nr <= 100; ++try_nr) {
 			switch (try_nr) {
@@ -113,10 +114,11 @@ stream_outlet_impl::~stream_outlet_impl() {
 			case 20: LOG_F(INFO, "Waiting for %s's IO threads to end", name); break;
 			case 80:
 				LOG_F(WARNING, "Stopping io_contexts for %s", name);
+				io_ctx_data_->stop();
+				io_ctx_service_->stop();
 				for (std::size_t k = 0; k < io_threads_.size(); k++) {
 					if (!io_threads_[k]->joinable()) {
-						LOG_F(ERROR, "Tearing down stream_outlet of %s's thread #%lu", name, k);
-						ios_[k]->stop();
+						LOG_F(ERROR, "%s's io thread #%lu still running", name, k);
 					}
 				}
 				break;
