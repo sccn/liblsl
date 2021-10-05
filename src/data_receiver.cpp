@@ -324,7 +324,7 @@ void data_receiver::data_thread() {
 					// periodically update the last receive time to keep the watchdog happy
 					if (srate <= 16 || (k & 0xF) == 0) conn_.update_receive_time(lsl_clock());
 				}
-			} catch (error_code &) {
+			} catch (err_t) {
 				// connection-level error: closed, reset, refused, etc.
 				conn_.try_recover_from_error();
 			} catch (lost_error &) {

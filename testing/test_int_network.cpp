@@ -1,9 +1,9 @@
 #include "../src/cancellable_streambuf.h"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/multicast.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/ip/v6_only.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/multicast.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/ip/v6_only.hpp>
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <condition_variable>
@@ -12,9 +12,8 @@
 #include <mutex>
 #include <thread>
 
-namespace asio = lslboost::asio;
 using namespace asio;
-using err_t = const lslboost::system::error_code &;
+using err_t = const asio::error_code &;
 
 static uint16_t port = 28812;
 static const char hello[] = "Hello World";
@@ -194,7 +193,7 @@ TEST_CASE("reuseport", "[network][basic][!mayfail]") {
 			sock.bind(ip::udp::endpoint(proto, test_port));
 
 			if (addr.is_multicast()) {
-				lslboost::system::error_code ec;
+				asio::error_code ec;
 				sock.set_option(ip::multicast::join_group(addr), ec);
 				if (ec == error::no_such_device || ec == std::errc::address_not_available)
 					FAIL("Couldn't join multicast group: " + ec.message());

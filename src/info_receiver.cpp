@@ -70,7 +70,7 @@ void lsl::info_receiver::info_thread() {
 				}
 				fullinfo_upd_.notify_all();
 				break;
-			} catch (error_code &) {
+			} catch (err_t) {
 				// connection-level error: closed, reset, refused, etc.
 				conn_.try_recover_from_error();
 			} catch (std::exception &e) {

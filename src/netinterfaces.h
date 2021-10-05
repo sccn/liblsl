@@ -1,10 +1,8 @@
 #pragma once
+#include <asio/ip/address.hpp>
 #include <cstdint>
 #include <string>
 #include <vector>
-#include <boost/asio/ip/address.hpp>
-
-namespace asio = lslboost::asio;
 
 namespace lsl {
 

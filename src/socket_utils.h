@@ -1,10 +1,8 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
-
-namespace asio = lslboost::asio;
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
 
 namespace lsl {
 inline asio::chrono::milliseconds timeout_sec(double timeout_seconds) {
