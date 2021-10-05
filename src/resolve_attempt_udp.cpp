@@ -2,9 +2,9 @@
 #include "api_config.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/multicast.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/address.hpp>
+#include <asio/ip/multicast.hpp>
 #include <exception>
 #include <loguru.hpp>
 #include <sstream>

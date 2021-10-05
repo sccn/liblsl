@@ -3,5 +3,4 @@
 // Normally, one would just compile boost/asio/impl/src.hpp but some compilers
 // think they should generate a precompiled header.
 
-#include "boost/asio/impl/src.hpp"
-#include "boost/asio.hpp"
+#include <asio/impl/src.hpp>

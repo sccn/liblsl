@@ -5,8 +5,8 @@
 #include "resolver_impl.h"
 #include "stream_info_impl.h"
 #include <atomic>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -26,7 +26,6 @@ using shared_lock_t = std::unique_lock<std::mutex>;
 
 using unique_lock_t = std::unique_lock<shared_mutex_t>;
 
-namespace asio = lslboost::asio;
 using asio::ip::tcp;
 using asio::ip::udp;
 

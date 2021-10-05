@@ -10,13 +10,13 @@ set -e -x
 echo ${LSLGITREVISION:="$(git describe --tags HEAD)"}
 ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} ${CXXFLAGS} -Ilslboost \
 	-DBOOST_ALL_NO_LIB \
-	-DBOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS \
-	-DBOOST_ASIO_STANDALONE \
+	-DASIO_NO_DEPRECATED \
 	-DLOGURU_DEBUG_LOGGING=0 \
 	-DLSL_LIBRARY_INFO_STR=\"${LSLGITREVISION:-"built from standalone build script"}\" \
 	src/*.cpp src/util/*.cpp \
 	thirdparty/pugixml/pugixml.cpp -Ithirdparty/pugixml \
 	thirdparty/loguru/loguru.cpp -Ithirdparty/loguru \
+	-Ithirdparty/asio \
 	lslboost/serialization_objects.cpp \
 	${LDFLAGS} \
 	-shared -o liblsl.so -lpthread -lrt -ldl

@@ -1,17 +1,16 @@
 #ifndef TIME_RECEIVER_H
 #define TIME_RECEIVER_H
 
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/steady_timer.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/steady_timer.hpp>
 #include <condition_variable>
 #include <mutex>
 #include <thread>
 #include <vector>
 
-namespace asio = lslboost::asio;
 using asio::ip::udp;
-using lslboost::system::error_code;
+using err_t = const asio::error_code &;
 
 namespace lsl {
 class inlet_connection;
@@ -74,10 +73,10 @@ private:
 	void receive_next_packet();
 
 	/// Handler that gets called once reception of a time packet has completed
-	void handle_receive_outcome(error_code err, std::size_t len);
+	void handle_receive_outcome(err_t err, std::size_t len);
 
 	/// Handlers that gets called once the time estimation results shall be aggregated.
-	void result_aggregation_scheduled(error_code err);
+	void result_aggregation_scheduled(err_t err);
 
 	/// Ensures that the time-offset is reset when the underlying connection is recovered (e.g.,
 	/// switches to another host)

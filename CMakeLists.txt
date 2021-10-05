@@ -177,7 +177,6 @@ target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
 target_compile_definitions(lslboost
 	PUBLIC
 		BOOST_ALL_NO_LIB
-		BOOST_ASIO_STANDALONE
 )
 target_include_directories(lslboost SYSTEM PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
@@ -194,10 +193,12 @@ target_include_directories(lslobj
 target_include_directories(lslobj
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/asio>
 )
 target_compile_definitions(lslobj PRIVATE
 	LIBLSL_EXPORTS
 	LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+	PUBLIC ASIO_NO_DEPRECATED
 )
 
 # platform specific configuration
@@ -212,14 +213,11 @@ if(UNIX AND NOT APPLE)
 		target_link_libraries(lslobj PRIVATE dl)
 	endif()
 elseif(WIN32)
-	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	target_link_libraries(lslboost PRIVATE mswsock ws2_32)
+	target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-		)
-	target_compile_definitions(lslboost
-		PUBLIC _WIN32_WINNT=${LSL_WINVER}
+		_WIN32_WINNT=${LSL_WINVER}
 		)
 endif()
 
@@ -250,8 +248,8 @@ if(LSL_OPTIMIZATIONS)
 else()
 	# build one object file for Asio instead of once every time an Asio function is called. See
 	# https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
-	target_sources(lslboost PRIVATE lslboost/asio_objects.cpp)
-	target_compile_definitions(lslboost PUBLIC BOOST_ASIO_SEPARATE_COMPILATION)
+	target_sources(lslobj PRIVATE thirdparty/asio_objects.cpp)
+	target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
 
