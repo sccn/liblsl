@@ -15,14 +15,12 @@
 
 #define BOOST_ASIO_NO_DEPRECATED
 #include "cancellation.h"
-#include <boost/asio/basic_stream_socket.hpp>
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/tcp.hpp>
+#include <asio/basic_stream_socket.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/tcp.hpp>
 #include <exception>
 #include <streambuf>
 
-namespace asio = lslboost::asio;
-using lslboost::system::error_code;
 using asio::io_context;
 
 namespace lsl {
@@ -73,7 +71,7 @@ public:
 
 			init_buffers();
 			socket().close(ec_);
-			socket().async_connect(endpoint, [this](const error_code &ec) { this->ec_ = ec; });
+			socket().async_connect(endpoint, [this](const asio::error_code &ec) { this->ec_ = ec; });
 			this->as_context().restart();
 		}
 		ec_ = asio::error::would_block;
@@ -98,7 +96,7 @@ public:
 	 * @return An \c error_code corresponding to the last error from the stream
 	 * buffer.
 	 */
-	const error_code &error() const { return ec_; }
+	const asio::error_code &error() const { return ec_; }
 
 protected:
 	/// Close the socket if it's open.
@@ -131,7 +129,7 @@ protected:
 			std::size_t bytes_transferred_;
 			socket().async_receive(asio::buffer(asio::buffer(get_buffer_) + putback_max),
 				[this, &bytes_transferred_](
-					const error_code &ec, std::size_t bytes_transferred = 0) {
+					const asio::error_code &ec, std::size_t bytes_transferred = 0) {
 					this->ec_ = ec;
 					bytes_transferred_ = bytes_transferred;
 				});
@@ -155,7 +153,7 @@ protected:
 		while (asio::buffer_size(buffer) > 0) {
 			std::size_t bytes_transferred_;
 			socket().async_send(asio::buffer(buffer),
-				[this, &bytes_transferred_](const error_code &ec, std::size_t bytes_transferred) {
+				[this, &bytes_transferred_](const asio::error_code &ec, std::size_t bytes_transferred) {
 					this->ec_ = ec;
 					bytes_transferred_ = bytes_transferred;
 				});
@@ -192,7 +190,7 @@ protected:
 	enum { putback_max = 8 };
 	enum { buffer_size = 512 };
 	char get_buffer_[buffer_size], put_buffer_[buffer_size];
-	error_code ec_;
+	asio::error_code ec_;
 	std::atomic<bool> cancel_issued_{false};
 	bool cancel_started_{false};
 	std::recursive_mutex cancel_mut_;

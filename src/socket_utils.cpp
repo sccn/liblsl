@@ -16,10 +16,10 @@ double lsl::measure_endian_performance() {
 template <typename Socket, typename Protocol>
 uint16_t bind_port_in_range_(Socket &sock, Protocol protocol) {
 	const auto *cfg = lsl::api_config::get_instance();
-	lslboost::system::error_code ec;
+	asio::error_code ec;
 	for (uint16_t port = cfg->base_port(), e = port + cfg->port_range(); port < e; port++) {
 		sock.bind(typename Protocol::endpoint(protocol, port), ec);
-		if (ec == lslboost::system::errc::address_in_use) continue;
+		if (ec == asio::error::address_in_use) continue;
 		if (!ec) return port;
 	}
 	if (cfg->allow_random_ports()) {
