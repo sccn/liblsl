@@ -206,7 +206,7 @@ private:
 	 */
 	void load_from_file(const std::string &filename = std::string());
 
-	void set_option(const std::string &section, const std::string &key, const std::string &value);
+	bool set_option(const std::string &section, const std::string &key, const std::string &value);
 	void update_multicast_groups();
 
 	// core parameters
@@ -242,6 +242,9 @@ private:
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
 	std::string session_id_ = "default";
+	// log
+	int8_t log_level_ = 0;
+	bool log_file_enabled_ = false;
 	// tuning parameters
 	int use_protocol_version_ = LSL_PROTOCOL_VERSION;
 	double watchdog_time_threshold_ = 15.0;
