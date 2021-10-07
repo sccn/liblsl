@@ -198,6 +198,7 @@ target_include_directories(lslobj
 target_compile_definitions(lslobj PRIVATE
 	LIBLSL_EXPORTS
 	LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+	PUBLIC ASIO_NO_DEPRECATED
 )
 
 # platform specific configuration
