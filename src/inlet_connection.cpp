@@ -1,9 +1,9 @@
 #include "inlet_connection.h"
 #include "api_config.h"
 #include "resolver_impl.h"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/basic_resolver.hpp>
+#include <asio/io_context.hpp>
+#include <asio/ip/address.hpp>
+#include <asio/ip/basic_resolver.hpp>
 #include <chrono>
 #include <exception>
 #include <functional>
@@ -14,8 +14,6 @@
 
 using namespace lsl;
 namespace ip = asio::ip;
-using lslboost::system::error_code;
-
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
 	  recovery_enabled_(recover), lost_(false), shutdown_(false), last_receive_time_(lsl_clock()),
@@ -114,7 +112,7 @@ void inlet_connection::disengage() {
 /// convert a IPv6 address or hostname into an non-link-local address
 ip::address resolve_v6_addr(const std::string &addr) {
 	// Try to parse the IPv6 address
-	error_code ec;
+	asio::error_code ec;
 	auto v6addr = ip::make_address_v6(addr, ec);
 	if (!ec && !v6addr.is_link_local()) return v6addr;
 

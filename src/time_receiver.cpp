@@ -2,7 +2,7 @@
 #include "api_config.h"
 #include "inlet_connection.h"
 #include "socket_utils.h"
-#include <boost/asio/io_context.hpp>
+#include <asio/io_context.hpp>
 #include <chrono>
 #include <exception>
 #include <limits>
@@ -149,7 +149,7 @@ void time_receiver::receive_next_packet() {
 		[this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
 }
 
-void time_receiver::handle_receive_outcome(error_code err, std::size_t len) {
+void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 	try {
 		if (!err) {
 			// parse the buffer contents
@@ -177,7 +177,7 @@ void time_receiver::handle_receive_outcome(error_code err, std::size_t len) {
 	if (err != asio::error::operation_aborted) receive_next_packet();
 }
 
-void time_receiver::result_aggregation_scheduled(error_code err) {
+void time_receiver::result_aggregation_scheduled(err_t err) {
 	if (err) return;
 
 	if ((int)estimates_.size() >= cfg_->time_update_minprobes()) {

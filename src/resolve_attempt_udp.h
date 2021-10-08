@@ -4,15 +4,15 @@
 #include "cancellation.h"
 #include "forward.h"
 #include "stream_info_impl.h"
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/steady_timer.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/steady_timer.hpp>
 #include <map>
 #include <memory>
 #include <string>
 #include <vector>
 
 using asio::ip::udp;
-using err_t = const lslboost::system::error_code &;
+using err_t = const asio::error_code &;
 
 namespace lsl {
 

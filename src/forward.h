@@ -4,11 +4,6 @@
 #include <memory>
 #include <string>
 
-namespace lslboost {
-class thread;
-namespace system {
-class error_code;
-}
 namespace asio {
 namespace ip {
 class tcp;
@@ -16,14 +11,11 @@ class udp;
 } // namespace ip
 class io_context;
 } // namespace asio
-} // namespace lslboost
 
 namespace eos {
 class portable_oarchive;
 class portable_iarchive;
 } // namespace eos
-
-namespace asio = lslboost::asio;
 
 namespace lsl {
 /// shared pointers to various classes

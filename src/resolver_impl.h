@@ -6,9 +6,9 @@
 #include "forward.h"
 #include "stream_info_impl.h"
 #include <atomic>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
-#include <boost/asio/steady_timer.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
+#include <asio/steady_timer.hpp>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -18,7 +18,7 @@
 
 using asio::ip::tcp;
 using asio::ip::udp;
-using err_t = const lslboost::system::error_code &;
+using err_t = const asio::error_code &;
 
 namespace lsl {
 class api_config;
