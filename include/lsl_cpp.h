@@ -396,10 +396,10 @@ public:
 	 * @param max_buffered Optionally the maximum amount of data to buffer (in seconds if there is a
 	 * nominal sampling rate, otherwise x100 in samples). The default is 6 minutes of data.
 	 */
-	stream_outlet(const stream_info &info, int32_t chunk_size = 0, int32_t max_buffered = 360)
+	stream_outlet(const stream_info &info, int32_t chunk_size = 0, int32_t max_buffered = 360, uint32_t flags = transp_default)
 		: channel_count(info.channel_count()),
 		  sample_rate(info.nominal_srate()),
-		  obj(lsl_create_outlet(info.handle().get(), chunk_size, max_buffered), &lsl_destroy_outlet) {}
+		  obj(lsl_create_outlet_ex(info.handle().get(), chunk_size, max_buffered, flags), &lsl_destroy_outlet) {}
 
 	// ========================================
 	// === Pushing a sample into the outlet ===
@@ -900,9 +900,9 @@ public:
 	 * lsl::lost_error if the stream's source is lost (e.g., due to an app or computer crash).
 	 */
 	stream_inlet(const stream_info &info, int32_t max_buflen = 360, int32_t max_chunklen = 0,
-		bool recover = true)
+		bool recover = true, uint32_t flags = transp_default)
 		: channel_count(info.channel_count()),
-		  obj(lsl_create_inlet(info.handle().get(), max_buflen, max_chunklen, recover), &lsl_destroy_inlet) {}
+		  obj(lsl_create_inlet_ex(info.handle().get(), max_buflen, max_chunklen, recover, flags), &lsl_destroy_inlet) {}
 
 	/// Return a shared pointer to pass to C-API functions that aren't wrapped yet
 	///

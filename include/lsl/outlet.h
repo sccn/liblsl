@@ -34,6 +34,11 @@
  * @return A newly created lsl_outlet handle or NULL in the event that an error occurred.
  */
 extern LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered);
+/** @copydoc lsl_create_outlet()
+ * @param flags An integer that is the result of bitwise OR'ing one or more options from
+* #lsl_transport_options_t together (e.g., #transp_bufsize_samples|#transp_bufsize_thousandths)
+ */
+extern LIBLSL_C_API lsl_outlet lsl_create_outlet_ex(lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, uint32_t flags);
 
 /**
  * Destroy an outlet.
