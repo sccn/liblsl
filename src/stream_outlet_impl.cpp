@@ -12,7 +12,7 @@
 namespace lsl {
 
 stream_outlet_impl::stream_outlet_impl(
-	const stream_info_impl &info, int32_t chunk_size, int32_t max_capacity)
+	const stream_info_impl &info, int32_t chunk_size, int32_t max_capacity, uint32_t flags)
 	: sample_factory_(std::make_shared<factory>(info.channel_format(), info.channel_count(),
 		  static_cast<uint32_t>(
 			  info.nominal_srate()
@@ -20,7 +20,14 @@ stream_outlet_impl::stream_outlet_impl(
 						1000
 				  : api_config::get_instance()->outlet_buffer_reserve_samples()))),
 	  chunk_size_(chunk_size), info_(std::make_shared<stream_info_impl>(info)),
-	  send_buffer_(std::make_shared<send_buffer>(max_capacity)) {
+	  send_buffer_(std::make_shared<send_buffer>(max_capacity)),
+	  do_sync_(flags & transp_sync_blocking) {
+
+	if ((info.channel_format() == cft_string) && (flags & transp_sync_blocking)) {
+		LOG_F(WARNING, "sync push not supported for string-formatted streams. Reverting to async.");
+		do_sync_ = false;
+	}
+
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
 
@@ -143,8 +150,24 @@ void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bo
 	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
 	sample_p smp(
 		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-	smp->assign_untyped(data);
-	send_buffer_->push_sample(smp);
+	if (!do_sync_) {
+		smp->assign_untyped(data);  // Note: Makes a copy!
+		send_buffer_->push_sample(smp);
+	} else {
+		if (timestamp == DEDUCED_TIMESTAMP) {
+			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
+		} else {
+			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
+			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
+		}
+		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
+		if (pushthrough) {
+			for (auto &tcp_server : tcp_servers_)
+				tcp_server->write_all_blocking(sync_buffs_);
+			sync_buffs_.clear();
+		}
+	}
+
 }
 
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
@@ -158,8 +181,23 @@ void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrou
 	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
 	sample_p smp(
 		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-	smp->assign_typed(data);
-	send_buffer_->push_sample(smp);
+	if (!do_sync_) {
+		smp->assign_typed(data);
+		send_buffer_->push_sample(smp);
+	} else {
+		if (timestamp == DEDUCED_TIMESTAMP) {
+			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
+		} else {
+			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
+			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
+		}
+		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
+		if (pushthrough) {
+			for (auto &tcp_server : tcp_servers_)
+				tcp_server->write_all_blocking(sync_buffs_);
+			sync_buffs_.clear();
+		}
+	}
 }
 
 template void stream_outlet_impl::enqueue<char>(const char *data, double, bool);

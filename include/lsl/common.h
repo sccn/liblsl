@@ -161,6 +161,9 @@ typedef enum {
 	/// The supplied max_buf should be scaled by 0.001.
 	transp_bufsize_thousandths = 2,
 
+	/// The outlet will use synchronous (blocking) calls to asio to push data
+	transp_sync_blocking = 4,
+
 	// prevent compilers from assuming an instance fits in a single byte
 	_lsl_transport_options_maxval = 0x7f000000
 } lsl_transport_options_t;

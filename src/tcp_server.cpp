@@ -148,10 +148,10 @@ private:
 };
 
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, tcp protocol, int chunk_size)
+	factory_p factory, tcp protocol, int chunk_size, bool do_sync)
 	: chunk_size_(chunk_size), shutdown_(false), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)),
-	  acceptor_(std::make_shared<tcp::acceptor>(*io_)) {
+	  acceptor_(std::make_shared<tcp::acceptor>(*io_)), transfer_is_sync_(do_sync) {
 	// open the server connection
 	acceptor_->open(protocol);
 
@@ -222,36 +222,68 @@ void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsessio
 	accept_next_connection();
 }
 
+// === synchronous transfer
+
+void tcp_server::write_all_blocking(std::vector<asio::const_buffer> buffs) {
+	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
+	std::size_t bytes_sent;
+	asio::error_code ec;
+	for (const auto &x : inflight_ready_) {
+		if (x.second && x.first->is_open()) {
+			bytes_sent = x.first->send(buffs, 0, ec);
+			if (ec) {
+				switch(ec.value()) {
+				case asio::error::broken_pipe:
+				case asio::error::connection_reset:
+					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
+					inflight_ready_[x.first] = false;
+					post(*io_, [x]() {
+						close_inflight_socket(x);
+					});
+					// We leave it up to the client_session destructor to remove the socket.
+					break;
+				default:
+					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+				}
+			}
+		}
+	}
+}
+
 // === graceful cancellation of in-flight sockets ===
 
 void tcp_server::register_inflight_socket(const tcp_socket_p &sock) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	inflight_.insert(sock);
+	inflight_ready_.insert({sock, false});
 }
 
 void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	inflight_.erase(sock);
+	inflight_ready_[sock] = false;
+	inflight_ready_.erase(sock);
+}
+
+void tcp_server::close_inflight_socket(std::pair<tcp_socket_p, bool> x) {
+	try {
+		if (x.first->is_open()) {
+			try {
+				// (in some cases shutdown may fail)
+				x.first->shutdown(x.first->shutdown_both);
+			} catch (...) {}
+			x.first->close();
+		}
+	} catch (std::exception &e) {
+		LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what());
+	}
 }
 
 void tcp_server::close_inflight_sockets() {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	for (const auto &sock : inflight_)
-		post(*io_, [sock]() {
-			try {
-				if (sock->is_open()) {
-					try {
-						// (in some cases shutdown may fail)
-						sock->shutdown(sock->shutdown_both);
-					} catch (...) {}
-					sock->close();
-				}
-			} catch (std::exception &e) {
-				LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what());
-			}
-		});
+	for (const auto &x : inflight_ready_) {
+		inflight_ready_[x.first] = false;
+		post(*io_, [x]() { close_inflight_socket(x); });
+	}
 }
-
 
 // === implementation of the client_session class ===
 
@@ -511,7 +543,11 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		feedbuf_.consume(n);
 		// register outstanding work at the server (will be unregistered at session destruction)
 		work_ = std::make_shared<work_p::element_type>(serv_->io_->get_executor());
-		// spawn a sample transfer thread
+		serv_->inflight_ready_[sock_] = true;
+		if (serv_->transfer_is_sync_)
+			LOG_F(WARNING, "Using synchronous blocking transfers for new client session.");
+		// spawn a sample transfer thread.
+		// TODO: only spawn thread in async, but then we need `this` to belong to something else.
 		std::thread(&client_session::transfer_samples_thread, this, shared_from_this()).detach();
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error while handling the feedheader send outcome: %s", e.what());

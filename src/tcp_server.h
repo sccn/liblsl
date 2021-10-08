@@ -6,7 +6,7 @@
 #include <asio/ip/tcp.hpp>
 #include <memory>
 #include <mutex>
-#include <set>
+#include <map>
 #include <string>
 
 using asio::ip::tcp;
@@ -47,9 +47,11 @@ public:
 	 * @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 	 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines
 	 * the effective chunking.
+	 * @param do_sync Set true to indicate data transfer should happen synchronously in a blocking
+	 * call. Default false -- asynchronous transfer in a thread (copies data).
 	 */
 	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
-		tcp protocol, int chunk_size);
+		tcp protocol, int chunk_size, bool do_sync = false);
 
 	/**
 	 * Begin serving TCP connections.
@@ -67,6 +69,12 @@ public:
 	 */
 	void end_serving();
 
+	/**
+	 * Write directly to each socket. This should only be used when server initialized with
+	 * do_async = false.
+	 */
+	void write_all_blocking(std::vector<asio::const_buffer> buffs);
+
 private:
 	friend class client_session;
 	/// Start accepting a new connection.
@@ -81,6 +89,9 @@ private:
 
 	/// Unregister an in-flight session socket.
 	void unregister_inflight_socket(const tcp_socket_p &sock);
+
+	/// Post a close of a single in-flight socket
+	static void close_inflight_socket(std::pair<tcp_socket_p, bool> x);
 
 	/// Post a close of all in-flight sockets.
 	void close_inflight_sockets();
@@ -100,9 +111,12 @@ private:
 	// acceptor socket
 	tcp_acceptor_p acceptor_; // our server socket
 
+	// Flag to indicate that new client_sessions should use synchronous blocking data transfer.
+	bool transfer_is_sync_;
+
 	// registry of in-flight client sockets (for cancellation)
-	std::set<tcp_socket_p> inflight_;		 // registry of currently in-flight sockets
-	std::recursive_mutex inflight_mut_;		 // mutex protecting the registry from concurrent access
+	std::map<tcp_socket_p, bool> inflight_ready_;	// registry of currently in-flight sockets
+	std::recursive_mutex inflight_mut_;		 		// mutex protecting the registry from concurrent access
 
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response

@@ -10,6 +10,7 @@
 #include <string>
 #include <thread>
 #include <vector>
+#include <asio/buffer.hpp>
 
 using asio::ip::tcp;
 using asio::ip::udp;
@@ -35,9 +36,11 @@ public:
 	 * @param max_capacity The maximum number of samples buffered for unresponsive receivers. If
 	 * more samples get pushed, the oldest will be dropped. The default is sufficient to hold a bit
 	 * more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB of RAM.
+	 * @param flags Bitwise-OR'd flags from lsl_transport_options_t
 	 */
 	stream_outlet_impl(
-		const stream_info_impl &info, int32_t chunk_size = 0, int32_t max_capacity = 512000);
+		const stream_info_impl &info, int32_t chunk_size = 0, int32_t max_capacity = 512000,
+		uint32_t flags = transp_default);
 
 	/**
 	 * Destructor.
@@ -317,6 +320,8 @@ private:
 	stream_info_impl_p info_;
 	/// the single-producer, multiple-receiver send buffer
 	send_buffer_p send_buffer_;
+	/// Flag to indicate that push_* operations should be blocking synchronous. false by default.
+	bool do_sync_;
 	/// the IO service objects (two per stack: one for UDP and one for TCP)
 	std::vector<io_context_p> ios_;
 
@@ -329,6 +334,8 @@ private:
 	std::vector<udp_server_p> responders_;
 	/// threads that handle the I/O operations (two per stack: one for UDP and one for TCP)
 	std::vector<thread_p> io_threads_;
+	/// buffers used in synchronous call to gather-write data directly to the socket.
+	std::vector<asio::const_buffer> sync_buffs_;
 };
 
 } // namespace lsl
