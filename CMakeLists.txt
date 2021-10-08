@@ -213,14 +213,11 @@ if(UNIX AND NOT APPLE)
 		target_link_libraries(lslobj PRIVATE dl)
 	endif()
 elseif(WIN32)
-	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	target_link_libraries(lslboost PRIVATE mswsock ws2_32)
+	target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-		)
-	target_compile_definitions(lslboost
-		PUBLIC _WIN32_WINNT=${LSL_WINVER}
+		_WIN32_WINNT=${LSL_WINVER}
 		)
 endif()
 
