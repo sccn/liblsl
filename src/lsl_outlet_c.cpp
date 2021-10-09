@@ -160,14 +160,74 @@ LIBLSL_C_API int32_t lsl_push_sample_buft(
 
 LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data,
 	const uint32_t *lengths, double timestamp, int32_t pushthrough) {
+	stream_outlet_impl *outimpl = out;
+	// As the number of bytes-per-buffer is the same as the number of chars-per-buffer,
+	// we can pass `lengths` through as `bytes`.
+	return lsl_push_sample_rawtpn(out, (void **)data, lengths, timestamp, pushthrough,
+		(uint32_t)outimpl->info().channel_count());
+}
+
+LIBLSL_C_API int32_t lsl_push_sample_rawtpn(lsl_outlet out, void **data, const uint32_t *bytes,
+	double timestamp, int32_t pushthrough, uint32_t nbufs) {
+	stream_outlet_impl *outimpl = out;
 	try {
-		stream_outlet_impl *outimpl = out;
-		std::vector<std::string> tmp;
-		for (uint32_t k = 0; k < (uint32_t)outimpl->info().channel_count(); k++)
-			tmp.emplace_back(data[k], lengths[k]);
-		return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
+		if (outimpl->is_sync_blocking()) {
+			// Convert input to a vector of asio buffers for a gather-write operation.
+			std::vector<asio::const_buffer> bufs;
+			bufs.reserve(nbufs);
+			for (auto buf_ix = 0; buf_ix < nbufs; buf_ix++) {
+				bufs.push_back(asio::buffer(data[buf_ix], bytes[buf_ix]));
+			}
+			return outimpl->push_sample_gather(bufs, timestamp, pushthrough);
+		} else {
+			// Make contiguous.
+			if (outimpl->info().channel_format() == cft_string) {
+				// For strings we place in std::string vector to make sure they are properly
+				//  terminated.
+				std::vector<std::string> tmp;
+				for (uint32_t k = 0; k < nbufs; k++)
+					tmp.emplace_back((const char *)data[k], bytes[k]);
+				return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
+			} else {
+				// Otherwise we put into new memory block.
+				uint32_t total_bytes = 0, byte_offset = 0;
+				for (size_t k = 0; k < nbufs; k++) { total_bytes += bytes[k]; }
+				char *tmp = (char *)malloc(total_bytes);
+				for (size_t k = 0; k < nbufs; k++) {
+					memcpy(&tmp[byte_offset], data[k], bytes[k]);
+					byte_offset += bytes[k];
+				}
+				// TODO: I tried passing void buffer but eventually fail because the convert
+				// functions
+				//  become ambiguous.
+				lsl_error_code_t ec;
+				switch (outimpl->info().channel_format()) {
+				case cft_int8:
+					ec = outimpl->push_sample_noexcept((const char *)tmp, timestamp, pushthrough);
+				case cft_int16:
+					ec =
+						outimpl->push_sample_noexcept((const int16_t *)tmp, timestamp, pushthrough);
+				case cft_int32:
+					ec =
+						outimpl->push_sample_noexcept((const int32_t *)tmp, timestamp, pushthrough);
+				case cft_int64:
+					ec =
+						outimpl->push_sample_noexcept((const int64_t *)tmp, timestamp, pushthrough);
+				case cft_float32:
+					ec = outimpl->push_sample_noexcept((const float *)tmp, timestamp, pushthrough);
+				case cft_double64:
+					ec = outimpl->push_sample_noexcept((const double *)tmp, timestamp, pushthrough);
+				case cft_undefined: ec = lsl_internal_error;
+				}
+				free(tmp);
+				return ec;
+			}
+		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
+		if (!outimpl->is_sync_blocking() && outimpl->info().channel_format() != cft_string)
+			LOG_F(ERROR, "lsl_push_sample_buftpn only compatible with string type or when outlet "
+						 "is using sync writes.");
 		return lsl_internal_error;
 	}
 }

@@ -109,6 +109,7 @@ int main(int argc, char **argv) {
 	int32_t chunk_rate = argc > 6 ? std::stol(argv[6]) : 10;  // Chunks per second.
 	bool nodata = argc > 7;
 	bool do_sync = argc > 8 ? (bool)std::stol(argv[8]) : true;
+	bool b_contig = true && do_sync; // Set true to test gather-write operations.
 
 	int32_t chunk_samples = samplingrate > 0 ? std::max((samplingrate / chunk_rate), 1) : 100;  // Samples per chunk.
 	int32_t chunk_duration = 1000 / chunk_rate;  // Milliseconds per chunk
@@ -134,12 +135,13 @@ int main(int argc, char **argv) {
 		std::cout << "Stream UID: " << info.uid() << std::endl;
 
 		// Create a connection to our device.
-		fake_device my_device(n_channels, (float)samplingrate);
+		int dev_chans = b_contig ? n_channels : n_channels + 1;
+		fake_device my_device(dev_chans, (float)samplingrate);
 
 		// Prepare buffer to get data from 'device'.
 		//  The buffer should be larger than you think you need. Here we make it 4x as large.
-		std::vector<int16_t> chunk_buffer(4 * chunk_samples * n_channels);
-		std::fill(chunk_buffer.begin(), chunk_buffer.end(), 0);
+		std::vector<int16_t> dev_buffer(4 * chunk_samples * dev_chans);
+		std::fill(dev_buffer.begin(), dev_buffer.end(), 0);
 
 		std::cout << "Now sending data..." << std::endl;
 
@@ -153,13 +155,24 @@ int main(int argc, char **argv) {
 			std::this_thread::sleep_until(next_chunk_time);
 
 			// Get data from device
-			std::size_t returned_samples = my_device.get_data(chunk_buffer, nodata);
+			std::size_t returned_samples = my_device.get_data(dev_buffer, nodata);
 
 			// send it to the outlet. push_chunk_multiplexed is one of the more complicated approaches.
 			//  other push_chunk methods are easier but slightly slower.
 			double ts = lsl::local_clock();
-			outlet.push_chunk_multiplexed(
-				chunk_buffer.data(), returned_samples * n_channels, ts, true);
+			if (b_contig) {
+				// Push a chunk of a contiguous buffer.
+				outlet.push_chunk_multiplexed(
+					dev_buffer.data(), returned_samples * n_channels, ts, true);
+			} else {
+				std::cout << "Discontiguous push_chunk not yet supported." << std::endl;
+				std::cout << "See SendData.cpp for discontiguous push_sample, then set "
+						  << std::endl;
+				std::cout << "timestamps as LSL_DEDUCED_TIMESTAMP and pushtrough as false "
+						  << std::endl;
+				std::cout << "for all samples except the the first or last in a chunk."
+						  << std::endl;
+			}
 		}
 	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;

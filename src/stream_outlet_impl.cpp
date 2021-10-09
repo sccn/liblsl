@@ -25,10 +25,8 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	  do_sync_(flags & transp_sync_blocking), io_ctx_data_(std::make_shared<asio::io_context>(1)),
 	  io_ctx_service_(std::make_shared<asio::io_context>(1)) {
 
-	if ((info.channel_format() == cft_string) && (flags & transp_sync_blocking)) {
-		LOG_F(WARNING, "sync push not supported for string-formatted streams. Reverting to async.");
-		do_sync_ = false;
-	}
+	if ((info.channel_format() == cft_string) && do_sync_)
+		throw std::invalid_argument("Synchronous push not supported for string-formatted streams.");
 
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
@@ -47,7 +45,7 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 
 	// create TCP data server
 	tcp_server_ = std::make_shared<tcp_server>(info_, io_ctx_data_, send_buffer_, sample_factory_,
-		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6());
+		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6(), do_sync_);
 
 	// fail if both stacks failed to instantiate
 	if (udp_servers_.empty())
@@ -157,17 +155,7 @@ void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bo
 		smp->assign_untyped(data); // Note: Makes a copy!
 		send_buffer_->push_sample(smp);
 	} else {
-		if (timestamp == DEDUCED_TIMESTAMP) {
-			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
-		} else {
-			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
-			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
-		}
-		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
-		if (pushthrough) {
-			tcp_server_->write_all_blocking(sync_buffs_);
-			sync_buffs_.clear();
-		}
+		enqueue_sync(asio::buffer(data, smp->datasize()), timestamp, pushthrough);
 	}
 }
 
@@ -175,6 +163,28 @@ bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(
 
 bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
+}
+
+void stream_outlet_impl::push_timestamp_sync(const double &timestamp) {
+	if (timestamp == DEDUCED_TIMESTAMP) {
+		sync_buffs_.emplace_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
+	} else {
+		sync_buffs_.emplace_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
+		sync_buffs_.emplace_back(asio::buffer(&timestamp, sizeof(timestamp)));
+	}
+}
+
+void stream_outlet_impl::pushthrough_sync() {
+	// LOG_F(INFO, "Pushing %u buffers.", sync_buffs_.size());
+	tcp_server_->write_all_blocking(sync_buffs_);
+	sync_buffs_.clear();
+}
+
+void stream_outlet_impl::enqueue_sync(
+	asio::const_buffer buff, const double &timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.push_back(buff);
+	if (pushthrough) pushthrough_sync();
 }
 
 template <class T>
@@ -186,17 +196,7 @@ void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrou
 		smp->assign_typed(data);
 		send_buffer_->push_sample(smp);
 	} else {
-		if (timestamp == DEDUCED_TIMESTAMP) {
-			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
-		} else {
-			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
-			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
-		}
-		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
-		if (pushthrough) {
-			tcp_server_->write_all_blocking(sync_buffs_);
-			sync_buffs_.clear();
-		}
+		enqueue_sync(asio::buffer(data, smp->datasize()), smp->timestamp, smp->pushthrough);
 	}
 }
 
@@ -207,5 +207,12 @@ template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, 
 template void stream_outlet_impl::enqueue<float>(const float *data, double, bool);
 template void stream_outlet_impl::enqueue<double>(const double *data, double, bool);
 template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
+
+void stream_outlet_impl::enqueue_sync_multi(
+	std::vector<asio::const_buffer> buffs, double timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.insert(sync_buffs_.end(), buffs.begin(), buffs.end());
+	if (pushthrough) pushthrough_sync();
+}
 
 } // namespace lsl

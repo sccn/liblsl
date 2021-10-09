@@ -65,7 +65,9 @@ class client_session : public std::enable_shared_from_this<client_session> {
 public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv, tcp_socket &&sock)
-		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {}
+		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {
+		LOG_F(1, "Initialized client session %p", this);
+	}
 
 	/// Destructor.
 	~client_session();
@@ -146,6 +148,7 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)), transfer_is_sync_(do_sync) {
+	if (transfer_is_sync_) sync_transfer_io_ctx_ = std::make_unique<asio::io_context>(1);
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -210,7 +213,9 @@ void tcp_server::end_serving() {
 void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 	try {
 		// Select the IO context for handling the socket
-		auto &sock_io_ctx = *io_;
+		// for `transfer_is_sync`, IO is done in the thread calling `push_sample`,
+		// otherwise in the outlet's IO thread / IO context
+		auto &sock_io_ctx = transfer_is_sync_ ? *sync_transfer_io_ctx_ : *io_;
 
 		// accept a connection on the session's socket
 		acceptor->async_accept(sock_io_ctx, [shared_this = shared_from_this(), &acceptor](

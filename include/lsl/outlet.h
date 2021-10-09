@@ -99,9 +99,11 @@ extern LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data
 /** @copybrief lsl_push_sample_ftp
  * @see lsl_push_sample_ftp
  * @param out The lsl_outlet object through which to push the data.
- * @param data A pointer to values to push. The number of values pointed to must be no less than the
- * number of channels in the sample.
- * @param lengths A pointer the number of elements to push for each channel (string lengths).
+ * @param data An array of data buffers to push. The number of buffers in the array must be no less
+ * than the number of channels in the sample. Each entry in data must be longer than the
+ * corresponding entry in `lengths`.
+ * @param lengths An array containing the lengths of each buffer in data. Units are string lengths
+ * or number of bytes.
  */
 extern LIBLSL_C_API int32_t lsl_push_sample_buf(lsl_outlet out, const char **data, const uint32_t *lengths);
 /** @copydoc lsl_push_sample_buf
@@ -110,6 +112,17 @@ extern LIBLSL_C_API int32_t lsl_push_sample_buft(lsl_outlet out, const char **da
 /** @copydoc lsl_push_sample_buft
  * @param pushthrough @see lsl_push_sample_ftp */
 extern LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, const uint32_t *lengths, double timestamp, int32_t pushthrough);
+
+/** @copydoc lsl_push_sample_buftp
+ * @param data An array of data buffers to push. The number of buffers in the array must be no less
+ * than `nbufs`.
+ * @param bytes An array comprising the number of bytes in each buffer. The number of entries in
+ * bytes must be no less than `nbufs`.
+ * @param nbufs The number of values pointed to in `data` and equivalently the number of items in
+ * `bytes`.
+ */
+extern LIBLSL_C_API int32_t lsl_push_sample_rawtpn(lsl_outlet out, void **data,
+	const uint32_t *bytes, double timestamp, int32_t pushthrough, uint32_t nbufs);
 
 /** Push a chunk of multiplexed samples into the outlet. One timestamp per sample is provided.
  *

@@ -71,9 +71,9 @@ public:
 
 	/**
 	 * Write directly to each socket. This should only be used when server initialized with
-	 * do_async = false.
+	 * do_sync = true.
 	 */
-	void write_all_blocking(std::vector<asio::const_buffer> buffs);
+	void write_all_blocking(std::vector<asio::const_buffer> bufs);
 
 private:
 	friend class client_session;
