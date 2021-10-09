@@ -226,12 +226,15 @@ void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsessio
 
 void tcp_server::write_all_blocking(std::vector<asio::const_buffer> buffs) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	std::size_t bytes_sent;
-	asio::error_code ec;
+	std::size_t bytes_sent = 0;
 	for (const auto &x : inflight_ready_) {
 		if (x.second && x.first->is_open()) {
-			bytes_sent = x.first->send(buffs, 0, ec);
-			if (ec) {
+			try {
+				// I couldn't figure out how to get the correct overload while providing
+				// error_code& ec to the write function. So we use try-catch instead.
+				bytes_sent = asio::write(*x.first, buffs);
+			} catch (const asio::system_error &err) { // std::exception &e
+				asio::error_code ec = err.code();
 				switch(ec.value()) {
 				case asio::error::broken_pipe:
 				case asio::error::connection_reset:
@@ -243,7 +246,7 @@ void tcp_server::write_all_blocking(std::vector<asio::const_buffer> buffs) {
 					// We leave it up to the client_session destructor to remove the socket.
 					break;
 				default:
-					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", err.what());
 				}
 			}
 		}

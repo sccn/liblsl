@@ -28,7 +28,7 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet_ex(
 		buf_samples /= 1000;
 	buf_samples = (buf_samples > 0) ? buf_samples : 1;
 	return create_object_noexcept<stream_outlet_impl>(
-		*info, chunk_size, buf_samples);
+		*info, chunk_size, buf_samples, flags);
 }
 
 LIBLSL_C_API lsl_outlet lsl_create_outlet(
@@ -171,14 +171,32 @@ LIBLSL_C_API int32_t lsl_push_sample_buft(
 
 LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data,
 	const uint32_t *lengths, double timestamp, int32_t pushthrough) {
+	stream_outlet_impl *outimpl = out;
+	return lsl_push_sample_buftpn(out, data, lengths, timestamp, pushthrough,
+		(uint32_t)outimpl->info().channel_count());
+}
+
+LIBLSL_C_API int32_t lsl_push_sample_buftpn(lsl_outlet out, const char **data,
+	const uint32_t *lengths, double timestamp, int32_t pushthrough, uint32_t nbufs) {
+	stream_outlet_impl *outimpl = out;
 	try {
-		stream_outlet_impl *outimpl = out;
-		std::vector<std::string> tmp;
-		for (uint32_t k = 0; k < (uint32_t)outimpl->info().channel_count(); k++)
-			tmp.emplace_back(data[k], lengths[k]);
-		return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
+		if (outimpl->is_sync_blocking()) {
+			// Convert input to a vector of asio buffers
+			std::vector<asio::const_buffer> buffs;
+			for (auto buf_ix = 0; buf_ix < nbufs; buf_ix++) {
+				buffs.push_back(asio::buffer(data[buf_ix], lengths[buf_ix]));
+			}
+			return outimpl->push_sample_gather(buffs, timestamp, pushthrough);
+		} else {
+			std::vector<std::string> tmp;
+			for (uint32_t k = 0; k < nbufs; k++)
+				tmp.emplace_back(data[k], lengths[k]);
+			return outimpl->push_sample_noexcept(&tmp[0], timestamp, pushthrough);
+		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Unexpected error during push_sample: %s", e.what());
+		if (!outimpl->is_sync_blocking() && outimpl->info().channel_format() != cft_string)
+			LOG_F(ERROR, "lsl_push_sample_buftpn only compatible with string type or when outlet is using sync writes.");
 		return lsl_internal_error;
 	}
 }

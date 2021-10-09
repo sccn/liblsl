@@ -99,7 +99,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data
  * @see lsl_push_sample_ftp
  * @param out The lsl_outlet object through which to push the data.
  * @param data A pointer to values to push. The number of values pointed to must be no less than the number of channels in the sample.
- * @param lengths A pointer the number of elements to push for each channel (string lengths).
+ * @param lengths A pointer the number of elements to push for each channel (string lengths, or number of bytes).
  */
 extern LIBLSL_C_API int32_t lsl_push_sample_buf(lsl_outlet out, const char **data, const uint32_t *lengths);
 /** @copydoc lsl_push_sample_buf
@@ -108,6 +108,11 @@ extern LIBLSL_C_API int32_t lsl_push_sample_buft(lsl_outlet out, const char **da
 /** @copydoc lsl_push_sample_buft
  * @param pushthrough @see lsl_push_sample_ftp */
 extern LIBLSL_C_API int32_t lsl_push_sample_buftp(lsl_outlet out, const char **data, const uint32_t *lengths, double timestamp, int32_t pushthrough);
+/** @copydoc lsl_push_sample_buftp
+ * @param nbufs Number of values pointed to in `data` and number of items in `lengths` -- doesn't assume one buffer
+ * per channel but each array in data must be longer than each item in lengths.
+ */
+extern LIBLSL_C_API int32_t lsl_push_sample_buftpn(lsl_outlet out, const char **data, const uint32_t *lengths, double timestamp, int32_t pushthrough, uint32_t nbufs);
 
 /** Push a chunk of multiplexed samples into the outlet. One timestamp per sample is provided.
  *

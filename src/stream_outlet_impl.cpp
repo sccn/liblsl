@@ -23,7 +23,7 @@ stream_outlet_impl::stream_outlet_impl(
 	  send_buffer_(std::make_shared<send_buffer>(max_capacity)),
 	  do_sync_(flags & transp_sync_blocking) {
 
-	if ((info.channel_format() == cft_string) && (flags & transp_sync_blocking)) {
+	if ((info.channel_format() == cft_string) && do_sync_) {
 		LOG_F(WARNING, "sync push not supported for string-formatted streams. Reverting to async.");
 		do_sync_ = false;
 	}
@@ -154,26 +154,36 @@ void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bo
 		smp->assign_untyped(data);  // Note: Makes a copy!
 		send_buffer_->push_sample(smp);
 	} else {
-		if (timestamp == DEDUCED_TIMESTAMP) {
-			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
-		} else {
-			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
-			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
-		}
-		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
-		if (pushthrough) {
-			for (auto &tcp_server : tcp_servers_)
-				tcp_server->write_all_blocking(sync_buffs_);
-			sync_buffs_.clear();
-		}
+		enqueue_sync(asio::buffer(data, smp->datasize()), timestamp, pushthrough);
 	}
-
 }
 
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
 
 bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
+}
+
+void stream_outlet_impl::push_timestamp_sync(double timestamp) {
+	if (timestamp == DEDUCED_TIMESTAMP) {
+		sync_buffs_.emplace_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
+	} else {
+		sync_buffs_.emplace_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
+		sync_buffs_.emplace_back(asio::buffer(&timestamp, sizeof(timestamp)));
+	}
+}
+
+void stream_outlet_impl::pushthrough_sync() {
+	// LOG_F(INFO, "Pushing %u buffers.", sync_buffs_.size());
+	for (auto &tcp_server : tcp_servers_)
+		tcp_server->write_all_blocking(sync_buffs_);
+	sync_buffs_.clear();
+}
+
+void stream_outlet_impl::enqueue_sync(asio::const_buffer buff, double timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.push_back(buff);
+	if (pushthrough) pushthrough_sync();
 }
 
 template <class T>
@@ -185,18 +195,7 @@ void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrou
 		smp->assign_typed(data);
 		send_buffer_->push_sample(smp);
 	} else {
-		if (timestamp == DEDUCED_TIMESTAMP) {
-			sync_buffs_.push_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
-		} else {
-			sync_buffs_.push_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
-			sync_buffs_.push_back(asio::buffer(&timestamp, sizeof(timestamp)));
-		}
-		sync_buffs_.push_back(asio::buffer(data, smp->datasize()));
-		if (pushthrough) {
-			for (auto &tcp_server : tcp_servers_)
-				tcp_server->write_all_blocking(sync_buffs_);
-			sync_buffs_.clear();
-		}
+		enqueue_sync(asio::buffer(data, smp->datasize()), timestamp, pushthrough);
 	}
 }
 
@@ -207,5 +206,11 @@ template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, 
 template void stream_outlet_impl::enqueue<float>(const float *data, double, bool);
 template void stream_outlet_impl::enqueue<double>(const double *data, double, bool);
 template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
+
+void stream_outlet_impl::enqueue_sync_multi(std::vector<asio::const_buffer> buffs, double timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.insert( sync_buffs_.end(), buffs.begin(), buffs.end() );
+	if (pushthrough) pushthrough_sync();
+}
 
 } // namespace lsl
