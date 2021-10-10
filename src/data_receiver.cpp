@@ -5,6 +5,7 @@
 #include "sample.h"
 #include "socket_utils.h"
 #include "util/cast.hpp"
+#include "util/strfuns.hpp"
 #include <chrono>
 #include <exception>
 #include <iostream>

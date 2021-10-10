@@ -98,6 +98,8 @@ add_library(lslobj OBJECT
 	src/util/cast.cpp
 	src/util/inireader.hpp
 	src/util/inireader.cpp
+	src/util/strfuns.hpp
+	src/util/strfuns.cpp
 	src/util/uuid.hpp
 	thirdparty/loguru/loguru.cpp
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>

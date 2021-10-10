@@ -83,9 +83,6 @@ public:
 	explicit timeout_error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
-std::string trim(const std::string &input);
-std::vector<std::string> splitandtrim(
-	const std::string &input, char separator = ',', bool keepempty = false);
 } // namespace lsl
 
 #endif

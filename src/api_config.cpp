@@ -1,6 +1,7 @@
 #include "api_config.h"
 #include "common.h"
 #include "util/inireader.hpp"
+#include "util/strfuns.hpp"
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
