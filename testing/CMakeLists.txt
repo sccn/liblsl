@@ -60,6 +60,7 @@ if(LSL_BENCHMARKS)
 
 	add_executable(lsl_bench_internal
 		bench_int_sleep.cpp
+		bench_int_timesync.cpp
 	)
 	target_link_libraries(lsl_bench_internal PRIVATE lslobj lslboost catch_main)
 	target_include_directories(lsl_test_internal PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src/)
