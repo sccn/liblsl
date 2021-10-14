@@ -1,6 +1,6 @@
 #include <catch2/catch.hpp>
+#include <common.h>
 #include <thread>
-#include "../src/common.h"
 
 TEST_CASE("sleep") {
 	BENCHMARK("sleep1ms") { std::this_thread::sleep_for(std::chrono::milliseconds(1)); };

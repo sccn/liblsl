@@ -9,7 +9,7 @@ struct Streampair {
 		: out_(std::move(out)), in_(std::move(in)) {}
 };
 
-static Streampair create_streampair(const lsl::stream_info &info) {
+inline Streampair create_streampair(const lsl::stream_info &info) {
 	lsl::stream_outlet out(info);
 	auto found_stream_info(lsl::resolve_stream("name", info.name(), 1, 2.0));
 	if (found_stream_info.empty()) throw std::runtime_error("outlet not found");

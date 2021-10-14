@@ -1,4 +1,4 @@
-#include "helpers.h"
+#include "common/create_streampair.hpp"
 #include <atomic>
 #include <catch2/catch.hpp>
 #include <lsl_cpp.h>

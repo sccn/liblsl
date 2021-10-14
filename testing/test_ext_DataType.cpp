@@ -1,5 +1,5 @@
-#include "helper_type.hpp"
-#include "helpers.h"
+#include "common/create_streampair.hpp"
+#include "common/lsltypes.hpp"
 #include <catch2/catch.hpp>
 #include <cstdint>
 #include <lsl_cpp.h>
