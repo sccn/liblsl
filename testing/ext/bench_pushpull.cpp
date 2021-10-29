@@ -1,5 +1,5 @@
-#include "common/create_streampair.hpp"
-#include "common/lsltypes.hpp"
+#include "../common/create_streampair.hpp"
+#include "../common/lsltypes.hpp"
 #include <atomic>
 #include <catch2/catch.hpp>
 #include <list>

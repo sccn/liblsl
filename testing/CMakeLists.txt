@@ -36,25 +36,25 @@ target_include_directories(common PUBLIC
 
 
 add_executable(lsl_test_exported
-	test_ext_DataType.cpp
-	test_ext_discovery.cpp
-	test_ext_move.cpp
-	test_ext_streaminfo.cpp
-	test_ext_time.cpp
+	ext/DataType.cpp
+	ext/discovery.cpp
+	ext/move.cpp
+	ext/streaminfo.cpp
+	ext/time.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
 
 
 add_executable(lsl_test_internal
-	test_int_inireader.cpp
-	test_int_loguruthreadnames.cpp
-	test_int_network.cpp
-	test_int_stringfuncs.cpp
-	test_int_streaminfo.cpp
-	test_int_samples.cpp
-	internal/postproc.cpp
-	internal/serialization_v100.cpp
-	internal/tcpserver.cpp
+	int/inireader.cpp
+	int/loguruthreadnames.cpp
+	int/network.cpp
+	int/stringfuncs.cpp
+	int/streaminfo.cpp
+	int/samples.cpp
+	int/postproc.cpp
+	int/serialization_v100.cpp
+	int/tcpserver.cpp
 )
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
 
@@ -63,13 +63,13 @@ if(LSL_BENCHMARKS)
 	# /usr/bin/time -v testing/lsl_test_exported --benchmark-samples 100  bounce
 	# [unix only]     |   binary                |    nr. of samples      | test name
 	target_sources(lsl_test_exported PRIVATE
-		bench_ext_bounce.cpp
-		bench_ext_common.cpp
-		bench_ext_pushpull.cpp
+		ext/bench_bounce.cpp
+		ext/bench_common.cpp
+		ext/bench_pushpull.cpp
 	)
 	target_sources(lsl_test_internal PRIVATE
-		bench_int_sleep.cpp
-		bench_int_timesync.cpp
+		int/bench_sleep.cpp
+		int/bench_timesync.cpp
 	)
 endif()
 
