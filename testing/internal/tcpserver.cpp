@@ -69,7 +69,11 @@ auto with_read_callback(const char *name, std::function<void(const std::string &
 	return [name, fun = std::move(fun)](sock_p sock) {
 		auto buf = std::make_shared<std::string>();
 		asio::async_read(*sock, asio::dynamic_buffer(*buf),
-			[sock, buf, name, fun = std::move(fun)](err_t read_err, std::size_t len) {
+			[sock, buf, name, fun
+#if !defined(_MSC_VER) || _MSC_VER > 1930
+						 = std::move(fun)
+#endif
+						 ](err_t read_err, std::size_t len) {
 				INFO("Test " << name << "\t– read " << len
 							 << " bytes, outcome: " << read_err.message())
 				if (read_err) REQUIRE(read_err == asio::error::eof);
