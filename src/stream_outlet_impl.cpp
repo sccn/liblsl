@@ -23,10 +23,8 @@ stream_outlet_impl::stream_outlet_impl(
 	  send_buffer_(std::make_shared<send_buffer>(max_capacity)),
 	  do_sync_(flags & transp_sync_blocking) {
 
-	if ((info.channel_format() == cft_string) && do_sync_) {
-		LOG_F(WARNING, "sync push not supported for string-formatted streams. Reverting to async.");
-		do_sync_ = false;
-	}
+	if ((info.channel_format() == cft_string) && do_sync_)
+		throw std::invalid_argument("Synchronous push not supported for string-formatted streams.");
 
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
@@ -164,7 +162,7 @@ bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
 
-void stream_outlet_impl::push_timestamp_sync(double timestamp) {
+void stream_outlet_impl::push_timestamp_sync(const double& timestamp) {
 	if (timestamp == DEDUCED_TIMESTAMP) {
 		sync_buffs_.emplace_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
 	} else {
@@ -180,7 +178,7 @@ void stream_outlet_impl::pushthrough_sync() {
 	sync_buffs_.clear();
 }
 
-void stream_outlet_impl::enqueue_sync(asio::const_buffer buff, double timestamp, bool pushthrough) {
+void stream_outlet_impl::enqueue_sync(asio::const_buffer buff, const double& timestamp, bool pushthrough) {
 	push_timestamp_sync(timestamp);
 	sync_buffs_.push_back(buff);
 	if (pushthrough) pushthrough_sync();
@@ -195,7 +193,7 @@ void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrou
 		smp->assign_typed(data);
 		send_buffer_->push_sample(smp);
 	} else {
-		enqueue_sync(asio::buffer(data, smp->datasize()), timestamp, pushthrough);
+		enqueue_sync(asio::buffer(data, smp->datasize()), smp->timestamp, smp->pushthrough);
 	}
 }
 

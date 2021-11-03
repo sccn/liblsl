@@ -224,24 +224,24 @@ void tcp_server::handle_accept_outcome(std::shared_ptr<client_session> newsessio
 
 // === synchronous transfer
 
-void tcp_server::write_all_blocking(std::vector<asio::const_buffer> buffs) {
+void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
-	std::size_t bytes_sent = 0;
-	for (const auto &x : inflight_ready_) {
-		if (x.second && x.first->is_open()) {
+	// If there is exactly one consumer, use blocking-write.
+	if (inflight_ready_.size() == 1) {
+		if (inflight_ready_.begin()->second && inflight_ready_.begin()->first->is_open()) {
 			try {
-				// I couldn't figure out how to get the correct overload while providing
-				// error_code& ec to the write function. So we use try-catch instead.
-				bytes_sent = asio::write(*x.first, buffs);
+				// CBB: I couldn't figure out how to get the correct overload while providing
+				// error_code& ec to the write function; using try-catch instead.
+				asio::write(*inflight_ready_.begin()->first, bufs);
 			} catch (const asio::system_error &err) { // std::exception &e
 				asio::error_code ec = err.code();
 				switch(ec.value()) {
 				case asio::error::broken_pipe:
 				case asio::error::connection_reset:
 					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
-					inflight_ready_[x.first] = false;
-					post(*io_, [x]() {
-						close_inflight_socket(x);
+					inflight_ready_.begin()->second = false;
+					post(*io_, [sock=inflight_ready_.begin()->first]() {
+						close_inflight_socket(sock);
 					});
 					// We leave it up to the client_session destructor to remove the socket.
 					break;
@@ -249,6 +249,43 @@ void tcp_server::write_all_blocking(std::vector<asio::const_buffer> buffs) {
 					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", err.what());
 				}
 			}
+		}
+	}
+	else { // multiple consumers. Use asynchronous write.
+		for (const auto &x : inflight_ready_) {
+			if (x.second && x.first->is_open()) {
+				asio::async_write(*x.first, bufs, [this, self = shared_from_this()](
+													  const asio::error_code& ec, size_t bytes_transferred) {
+					{
+						std::lock_guard<std::mutex> lock(sync_write_mut_);
+						// assign the transfer outcome
+						if (!ec) {
+							// TODO: Check bytes_transferred
+						}
+						else {
+							switch(ec.value()) {
+							case asio::error::broken_pipe:
+							case asio::error::connection_reset:
+								LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
+								inflight_ready_.begin()->second = false;
+								post(*io_, [sock=inflight_ready_.begin()->first]() {
+									close_inflight_socket(sock);
+								});
+								// We leave it up to the client_session destructor to remove the socket.
+								break;
+							default:
+								LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+							}
+						}
+					}
+					sync_write_cv_.notify_one();
+				});
+			}
+		}
+		// Using asynchronous write, but waiting for return.
+		{
+			std::unique_lock<std::mutex> lk(sync_write_mut_);
+			sync_write_cv_.wait(lk, []{return true;});
 		}
 	}
 }
@@ -266,14 +303,14 @@ void tcp_server::unregister_inflight_socket(const tcp_socket_p &sock) {
 	inflight_ready_.erase(sock);
 }
 
-void tcp_server::close_inflight_socket(std::pair<tcp_socket_p, bool> x) {
+void tcp_server::close_inflight_socket(const tcp_socket_p &sock) {
 	try {
-		if (x.first->is_open()) {
+		if (sock->is_open()) {
 			try {
 				// (in some cases shutdown may fail)
-				x.first->shutdown(x.first->shutdown_both);
+				sock->shutdown(sock->shutdown_both);
 			} catch (...) {}
-			x.first->close();
+			sock->close();
 		}
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Error during shutdown_and_close: %s", e.what());
@@ -284,7 +321,7 @@ void tcp_server::close_inflight_sockets() {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
 	for (const auto &x : inflight_ready_) {
 		inflight_ready_[x.first] = false;
-		post(*io_, [x]() { close_inflight_socket(x); });
+		post(*io_, [sock=x.first]() { close_inflight_socket(sock); });
 	}
 }
 

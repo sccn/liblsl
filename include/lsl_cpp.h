@@ -522,8 +522,8 @@ public:
 	 * @param pushthrough Whether to push the sample through to the receivers immediately instead of
 	 * concatenating with subsequent samples.
 	 */
-	void push_numeric_bufs(const char **bufs, uint32_t *bytes, uint32_t nbufs, double timestamp = 0.0, bool pushthrough = true) {
-		lsl_push_sample_buftpn(obj.get(), bufs, bytes, timestamp, pushthrough, nbufs);
+	void push_numeric_bufs(void **bufs, uint32_t *bytes, uint32_t nbufs, double timestamp = 0.0, bool pushthrough = true) {
+		lsl_push_sample_rawtpn(obj.get(), bufs, bytes, timestamp, pushthrough, nbufs);
 	}
 
 

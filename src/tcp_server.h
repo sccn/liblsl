@@ -6,6 +6,7 @@
 #include <asio/ip/tcp.hpp>
 #include <memory>
 #include <mutex>
+#include <condition_variable>
 #include <map>
 #include <string>
 
@@ -65,15 +66,15 @@ public:
 	 * Initiate teardown of IO processes.
 	 *
 	 * The actual teardown will be performed by the IO thread that runs the operations of
-	 * thisserver.
+	 * this server.
 	 */
 	void end_serving();
 
 	/**
 	 * Write directly to each socket. This should only be used when server initialized with
-	 * do_async = false.
+	 * do_sync = true.
 	 */
-	void write_all_blocking(std::vector<asio::const_buffer> buffs);
+	void write_all_blocking(std::vector<asio::const_buffer> bufs);
 
 private:
 	friend class client_session;
@@ -91,7 +92,7 @@ private:
 	void unregister_inflight_socket(const tcp_socket_p &sock);
 
 	/// Post a close of a single in-flight socket
-	static void close_inflight_socket(std::pair<tcp_socket_p, bool> x);
+	static void close_inflight_socket(const tcp_socket_p &sock);
 
 	/// Post a close of all in-flight sockets.
 	void close_inflight_sockets();
@@ -117,6 +118,8 @@ private:
 	// registry of in-flight client sockets (for cancellation)
 	std::map<tcp_socket_p, bool> inflight_ready_;	// registry of currently in-flight sockets
 	std::recursive_mutex inflight_mut_;		 		// mutex protecting the registry from concurrent access
+	std::mutex sync_write_mut_;
+	std::condition_variable sync_write_cv_;
 
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response
