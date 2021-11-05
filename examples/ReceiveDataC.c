@@ -5,7 +5,7 @@
  * Example program that demonstrates how to resolve a specific stream on the lab network and how to
  * connect to it in order to receive data.
  */
-const int NCHANS = 8;
+#define NCHANS 8
 
 
 int main(int argc, char *argv[]) {
