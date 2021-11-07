@@ -6,6 +6,9 @@ project (liblsl
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
 	)
 
+# API version, to be incremented on backwards-incompatible ABI changes
+set(LSL_ABI_VERSION 2)
+
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
 if(NOT MSVC_VERSION VERSION_LESS 1700)
@@ -22,7 +25,6 @@ option(LSL_BUILD_STATIC "Build LSL as static library." OFF)
 option(LSL_LEGACY_CPP_ABI "Build legacy C++ ABI into lsl-static" OFF)
 option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
-option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
 
@@ -96,6 +98,8 @@ add_library(lslobj OBJECT
 	src/util/cast.cpp
 	src/util/inireader.hpp
 	src/util/inireader.cpp
+	src/util/strfuns.hpp
+	src/util/strfuns.cpp
 	src/util/uuid.hpp
 	thirdparty/loguru/loguru.cpp
 	$<$<BOOL:${LSL_LEGACY_CPP_ABI}>:src/legacy/legacy_abi.cpp src/legacy/legacy_abi.h>
@@ -161,49 +165,23 @@ set_source_files_properties("thirdparty/loguru/loguru.cpp"
 find_package(Threads REQUIRED)
 
 # create the lslboost target
-if(LSL_BUNDLED_BOOST)
-	message(STATUS "Using bundled Boost")
-		
-	add_library(lslboost OBJECT
-		lslboost/serialization_objects.cpp
-	)
-	target_link_libraries(lslboost PUBLIC Threads::Threads)
-	if(LSL_SLIMARCHIVE)
-		message(STATUS "Using shim instead of full Boost.Archive")
-		target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
-	endif()
-	target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
+add_library(lslboost OBJECT
+	lslboost/serialization_objects.cpp
+)
+target_link_libraries(lslboost PUBLIC Threads::Threads)
 
-	target_compile_definitions(lslboost
-		PUBLIC
-			BOOST_ALL_NO_LIB
-			BOOST_ASIO_STANDALONE
-			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
-	)
-	target_include_directories(lslboost SYSTEM PUBLIC
-		${CMAKE_CURRENT_SOURCE_DIR}/lslboost)
-else()
-	message(STATUS "Using system Boost")
-
-	find_package(Boost REQUIRED
-		COMPONENTS
-			serialization
-	)
-	add_library(lslboost INTERFACE)
-	target_compile_definitions(lslboost
-		INTERFACE
-			BOOST_ALL_NO_LIB
-			BOOST_ARCHIVE_SOURCE
-			BOOST_ASIO_STANDALONE
-			#BOOST_ASIO_SEPARATE_COMPILATION
-			BOOST_THREAD_DONT_PROVIDE_INTERRUPTIONS
-			lslboost=boost # allows the LSL code base to work with the original Boost namespace/headers
-	)
-	target_link_libraries(lslboost
-	    INTERFACE
-	        Boost::boost Boost::serialization
-	)
+if(LSL_SLIMARCHIVE)
+	message(STATUS "Using shim instead of full Boost.Archive")
+	target_compile_definitions(lslboost PUBLIC SLIMARCHIVE)
 endif()
+target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
+
+target_compile_definitions(lslboost
+	PUBLIC
+		BOOST_ALL_NO_LIB
+)
+target_include_directories(lslboost SYSTEM PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost)
@@ -217,10 +195,12 @@ target_include_directories(lslobj
 target_include_directories(lslobj
 	SYSTEM PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/loguru>
+		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/thirdparty/asio>
 )
 target_compile_definitions(lslobj PRIVATE
 	LIBLSL_EXPORTS
 	LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+	PUBLIC ASIO_NO_DEPRECATED
 )
 
 # platform specific configuration
@@ -235,28 +215,12 @@ if(UNIX AND NOT APPLE)
 		target_link_libraries(lslobj PRIVATE dl)
 	endif()
 elseif(WIN32)
-	target_link_libraries(lslobj PRIVATE iphlpapi winmm)
-	if(LSL_BUNDLED_BOOST)
-		target_link_libraries(lslboost PRIVATE mswsock ws2_32)
-	else()
-		target_link_libraries(lslboost INTERFACE mswsock ws2_32)
-	endif()
+	target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
 	target_compile_definitions(lslobj
 		PRIVATE _CRT_SECURE_NO_WARNINGS
 		PUBLIC LSLNOAUTOLINK # don't use #pragma(lib) in CMake builds
-	)
-	if(LSL_BUNDLED_BOOST)
-		target_compile_definitions(lslboost
-			PUBLIC _WIN32_WINNT=${LSL_WINVER}
-			PRIVATE BOOST_THREAD_BUILD_DLL
+		_WIN32_WINNT=${LSL_WINVER}
 		)
-	else()
-		target_compile_definitions(lslboost
-			INTERFACE
-			    _WIN32_WINNT=${LSL_WINVER}
-			    BOOST_THREAD_BUILD_DLL
-		)
-	endif()
 endif()
 
 # the "real" liblsl library. It contains one source with the version info
@@ -276,6 +240,7 @@ target_include_directories(lsl INTERFACE
 )
 set_target_properties(lsl PROPERTIES
 	VERSION ${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}.${liblsl_VERSION_PATCH}
+	SOVERSION ${LSL_ABI_VERSION}
 )
 
 # enable some additional expensive compiler optimizations
@@ -285,8 +250,8 @@ if(LSL_OPTIMIZATIONS)
 else()
 	# build one object file for Asio instead of once every time an Asio function is called. See
 	# https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
-	target_sources(lslboost PRIVATE lslboost/asio_objects.cpp)
-	target_compile_definitions(lslboost PUBLIC BOOST_ASIO_SEPARATE_COMPILATION)
+	target_sources(lslobj PRIVATE thirdparty/asio_objects.cpp)
+	target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
 
