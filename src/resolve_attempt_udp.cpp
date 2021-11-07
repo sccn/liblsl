@@ -2,9 +2,10 @@
 #include "api_config.h"
 #include "resolver_impl.h"
 #include "socket_utils.h"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/address.hpp>
-#include <boost/asio/ip/multicast.hpp>
+#include "util/strfuns.hpp"
+#include <asio/io_context.hpp>
+#include <asio/ip/address.hpp>
+#include <asio/ip/multicast.hpp>
 #include <exception>
 #include <loguru.hpp>
 #include <sstream>
@@ -102,16 +103,16 @@ void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 	if (!err) {
 		try {
 			// first parse & check the query id
-			std::istringstream is(std::string(resultbuf_, len));
-			std::string returned_id;
-			getline(is, returned_id);
-			returned_id = trim(returned_id);
-			if (returned_id == query_id_) {
+			char *bufend = resultbuf_ + len;
+			char *newlinepos = resultbuf_;
+			// find the end of the line
+			while (newlinepos != bufend && *newlinepos != '\n') ++newlinepos;
+			std::string returned_id(resultbuf_, trim_end(resultbuf_, newlinepos));
+
+			if (returned_id == query_id_ && newlinepos != bufend) {
 				// parse the rest of the query into a stream_info
 				stream_info_impl info;
-				std::ostringstream os;
-				os << is.rdbuf();
-				info.from_shortinfo_message(os.str());
+				info.from_shortinfo_message(std::string(newlinepos, bufend));
 				std::string uid = info.uid();
 				{
 					// update the results

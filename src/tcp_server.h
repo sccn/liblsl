@@ -2,16 +2,15 @@
 #define TCP_SERVER_H
 
 #include "forward.h"
+#include <asio/ip/tcp.hpp>
 #include <atomic>
-#include <boost/asio/ip/tcp.hpp>
 #include <memory>
 #include <mutex>
 #include <set>
 #include <string>
 
 using asio::ip::tcp;
-using lslboost::system::error_code;
-using err_t = const error_code &;
+using err_t = const asio::error_code &;
 
 namespace lsl {
 

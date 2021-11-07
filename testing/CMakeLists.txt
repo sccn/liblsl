@@ -9,58 +9,68 @@ enable_testing()
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
 add_library(catch_main OBJECT catch_main.cpp)
-target_compile_features(catch_main PUBLIC cxx_std_11)
+target_compile_features(catch_main PUBLIC cxx_std_14)
+if(CMAKE_SYSTEM_NAME STREQUAL "Android")
+	target_link_libraries(catch_main PUBLIC log)
+endif()
+find_package(Threads REQUIRED)
+target_link_libraries(catch_main PUBLIC Threads::Threads)
 
 target_compile_definitions(catch_main PRIVATE LSL_VERSION_INFO="${LSL_VERSION_INFO}")
+target_include_directories(catch_main PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty)
 if(LSL_BENCHMARKS)
 	target_compile_definitions(catch_main PUBLIC CATCH_CONFIG_ENABLE_BENCHMARKING)
 endif()
-target_include_directories(catch_main PUBLIC
+
+add_library(common OBJECT
+	common/bytecmp.cpp
+	common/bytecmp.hpp
+	common/create_streampair.hpp
+	common/lsltypes.hpp
+)
+target_compile_features(common PUBLIC cxx_std_14)
+target_include_directories(common PUBLIC
 	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../thirdparty>
-	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>)
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../src>
+)
+
 
 add_executable(lsl_test_exported
-	test_ext_DataType.cpp
-	test_ext_discovery.cpp
-	test_ext_move.cpp
-	test_ext_streaminfo.cpp
-	test_ext_time.cpp
+	ext/DataType.cpp
+	ext/discovery.cpp
+	ext/move.cpp
+	ext/streaminfo.cpp
+	ext/time.cpp
 )
+target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
 
-target_link_libraries(lsl_test_exported PRIVATE lsl catch_main Threads::Threads)
-
-find_package(Threads REQUIRED)
 
 add_executable(lsl_test_internal
-	test_int_inireader.cpp
-	test_int_loguruthreadnames.cpp
-	test_int_network.cpp
-	test_int_stringfuncs.cpp
-	test_int_streaminfo.cpp
-	test_int_samples.cpp
-	internal/postproc.cpp
-	internal/serialization_v100.cpp
+	int/inireader.cpp
+	int/loguruthreadnames.cpp
+	int/network.cpp
+	int/stringfuncs.cpp
+	int/streaminfo.cpp
+	int/samples.cpp
+	int/postproc.cpp
+	int/serialization_v100.cpp
+	int/tcpserver.cpp
 )
-target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost catch_main)
+target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
-	# /usr/bin/time -v testing/lsl_bench_exported --benchmark-samples 100 bounce
-	# [unix only]     |   binary                  |    nr. of samples   | test name
-	add_executable(lsl_bench_exported
-		bench_ext_bounce.cpp
-		bench_ext_common.cpp
-		bench_ext_pushpull.cpp
+	# /usr/bin/time -v testing/lsl_test_exported --benchmark-samples 100  bounce
+	# [unix only]     |   binary                |    nr. of samples      | test name
+	target_sources(lsl_test_exported PRIVATE
+		ext/bench_bounce.cpp
+		ext/bench_common.cpp
+		ext/bench_pushpull.cpp
 	)
-	target_link_libraries(lsl_bench_exported PRIVATE lsl catch_main Threads::Threads)
-	installLSLApp(lsl_bench_exported)
-
-	add_executable(lsl_bench_internal
-		bench_int_sleep.cpp
+	target_sources(lsl_test_internal PRIVATE
+		int/bench_sleep.cpp
+		int/bench_timesync.cpp
 	)
-	target_link_libraries(lsl_bench_internal PRIVATE lslobj lslboost catch_main)
-	target_include_directories(lsl_test_internal PRIVATE ${CMAKE_CURRENT_LIST_DIR}/../src/)
-	installLSLApp(lsl_bench_internal)
 endif()
 
 set(LSL_TESTS lsl_test_exported lsl_test_internal)

@@ -188,7 +188,14 @@ elseif(LSL_BUNDLED_BOOST)
 	# compile Boost.Serialization objects as part of lslobj
 	target_sources(lslobj PRIVATE lslboost/serialization_objects.cpp)
 endif()
-target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
+target_compile_features(lslboost PUBLIC cxx_std_11 cxx_lambda_init_captures)
+
+target_compile_definitions(lslboost
+	INTERFACE
+		BOOST_ALL_NO_LIB
+)
+target_include_directories(lslboost SYSTEM PUBLIC
+	$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>)
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)

@@ -4,32 +4,28 @@
 #include "cancellation.h"
 #include "resolver_impl.h"
 #include "stream_info_impl.h"
+#include <asio/ip/tcp.hpp>
+#include <asio/ip/udp.hpp>
 #include <atomic>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ip/udp.hpp>
 #include <condition_variable>
 #include <map>
 #include <mutex>
 #include <string>
 #include <thread>
 
-/* shared_mutex was added in C++17 so we use the boost shared_mutex when
+/* shared_mutex was added in C++17 so we fall back to a plain mutex when
 building for C++11 / C++14 or MSVC <= 2019 */
 #if __cplusplus >= 201703L || _MSC_VER >= 1925
-#include <mutex>
 #include <shared_mutex>
 using shared_mutex_t = std::shared_mutex;
 using shared_lock_t = std::shared_lock<std::shared_mutex>;
-using unique_lock_t = std::unique_lock<std::shared_mutex>;
 #else
-#include <boost/thread/lock_types.hpp>
-#include <boost/thread/shared_mutex.hpp>
-using shared_mutex_t = lslboost::shared_mutex;
-using shared_lock_t = lslboost::shared_lock<lslboost::shared_mutex>;
-using unique_lock_t = lslboost::unique_lock<lslboost::shared_mutex>;
+using shared_mutex_t = std::mutex;
+using shared_lock_t = std::unique_lock<std::mutex>;
 #endif
 
-namespace asio = lslboost::asio;
+using unique_lock_t = std::unique_lock<shared_mutex_t>;
+
 using asio::ip::tcp;
 using asio::ip::udp;
 

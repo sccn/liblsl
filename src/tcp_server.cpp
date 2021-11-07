@@ -6,12 +6,13 @@
 #include "socket_utils.h"
 #include "stream_info_impl.h"
 #include "util/cast.hpp"
-#include <boost/asio/io_context.hpp>
-#include <boost/asio/ip/host_name.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/read_until.hpp>
-#include <boost/asio/streambuf.hpp>
-#include <boost/asio/write.hpp>
+#include "util/strfuns.hpp"
+#include <asio/io_context.hpp>
+#include <asio/ip/host_name.hpp>
+#include <asio/ip/tcp.hpp>
+#include <asio/read_until.hpp>
+#include <asio/streambuf.hpp>
+#include <asio/write.hpp>
 #include <condition_variable>
 #include <cstdint>
 #include <exception>
@@ -138,7 +139,7 @@ private:
 	/// whether the current transfer has finished (possibly with an error)
 	bool transfer_completed_;
 	/// the outcome of the last chunk transfer
-	error_code transfer_error_;
+	asio::error_code transfer_error_;
 	/// the amount of bytes transferred
 	std::size_t transfer_amount_;
 	/// a mutex that protects the completion data
@@ -267,6 +268,10 @@ client_session::~client_session() {
 void client_session::begin_processing() {
 	try {
 		sock_->set_option(asio::ip::tcp::no_delay(true));
+		if (api_config::get_instance()->socket_send_buffer_size() > 0)
+			sock_->set_option(asio::socket_base::send_buffer_size(api_config::get_instance()->socket_send_buffer_size()));
+		if (api_config::get_instance()->socket_receive_buffer_size() > 0)
+			sock_->set_option(asio::socket_base::receive_buffer_size (api_config::get_instance()->socket_receive_buffer_size()));
 		// register this socket as "in-flight" with the server (so that any subsequent ops on it can
 		// be aborted if necessary)
 		serv_->register_inflight_socket(sock_);
@@ -423,7 +428,9 @@ void client_session::handle_read_feedparams(
 				api_config::get_instance()->use_protocol_version(), client_protocol_version);
 			// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is
 			// involved
-			if (serv_->info_->channel_bytes() != client_value_size) data_protocol_version_ = 100;
+			if (serv_->info_->channel_format() != cft_string &&
+				serv_->info_->channel_bytes() != client_value_size)
+				data_protocol_version_ = 100;
 			if (!format_ieee754[cft_double64] ||
 				(format == cft_float32 && !format_ieee754[cft_float32]) ||
 				!client_has_ieee754_floats)

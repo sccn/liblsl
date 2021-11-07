@@ -30,6 +30,16 @@ extern "C" {
 	"Please do not compile this with a lslboost version older than 1.45 because the library would otherwise not be protocol-compatible with builds using other versions."
 #endif
 
+// compiler hint that the given expression is likely or unlikely
+// (e.g., in conditional statements)
+#if defined(__clang__) || defined(__GNUC__)
+#define LIKELY(x) __builtin_expect(!!(x), 1)
+#define UNLIKELY(x) __builtin_expect(!!(x), 0)
+#else
+#define LIKELY(x) (x)
+#define UNLIKELY(x) (x)
+#endif
+
 // the highest supported protocol version
 // * 100 is the original version, supported by library versions 1.00+
 // * 110 is an alternative protocol that improves throughput, supported by library versions 1.10+
@@ -73,9 +83,6 @@ public:
 	explicit timeout_error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
-std::string trim(const std::string &input);
-std::vector<std::string> splitandtrim(
-	const std::string &input, char separator = ',', bool keepempty = false);
 } // namespace lsl
 
 #endif

@@ -174,10 +174,14 @@ public:
 	int outlet_buffer_reserve_ms() const { return outlet_buffer_reserve_ms_; }
 	/// Default pre-allocated buffer size for the outlet, in samples (irregular streams).
 	int outlet_buffer_reserve_samples() const { return outlet_buffer_reserve_samples_; }
+	/// Default socket send buffer size, in bytes.
+	int socket_send_buffer_size() const { return socket_send_buffer_size_; }
 	/// Default pre-allocated buffer size for the inlet, in ms (regular streams).
 	int inlet_buffer_reserve_ms() const { return inlet_buffer_reserve_ms_; }
 	/// Default pre-allocated buffer size for the inlet, in samples (irregular streams).
 	int inlet_buffer_reserve_samples() const { return inlet_buffer_reserve_samples_; }
+	/// Default socket receive buffer size, in bytes.
+	int socket_receive_buffer_size() const { return socket_receive_buffer_size_; }
 	/// Default halftime of the time-stamp smoothing window (if enabled), in seconds.
 	float smoothing_halftime() const { return smoothing_halftime_; }
 	/// Override timestamps with lsl clock if True
@@ -235,8 +239,10 @@ private:
 	double time_probe_max_rtt_;
 	int outlet_buffer_reserve_ms_;
 	int outlet_buffer_reserve_samples_;
+	int socket_send_buffer_size_;
 	int inlet_buffer_reserve_ms_;
 	int inlet_buffer_reserve_samples_;
+	int socket_receive_buffer_size_;
 	float smoothing_halftime_;
 	bool force_default_timestamps_;
 };
