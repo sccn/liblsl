@@ -336,7 +336,7 @@ void client_session::handle_read_query_outcome(err_t err) {
 		if (serv_->info_->matches_query(query)) {
 			// matches: reply (otherwise just close the stream)
 			async_write(*sock_, asio::buffer(serv_->shortinfo_msg_),
-				[shared_this = shared_from_this() /*unused*/](err_t, std::size_t /*unused*/) {
+				[shared_this = shared_from_this()](err_t /*unused*/, std::size_t /*unused*/) {
 					/* keep the client_session alive until the shortinfo is sent completely*/
 				});
 		} else {
@@ -347,10 +347,10 @@ void client_session::handle_read_query_outcome(err_t err) {
 	}
 }
 
-void client_session::send_status_message(const std::string &str) {
-	auto msg(std::make_shared<std::string>(str));
-	async_write(*sock_, asio::buffer(*msg),
-		[msg, shared_this = shared_from_this()](err_t /*unused*/,
+void client_session::send_status_message(const std::string &msg) {
+	auto buf(std::make_shared<std::string>(msg));
+	async_write(*sock_, asio::buffer(*buf),
+		[buf, shared_this = shared_from_this()](err_t /*unused*/,
 			std::size_t /*unused*/) { /* keep objects alive until the message is sent */ });
 }
 
@@ -478,7 +478,7 @@ void client_session::handle_read_feedparams(
 		// --- validation ---
 		if (data_protocol_version_ == 100) {
 			// create a portable output archive to write to
-			outarch_.reset(new eos::portable_oarchive(feedbuf_));
+			outarch_ = std::make_unique<eos::portable_oarchive>(feedbuf_);
 			// serialize the shortinfo message into an archive
 			*outarch_ << serv_->shortinfo_msg_;
 		} else {

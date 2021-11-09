@@ -2,8 +2,6 @@
 #include <cstring>
 #include <loguru.hpp>
 
-using asio::ip::address_v4;
-
 asio::ip::address_v6 sinaddr_to_asio(sockaddr_in6 *addr) {
 	asio::ip::address_v6::bytes_type buf;
 	memcpy(buf.data(), addr->sin6_addr.s6_addr, sizeof(addr->sin6_addr));

@@ -89,10 +89,10 @@ void udp_server::end_serving() {
 	// gracefully close the socket; this will eventually lead to the cancellation of the IO
 	// operation(s) tied to its socket
 	auto sock(socket_); // socket shared ptr to be kept alive
-	post(io_, [sock]() {
+	post(io_, [sock, fn = __func__]() {
 		try {
 			if (sock->is_open()) sock->close();
-		} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", __func__, e.what()); }
+		} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", fn, e.what()); }
 	});
 }
 
@@ -125,7 +125,7 @@ void udp_server::process_shortinfo_request(std::istream& request_stream)
 		string_p replymsg(
 			std::make_shared<std::string>((query_id += "\r\n") += shortinfo_msg_));
 		socket_->async_send_to(asio::buffer(*replymsg), return_endpoint,
-			[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+			[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t /*unused*/) {
 				if (err_ != asio::error::operation_aborted && err_ != asio::error::shut_down)
 					shared_this->request_next_packet();
 			});
@@ -147,7 +147,7 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 	reply << ' ' << wave_id << ' ' << t0 << ' ' << t1 << ' ' << lsl_clock();
 	string_p replymsg(std::make_shared<std::string>(reply.str()));
 	socket_->async_send_to(asio::buffer(*replymsg), remote_endpoint_,
-		[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t) {
+		[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t /*unused*/) {
 			if (err_ != asio::error::operation_aborted && err_ != asio::error::shut_down)
 				shared_this->request_next_packet();
 		});
