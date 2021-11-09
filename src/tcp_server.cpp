@@ -524,8 +524,14 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*k
 	try {
 		// make a new consumer queue
 		auto queue = serv_->send_buffer_->new_consumer(max_buffered_);
-		// the sequence # is merely used to determine chunk boundaries (no need for int64)
-		uint32_t seqn = 0;
+		// the sequence #s are merely used to determine chunk boundaries (no need for int64)
+		int samples_in_current_chunk = 0;
+		int max_samples_per_chunk = std::numeric_limits<decltype(samples_in_current_chunk)>::max();
+		if (chunk_granularity_)
+			max_samples_per_chunk = chunk_granularity_;
+		else if (serv_->chunk_size_)
+			max_samples_per_chunk = serv_->chunk_size_;
+
 		while (!serv_->shutdown_) {
 			try {
 				// get next sample from the sample queue (blocking)
@@ -534,20 +540,14 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*k
 				// ignore blank samples (they are basically wakeup notifiers from someone's
 				// end_serving())
 				if (!samp) continue;
-				// optionally override the pushthrough flag by the chunk size of the receiver (if
-				// set) or of the sender (if set)
-				if (chunk_granularity_)
-					samp->pushthrough = (((++seqn) % (uint32_t)chunk_granularity_) == 0);
-				else if (serv_->chunk_size_)
-					samp->pushthrough = (((++seqn) % (uint32_t)serv_->chunk_size_) == 0);
 				// serialize the sample into the stream
 				if (data_protocol_version_ >= 110)
 					samp->save_streambuf(
 						feedbuf_, data_protocol_version_, use_byte_order_, scratch_);
 				else
 					*outarch_ << *samp;
-				// if the sample shall be pushed though...
-				if (samp->pushthrough) {
+				// if the sample is marked as force-push or the configured chunk size is reached
+				if (samp->pushthrough || ++samples_in_current_chunk >= max_samples_per_chunk) {
 					// send off the chunk that we aggregated so far
 					std::unique_lock<std::mutex> lock(completion_mut_);
 					transfer_completed_ = false;
@@ -562,6 +562,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /*k
 						feedbuf_.consume(transfer_amount_);
 					} else
 						break;
+					samples_in_current_chunk = 0;
 				}
 			} catch (std::exception &e) {
 				LOG_F(WARNING, "Unexpected glitch in transfer_samples_thread: %s", e.what());
