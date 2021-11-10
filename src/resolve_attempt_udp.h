@@ -4,6 +4,7 @@
 #include "cancellation.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include "socket_utils.h"
 #include <asio/ip/udp.hpp>
 #include <asio/steady_timer.hpp>
 #include <map>
@@ -15,6 +16,8 @@ using asio::ip::udp;
 using err_t = const asio::error_code &;
 
 namespace lsl {
+
+using steady_timer = asio::basic_waitable_timer<asio::chrono::steady_clock, asio::wait_traits<asio::chrono::steady_clock>, asio::io_context::executor_type>;
 
 /// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
 typedef std::map<std::string, std::pair<stream_info_impl, double>> result_container;
@@ -114,15 +117,15 @@ private:
 
 	// IO objects
 	/// socket to send data over (for unicasts)
-	udp::socket unicast_socket_;
+	udp_socket unicast_socket_;
 	/// socket to send data over (for broadcasts)
-	udp::socket broadcast_socket_;
+	udp_socket broadcast_socket_;
 	/// socket to send data over (for multicasts)
-	udp::socket multicast_socket_;
+	udp_socket multicast_socket_;
 	/// socket to receive replies (always unicast)
-	udp::socket recv_socket_;
+	udp_socket recv_socket_;
 	/// timer to schedule the cancel action
-	asio::steady_timer cancel_timer_;
+	steady_timer cancel_timer_;
 };
 } // namespace lsl
 

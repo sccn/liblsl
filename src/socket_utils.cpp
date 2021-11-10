@@ -24,12 +24,12 @@ uint16_t bind_port_in_range_(Socket &sock, Protocol protocol) {
 		") or you have a problem with your network configuration.");
 }
 
-uint16_t lsl::bind_port_in_range(asio::ip::udp::socket &sock, asio::ip::udp protocol) {
+uint16_t lsl::bind_port_in_range(udp_socket &sock, asio::ip::udp protocol) {
 	return bind_port_in_range_(sock, protocol);
 }
 
 uint16_t lsl::bind_and_listen_to_port_in_range(
-	asio::ip::tcp::acceptor &acc, asio::ip::tcp protocol, int backlog) {
+	tcp_acceptor &acc, asio::ip::tcp protocol, int backlog) {
 	uint16_t port = bind_port_in_range_(acc, protocol);
 	acc.listen(backlog);
 	return port;

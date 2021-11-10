@@ -68,7 +68,7 @@ class client_session : public std::enable_shared_from_this<client_session> {
 public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv)
-		: io_(serv->io_), serv_(serv), sock_(std::make_shared<tcp::socket>(*serv->io_)),
+		: io_(serv->io_), serv_(serv), sock_(std::make_shared<tcp_socket>(*serv->io_)),
 		  requeststream_(&requestbuf_) {}
 
 	/// Destructor. Unregisters the session from the server.
@@ -154,7 +154,7 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	factory_p factory, tcp protocol, int chunk_size)
 	: chunk_size_(chunk_size), shutdown_(false), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)),
-	  acceptor_(std::make_shared<tcp::acceptor>(*io_)) {
+	  acceptor_(std::make_shared<tcp_acceptor>(*io_)) {
 	// open the server connection
 	acceptor_->open(protocol);
 

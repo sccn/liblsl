@@ -2,7 +2,7 @@
 #define TCP_SERVER_H
 
 #include "forward.h"
-#include <asio/ip/tcp.hpp>
+#include "socket_utils.h"
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -15,9 +15,9 @@ using err_t = const asio::error_code &;
 namespace lsl {
 
 /// shared pointer to a socket
-using tcp_socket_p = std::shared_ptr<tcp::socket>;
+using tcp_socket_p = std::shared_ptr<tcp_socket>;
 /// shared pointer to an acceptor socket
-using tcp_acceptor_p = std::shared_ptr<tcp::acceptor>;
+using tcp_acceptor_p = std::shared_ptr<tcp_acceptor>;
 
 /**
  * The TCP data server.

@@ -23,6 +23,8 @@ using err_t = const asio::error_code &;
 namespace lsl {
 class api_config;
 
+using steady_timer = asio::basic_waitable_timer<asio::chrono::steady_clock, asio::wait_traits<asio::chrono::steady_clock>, asio::io_context::executor_type>;
+
 /// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
 typedef std::map<std::string, std::pair<stream_info_impl, double>> result_container;
 
@@ -187,11 +189,11 @@ private:
 	/// a thread that runs background IO if we are performing a resolve_continuous
 	std::shared_ptr<std::thread> background_io_;
 	/// the overall timeout for a query
-	asio::steady_timer resolve_timeout_expired_;
+	steady_timer resolve_timeout_expired_;
 	/// a timer that fires when a new wave should be scheduled
-	asio::steady_timer wave_timer_;
+	steady_timer wave_timer_;
 	/// a timer that fires when the unicast wave should be scheduled
-	asio::steady_timer unicast_timer_;
+	steady_timer unicast_timer_;
 };
 
 } // namespace lsl

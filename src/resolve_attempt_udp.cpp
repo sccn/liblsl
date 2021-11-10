@@ -160,7 +160,7 @@ void resolve_attempt_udp::send_next_query(endpoint_list::const_iterator next) {
 	// endpoint matches our active protocol?
 	if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
 		// select socket to use
-		udp::socket &sock =
+		udp_socket &sock =
 			(ep.address() == asio::ip::address_v4::broadcast())
 				? broadcast_socket_
 				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);

@@ -2,6 +2,7 @@
 #define UDP_SERVER_H
 
 #include "forward.h"
+#include "socket_utils.h"
 #include <asio/ip/udp.hpp>
 #include <cstdint>
 #include <exception>
@@ -13,7 +14,7 @@ using err_t = const asio::error_code &;
 
 namespace lsl {
 /// shared pointer to a socket
-using udp_socket_p = std::shared_ptr<udp::socket>;
+using udp_socket_p = std::shared_ptr<udp_socket>;
 
 /**
  * A lightweight UDP responder service.

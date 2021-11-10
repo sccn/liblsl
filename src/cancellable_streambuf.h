@@ -25,7 +25,7 @@ using asio::io_context;
 
 namespace lsl {
 using Protocol = asio::ip::tcp;
-using Socket = asio::basic_stream_socket<Protocol>;
+using Socket = asio::basic_stream_socket<Protocol, asio::io_context::executor_type>;
 /// Iostream streambuf for a socket.
 class cancellable_streambuf : public std::streambuf,
 							  private asio::io_context,
