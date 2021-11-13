@@ -6,13 +6,13 @@
 // clazy:excludeall=non-pod-global-static
 
 TEST_CASE("loguru_thread_local_storage", "[threading]") {
-	char name[2] = "0";
+	char name[16] = "0";
 	loguru::set_thread_name("1");
-	std::thread([&](){
+	std::thread([&]() {
 		loguru::set_thread_name("2");
-		loguru::get_thread_name(name,2,false);
+		loguru::get_thread_name(name, sizeof(name), false);
 	}).join();
 	REQUIRE(name[0] == '2');
-	loguru::get_thread_name(name,2,false);
+	loguru::get_thread_name(name, sizeof(name), false);
 	REQUIRE(name[0] == '1');
 }

@@ -109,16 +109,6 @@
 	#elif defined(__OpenBSD__)
 		#include <pthread_np.h>
 	#endif
-
-	#ifdef __linux__
-		/* On Linux, the default thread name is the same as the name of the binary.
-		   Additionally, all new threads inherit the name of the thread it got forked from.
-		   For this reason, Loguru use the pthread Thread Local Storage
-		   for storing thread names on Linux. */
-		#ifndef LOGURU_PTLS_NAMES
-			#define LOGURU_PTLS_NAMES 1
-		#endif
-	#endif
 #endif
 
 #if LOGURU_WINTHREADS
@@ -1066,7 +1056,8 @@ namespace loguru
 			// Ask the OS about the thread name.
 			// This is what we *want* to do on all platforms, but
 			// only some platforms support it (currently).
-			pthread_getname_np(pthread_self(), buffer, length);
+			if(pthread_getname_np(pthread_self(), buffer, length) != 0)
+				buffer[0] = 0;
 		#elif LOGURU_WINTHREADS
 			snprintf(buffer, static_cast<size_t>(length), "%s", thread_name_buffer());
 		#else
