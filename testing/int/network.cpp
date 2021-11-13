@@ -12,6 +12,8 @@
 #include <mutex>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 using namespace asio;
 using err_t = const asio::error_code &;
 

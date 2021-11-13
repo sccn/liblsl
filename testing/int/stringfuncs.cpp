@@ -1,6 +1,8 @@
 #include "util/strfuns.hpp"
 #include <catch2/catch.hpp>
 
+// clazy:excludeall=non-pod-global-static
+
 using vec = std::vector<std::string>;
 
 TEST_CASE("strings are split correctly", "[string][basic]") {

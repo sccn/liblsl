@@ -2,8 +2,10 @@
 #include <loguru.hpp>
 #include <random>
 #include <thread>
-
+// include loguru before catch
 #include <catch2/catch.hpp>
+
+// clazy:excludeall=non-pod-global-static
 
 template <std::size_t N>
 inline void test_postproc_array(

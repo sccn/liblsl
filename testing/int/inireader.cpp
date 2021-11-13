@@ -2,6 +2,8 @@
 #include <catch2/catch.hpp>
 #include <sstream>
 
+// clazy:excludeall=non-pod-global-static
+
 void try_load(INI &pt, const char *contents) {
 	std::istringstream stream{std::string(contents)};
 	pt.load(stream);

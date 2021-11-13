@@ -2,8 +2,10 @@
 #include "../src/stream_info_impl.h"
 #include <cctype>
 #include <loguru.hpp>
-
+// include loguru before catch
 #include <catch2/catch.hpp>
+
+// clazy:excludeall=non-pod-global-static
 
 template<typename T, const std::size_t N>
 bool contains(const T(&valid)[N], const T target) {

@@ -11,6 +11,8 @@
 #include <sstream>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 using namespace asio::ip;
 using err_t = const asio::error_code &;
 using sock_t = tcp::socket;

@@ -5,12 +5,14 @@
 #include <lsl_cpp.h>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 TEMPLATE_TEST_CASE(
 	"datatransfer", "[datatransfer][basic]", char, int16_t, int32_t, int64_t, float, double) {
 	const int numBounces = sizeof(TestType) * 8;
 	double timestamps[numBounces][2];
 	const char *name = SampleType<TestType>::fmt_string();
-	lsl::channel_format_t cf = (lsl::channel_format_t)SampleType<TestType>::chan_fmt;
+	auto cf = static_cast<lsl::channel_format_t>(SampleType<TestType>::chan_fmt);
 
 	Streampair sp(create_streampair(
 		lsl::stream_info(name, "Bounce", 2, lsl::IRREGULAR_RATE, cf, "streamid")));
@@ -60,8 +62,8 @@ TEST_CASE("TypeConversion", "[datatransfer][types][basic]") {
 	Streampair sp{create_streampair(
 		lsl::stream_info("TypeConversion", "int2str2int", 1, 1, lsl::cf_string, "TypeConversion"))};
 	const int num_bounces = 31;
-	std::vector<int32_t> data;
-	for (int i = 0; i < num_bounces; ++i) data.push_back(1 << i);
+	std::vector<int32_t> data(num_bounces);
+	for (int i = 0; i < num_bounces; ++i) data[i] = 1 << i;
 
 	sp.out_.push_chunk_multiplexed(data);
 
@@ -88,11 +90,11 @@ TEST_CASE("Flush", "[datatransfer][basic]") {
 		}
 	});
 
-	double data_in, ts_in;
-	ts_in = sp.in_.pull_sample(&data_in, 1.);
+	double data_in;
+	double ts_in = sp.in_.pull_sample(&data_in, 1.);
 	REQUIRE(ts_in == Approx(data_in));
 	std::this_thread::sleep_for(std::chrono::milliseconds(700));
-	int pulled = sp.in_.flush() + 1;
+	auto pulled = sp.in_.flush() + 1;
 
 	for(; pulled < n; ++pulled) {
 		INFO(pulled);

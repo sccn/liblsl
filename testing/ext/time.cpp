@@ -4,6 +4,8 @@
 #include <lsl_cpp.h>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 namespace {
 
 TEST_CASE("simple timesync", "[timesync][basic]") {

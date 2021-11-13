@@ -7,6 +7,8 @@
 #include <string>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 template<typename T>
 struct sample_value {};
 template<> struct sample_value<char> { static constexpr char val = 122; };
@@ -42,12 +44,13 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 
 			BENCHMARK("push_sample_nchan_" + suffix) {
 				for (size_t s = 0; s < chunk_size; s++) out.push_sample(data);
+				for (auto &inlet : inlet_list) inlet.flush();
 			};
 
 			BENCHMARK("push_chunk_nchan_" + suffix) {
 				out.push_chunk_multiplexed(data, chunk_size);
+				for (auto &inlet : inlet_list) inlet.flush();
 			};
-			for (auto &inlet : inlet_list) inlet.flush();
 		}
 	}
 }

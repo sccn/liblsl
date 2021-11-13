@@ -4,6 +4,8 @@
 #include <sstream>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 using namespace asio::ip;
 
 TEST_CASE("timesync", "[basic][latency]") {

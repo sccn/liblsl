@@ -4,6 +4,8 @@
 #include <catch2/catch.hpp>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 TEST_CASE("consumer_queue", "[queue][basic]") {
 	const int size = 10;
 	lsl::factory fac(lsl_channel_format_t::cft_int8, 4, size / 2);

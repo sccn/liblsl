@@ -3,6 +3,8 @@
 #include <catch2/catch.hpp>
 #include <lsl_cpp.h>
 
+// clazy:excludeall=non-pod-global-static
+
 TEST_CASE("bounce", "[basic][latency]") {
 	auto sp = create_streampair(lsl::stream_info("bounce", "Test"));
 

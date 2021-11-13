@@ -127,24 +127,23 @@ ip::address resolve_v6_addr(const std::string &addr) {
 tcp::endpoint inlet_connection::get_tcp_endpoint() {
 	shared_lock_t lock(host_info_mut_);
 	if (tcp_protocol_ == tcp::v4())
-		return tcp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4data_port());
+		return {ip::make_address(host_info_.v4address()), host_info_.v4data_port()};
 
 	std::string addr = host_info_.v6address();
 	uint16_t port = host_info_.v6data_port();
 	lock.unlock();
-	return tcp::endpoint(resolve_v6_addr(addr), port);
+	return {resolve_v6_addr(addr), port};
 }
 
 udp::endpoint inlet_connection::get_udp_endpoint() {
 	shared_lock_t lock(host_info_mut_);
-
 	if (udp_protocol_ == udp::v4())
-		return udp::endpoint(ip::make_address(host_info_.v4address()), host_info_.v4service_port());
+		return {ip::make_address(host_info_.v4address()), host_info_.v4service_port()};
 
 	std::string addr = host_info_.v6address();
 	uint16_t port = host_info_.v6service_port();
 	lock.unlock();
-	return udp::endpoint(resolve_v6_addr(addr), port);
+	return {resolve_v6_addr(addr), port};
 }
 
 std::string inlet_connection::current_uid() {

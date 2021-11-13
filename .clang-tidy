@@ -1,0 +1,17 @@
+---
+Checks: |
+    modernize-*,
+        -modernize-use-trailing-return-type,
+        -modernize-avoid-c-arrays,
+    isc-*,
+    performance-*,
+    readability-*,
+        -readability-braces-around-statements,
+        -readability-implicit-bool-conversion,
+        -readability-magic-numbers,
+        -readability-isolate-declaration,
+        -readability-function-cognitive-complexity,
+    bugprone-*,
+    concurrency-*
+    portability-*
+...

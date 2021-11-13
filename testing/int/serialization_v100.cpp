@@ -4,6 +4,8 @@
 #include <sstream>
 #include <type_traits>
 
+// clazy:excludeall=non-pod-global-static
+
 #define NO_EXPLICIT_TEMPLATE_INSTANTIATION
 #include "portable_archive/portable_iarchive.hpp"
 #include "portable_archive/portable_oarchive.hpp"

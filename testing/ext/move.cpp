@@ -2,6 +2,8 @@
 #include <lsl_cpp.h>
 #include <thread>
 
+// clazy:excludeall=non-pod-global-static
+
 namespace {
 
 TEST_CASE("move C++ API types", "[move][basic]") {
