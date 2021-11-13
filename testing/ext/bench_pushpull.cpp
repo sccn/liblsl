@@ -10,7 +10,7 @@
 template<typename T>
 struct sample_value {};
 template<> struct sample_value<char> { static constexpr char val = 122; };
-template<> struct sample_value<int64_t> { static constexpr int64_t val = 1l<<62; };
+template<> struct sample_value<int64_t> { static constexpr int64_t val = 1LL<<62; };
 template<> struct sample_value<double> { static constexpr double val = 17324412.552; };
 template<> struct sample_value<std::string> { static const std::string val; };
 const std::string sample_value<std::string>::val(200, 'a');
