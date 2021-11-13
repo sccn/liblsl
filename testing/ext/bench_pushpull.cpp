@@ -9,13 +9,11 @@
 
 // clazy:excludeall=non-pod-global-static
 
-template<typename T>
-struct sample_value {};
-template<> struct sample_value<char> { static constexpr char val = 122; };
-template<> struct sample_value<int64_t> { static constexpr int64_t val = 1LL<<62; };
-template<> struct sample_value<double> { static constexpr double val = 17324412.552; };
-template<> struct sample_value<std::string> { static const std::string val; };
-const std::string sample_value<std::string>::val(200, 'a');
+template <typename T> struct sample_value { static const T val; };
+template <> const char sample_value<char>::val = 122;
+template <> const int64_t sample_value<int64_t>::val = 1LL << 62;
+template <> const double sample_value<double>::val = 17324412.552;
+template <> const std::string sample_value<std::string>::val(200, 'a');
 
 
 TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string) {
