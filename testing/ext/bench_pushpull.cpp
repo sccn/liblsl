@@ -30,14 +30,14 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 
 	for (auto nchan : param_nchan) {
 		lsl::stream_outlet out(
-			lsl::stream_info(name, "PushPull", (int)nchan, lsl::IRREGULAR_RATE, cf, "streamid"));
+			lsl::stream_info(name, "PushPull", (int)nchan, chunk_size, cf, "streamid"));
 		auto found_stream_info(lsl::resolve_stream("name", name, 1, 2.0));
 		REQUIRE(!found_stream_info.empty());
 
 		std::list<lsl::stream_inlet> inlet_list;
 		for (auto n_inlets : param_inlets) {
 			while (inlet_list.size() < n_inlets) {
-				inlet_list.emplace_front(found_stream_info[0], 1, false);
+				inlet_list.emplace_front(found_stream_info[0], 300, false);
 				inlet_list.front().open_stream(.5);
 			}
 			std::string suffix(std::to_string(nchan) + "_inlets_" + std::to_string(n_inlets));
