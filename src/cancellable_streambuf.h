@@ -33,7 +33,7 @@ class cancellable_streambuf : public std::streambuf,
 							  public lsl::cancellable_obj {
 public:
 	/// Construct a cancellable_streambuf without establishing a connection.
-	cancellable_streambuf() : io_context(), Socket(as_context()) { init_buffers(); }
+	cancellable_streambuf() : io_context(1), Socket(as_context()) { init_buffers(); }
 
 	/// Destructor flushes buffered data.
 	virtual ~cancellable_streambuf() override {
@@ -190,7 +190,7 @@ protected:
 	}
 
 	enum { putback_max = 8 };
-	enum { buffer_size = 512 };
+	enum { buffer_size = 16384 };
 	char get_buffer_[buffer_size], put_buffer_[buffer_size];
 	asio::error_code ec_;
 	std::atomic<bool> cancel_issued_{false};
