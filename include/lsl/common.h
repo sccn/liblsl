@@ -150,6 +150,21 @@ typedef enum {
 	_lsl_error_code_maxval = 0x7f000000
 } lsl_error_code_t;
 
+/// Flags for outlet_ex and inlet_ex
+typedef enum {
+	/// Keep legacy behavior: max_buffered / max_buflen is in seconds; use asynch transfer.
+	transp_default = 0,
+
+	/// The supplied max_buf value is in samples.
+	transp_bufsize_samples = 1,
+
+	/// The supplied max_buf should be scaled by 0.001.
+	transp_bufsize_thousandths = 2,
+
+	// prevent compilers from assuming an instance fits in a single byte
+	_lsl_transport_options_maxval = 0x7f000000
+} lsl_transport_options_t;
+
 /// Return an explanation for the last error
 extern LIBLSL_C_API const char *lsl_last_error(void);
 

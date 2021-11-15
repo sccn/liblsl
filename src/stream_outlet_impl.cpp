@@ -11,16 +11,17 @@
 
 namespace lsl {
 
-stream_outlet_impl::stream_outlet_impl(
-	const stream_info_impl &info, int32_t chunk_size, int32_t max_capacity)
+stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chunk_size,
+	int32_t requested_bufsize, lsl_transport_options_t flags)
 	: sample_factory_(std::make_shared<factory>(info.channel_format(), info.channel_count(),
 		  static_cast<uint32_t>(
 			  info.nominal_srate()
 				  ? info.nominal_srate() * api_config::get_instance()->outlet_buffer_reserve_ms() /
 						1000
 				  : api_config::get_instance()->outlet_buffer_reserve_samples()))),
-	  chunk_size_(chunk_size), info_(std::make_shared<stream_info_impl>(info)),
-	  send_buffer_(std::make_shared<send_buffer>(max_capacity)),
+	  chunk_size_(info.calc_transport_buf_samples(requested_bufsize, flags)),
+	  info_(std::make_shared<stream_info_impl>(info)),
+	  send_buffer_(std::make_shared<send_buffer>(chunk_size_)),
 	  io_ctx_data_(std::make_shared<asio::io_context>(1)),
 	  io_ctx_service_(std::make_shared<asio::io_context>(1)) {
 	ensure_lsl_initialized();

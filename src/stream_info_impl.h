@@ -221,6 +221,9 @@ public:
 	pugi::xml_node desc();
 	pugi::xml_node desc() const;
 
+	/// helper function to calculate the buffer size in samples for inlets and outlets
+	uint32_t calc_transport_buf_samples(int32_t requested_len, lsl_transport_options_t flags) const;
+
 protected:
 	/// Create and assign the XML DOM structure based on the class fields.
 	void write_xml(pugi::xml_document &doc);

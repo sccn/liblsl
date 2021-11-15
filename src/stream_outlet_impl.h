@@ -32,12 +32,14 @@ public:
 	 * @param chunk_size The preferred chunk size, in samples, at which data shall be transmitted
 	 * over the network. Can be selectively overridden by the inlet. If 0 (=default), the chunk size
 	 * is determined by the pushthrough flag in push_sample or push_chunk.
-	 * @param max_capacity The maximum number of samples buffered for unresponsive receivers. If
-	 * more samples get pushed, the oldest will be dropped. The default is sufficient to hold a bit
-	 * more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB of RAM.
+	 * @param requested_size The maximum number of seconds/samples buffered for unresponsive
+	 * receivers. If more samples get pushed, the oldest will be dropped. The default is sufficient
+	 * to hold a bit more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB
+	 * of RAM. Depends on `flags` as calculated in `stream_info_impl::calc_transport_buf_samples()`
+	 * @param flags Bitwise-OR'd flags from lsl_transport_options_t
 	 */
-	stream_outlet_impl(
-		const stream_info_impl &info, int32_t chunk_size = 0, int32_t max_capacity = 512000);
+	stream_outlet_impl(const stream_info_impl &info, int32_t chunk_size = 0,
+		int32_t requested_bufsize = 900, lsl_transport_options_t flags = transp_default);
 
 	/**
 	 * Destructor.

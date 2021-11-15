@@ -271,17 +271,20 @@ void client_session::begin_processing() {
 	try {
 		sock_->set_option(asio::ip::tcp::no_delay(true));
 		if (api_config::get_instance()->socket_send_buffer_size() > 0)
-			sock_->set_option(asio::socket_base::send_buffer_size(api_config::get_instance()->socket_send_buffer_size()));
+			sock_->set_option(asio::socket_base::send_buffer_size(
+				api_config::get_instance()->socket_send_buffer_size()));
 		if (api_config::get_instance()->socket_receive_buffer_size() > 0)
-			sock_->set_option(asio::socket_base::receive_buffer_size (api_config::get_instance()->socket_receive_buffer_size()));
+			sock_->set_option(asio::socket_base::receive_buffer_size(
+				api_config::get_instance()->socket_receive_buffer_size()));
 		// register this socket as "in-flight" with the server (so that any subsequent ops on it can
 		// be aborted if necessary)
 		serv_->register_inflight_socket(sock_);
 		registered_ = true;
 		// read the request line
 		async_read_until(*sock_, requestbuf_, "\r\n",
-			[shared_this = shared_from_this()](
-				err_t err, std::size_t /*unused*/) { shared_this->handle_read_command_outcome(err); });
+			[shared_this = shared_from_this()](err_t err, std::size_t /*unused*/) {
+				shared_this->handle_read_command_outcome(err);
+			});
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during client_session::begin_processing: %s", e.what());
 	}
@@ -501,8 +504,8 @@ void client_session::handle_read_feedparams(
 		}
 
 		// send off the newly created feedheader
-		async_write(
-			*sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, std::size_t len) {
+		async_write(*sock_, feedbuf_.data(),
+			[shared_this = shared_from_this()](err_t err, std::size_t len) {
 				shared_this->handle_send_feedheader_outcome(err, len);
 			});
 		DLOG_F(2, "%p sent test pattern samples", this);

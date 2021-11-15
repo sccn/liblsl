@@ -14,11 +14,19 @@ extern "C" {
 
 using namespace lsl;
 
+LIBLSL_C_API lsl_inlet lsl_create_inlet_ex(lsl_streaminfo info, int32_t max_buflen,
+	int32_t max_chunklen, int32_t recover, lsl_transport_options_t flags) {
+	try {
+		int32_t buf_samples = info->calc_transport_buf_samples(max_buflen, flags);
+		return create_object_noexcept<stream_inlet_impl>(
+			*info, buf_samples, max_chunklen, recover != 0);
+	}
+	LSLCATCHANDSTORE(nullptr, std::invalid_argument, lsl_argument_error);
+	return nullptr;
+}
 LIBLSL_C_API lsl_inlet lsl_create_inlet(
 	lsl_streaminfo info, int32_t max_buflen, int32_t max_chunklen, int32_t recover) {
-	return create_object_noexcept<stream_inlet_impl>(*info,
-		(info->nominal_srate() ? (int)(info->nominal_srate() * max_buflen) : max_buflen * 100) + 1,
-		max_chunklen, recover != 0);
+	return lsl_create_inlet_ex(info, max_buflen, max_chunklen, recover, transp_default);
 }
 
 LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) {

@@ -39,6 +39,12 @@
  * @return A newly created lsl_inlet handle or NULL in the event that an error occurred.
  */
 extern LIBLSL_C_API lsl_inlet lsl_create_inlet(lsl_streaminfo info, int32_t max_buflen, int32_t max_chunklen, int32_t recover);
+/** @copydoc lsl_create_inlet()
+ * @param flags An integer that is the result of bitwise OR'ing one or more options from
+ * #lsl_transport_options_t together (e.g., #transp_bufsize_samples)
+ */
+extern LIBLSL_C_API lsl_inlet lsl_create_inlet_ex(lsl_streaminfo info, int32_t max_buflen,
+	int32_t max_chunklen, int32_t recover, lsl_transport_options_t flags);
 
 /**
 * Destructor.

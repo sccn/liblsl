@@ -244,6 +244,24 @@ int stream_info_impl::channel_bytes() const {
 xml_node stream_info_impl::desc() { return doc_.child("info").child("desc"); }
 xml_node stream_info_impl::desc() const { return doc_.child("info").child("desc"); }
 
+uint32_t lsl::stream_info_impl::calc_transport_buf_samples(
+	int32_t requested_len, lsl_transport_options_t flags) const {
+	if ((flags & transp_bufsize_samples) && (flags & transp_bufsize_thousandths))
+		throw std::invalid_argument(
+			"transp_bufsize_samples and transp_bufsize_thousandths are mutually exclusive");
+
+	int32_t buf_samples;
+	if (flags & transp_bufsize_samples)
+		buf_samples = requested_len;
+	else if (nominal_srate() == LSL_IRREGULAR_RATE)
+		buf_samples = requested_len * 100;
+	else
+		buf_samples = nominal_srate() * requested_len;
+	if (flags & transp_bufsize_thousandths) buf_samples /= 1000;
+	buf_samples = (buf_samples > 0) ? buf_samples : 1;
+	return buf_samples;
+}
+
 void stream_info_impl::version(int v) {
 	version_ = v;
 	doc_.child("info").child("version").first_child().set_value(to_string(version_ / 100.).c_str());

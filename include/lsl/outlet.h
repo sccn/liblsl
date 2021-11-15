@@ -34,6 +34,12 @@
  * @return A newly created lsl_outlet handle or NULL in the event that an error occurred.
  */
 extern LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered);
+/** @copydoc lsl_create_outlet()
+ * @param flags An integer that is the result of bitwise OR'ing one or more options from
+ * #lsl_transport_options_t together (e.g., #transp_bufsize_samples|#transp_bufsize_thousandths)
+ */
+extern LIBLSL_C_API lsl_outlet lsl_create_outlet_ex(
+	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, lsl_transport_options_t flags);
 
 /**
  * Destroy an outlet.
@@ -93,7 +99,8 @@ extern LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data
 /** @copybrief lsl_push_sample_ftp
  * @see lsl_push_sample_ftp
  * @param out The lsl_outlet object through which to push the data.
- * @param data A pointer to values to push. The number of values pointed to must be no less than the number of channels in the sample.
+ * @param data A pointer to values to push. The number of values pointed to must be no less than the
+ * number of channels in the sample.
  * @param lengths A pointer the number of elements to push for each channel (string lengths).
  */
 extern LIBLSL_C_API int32_t lsl_push_sample_buf(lsl_outlet out, const char **data, const uint32_t *lengths);

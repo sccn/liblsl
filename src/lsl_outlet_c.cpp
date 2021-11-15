@@ -15,12 +15,14 @@ extern "C" {
 using namespace lsl;
 
 // boilerplate wrapper code
+LIBLSL_C_API lsl_outlet lsl_create_outlet_ex(
+	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, lsl_transport_options_t flags) {
+	return create_object_noexcept<stream_outlet_impl>(*info, chunk_size, max_buffered, flags);
+}
+
 LIBLSL_C_API lsl_outlet lsl_create_outlet(
 	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered) {
-	double buftime = info->nominal_srate();
-	if (buftime <= 0) buftime = 100;
-	return create_object_noexcept<stream_outlet_impl>(
-		*info, chunk_size, static_cast<int>(buftime * max_buffered));
+	return lsl_create_outlet_ex(info, chunk_size, max_buffered, transp_default);
 }
 
 LIBLSL_C_API void lsl_destroy_outlet(lsl_outlet out) {
