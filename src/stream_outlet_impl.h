@@ -296,7 +296,7 @@ public:
 
 private:
 	/// Instantiate a new server stack.
-	void instantiate_stack(tcp tcp_protocol, udp udp_protocol);
+	void instantiate_stack(udp udp_protocol);
 
 	/// Allocate and enqueue a new sample into the send buffer.
 	template <class T> void enqueue(const T *data, double timestamp, bool pushthrough);
@@ -322,8 +322,8 @@ private:
 	/// the IO service objects
 	io_context_p io_ctx_data_, io_ctx_service_;
 
-	/// the threaded TCP data server(s); two if using both IP stacks
-	std::vector<tcp_server_p> tcp_servers_;
+	/// the threaded TCP data server
+	tcp_server_p tcp_server_;
 	/// the UDP timing & ident service(s); two if using both IP stacks
 	std::vector<udp_server_p> udp_servers_;
 	/// UDP multicast responders for service discovery (time features disabled);

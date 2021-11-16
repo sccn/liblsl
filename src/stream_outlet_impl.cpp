@@ -29,22 +29,26 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 
 	// instantiate IPv4 and/or IPv6 stacks (depending on settings)
 	if (cfg->allow_ipv4()) try {
-			instantiate_stack(tcp::v4(), udp::v4());
+			instantiate_stack(udp::v4());
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Could not instantiate IPv4 stack: %s", e.what());
 		}
 	if (cfg->allow_ipv6()) try {
-			instantiate_stack(tcp::v6(), udp::v6());
+			instantiate_stack(udp::v6());
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Could not instantiate IPv6 stack: %s", e.what());
 		}
 
+	// create TCP data server
+	tcp_server_ = std::make_shared<tcp_server>(info_, io_ctx_data_, send_buffer_, sample_factory_,
+		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6());
+
 	// fail if both stacks failed to instantiate
-	if (tcp_servers_.empty() || udp_servers_.empty())
+	if (udp_servers_.empty())
 		throw std::runtime_error("Neither the IPv4 nor the IPv6 stack could be instantiated.");
 
 	// get the async request chains set up
-	for (auto &tcp_server : tcp_servers_) tcp_server->begin_serving();
+	tcp_server_->begin_serving();
 	for (auto &udp_server : udp_servers_) udp_server->begin_serving();
 	for (auto &responder : responders_) responder->begin_serving();
 
@@ -64,16 +68,14 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 		}));
 }
 
-void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
+void stream_outlet_impl::instantiate_stack(udp udp_protocol) {
 	// get api_config
 	const api_config *cfg = api_config::get_instance();
 	std::string listen_address = cfg->listen_address();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());
-	// create TCP data server
-	tcp_servers_.push_back(std::make_shared<tcp_server>(
-		info_, io_ctx_data_, send_buffer_, sample_factory_, tcp_protocol, chunk_size_));
+
 	// create UDP time server
 	udp_servers_.push_back(std::make_shared<udp_server>(info_, *io_ctx_service_, udp_protocol));
 	// create UDP multicast responders
@@ -94,7 +96,7 @@ void stream_outlet_impl::instantiate_stack(tcp tcp_protocol, udp udp_protocol) {
 stream_outlet_impl::~stream_outlet_impl() {
 	try {
 		// cancel all request chains
-		for (auto &tcp_server : tcp_servers_) tcp_server->end_serving();
+		tcp_server_->end_serving();
 		for (auto &udp_server : udp_servers_) udp_server->end_serving();
 		for (auto &responder : responders_) responder->end_serving();
 

@@ -29,7 +29,7 @@ public:
 		srv_ctx = std::make_shared<asio::io_context>(1);
 		auto factory =
 			std::make_shared<lsl::factory>(info->channel_format(), info->channel_count(), 10);
-		srv = std::make_shared<lsl::tcp_server>(info, srv_ctx, sendbuf, factory, tcp::v4(), 5);
+		srv = std::make_shared<lsl::tcp_server>(info, srv_ctx, sendbuf, factory, 5, true, true);
 		srv->begin_serving();
 	}
 	~tcp_server_wrapper() noexcept {
