@@ -1,3 +1,4 @@
+#include <iostream>
 #include <lsl_cpp.h>
 #include <vector>
 
@@ -16,7 +17,10 @@ int main(int argc, char **argv) {
 
 	// receive data & time stamps forever (not displaying them here)
 	std::vector<float> sample;
-	while (true) inlet.pull_sample(sample);
+	while (true) {
+		double timestamp = inlet.pull_sample(sample);
+		std::cout << timestamp << "\t" << sample[0] << "\t" << sample[1] << "..." << std::endl;
+	}
 
 	return 0;
 }

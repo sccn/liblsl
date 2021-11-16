@@ -499,7 +499,7 @@ public:
 	}
 
 	/** Push a pointer to raw numeric data as one sample into the outlet.
-	 * This is the lowest-level function; performns no checking whatsoever. Can not be used for
+	 * This is the lowest-level function; performs no checking whatsoever. Cannot be used for
 	 * variable-size / string-formatted channels.
 	 * @param sample A pointer to the raw sample data to push.
 	 * @param timestamp Optionally the capture time of the sample, in agreement with local_clock();

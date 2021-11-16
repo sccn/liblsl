@@ -8,14 +8,21 @@
 int main(int argc, char **argv) {
 	std::cout << "ReceiveDataInChunks" << std::endl;
 	std::cout << "ReceiveDataInChunks StreamName max_buflen flush" << std::endl;
+	std::cout << "- max_buffered -- duration in sec (or x100 samples if samplerate is 0) to buffer "
+				 "in the receiver"
+			  << std::endl;
+	std::cout
+		<< "- flush -- set non-zero to flush data instead of pulling; useful for testing throughput"
+		<< std::endl;
 
 	try {
 
 		std::string name{argc > 1 ? argv[1] : "MyAudioStream"};
-		int32_t max_buflen = argc > 2 ? std::stol(argv[2]) : 360;
+		double max_buffered = argc > 2 ? std::stod(argv[2]) : 360.;
 		bool flush = argc > 3;
 		// resolve the stream of interest & make an inlet
-		lsl::stream_inlet inlet(lsl::resolve_stream("name", name).at(0), max_buflen);
+		lsl::stream_info inlet_info = lsl::resolve_stream("name", name).at(0);
+		lsl::stream_inlet inlet(inlet_info, max_buffered);
 
 		// Use set_postprocessing to get the timestamps in a common base clock.
 		// Do not use if this application will record timestamps to disk -- it is better to 

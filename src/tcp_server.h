@@ -63,12 +63,13 @@ public:
 	 * Initiate teardown of IO processes.
 	 *
 	 * The actual teardown will be performed by the IO thread that runs the operations of
-	 * thisserver.
+	 * this server.
 	 */
 	void end_serving();
 
 private:
 	friend class client_session;
+
 	/// Start accepting a new connection.
 	void accept_next_connection();
 
