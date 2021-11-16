@@ -212,14 +212,9 @@ void tcp_server::end_serving() {
 
 void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 	try {
-		// Select the IO context for handling the socket
-		// for `transfer_is_sync`, IO is done in the thread calling `push_sample`,
-		// otherwise in the outlet's IO thread / IO context
-		auto &sock_io_ctx = transfer_is_sync_ ? *sync_transfer_io_ctx_ : *io_;
-
-		// accept a connection on the session's socket
-		acceptor->async_accept(sock_io_ctx, [shared_this = shared_from_this(), &acceptor](
-												err_t err, tcp_socket sock) {
+		// accept a new connection
+		acceptor->async_accept(*io_, [shared_this = shared_from_this(), &acceptor](
+										 err_t err, tcp_socket sock) {
 			if (err == asio::error::operation_aborted || err == asio::error::shut_down) return;
 
 			// no error: create a new session and start processing
@@ -240,34 +235,36 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 // === synchronous transfer
 
 void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
-	int writes_outstanding = 0;
 	bool any_session_broken = false;
 
 	for (auto &sock : sync_sockets_) {
 		asio::async_write(*sock, bufs,
-			[this, sock, &writes_outstanding](
+			[this, &sock, &any_session_broken](
 				const asio::error_code &ec, size_t bytes_transferred) {
-				writes_outstanding--;
 				switch (ec.value()) {
 				case 0: break; // success
 				case asio::error::broken_pipe:
 				case asio::error::connection_reset:
 					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
-					{
+					any_session_broken = true;
+					asio::post(*sync_transfer_io_ctx_, [sock]() {
 						asio::error_code close_ec;
 						sock->close(close_ec);
-					}
+					});
+					break;
+				case asio::error::operation_aborted:
+					LOG_F(INFO, "Socket wasn't fast enough");
 					break;
 				default:
-					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+					LOG_F(ERROR, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
 				}
 			});
-		writes_outstanding++;
 	}
 	try {
-		assert(sync_transfer_io_ctx_);
+		// prepare the io context for new work
 		sync_transfer_io_ctx_->restart();
-		while (writes_outstanding) sync_transfer_io_ctx_->run_one();
+		sync_transfer_io_ctx_->run();
+
 		if (any_session_broken) {
 			// remove sessions whose socket was closed
 			auto new_end_it = std::remove_if(sync_sockets_.begin(), sync_sockets_.end(),
@@ -582,10 +579,19 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 
 		if (serv->transfer_is_sync_) {
 			LOG_F(INFO, "Using synchronous blocking transfers for new client session.");
-			asio::post(*serv->sync_transfer_io_ctx_,
-				[serv, sock_p = std::make_shared<tcp_socket>(std::move(sock_))]() {
-					serv->sync_sockets_.emplace_back(std::move(sock_p));
-				});
+			auto &sock_io_ctx = *serv->sync_transfer_io_ctx_;
+
+			// move the socket into the sync_transfer_io_ctx by releasing it from this
+			// io ctx and re-creating it with sync_transfer_io_ctx.
+			// See https://stackoverflow.com/q/52671836/73299
+			// Then schedule the sync_transfer_io_ctx to add it to the list of sync sockets
+			auto protocol = sock_.local_endpoint().protocol();
+			auto new_sock = std::make_shared<tcp_socket>(sock_io_ctx, protocol, sock_.release());
+
+			asio::post(sock_io_ctx, [serv, sock_p = std::move(new_sock)]() {
+				LOG_F(1, "Moved socket to new io_ctx");
+				serv->sync_sockets_.emplace_back(std::move(sock_p));
+			});
 			serv->unregister_inflight_session(this);
 			return;
 		}
