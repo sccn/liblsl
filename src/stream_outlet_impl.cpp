@@ -6,6 +6,7 @@
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <algorithm>
+#include <asio/post.hpp>
 #include <chrono>
 #include <memory>
 
@@ -57,10 +58,8 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	for (auto &responder : responders_) responder->begin_serving();
 
 	// and start the IO threads to handle them
-	const std::string name{"IO_" + this->info().name().substr(0, 11)};
 	for (const auto &io : {io_ctx_data_, io_ctx_service_})
-		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
-			loguru::set_thread_name(name.c_str());
+		io_threads_.emplace_back(std::make_shared<std::thread>([io]() {
 			while (true) {
 				try {
 					io->run();
@@ -70,6 +69,10 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 				}
 			}
 		}));
+
+	const std::string name{this->info().name().substr(0, 11)};
+	asio::post(*io_ctx_data_, [name]() { loguru::set_thread_name(("IO_" + name).c_str()); });
+	asio::post(*io_ctx_service_, [name]() { loguru::set_thread_name(("SVC_" + name).c_str()); });
 }
 
 void stream_outlet_impl::instantiate_stack(udp udp_protocol) {
