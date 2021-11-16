@@ -4,6 +4,7 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <asio/buffer.hpp>
 #include <cstdint>
 #include <loguru.hpp>
 #include <memory>
@@ -319,6 +320,8 @@ private:
 	stream_info_impl_p info_;
 	/// the single-producer, multiple-receiver send buffer
 	send_buffer_p send_buffer_;
+	/// Flag to indicate that push_* operations should be blocking synchronous. false by default.
+	bool do_sync_;
 	/// the IO service objects
 	io_context_p io_ctx_data_, io_ctx_service_;
 
@@ -331,6 +334,8 @@ private:
 	std::vector<udp_server_p> responders_;
 	/// threads that handle the I/O operations (two per stack: one for UDP and one for TCP)
 	std::vector<thread_p> io_threads_;
+	/// buffers used in synchronous call to gather-write data directly to the socket.
+	std::vector<asio::const_buffer> sync_buffs_;
 };
 
 } // namespace lsl

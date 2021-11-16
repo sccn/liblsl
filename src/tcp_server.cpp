@@ -143,9 +143,9 @@ private:
 };
 
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6)
+	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
-	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)), transfer_is_sync_(do_sync) {
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -232,7 +232,47 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 }
 
 
-// === graceful cancellation of in-flight sockets ===
+// === synchronous transfer
+
+void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
+	int writes_outstanding = 0;
+	bool any_session_broken = false;
+
+	for (auto &sock : sync_sockets_) {
+		asio::async_write(*sock, bufs,
+			[this, sock, &writes_outstanding](
+				const asio::error_code &ec, size_t bytes_transferred) {
+				writes_outstanding--;
+				switch (ec.value()) {
+				case 0: break; // success
+				case asio::error::broken_pipe:
+				case asio::error::connection_reset:
+					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
+					{
+						asio::error_code close_ec;
+						sock->close(close_ec);
+					}
+					break;
+				default:
+					LOG_F(WARNING, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+				}
+			});
+		writes_outstanding++;
+	}
+	try {
+		assert(sync_transfer_io_ctx_);
+		sync_transfer_io_ctx_->restart();
+		while (writes_outstanding) sync_transfer_io_ctx_->run_one();
+		if (any_session_broken) {
+			// remove sessions whose socket was closed
+			auto new_end_it = std::remove_if(sync_sockets_.begin(), sync_sockets_.end(),
+				[](const tcp_socket_p &sock) {
+					return !sock->is_open();
+				});
+			sync_sockets_.erase(new_end_it, sync_sockets_.end());
+		}
+	} catch (std::exception &e) { LOG_F(ERROR, "Error during write_all_blocking: %s", e.what()); }
+}
 
 void tcp_server::register_inflight_session(const std::shared_ptr<client_session> &session) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
@@ -534,6 +574,16 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
+
+		if (serv->transfer_is_sync_) {
+			LOG_F(INFO, "Using synchronous blocking transfers for new client session.");
+			asio::post(*serv->sync_transfer_io_ctx_,
+				[serv, sock_p = std::make_shared<tcp_socket>(std::move(sock_))]() {
+					serv->sync_sockets_.emplace_back(std::move(sock_p));
+				});
+			serv->unregister_inflight_session(this);
+			return;
+		}
 
 		// determine transfer parameters
 		auto queue = serv->send_buffer_->new_consumer(max_buffered_);

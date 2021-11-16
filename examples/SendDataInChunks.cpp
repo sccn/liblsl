@@ -92,15 +92,24 @@ struct fake_device {
 
 int main(int argc, char **argv) {
 	std::cout << "SendDataInChunks" << std::endl;
-	std::cout << "SendDataInChunks StreamName StreamType samplerate n_channels max_buffered chunk_rate" << std::endl;
+	std::cout << "SendDataInChunks StreamName StreamType samplerate n_channels max_buffered "
+				 "chunk_rate nodata use_sync"
+			  << std::endl;
 	std::cout << "- max_buffered -- duration in sec (or x100 samples if samplerate is 0) to buffer for each outlet" << std::endl;
 	std::cout << "- chunk_rate -- number of chunks pushed per second. For this example, make it a common factor of samplingrate and 1000." << std::endl;
-	
+	std::cout << "- nodata -- Set non-zero to cause the fake device to not copy pattern data into "
+				 "the buffer."
+			  << std::endl;
+	std::cout << "- use_sync -- Set to non-zero to use blocking send." << std::endl;
+
 	std::string name{argc > 1 ? argv[1] : "MyAudioStream"}, type{argc > 2 ? argv[2] : "Audio"};
 	int samplingrate = argc > 3 ? std::stol(argv[3]) : 44100;  // Here we specify srate, but typically this would come from the device.
 	int n_channels = argc > 4 ? std::stol(argv[4]) : 2;        // Here we specify n_chans, but typically this would come from theh device.
 	double max_buffered = argc > 5 ? std::stod(argv[5]) : 360.;
 	int32_t chunk_rate = argc > 6 ? std::stol(argv[6]) : 10;  // Chunks per second.
+	bool nodata = argc > 7;
+	bool do_sync = argc > 8 ? (bool)std::stol(argv[8]) : true;
+
 	int32_t chunk_samples = samplingrate > 0 ? std::max((samplingrate / chunk_rate), 1) : 100;  // Samples per chunk.
 	int32_t chunk_duration = 1000 / chunk_rate;  // Milliseconds per chunk
 
@@ -118,7 +127,9 @@ int main(int argc, char **argv) {
 			chn.append_child_value("type", type);
 		}
 		int32_t buf_samples = (int32_t)(max_buffered * samplingrate);
-		lsl::stream_outlet outlet(info, chunk_samples, buf_samples);
+		auto flags = static_cast<lsl_transport_options_t>(
+			(do_sync ? transp_sync_blocking : transp_default) | transp_bufsize_samples);
+		lsl::stream_outlet outlet(info, chunk_samples, buf_samples, flags);
 		info = outlet.info(); // Refresh info with whatever the outlet captured.
 		std::cout << "Stream UID: " << info.uid() << std::endl;
 
@@ -128,6 +139,7 @@ int main(int argc, char **argv) {
 		// Prepare buffer to get data from 'device'.
 		//  The buffer should be larger than you think you need. Here we make it 4x as large.
 		std::vector<int16_t> chunk_buffer(4 * chunk_samples * n_channels);
+		std::fill(chunk_buffer.begin(), chunk_buffer.end(), 0);
 
 		std::cout << "Now sending data..." << std::endl;
 
@@ -141,7 +153,7 @@ int main(int argc, char **argv) {
 			std::this_thread::sleep_until(next_chunk_time);
 
 			// Get data from device
-			std::size_t returned_samples = my_device.get_data(chunk_buffer);
+			std::size_t returned_samples = my_device.get_data(chunk_buffer, nodata);
 
 			// send it to the outlet. push_chunk_multiplexed is one of the more complicated approaches.
 			//  other push_chunk methods are easier but slightly slower.
