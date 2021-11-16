@@ -28,6 +28,7 @@ option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
+option(LSL_TOOLS "Build some experimental tools for in-depth tests" OFF)
 
 mark_as_advanced(LSL_SLIMARCHIVE LSL_FORCE_FANCY_LIBNAME)
 
@@ -338,6 +339,13 @@ include(cmake/LSLCMake.cmake)
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 installLSLApp(lslver)
+
+if(LSL_TOOLS)
+	add_executable(blackhole testing/blackhole.cpp)
+	target_link_libraries(blackhole PRIVATE Threads::Threads)
+	target_include_directories(blackhole PRIVATE "thirdparty/asio/")
+	installLSLApp(blackhole)
+endif()
 
 set(LSL_INSTALL_ROOT ${CMAKE_CURRENT_BINARY_DIR})
 if(LSL_UNITTESTS)
