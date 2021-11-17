@@ -256,7 +256,6 @@ public:
 			throw std::runtime_error("The number of buffer elements to send is not a multiple of "
 									 "the stream's channel count.");
 		if (num_samples > 0) {
-			if (timestamp == 0.0) timestamp = lsl_clock();
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
 			push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
@@ -311,14 +310,14 @@ private:
 
 	/// Append the appropriate timestamp tag and optionally timestamp onto sync_buffs_ for a single
 	/// timestamp.
-	void push_timestamp_sync(const double &timestamp);
+	void push_timestamp_sync(double timestamp);
 
 	/// push sync_buffs_ through each tcp server.
 	void pushthrough_sync();
 
 	/// Append a single timestamp and single buffer to sync_buffs and optionally pushthrough the
 	/// server.
-	void enqueue_sync(asio::const_buffer buff, const double &timestamp, bool pushthrough);
+	void enqueue_sync(asio::const_buffer buff, double timestamp, bool pushthrough);
 
 	/**
 	 * Append a single timestamp and multiple within-sample buffers to sync_buffs_.
@@ -362,6 +361,8 @@ private:
 	std::vector<thread_p> io_threads_;
 	/// buffers used in synchronous call to gather-write data directly to the socket.
 	std::vector<asio::const_buffer> sync_buffs_;
+	/// timestamp buffer for sync transfers
+	std::vector<std::pair<uint64_t, double>> sync_timestamps_;
 };
 
 } // namespace lsl

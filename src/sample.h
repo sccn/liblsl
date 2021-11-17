@@ -54,6 +54,8 @@ public:
 	/// Reclaim a sample that's no longer used.
 	void reclaim_sample(sample *s);
 
+	std::size_t datasize() const { return format_sizes[fmt_] * static_cast<std::size_t>(num_chans_); }
+
 private:
 	/// Pop a sample from the freelist (multi-producer/single-consumer queue by Dmitry Vjukov)
 	sample *pop_freelist();

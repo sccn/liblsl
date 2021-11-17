@@ -168,12 +168,16 @@ bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
 
-void stream_outlet_impl::push_timestamp_sync(const double &timestamp) {
+void stream_outlet_impl::push_timestamp_sync(double timestamp) {
+	static_assert(TAG_TRANSMITTED_TIMESTAMP == 2, "Unexpected TAG_TRANSMITTED_TIMESTAMP");
+	const uint64_t ENDIAN_SAFE_TAG_TRANSMITTED = (2LL << 28) | 2LL;
 	if (timestamp == DEDUCED_TIMESTAMP) {
-		sync_buffs_.emplace_back(asio::buffer(&TAG_DEDUCED_TIMESTAMP, 1));
+		sync_buffs_.emplace_back(&TAG_DEDUCED_TIMESTAMP, 1);
 	} else {
-		sync_buffs_.emplace_back(asio::buffer(&TAG_TRANSMITTED_TIMESTAMP, 1));
-		sync_buffs_.emplace_back(asio::buffer(&timestamp, sizeof(timestamp)));
+		sync_timestamps_.emplace_back(ENDIAN_SAFE_TAG_TRANSMITTED, timestamp);
+		// add a pointer to the memory region containing |TAG_TRANSMITTED_TIMESTAMP|timestamp
+		// one byte for the tag, 8 for the timestamp
+		sync_buffs_.emplace_back(reinterpret_cast<const char*>(&sync_timestamps_.back()) + 7, 9);
 	}
 }
 
@@ -181,10 +185,11 @@ void stream_outlet_impl::pushthrough_sync() {
 	// LOG_F(INFO, "Pushing %u buffers.", sync_buffs_.size());
 	tcp_server_->write_all_blocking(sync_buffs_);
 	sync_buffs_.clear();
+	sync_timestamps_.clear();
 }
 
 void stream_outlet_impl::enqueue_sync(
-	asio::const_buffer buff, const double &timestamp, bool pushthrough) {
+	asio::const_buffer buff, double timestamp, bool pushthrough) {
 	push_timestamp_sync(timestamp);
 	sync_buffs_.push_back(buff);
 	if (pushthrough) pushthrough_sync();
@@ -192,14 +197,14 @@ void stream_outlet_impl::enqueue_sync(
 
 template <class T>
 void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrough) {
-	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
-	sample_p smp(
-		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
+	if (timestamp == 0.0 || lsl::api_config::get_instance()->force_default_timestamps()) timestamp = lsl_local_clock();
 	if (!do_sync_) {
+		sample_p smp(
+			sample_factory_->new_sample(timestamp, pushthrough));
 		smp->assign_typed(data);
 		send_buffer_->push_sample(smp);
 	} else {
-		enqueue_sync(asio::buffer(data, smp->datasize()), smp->timestamp, smp->pushthrough);
+		enqueue_sync(asio::buffer(data, sample_factory_->datasize()), timestamp, pushthrough);
 	}
 }
 
