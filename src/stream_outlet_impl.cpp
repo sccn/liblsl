@@ -29,6 +29,10 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	if ((info.channel_format() == cft_string) && do_sync_)
 		throw std::invalid_argument("Synchronous push not supported for string-formatted streams.");
 
+	// reserver space for sync timestamps so `push_back` doesn't caused reallocations
+	// to invalidate pointers to elements
+	if(do_sync_) sync_timestamps_.reserve(chunk_size_);
+
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
 
