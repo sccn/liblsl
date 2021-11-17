@@ -53,6 +53,8 @@ public:
 	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
 		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
 
+	~tcp_server() noexcept;
+
 	/**
 	 * Begin serving TCP connections.
 	 *
@@ -73,7 +75,7 @@ public:
 	 * Write directly to each socket. This should only be used when server initialized with
 	 * do_sync = true.
 	 */
-	void write_all_blocking(std::vector<asio::const_buffer> bufs);
+	void write_all_blocking(const std::vector<asio::const_buffer>& bufs);
 
 private:
 	friend class client_session;
@@ -104,14 +106,8 @@ private:
 	tcp_acceptor_p acceptor_v4_, acceptor_v6_; // our server socket
 
 
-	// sync mode fields
-
-	// Flag to indicate that new client_sessions should use synchronous blocking data transfer.
-	bool transfer_is_sync_;
-	// sockets that should receive data in sync mode
-	std::vector<tcp_socket_p> sync_sockets_;
-	// io context for sync mode, app is responsible for running it
-	std::unique_ptr<asio::io_context> sync_transfer_io_ctx_;
+	// optional pointer to a handler class for synchronous transfers
+	std::unique_ptr<class sync_transfer_handler> sync_handler;
 
 	// registry of in-flight asessions (for cancellation)
 	std::map<void *, std::weak_ptr<client_session>> inflight_;

@@ -144,11 +144,31 @@ private:
 	std::condition_variable completion_cond_;
 };
 
+class sync_transfer_handler {
+	bool transfer_is_sync_;
+	// sockets that should receive data in sync mode
+	std::vector<tcp_socket_p> sync_sockets_;
+	// io context for sync mode, app is responsible for running it
+	asio::io_context io_ctx_;
+public:
+	sync_transfer_handler(): io_ctx_(1) {
+
+	}
+
+	/// schedules a native socket handle to be added the next time a push operation is done
+	void add_socket(const tcp_socket::native_handle_type handle, tcp_socket::protocol_type protocol) {
+		asio::post(io_ctx_, [=](){
+			sync_sockets_.push_back(std::make_unique<tcp_socket>(io_ctx_, protocol, handle));
+		});
+	}
+	void write_all_blocking(const std::vector<asio::const_buffer> &bufs);
+};
+
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
 	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
-	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)), transfer_is_sync_(do_sync) {
-	if (transfer_is_sync_) sync_transfer_io_ctx_ = std::make_unique<asio::io_context>(1);
+	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	if (do_sync) sync_handler = std::make_unique<sync_transfer_handler>();
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -179,6 +199,11 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	}
 	if (!acceptor_v4_ && !acceptor_v6_)
 		throw std::runtime_error("Failed to instantiate socket acceptors for the TCP server");
+}
+
+tcp_server::~tcp_server() noexcept
+{
+	// defined here so the compiler can generate the destructor for the sync_handler
 }
 
 
@@ -234,7 +259,12 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 
 // === synchronous transfer
 
-void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
+void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs)
+{
+	sync_handler->write_all_blocking(bufs);
+}
+
+void sync_transfer_handler::write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
 	bool any_session_broken = false;
 
 	for (auto &sock : sync_sockets_) {
@@ -247,7 +277,7 @@ void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
 				case asio::error::connection_reset:
 					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
 					any_session_broken = true;
-					asio::post(*sync_transfer_io_ctx_, [sock]() {
+					asio::post(io_ctx_, [sock]() {
 						asio::error_code close_ec;
 						sock->close(close_ec);
 					});
@@ -262,8 +292,8 @@ void tcp_server::write_all_blocking(std::vector<asio::const_buffer> bufs) {
 	}
 	try {
 		// prepare the io context for new work
-		sync_transfer_io_ctx_->restart();
-		sync_transfer_io_ctx_->run();
+		io_ctx_.restart();
+		io_ctx_.run();
 
 		if (any_session_broken) {
 			// remove sessions whose socket was closed
@@ -577,21 +607,14 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
 
-		if (serv->transfer_is_sync_) {
+		if (serv->sync_handler) {
 			LOG_F(INFO, "Using synchronous blocking transfers for new client session.");
-			auto &sock_io_ctx = *serv->sync_transfer_io_ctx_;
-
+			auto protocol = sock_.local_endpoint().protocol();
 			// move the socket into the sync_transfer_io_ctx by releasing it from this
 			// io ctx and re-creating it with sync_transfer_io_ctx.
 			// See https://stackoverflow.com/q/52671836/73299
 			// Then schedule the sync_transfer_io_ctx to add it to the list of sync sockets
-			auto protocol = sock_.local_endpoint().protocol();
-			auto new_sock = std::make_shared<tcp_socket>(sock_io_ctx, protocol, sock_.release());
-
-			asio::post(sock_io_ctx, [serv, sock_p = std::move(new_sock)]() {
-				LOG_F(1, "Moved socket to new io_ctx");
-				serv->sync_sockets_.emplace_back(std::move(sock_p));
-			});
+			serv->sync_handler->add_socket(sock_.release(), protocol);
 			serv->unregister_inflight_session(this);
 			return;
 		}
