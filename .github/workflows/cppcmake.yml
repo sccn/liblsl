@@ -60,7 +60,8 @@ jobs:
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
-                ${{ matrix.config.cmake_extra }} 
+                ${{ matrix.config.cmake_extra }} \
+                ${{ github.event.inputs.cmakeextra }}
             echo ${PWD}
     - name: make
       run: cmake --build build --target install --config Release -j
