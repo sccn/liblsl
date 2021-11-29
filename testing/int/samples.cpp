@@ -16,7 +16,7 @@ TEST_CASE("consumer_queue", "[queue][basic]") {
 	CHECK(queue.read_available() == size);
 
 	// Are the right samples dropped when going over capacity?
-	CHECK(static_cast<int>(queue.pop_sample()->timestamp) == 1);
+	CHECK(static_cast<int>(queue.pop_sample()->timestamp()) == 1);
 
 	// Does flush() return the correct count?
 	CHECK(queue.flush() == size - 1);

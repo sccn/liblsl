@@ -85,8 +85,6 @@ private:
 class sample {
 public:
 	friend class factory;
-	/// time-stamp of the sample
-	double timestamp{0.0};
 	/// whether the sample shall be buffered or pushed through
 	bool pushthrough{false};
 
@@ -101,6 +99,8 @@ private:
 	std::atomic<sample *> next_;
 	/// the factory used to reclaim this sample, if any
 	factory *factory_;
+	/// time-stamp of the sample
+	double timestamp_{0.0};
 	/// the data payload begins here
 	alignas(8) int32_t data_{0};
 
@@ -109,6 +109,8 @@ public:
 
 	/// Destructor for a sample.
 	~sample() noexcept;
+
+	double &timestamp() { return timestamp_; }
 
 	/// Delete a sample.
 	void operator delete(void *x) noexcept;

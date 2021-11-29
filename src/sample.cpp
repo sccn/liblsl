@@ -93,7 +93,7 @@ lsl::sample::~sample() noexcept {
 }
 
 bool sample::operator==(const sample &rhs) const noexcept {
-	if ((timestamp != rhs.timestamp) || (format_ != rhs.format_) ||
+	if ((timestamp_ != rhs.timestamp_) || (format_ != rhs.format_) ||
 		(num_channels_ != rhs.num_channels_))
 		return false;
 	if (format_ != cft_string)
@@ -189,11 +189,11 @@ template <typename T> void save_value(std::streambuf &sb, T v, bool reverse_byte
 void sample::save_streambuf(
 	std::streambuf &sb, int /*protocol_version*/, bool reverse_byte_order, void *scratchpad) const {
 	// write sample header
-	if (timestamp == DEDUCED_TIMESTAMP) {
+	if (timestamp_ == DEDUCED_TIMESTAMP) {
 		save_byte(sb, TAG_DEDUCED_TIMESTAMP);
 	} else {
 		save_byte(sb, TAG_TRANSMITTED_TIMESTAMP);
-		save_value(sb, timestamp, reverse_byte_order);
+		save_value(sb, timestamp_, reverse_byte_order);
 	}
 	// write channel data
 	if (format_ == cft_string) {
@@ -231,10 +231,10 @@ void sample::load_streambuf(
 	// read sample header
 	if (load_byte(sb) == TAG_DEDUCED_TIMESTAMP)
 		// deduce the timestamp
-		timestamp = DEDUCED_TIMESTAMP;
+		timestamp_ = DEDUCED_TIMESTAMP;
 	else
 		// read the time stamp
-		timestamp = load_value<double>(sb, reverse_byte_order);
+		timestamp_ = load_value<double>(sb, reverse_byte_order);
 
 	// read channel data
 	if (format_ == cft_string) {
@@ -329,10 +329,10 @@ template <class Archive> void sample::serialize_channels(Archive &ar, const uint
 
 void lsl::sample::serialize(eos::portable_oarchive &ar, const uint32_t archive_version) const {
 	// write sample header
-	if (timestamp == DEDUCED_TIMESTAMP) {
+	if (timestamp_ == DEDUCED_TIMESTAMP) {
 		ar &TAG_DEDUCED_TIMESTAMP;
 	} else {
-		ar &TAG_TRANSMITTED_TIMESTAMP &timestamp;
+		ar &TAG_TRANSMITTED_TIMESTAMP &timestamp_;
 	}
 	// write channel data
 	const_cast<sample *>(this)->serialize_channels(ar, archive_version);
@@ -344,10 +344,10 @@ void lsl::sample::serialize(eos::portable_iarchive &ar, const uint32_t archive_v
 	ar &tag;
 	if (tag == TAG_DEDUCED_TIMESTAMP) {
 		// deduce the timestamp
-		timestamp = DEDUCED_TIMESTAMP;
+		timestamp_ = DEDUCED_TIMESTAMP;
 	} else {
 		// read the time stamp
-		ar &timestamp;
+		ar &timestamp_;
 	}
 	// read channel data
 	serialize_channels(ar, archive_version);
@@ -364,7 +364,7 @@ template <typename T> void test_pattern(T *data, uint32_t num_channels, int offs
 
 sample &sample::assign_test_pattern(int offset) {
 	pushthrough = true;
-	timestamp = 123456.789;
+	timestamp_ = 123456.789;
 
 	switch (format_) {
 	case cft_float32:
@@ -436,7 +436,7 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	sample *result = pop_freelist();
 	if (!result)
 		result = new (new char[sample_size_]) sample(fmt_, num_chans_, this);
-	result->timestamp = timestamp;
+	result->timestamp_ = timestamp;
 	result->pushthrough = pushthrough;
 	return sample_p(result);
 }
