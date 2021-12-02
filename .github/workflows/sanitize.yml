@@ -1,0 +1,64 @@
+name: Clang Sanitizer
+
+on:
+  workflow_dispatch:
+    inputs:
+      cmakeextra:
+        description: "Extra CMake options"
+        required: false
+        default: ""
+      sanitizer:
+        description: 'Sanitizer to run'
+        required: true
+        default: 'address'
+        options: ['address', 'thread', 'memory', 'undefined']
+        type: choice
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: "${{ github.event.inputs.sanitizer }}"
+    runs-on: 'ubuntu-latest'
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Configure CMake
+        run: |
+          wget https://apt.llvm.org/llvm-snapshot.gpg.key
+          echo "deb [signed-by=$PWD/llvm-snapshot.gpg.key] http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          sudo apt update
+          sudo apt install -y libpugixml-dev clang-13
+          # linking a C++ library to a C program fails with ubsan enabled; disable lslver for this run
+          sed -i -e'/lslver/d' CMakeLists.txt
+          cmake --version
+          cmake -S . -B build \
+               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+               -DCMAKE_C_COMPILER=clang-13 \
+               -DCMAKE_{CXX_COMPILER,LINKER}=clang++-13 \
+               -DCMAKE_{C,CXX,EXE_LINKER,SHARED_LINKER}_FLAGS="-fsanitize=${{ github.event.inputs.sanitizer }}" \
+               -DLSL_COMFY_DEFAULTS=ON \
+               -DLSL_UNITTESTS=ON \
+               -DLSL_BENCHMARKS=ON \
+               -DLSL_BUILD_EXAMPLES=OFF \
+               -DLSL_BUNDLED_PUGIXML=OFF \
+               -DLSL_SLIMARCHIVE=ON \
+               -DLSL_OPTIMIZATIONS=ON \
+               -Dlslgitrevision=${{ github.sha }} \
+               -Dlslgitbranch=${{ github.ref }} \
+               ${{ github.event.inputs.cmakeextra }}
+           echo ${PWD}
+
+      - name: make
+        run: cmake --build build --config RelWithDebInfo -j
+
+      - name: unit tests (internal functions)
+        run: catchsegv build/testing/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+        timeout-minutes: 10
+
+      - name: unit tests (exported functions)
+        run: catchsegv build/testing/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+        timeout-minutes: 10
+        if: ${{ success() || failure() }}
