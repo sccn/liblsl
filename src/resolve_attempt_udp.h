@@ -30,8 +30,8 @@ typedef std::map<std::string, std::pair<stream_info_impl, double>> result_contai
  * packet receives. The operation will wait for return packets until either a particular timeout has
  * been reached or until it is cancelled via the cancel() method.
  */
-class resolve_attempt_udp : public cancellable_obj,
-							public std::enable_shared_from_this<resolve_attempt_udp> {
+class resolve_attempt_udp final : public cancellable_obj,
+								  public std::enable_shared_from_this<resolve_attempt_udp> {
 	using endpoint_list = std::vector<udp::endpoint>;
 
 public:
@@ -59,7 +59,7 @@ public:
 		resolver_impl &resolver, double cancel_after = 5.0);
 
 	/// Destructor
-	~resolve_attempt_udp();
+	~resolve_attempt_udp() final;
 
 	/// Start the attempt asynchronously.
 	void begin();

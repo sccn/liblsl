@@ -438,7 +438,7 @@ sample_p factory::new_sample(double timestamp, bool pushthrough) {
 		result = new (new char[sample_size_]) sample(fmt_, num_chans_, this);
 	result->timestamp_ = timestamp;
 	result->pushthrough = pushthrough;
-	return sample_p(result);
+	return {result};
 }
 
 sample *factory::pop_freelist() {

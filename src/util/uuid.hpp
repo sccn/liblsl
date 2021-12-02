@@ -46,7 +46,7 @@ struct UUID {
 		std::random_device rng;
 		using rand_t = std::random_device::result_type;
 		constexpr int rand_elems = sizeof(UUID::data) / sizeof(rand_t);
-		rand_t *data_view = reinterpret_cast<rand_t*>(uuid.data);
+		auto *data_view = reinterpret_cast<rand_t *>(uuid.data);
 		for (int i = 0; i < rand_elems; ++i) data_view[i] = rng();
 
 		uuid.set_version(4);

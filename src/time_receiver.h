@@ -20,7 +20,7 @@ class inlet_connection;
 class api_config;
 
 /// list of time estimates with error bounds
-typedef std::vector<std::pair<double, double>> estimate_list;
+using estimate_list = std::vector<std::pair<double, double>>;
 
 /**
  * Internal class of an inlet that's responsible for retrieving time-correction data of the inlet.
@@ -111,7 +111,7 @@ private:
 	/// an IO service for async time operations
 	asio::io_context time_io_;
 	/// a buffer to hold inbound packet contents
-	char recv_buffer_[16384]{0};
+	char recv_buffer_[1024]{0};
 	/// the socket through which the time thread communicates
 	udp_socket time_sock_;
 	/// schedule the next time estimate

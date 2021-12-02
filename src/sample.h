@@ -153,13 +153,13 @@ public:
 	static void convert_endian(void *data, uint32_t n, uint32_t width);
 
 	/// Serialize a sample into a portable archive (protocol 1.00).
-	void serialize(eos::portable_oarchive &ar, const uint32_t archive_version) const;
+	void serialize(eos::portable_oarchive &ar, uint32_t archive_version) const;
 
 	/// Deserialize a sample from a portable archive (protocol 1.00).
-	void serialize(eos::portable_iarchive &ar, const uint32_t archive_version);
+	void serialize(eos::portable_iarchive &ar, uint32_t archive_version);
 
 	/// Serialize (read/write) the channel data.
-	template <class Archive> void serialize_channels(Archive &ar, const uint32_t archive_version);
+	template <class Archive> void serialize_channels(Archive &ar, uint32_t archive_version);
 
 	/// Assign a test pattern to the sample (for protocol validation)
 	sample &assign_test_pattern(int offset = 1);

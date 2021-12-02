@@ -10,13 +10,14 @@
 #include <exception>
 #include <loguru.hpp>
 #include <sstream>
+#include <utility>
 
 namespace ip = asio::ip;
 
 namespace lsl {
 
-udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io, udp protocol)
-	: info_(info), io_(io), socket_(std::make_shared<udp_socket_p::element_type>(io)),
+udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, udp protocol)
+	: info_(std::move(info)), io_(io), socket_(std::make_shared<udp_socket_p::element_type>(io)),
 	  time_services_enabled_(true) {
 	// open the socket for the specified protocol
 	socket_->open(protocol);
@@ -33,9 +34,9 @@ udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io, udp
 		(void *)this);
 }
 
-udp_server::udp_server(const stream_info_impl_p &info, asio::io_context &io,
-	const std::string &address, uint16_t port, int ttl, const std::string &listen_address)
-	: info_(info), io_(io), socket_(std::make_shared<udp_socket>(io)),
+udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, const std::string &address,
+	uint16_t port, int ttl, const std::string &listen_address)
+	: info_(std::move(info)), io_(io), socket_(std::make_shared<udp_socket>(io)),
 	  time_services_enabled_(false) {
 	ip::address addr = ip::make_address(address);
 	bool is_broadcast = addr == ip::address_v4::broadcast();
@@ -89,7 +90,8 @@ void udp_server::end_serving() {
 	// gracefully close the socket; this will eventually lead to the cancellation of the IO
 	// operation(s) tied to its socket
 	auto sock(socket_); // socket shared ptr to be kept alive
-	post(io_, [sock, fn = __func__]() {
+	const char *fn = __func__;
+	post(io_, [sock, fn]() {
 		try {
 			if (sock->is_open()) sock->close();
 		} catch (std::exception &e) { LOG_F(ERROR, "Error during %s: %s", fn, e.what()); }
@@ -174,7 +176,8 @@ void udp_server::handle_receive_outcome(err_t err, std::size_t len) {
 			// shortinfo request: parse content query string
 			process_shortinfo_request(request_stream);
 			return;
-		} else if (time_services_enabled_ && method == "LSL:timedata") {
+		}
+		if (time_services_enabled_ && method == "LSL:timedata") {
 			// timedata request: parse time of original transmission
 			process_timedata_request(request_stream, t1);
 			return;

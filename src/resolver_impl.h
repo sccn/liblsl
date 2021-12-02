@@ -42,7 +42,7 @@ typedef std::map<std::string, std::pair<stream_info_impl, double>> result_contai
  * by calling resolve_continuous() and the list is retrieved in parallel when desired via results().
  * In this case a new resolver instance must be created to issue a new query.
  */
-class resolver_impl : public cancellable_registry {
+class resolver_impl final : public cancellable_registry {
 public:
 	/**
 	 * Instantiate a new resolver and configure timing parameters.
@@ -79,7 +79,7 @@ public:
 		const char *value = nullptr) noexcept;
 
 	/// Destructor. Cancels any ongoing processes and waits until they finish.
-	~resolver_impl();
+	~resolver_impl() final;
 
 	resolver_impl(const resolver_impl &) = delete;
 

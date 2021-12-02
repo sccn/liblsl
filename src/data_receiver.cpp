@@ -258,7 +258,7 @@ void data_receiver::data_thread() {
 
 				if (data_protocol_version == 100) {
 					// portable binary archive (parse archive header)
-					inarch.reset(new eos::portable_iarchive(server_stream));
+					inarch = std::make_unique<eos::portable_iarchive>(server_stream);
 					// receive stream_info message from server
 					std::string infomsg;
 					*inarch >> infomsg;

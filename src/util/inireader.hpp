@@ -18,9 +18,7 @@ public:
 		auto it = values.find(key);
 		if (it == values.end())
 			return defaultval;
-		else {
-			return convert<T>(it->second);
-		}
+		return convert<T>(it->second);
 	}
 };
 

@@ -30,7 +30,7 @@ namespace eos {
 	const unsigned no_infnan = 64;
 
 	// integral type for the archive version
-		typedef lslboost::archive::library_version_type archive_version_type;
+	using archive_version_type = lslboost::archive::library_version_type;
 
 	// version of the linked lslboost archive library
 	const archive_version_type archive_version(
@@ -81,8 +81,8 @@ namespace eos {
 		}
 
 		//! override the base class function with our message
-		const char* what() const noexcept { return msg.c_str(); }
-		~portable_archive_exception() noexcept {}
+		const char *what() const noexcept override { return msg.c_str(); }
+		~portable_archive_exception() noexcept override = default;
 	};
 
 } // namespace eos

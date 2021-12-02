@@ -14,12 +14,13 @@ using namespace lsl;
 
 /// Substitute the "~" character by the full home directory (according to environment variables).
 std::string expand_tilde(const std::string &filename) {
+	// NOLINTBEGIN(concurrency-mt-unsafe)
 	if (!filename.empty() && filename[0] == '~') {
 		std::string homedir;
-		if (getenv("HOME"))
-			homedir = getenv("HOME");
-		else if (getenv("USERPROFILE"))
-			homedir = getenv("USERPROFILE");
+		if (auto *home = getenv("HOME"))
+			homedir = home;
+		else if (auto *home = getenv("USERPROFILE"))
+			homedir = home;
 		else if (getenv("HOMEDRIVE") && getenv("HOMEPATH"))
 			homedir = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
 		else {
@@ -30,6 +31,7 @@ std::string expand_tilde(const std::string &filename) {
 		return homedir + filename.substr(1);
 	}
 	return filename;
+	// NOLINTEND(concurrency-mt-unsafe)
 }
 
 /// Parse a set specifier (a string of the form {a, b, c, ...}) into a vector of strings.
@@ -50,8 +52,10 @@ bool file_is_readable(const std::string &filename) {
 api_config::api_config() {
 	// for each config file location under consideration...
 	std::vector<std::string> filenames;
-	if (getenv("LSLAPICFG")) {
-		std::string envcfg(getenv("LSLAPICFG"));
+
+	// NOLINTNEXTLINE(concurrency-mt-unsafe)
+	if (auto cfgpath = getenv("LSLAPICFG")) {
+		std::string envcfg(cfgpath);
 		if (!file_is_readable(envcfg))
 			LOG_F(ERROR, "LSLAPICFG file %s not found", envcfg.c_str());
 		else

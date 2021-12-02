@@ -27,16 +27,16 @@ namespace lsl {
 using Protocol = asio::ip::tcp;
 using Socket = asio::basic_stream_socket<Protocol, asio::io_context::executor_type>;
 /// Iostream streambuf for a socket.
-class cancellable_streambuf : public std::streambuf,
-							  private asio::io_context,
-							  private Socket,
-							  public lsl::cancellable_obj {
+class cancellable_streambuf final : public std::streambuf,
+									private asio::io_context,
+									private Socket,
+									public lsl::cancellable_obj {
 public:
 	/// Construct a cancellable_streambuf without establishing a connection.
 	cancellable_streambuf() : io_context(1), Socket(as_context()) { init_buffers(); }
 
 	/// Destructor flushes buffered data.
-	virtual ~cancellable_streambuf() override {
+	~cancellable_streambuf() override {
 		// no cancel() can fire after this call
 		unregister_from_all();
 		if (pptr() != pbase()) overflow(traits_type::eof());

@@ -241,9 +241,10 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 				data_buffer[k][tmp[k].size()] = '\0';
 			}
 			return result;
-		} else
-			return 0;
-	} LSL_STORE_EXCEPTION_IN(ec)
+		}
+		return 0;
+	}
+	LSL_STORE_EXCEPTION_IN(ec)
 	return 0;
 }
 
@@ -270,9 +271,10 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 				data_buffer[k][tmp[k].size()] = '\0';
 			}
 			return result;
-		} else
-			return 0;
-	} LSL_STORE_EXCEPTION_IN(ec)
+		}
+		return 0;
+	}
+	LSL_STORE_EXCEPTION_IN(ec)
 	return 0;
 }
 

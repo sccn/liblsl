@@ -12,6 +12,7 @@ Checks: |
         -readability-isolate-declaration,
         -readability-function-cognitive-complexity,
     bugprone-*,
-    concurrency-*
+        -bugprone-easily-swappable-parameters,
+    concurrency-*,
     portability-*
 ...

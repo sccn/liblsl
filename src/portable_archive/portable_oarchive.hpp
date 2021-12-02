@@ -17,7 +17,7 @@ template <> struct FPTraits<double> {
 	using bits = uint64_t;
 	static constexpr bits sign = (0x80000000ull) << 32, exponent = (0x7ff00000ll) << 32,
 						  significand = ((0x000fffffll) << 32) + (0xfffffffful);
-	bits get_bits(double f) {
+	static bits get_bits(double f) {
 		bits b;
 		std::memcpy(&b, &f, sizeof(bits));
 		return b;
@@ -26,7 +26,7 @@ template <> struct FPTraits<double> {
 template <> struct FPTraits<float> {
 	using bits = uint32_t;
 	static constexpr bits sign = 0x80000000u, exponent = 0x7f800000, significand = 0x007fffff;
-	bits get_bits(float f) {
+	static bits get_bits(float f) {
 		bits b;
 		std::memcpy(&b, &f, sizeof(bits));
 		return b;
@@ -45,11 +45,8 @@ namespace eos {
 	// forward declaration
 	class portable_oarchive;
 
-	typedef lslboost::archive::basic_binary_oprimitive<
-		portable_oarchive
-		, std::ostream::char_type
-		, std::ostream::traits_type
-	> portable_oprimitive;
+	using portable_oprimitive = lslboost::archive::basic_binary_oprimitive<portable_oarchive,
+		std::ostream::char_type, std::ostream::traits_type>;
 
 	/**
 	 * \brief Portable binary output archive using little endian format.

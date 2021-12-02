@@ -88,7 +88,8 @@ private:
 	void send_status_message(const std::string &msg);
 
 	/// Handler that gets called after finishing the reading of feedparameters.
-	void handle_read_feedparams(int request_protocol_version, std::string request_uid, err_t err);
+	void handle_read_feedparams(
+		int request_protocol_version, const std::string &request_uid, err_t err);
 
 	/// Handler that gets called sending the feedheader has completed.
 	void handle_send_feedheader_outcome(err_t err, std::size_t n);
@@ -370,7 +371,7 @@ void client_session::send_status_message(const std::string &msg) {
 }
 
 void client_session::handle_read_feedparams(
-	int request_protocol_version, std::string request_uid, err_t err) {
+	int request_protocol_version, const std::string &request_uid, err_t err) {
 	try {
 		if (err) return;
 		DLOG_F(2, "%p got a streamfeed request", this);

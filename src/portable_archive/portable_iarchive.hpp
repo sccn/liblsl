@@ -18,11 +18,8 @@ namespace eos {
 	// forward declaration
 	class portable_iarchive;
 
-	typedef lslboost::archive::basic_binary_iprimitive<
-		portable_iarchive
-		, std::istream::char_type
-		, std::istream::traits_type
-	> portable_iprimitive;
+	using portable_iprimitive = lslboost::archive::basic_binary_iprimitive<portable_iarchive,
+		std::istream::char_type, std::istream::traits_type>;
 
 	/**
 	 * \brief Portable binary input archive using little endian format.
@@ -49,7 +46,9 @@ namespace eos {
 
 		// workaround for gcc: use a dummy struct
 		// as additional argument type for overloading
-		template <int> struct dummy { dummy(int) {}};
+		template <int> struct dummy {
+			dummy(int /*unused*/) {}
+		};
 
 		// loads directly from stream
 		inline signed char load_signed_char()
@@ -208,7 +207,7 @@ namespace eos {
 		typename std::enable_if<std::is_floating_point<T>::value >::type
 		load(T & t, dummy<3> = 0)
 		{
-			typedef typename fp::detail::fp_traits<T>::type traits;
+			using traits = typename fp::detail::fp_traits<T>::type;
 
 			// if you end here there are three possibilities:
 			// 1. you're serializing a long double which is not portable

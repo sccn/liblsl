@@ -29,7 +29,7 @@ template <typename IteratorType> void trim(IteratorType &begin, IteratorType &en
 inline std::string trim(const std::string &input) {
 	std::string::const_iterator begin = input.begin(), end = input.end();
 	lsl::trim(begin, end);
-	return std::string(begin, end);
+	return {begin, end};
 }
 
 /// split a separated string like "this,is a,list" into its parts

@@ -21,8 +21,8 @@ class stream_outlet_impl;
 namespace pugi {
 struct xml_node_struct;
 }
-typedef lsl::resolver_impl *lsl_continuous_resolver;
-typedef lsl::stream_info_impl *lsl_streaminfo;
-typedef lsl::stream_outlet_impl *lsl_outlet;
-typedef lsl::stream_inlet_impl *lsl_inlet;
-typedef pugi::xml_node_struct *lsl_xml_ptr;
+using lsl_continuous_resolver = lsl::resolver_impl *;
+using lsl_streaminfo = lsl::stream_info_impl *;
+using lsl_outlet = lsl::stream_outlet_impl *;
+using lsl_inlet = lsl::stream_inlet_impl *;
+using lsl_xml_ptr = pugi::xml_node_struct *;
