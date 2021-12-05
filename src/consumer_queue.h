@@ -19,6 +19,18 @@ constexpr int CACHELINE_BYTES = 128;
 constexpr int CACHELINE_BYTES = 64;
 #endif
 
+constexpr int _min(int a, int b) { return a > b ? b : a; }
+
+/// calculate the needed padding to separate two members E1 and E2 by at least CACHELINE_BYTES
+template <typename E1, typename E2, typename... T> constexpr std::size_t padding() {
+	return CACHELINE_BYTES -
+		   _min(sizeof(std::tuple<E1, T..., E2>) - sizeof(E1) - sizeof(E2), CACHELINE_BYTES - 1);
+}
+
+template <typename E1, typename E2, typename... T> struct Padding {
+	const char pad[padding<E1, E2, T...>()]{0};
+};
+
 /**
  * A thread-safe producer/consumer queue of unread samples.
  *
@@ -159,24 +171,35 @@ private:
 		return ++x == wrap_at_ ? 0 : x;
 	}
 
-	/// optional consumer registry
-	send_buffer_p registry_;
+	/// current read position
+	std::atomic<std::size_t> read_idx_{0};
+	/// condition for waiting with timeout
+	std::condition_variable cv_;
 	/// the sample buffer
 	item_t *buffer_;
+
+	/// padding to ensure read_idx_ and write_idx_ don't share a cacheline
+	Padding<std::size_t, std::size_t, std::condition_variable, void *> pad;
+
+	/// current write position
+	std::atomic<std::size_t> write_idx_{0};
 	/// max number of elements in the queue
 	const std::size_t size_;
 	/// threshold at which to wrap read/write indices
 	const std::size_t wrap_at_;
-	// whether we have performed a sync on the data stored by the constructor
-	alignas(CACHELINE_BYTES) std::atomic<bool> done_sync_;
-	/// current write position
-	alignas(CACHELINE_BYTES) std::atomic<std::size_t> write_idx_;
-	/// current read position
-	alignas(CACHELINE_BYTES) std::atomic<std::size_t> read_idx_;
 	/// for use with the condition variable
 	std::mutex mut_;
-	/// condition for waiting with timeout
-	std::condition_variable cv_;
+
+	/// optional consumer registry
+	send_buffer_p registry_;
+
+	/// padding to ensure write_ix_ and done_sync_ don't share a cacheline
+#if UINTPTR_MAX <= 0xFFFFFFFF
+	Padding<std::size_t, bool, std::size_t, std::size_t, std::mutex, send_buffer_p> pad2;
+#endif
+
+	/// whether we have performed a sync on the data stored by the constructor
+	std::atomic<bool> done_sync_{false};
 };
 
 } // namespace lsl

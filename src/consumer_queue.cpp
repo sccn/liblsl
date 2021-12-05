@@ -8,16 +8,14 @@
 using namespace lsl;
 
 consumer_queue::consumer_queue(std::size_t size, send_buffer_p registry)
-	: registry_(std::move(registry)), buffer_(new item_t[size]), size_(size),
+	: buffer_(new item_t[size]), size_(size),
 	  // largest integer at which we can wrap correctly
 	  wrap_at_(std::numeric_limits<std::size_t>::max() - size -
-			   std::numeric_limits<std::size_t>::max() % size) {
+			   std::numeric_limits<std::size_t>::max() % size),
+	  registry_(std::move(registry)) {
 	assert(size_ > 1);
 	for (std::size_t i = 0; i < size_; ++i)
 		buffer_[i].seq_state.store(i, std::memory_order_release);
-	write_idx_.store(0, std::memory_order_release);
-	read_idx_.store(0, std::memory_order_release);
-	done_sync_.store(false, std::memory_order_release);
 	if (registry_) registry_->register_consumer(this);
 }
 
