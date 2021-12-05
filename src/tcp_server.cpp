@@ -378,11 +378,10 @@ void client_session::handle_read_feedparams(
 		// --- protocol negotiation ---
 
 		// check request validity
-		if (request_protocol_version / 100 >
-			api_config::get_instance()->use_protocol_version() / 100) {
-			send_status_message("LSL/" +
-								std::to_string(api_config::get_instance()->use_protocol_version()) +
-								" 505 Version not supported");
+		auto cfg_proto_version = api_config::get_instance()->use_protocol_version();
+		if (request_protocol_version / 100 > cfg_proto_version / 100) {
+			send_status_message(
+				"LSL/" + std::to_string(cfg_proto_version) + " 505 Version not supported");
 			DLOG_F(WARNING, "%p Got a request for a too new protocol version", this);
 			return;
 		}
@@ -390,9 +389,7 @@ void client_session::handle_read_feedparams(
 		if (!serv) return;
 		auto &info = serv->info_;
 		if (!request_uid.empty() && request_uid != info->uid()) {
-			send_status_message("LSL/" +
-								to_string(api_config::get_instance()->use_protocol_version()) +
-								" 404 Not found");
+			send_status_message("LSL/" + to_string(cfg_proto_version) + " 404 Not found");
 			return;
 		}
 
@@ -447,8 +444,7 @@ void client_session::handle_read_feedparams(
 			lsl::Endianness use_byte_order = LSL_BYTE_ORDER;
 
 			// use least common denominator data protocol version
-			data_protocol_version_ = std::min(
-				api_config::get_instance()->use_protocol_version(), client_protocol_version);
+			data_protocol_version_ = std::min(cfg_proto_version, client_protocol_version);
 			// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is
 			// involved
 			if (info->channel_format() != cft_string && info->channel_bytes() != client_value_size)
@@ -480,8 +476,7 @@ void client_session::handle_read_feedparams(
 
 			// send the response
 			std::ostream response_stream(&feedbuf_);
-			response_stream << "LSL/" << api_config::get_instance()->use_protocol_version()
-							<< " 200 OK\r\n";
+			response_stream << "LSL/" << cfg_proto_version << " 200 OK\r\n";
 			response_stream << "UID: " << info->uid() << "\r\n";
 			response_stream << "Byte-Order: " << use_byte_order << "\r\n";
 			response_stream << "Suppress-Subnormals: " << client_suppress_subnormals << "\r\n";
