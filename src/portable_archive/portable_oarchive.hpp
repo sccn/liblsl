@@ -1,7 +1,8 @@
 #pragma once
 
-#include <ostream>
 #include "portable_archive_includes.hpp"
+#include <cstring>
+#include <ostream>
 
 #ifdef SLIMARCHIVE
 #include "slimarchive.hpp"
@@ -9,29 +10,6 @@
 #include <boost/archive/basic_binary_oprimitive.hpp>
 #include <boost/archive/basic_binary_oarchive.hpp>
 #endif
-
-#include <cstring>
-
-template <typename T> struct FPTraits {};
-template <> struct FPTraits<double> {
-	using bits = uint64_t;
-	static constexpr bits sign = (0x80000000ull) << 32, exponent = (0x7ff00000ll) << 32,
-						  significand = ((0x000fffffll) << 32) + (0xfffffffful);
-	static bits get_bits(double f) {
-		bits b;
-		std::memcpy(&b, &f, sizeof(bits));
-		return b;
-	}
-};
-template <> struct FPTraits<float> {
-	using bits = uint32_t;
-	static constexpr bits sign = 0x80000000u, exponent = 0x7f800000, significand = 0x007fffff;
-	static bits get_bits(float f) {
-		bits b;
-		std::memcpy(&b, &f, sizeof(bits));
-		return b;
-	}
-};
 
 namespace eos {
 
@@ -214,7 +192,7 @@ namespace eos {
 		save(const T & t, dummy<3> = 0)
 		{
 			using traits = typename fp::detail::fp_traits<T>::type;
-			using newtraits = FPTraits<T>;
+			using newtraits = typename lsl::detail::fp_traits<T>::type;
 			static_assert(std::is_same<typename traits::bits, typename newtraits::bits>::value,
 				"Wrong corresponding int type");
 
