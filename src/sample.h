@@ -58,6 +58,16 @@ private:
 	/// Pop a sample from the freelist (multi-producer/single-consumer queue by Dmitry Vjukov)
 	sample *pop_freelist();
 
+	/// Return the address of a pre-allocated sample, #0 is the sentinel value
+	sample *sample_by_index(std::size_t idx) const {
+		return reinterpret_cast<sample*>(storage_ + idx * sample_size_);
+	}
+
+	/// Return the address of the sentinel value
+	sample *sentinel() const {
+		return sample_by_index(0);
+	}
+
 	friend class sample;
 	/// the channel format to construct samples with
 	const lsl_channel_format_t fmt_;
@@ -69,12 +79,10 @@ private:
 	const uint32_t storage_size_;
 	/// a slab of storage for pre-allocated samples
 	char *const storage_;
-	/// a sentinel element for our freelist
-	sample *sentinel_;
 	/// head of the freelist
 	std::atomic<sample *> head_;
 	/// tail of the freelist
-	sample *tail_;
+	std::atomic<sample *> tail_;
 };
 
 /**
@@ -97,8 +105,8 @@ private:
 	std::atomic<int> refcount_;
 	/// linked list of samples, for use in a freelist
 	std::atomic<sample *> next_;
-	/// the factory used to reclaim this sample, if any
-	factory *factory_;
+	/// the factory used to reclaim this sample
+	factory *const factory_;
 	/// time-stamp of the sample
 	double timestamp_{0.0};
 	/// the data payload begins here

@@ -414,49 +414,52 @@ lsl::sample::sample(lsl_channel_format_t fmt, uint32_t num_channels, factory *fa
 
 factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_reserve)
 	: fmt_(fmt), num_chans_(num_chans),
-	  sample_size_(
-		  ensure_multiple(sizeof(sample) - sizeof(char) + format_sizes[fmt] * num_chans, 16)),
-	  storage_size_(sample_size_ * std::max(1u, num_reserve)),
-	  storage_(new char[storage_size_ + sample_size_]), // +1 sample for the sentinel
-	  sentinel_(new(reinterpret_cast<sample*>(storage_ + storage_size_)) sample(fmt, num_chans, this)),
-	  head_(sentinel_), tail_(sentinel_)
-	  {
+	  sample_size_(ensure_multiple(
+		  sizeof(sample) - sizeof(sample::data_) + format_sizes[fmt] * num_chans, 16)),
+	  storage_size_(sample_size_ * std::max(2u, num_reserve + 1)),
+	  storage_(new char[storage_size_]), head_(sentinel()), tail_(sentinel()) {
+
 	// pre-construct an array of samples in the storage area and chain into a freelist
-	sample *s = nullptr;
+	// this is functionally identical to calling `reclaim_sample()` for each sample, but alters
+	// the head_/tail_ positions only once
+	sample *s = sample_by_index(0);
 	for (char *p = storage_, *e = p + storage_size_; p < e;) {
 		s = new (reinterpret_cast<sample *>(p)) sample(fmt, num_chans, this);
-		s->next_ = (sample *)(p += sample_size_);
+		s->next_ = reinterpret_cast<sample *>(p += sample_size_);
 	}
 	s->next_ = nullptr;
 	head_.store(s);
-	sentinel_->next_ = (sample *)storage_;
 }
 
 sample_p factory::new_sample(double timestamp, bool pushthrough) {
-	sample *result = pop_freelist();
-	if (!result)
-		result = new (new char[sample_size_]) sample(fmt_, num_chans_, this);
+	sample *result;
+	// try to retrieve a free sample, adding fresh samples until it succeeds
+	while((result = pop_freelist()) == nullptr)
+		reclaim_sample(new (new char[sample_size_]) sample(fmt_, num_chans_, this));
+
 	result->timestamp_ = timestamp;
 	result->pushthrough = pushthrough;
 	return {result};
 }
 
 sample *factory::pop_freelist() {
-	sample *tail = tail_, *next = tail->next_;
-	if (tail == sentinel_) {
+	sample *tail = tail_, *next = tail->next_.load(std::memory_order_acquire);
+	if (tail == sentinel()) {
+		// no samples available
 		if (!next) return nullptr;
-		tail_ = next;
+		tail_.store(next, std::memory_order_relaxed);
 		tail = next;
-		next = next->next_;
+		next = next->next_.load(std::memory_order_acquire);
 	}
 	if (next) {
-		tail_ = next;
+		tail_.store(next, std::memory_order_relaxed);
 		return tail;
 	}
-	sample *head = head_.load();
+	sample *head = head_.load(std::memory_order_acquire);
+	//
 	if (tail != head) return nullptr;
-	reclaim_sample(sentinel_);
-	next = tail->next_;
+	reclaim_sample(sentinel());
+	next = tail->next_.load(std::memory_order_acquire);
 	if (next) {
 		tail_ = next;
 		return tail;
@@ -465,15 +468,17 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	if (sample *cur = head_)
-		for (sample *next = cur->next_; next; cur = next, next = next->next_) delete cur;
+	for (sample *cur = tail_, *next = cur->next_;; cur = next, next = next->next_) {
+		if (cur != sentinel()) delete cur;
+		if (!next) break;
+	}
 	delete[] storage_;
 }
 
 void factory::reclaim_sample(sample *s) {
-	s->next_ = nullptr;
-	sample *prev = head_.exchange(s);
-	prev->next_ = s;
+	s->next_.store(nullptr, std::memory_order_release); // TODO: might be _relaxed?
+	sample *prev = head_.exchange(s, std::memory_order_acq_rel);
+	prev->next_.store(s, std::memory_order_release);
 }
 
 // template instantiations
