@@ -25,3 +25,32 @@ std::vector<std::string> lsl::splitandtrim(
 	}
 	return parts;
 }
+
+bool lsl::split_headerline(char *buf, std::size_t bufsize, std::string &type, std::string &value) {
+	char *end = buf + bufsize, *middle_it = nullptr;
+
+	buf = trim_begin(buf, end);
+	// find the end of the header line, i.e. the end of the buffer or the start of a comment
+	for (auto it = buf; it != end; ++it) {
+		if(!*it || *it == ';') {
+			end = it;
+			break;
+		}
+		else if(*it == ':') middle_it = it;
+	}
+
+	// no separator found?
+	if (middle_it == nullptr) return false;
+
+	auto *value_begin = middle_it + 1;
+	trim(value_begin, end);
+
+	// convert to lowercase
+	for (auto it = buf; it != end; ++it)
+		if (*it >= 'A' && *it <= 'Z') *it += 'a' - 'A';
+
+	type.assign(buf, trim_end(buf, middle_it));
+	value.assign(value_begin, end);
+
+	return true;
+}

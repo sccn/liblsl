@@ -34,3 +34,26 @@ TEST_CASE("trim functions", "[string][basic]") {
 	CHECK(lsl::trim(testcase) == "Hello World\t\n  123");
 	CHECK(lsl::trim("") == "");
 }
+
+inline bool test_split_headerline(
+	std::string str, const char *expected_key, const char *expected_value) {
+	std::string key, value;
+	bool result = lsl::split_headerline(&str[0], str.size(), key, value);
+	INFO(str);
+	CHECK(key == expected_key);
+	CHECK(value == expected_value);
+	return result;
+}
+
+TEST_CASE("split_headerline", "[string][basic]") {
+	std::string basic[] = {{"a:b"}, {"	a	:	b	\r\n"}, {"a: b;not c"}};
+	for(auto &str: basic)
+		CHECK(test_split_headerline(str, "a", "b"));
+
+	// empty line
+	CHECK(!test_split_headerline("", "", ""));
+	// empty key+val
+	CHECK(test_split_headerline(":", "", ""));
+	// comment in key (?!)
+	CHECK(!test_split_headerline("wha;t:??", "", ""));
+}
