@@ -83,10 +83,11 @@ BOOST_ARCHIVE_SIGNATURE(){
 // 18- addressed undefined behavior in archive constuctors.
 //     init() called from base wrote archive header before archive
 //     was fully constructed.
+//     Boost 1.76 
 
 BOOST_SYMBOL_VISIBLE lslboost::serialization::library_version_type
 BOOST_ARCHIVE_VERSION(){
-    return lslboost::serialization::library_version_type(18);
+    return lslboost::serialization::library_version_type(19);
 }
 
 } // namespace archive

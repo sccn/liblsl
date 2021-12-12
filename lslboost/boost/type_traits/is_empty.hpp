@@ -103,7 +103,7 @@ struct is_empty_impl
                   cvt
                 , ::lslboost::is_class<T>::value
                 , ::lslboost::is_convertible< r_type,int>::value
-              >::value || BOOST_INTERNAL_IS_EMPTY(cvt));
+              >::value || BOOST_INTERNAL_IS_EMPTY(cvt)));
 };
 
 #endif // BOOST_BORLANDC
