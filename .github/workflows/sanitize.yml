@@ -25,12 +25,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      - name: Configure CMake
+      - name: Install build toolchain
         run: |
           wget https://apt.llvm.org/llvm-snapshot.gpg.key
           echo "deb [signed-by=$PWD/llvm-snapshot.gpg.key] http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt update
-          sudo apt install -y libpugixml-dev clang-13
+          sudo apt install -y libpugixml-dev clang-13 gdb
+      - name: Configure CMake
+        run: |
           # linking a C++ library to a C program fails with ubsan enabled; disable lslver for this run
           sed -i -e'/lslver/d' CMakeLists.txt
           cmake --version
@@ -54,11 +56,9 @@ jobs:
       - name: make
         run: cmake --build build --config RelWithDebInfo -j
 
-      - name: unit tests (internal functions)
-        run: catchsegv build/testing/lsl_test_internal --order rand --wait-for-keypress never --durations yes
-        timeout-minutes: 10
-
-      - name: unit tests (exported functions)
-        run: catchsegv build/testing/lsl_test_exported --order rand --wait-for-keypress never --durations yes
-        timeout-minutes: 10
-        if: ${{ success() || failure() }}
+      - name: run unit tests
+        run: |
+          # alias gdbwrap="gdb --batch -ex 'run --order rand --wait-for-keypress never --durations yes' -ex 'thread apply all bt' -return-child-result"
+          gdb --batch -ex 'run --order rand --wait-for-keypress never --durations yes' -ex 'thread apply all bt' -return-child-result build/testing/lsl_test_internal
+          gdb --batch -ex 'run --order rand --wait-for-keypress never --durations yes' -ex 'thread apply all bt' -return-child-result build/testing/lsl_test_exported
+        timeout-minutes: 15

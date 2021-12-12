@@ -4,7 +4,11 @@ on:
   push:
     branches: ['*']
     tags: ['*']
-    paths-ignore: ['docs/**', '.travis.yml']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
+      - '.github/workflows/cppcmake.yml'
   pull_request:
   release:
     types: ['created']
