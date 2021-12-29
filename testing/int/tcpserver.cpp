@@ -91,9 +91,11 @@ auto with_read_callback(const char *name, std::function<void(const std::string &
 }
 
 void check_streamfeed_100_response(const std::string &res) {
-	REQUIRE(res.substr(0, 3) == "\x7f\x01\x09");
-	auto info_len = static_cast<std::size_t>((res[5] << 8) | res[4]);
-	REQUIRE(res.size() > 6 + info_len);
+	REQUIRE(res.substr(0, 4) == "\x7f\x01\x09\2");
+	INFO(bytes_to_hexstr(res.substr(0, 10)));
+	auto info_len = *reinterpret_cast<const uint16_t*>(res.data() + 4);
+
+	REQUIRE(static_cast<int>(res.size()) > 6 + info_len);
 
 	auto info = lsl::stream_info_impl();
 	info.from_fullinfo_message(res.substr(6, info_len));
