@@ -4,6 +4,9 @@
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 #include <asio/ip/v6_only.hpp>
+#include <asio/read.hpp>
+#include <asio/use_future.hpp>
+#include <asio/write.hpp>
 #include <catch2/catch.hpp>
 #include <chrono>
 #include <condition_variable>
@@ -15,6 +18,7 @@
 // clazy:excludeall=non-pod-global-static
 
 using namespace asio;
+using namespace std::chrono_literals;
 using err_t = const asio::error_code &;
 
 static uint16_t port = 28812;
@@ -24,6 +28,20 @@ static const std::string hellostr(hello);
 static std::mutex output_mutex;
 
 asio::const_buffer hellobuf() { return asio::const_buffer(hello, sizeof(hello)); }
+
+
+/// launches a task and waits for the underlying thread to have started
+template <typename Fun> std::future<void> launch_task(Fun &&fun) {
+	std::promise<void> started;
+	auto started_fut = started.get_future();
+	std::future<void> done_fut =
+		std::async(std::launch::async, [&started, fn = std::forward<Fun>(fun)]() {
+			started.set_value();
+			fn();
+		});
+	started_fut.wait();
+	return done_fut;
+}
 
 #define MINFO(str)                                                                                 \
 	{                                                                                              \
@@ -134,6 +152,45 @@ TEST_CASE("cancel streambuf reads", "[streambuf][network][!mayfail]") {
 		sb_read);
 }
 
+TEST_CASE("streambuf split reads", "[streambuf][network]") {
+	asio::io_context io_ctx;
+	lsl::cancellable_streambuf sb_read;
+	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
+	ip::tcp::acceptor remote(io_ctx, ep, true);
+	remote.listen(1);
+	REQUIRE(sb_read.connect(ep) != nullptr);
+	ip::tcp::socket sock(remote.accept());
+	REQUIRE(sock.send(asio::buffer(hello, 3)) == 3);
+
+	REQUIRE(sb_read.sbumpc() == hello[0]);
+	auto done = launch_task([&]() {
+		char buf[sizeof(hello)] = {0};
+		auto bytes_read = sb_read.sgetn(buf, sizeof(hello) - 2);
+		REQUIRE(bytes_read != std::streambuf::traits_type::eof());
+		CHECK(bytes_read == sizeof(hello) - 2);
+		REQUIRE(std::string(buf) == hellostr.substr(1));
+	});
+	sock.send(asio::buffer(hello + 3, 8));
+	done.wait();
+
+	std::vector<char> in_(65536 * 16), out_(65536 * 16);
+	for (std::size_t i = 0; i < out_.size(); ++i) out_[i] = (i >> 8 ^ i) % 127;
+
+	done = launch_task([&sb_read, &in_](){
+		auto *dataptr = in_.data(), *endptr = dataptr + in_.size();
+		while(dataptr != endptr) {
+			std::streamsize bytes_read =
+				sb_read.sgetn(dataptr, std::min<std::streamsize>(endptr - dataptr, 54));
+			if(bytes_read == std::streambuf::traits_type::eof()) break;
+			dataptr += bytes_read;
+		}
+	});
+	for(const char*outptr = out_.data(), *endptr = outptr + out_.size(); outptr != endptr; outptr+=64)
+		sock.send(asio::buffer(outptr, 64));
+	done.wait();
+	REQUIRE(std::equal(in_.begin(), in_.end(), out_.begin()));
+}
+
 TEST_CASE("receive v4 packets on v6 socket", "[ipv6][network]") {
 	const uint16_t test_port = port++;
 	asio::io_context io_ctx;
@@ -238,3 +295,82 @@ TEST_CASE("bindzero", "[network][basic]") {
 	sock.bind(asio::ip::udp::endpoint(asio::ip::address_v4::any(), 0));
 	REQUIRE(sock.local_endpoint().port() != 0);
 }
+
+#ifdef CATCH_CONFIG_ENABLE_BENCHMARKING
+
+TEST_CASE("streambuf throughput", "[streambuf][network]") {
+	asio::io_context io_ctx;
+	asio::executor_work_guard<asio::io_context::executor_type> work(io_ctx.get_executor());
+	auto background_io = launch_task([&]() { io_ctx.run(); });
+
+	lsl::cancellable_streambuf sb_bench;
+	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
+	ip::tcp::acceptor remote(io_ctx, ep, true);
+	remote.listen();
+	ip::tcp::socket sock(io_ctx);
+
+	auto accept_fut = remote.async_accept(sock, asio::use_future);
+	REQUIRE(sb_bench.connect(ep) != nullptr);
+	REQUIRE(accept_fut.wait_for(2s) == std::future_status::ready);
+
+	char buf_small[16] = "!Hello World!", buf_medium[256]{'\xab'}, buf_large[4096]{'\xab'};
+	asio::mutable_buffer bufs[] = {
+		asio::buffer(buf_small), asio::buffer(buf_medium), asio::buffer(buf_large)};
+
+	std::vector<char> dummy_buffer;
+
+	for (const auto &buf : bufs) {
+		for (std::size_t chunksize : {1U, 16U, 256U}) {
+			BENCHMARK_ADVANCED("Send;nchunk=" + std::to_string(chunksize) +
+							   ";buf=" + std::to_string(buf.size()) +
+							   ";n=" + std::to_string(chunksize * buf.size()))
+			(Catch::Benchmark::Chronometer meter) {
+
+				const auto total_bytes = buf.size() * chunksize * meter.runs();
+				if (dummy_buffer.size() < total_bytes) dummy_buffer.resize(total_bytes);
+				auto fut = asio::async_read(
+					sock, asio::buffer(dummy_buffer.data(), total_bytes), asio::use_future);
+
+				asio::steady_timer t(io_ctx, 5s);
+				t.async_wait([&](err_t ec) { REQUIRE(ec == asio::error::operation_aborted); });
+				meter.measure([&]() {
+					for (auto chunk = 0U; chunk < chunksize; ++chunk) {
+						auto res = sb_bench.sputn(reinterpret_cast<char *>(buf.data()), buf.size());
+						REQUIRE(res != std::streambuf::traits_type::eof());
+					}
+					sb_bench.pubsync();
+				});
+				// Wait for the read operations to finish
+				fut.wait();
+				t.cancel();
+			};
+		}
+	}
+	for (const auto &buf : bufs) {
+		for (int chunksize : {1, 16, 256}) {
+			BENCHMARK_ADVANCED("Recv;nchunk=" + std::to_string(chunksize) +
+							   ";buf=" + std::to_string(buf.size()) +
+							   ";n=" + std::to_string(chunksize * buf.size()))
+			(Catch::Benchmark::Chronometer meter) {
+				const auto total_bytes = buf.size() * chunksize * meter.runs();
+
+				if (dummy_buffer.size() < total_bytes) dummy_buffer.resize(total_bytes);
+				asio::async_write(sock, asio::buffer(dummy_buffer.data(), total_bytes),
+					[](err_t err, std::size_t /* unused */) { REQUIRE(!err); });
+				std::this_thread::sleep_for(10ms);
+				asio::steady_timer t(io_ctx, 5s);
+				t.async_wait([&](err_t ec) { REQUIRE(ec == asio::error::operation_aborted); });
+				meter.measure([&]() {
+					for (int chunk = 0; chunk < chunksize; ++chunk) {
+						auto res = sb_bench.sgetn(reinterpret_cast<char *>(buf.data()), buf.size());
+						REQUIRE(res != std::streambuf::traits_type::eof());
+					}
+				});
+				t.cancel();
+			};
+		}
+	}
+	asio::post(io_ctx, [&]() { io_ctx.stop(); });
+	background_io.wait();
+}
+#endif
