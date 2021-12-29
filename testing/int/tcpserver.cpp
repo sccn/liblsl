@@ -37,10 +37,16 @@ public:
 		if (thread)
 			thread->join();
 		else
-			srv_ctx->run();
+			try {
+				srv_ctx->run();
+			} catch (std::exception &e) { INFO(e.what()); }
 	}
 	void run() {
-		thread = std::make_unique<std::thread>([this](){ this->srv_ctx->run(); });
+		thread = std::make_unique<std::thread>([this]() {
+			try {
+				this->srv_ctx->run();
+			} catch (std::exception &e) { INFO(e.what()); }
+		});
 	}
 	lsl::tcp_server* operator->() { return srv.get(); }
 
