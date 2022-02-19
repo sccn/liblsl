@@ -4,8 +4,9 @@
 #include <limits>
 #include <utility>
 
+#if defined(__GNUC__)
 #pragma GCC diagnostic ignored "-Wdouble-promotion"
-#ifdef __clang__
+#elif defined(__clang__)
 #pragma clang diagnostic ignored "-Wimplicit-int-float-conversion"
 #endif
 

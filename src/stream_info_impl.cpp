@@ -256,7 +256,7 @@ uint32_t lsl::stream_info_impl::calc_transport_buf_samples(
 	else if (nominal_srate() == LSL_IRREGULAR_RATE)
 		buf_samples = requested_len * 100;
 	else
-		buf_samples = nominal_srate() * requested_len;
+		buf_samples = static_cast<int32_t>(nominal_srate() * requested_len);
 	if (flags & transp_bufsize_thousandths) buf_samples /= 1000;
 	buf_samples = (buf_samples > 0) ? buf_samples : 1;
 	return buf_samples;
