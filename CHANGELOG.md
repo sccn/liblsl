@@ -1,3 +1,18 @@
+# Changes for liblsl 1.16
+
+* add: optional, minimal header-only replacement for Boost.Serialization (Tristan Stenner)
+* add: extensible `lsl_create_inlet_ex()` for high-precision buffer lengths (Chadwick Boulay)
+* change: replace Boost.Uuid, Boost.Random and Boost.Thread with built-in functions (Tristan Stenner)
+* change: replace Boost.Asio with upstream Asio (Tristan Stenner)
+* change: update bundled Boost to 1.78 (Tristan Stenner)
+* change: allow building against system Boost again (@chausner)
+* change: speed up resolving a fixed number of streams (Tristan Stenner)
+* change: reduce Asio operation overhead (Tristan Stenner)
+* change: IPv6 is enabled by default on macOS (Tristan Stenner)
+* change: share io contexts for IPv4+IPv6 services (Tristan Stenner)
+* **change**: send resolve requests from all local network interfaces (Tristan Stenner)
+* fix: fix a minor memory leak when closing streams (Tristan Stenner)
+
 # Changes for liblsl 1.15.2
 
 * fix: bump artifact / soname version
