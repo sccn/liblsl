@@ -18,7 +18,6 @@ void sleep_(int ms) { usleep(ms * 1000); }
 int main(int argc, char *argv[]) {
 	lsl_streaminfo info; /* out stream declaration object */
 	lsl_outlet outlet;	 /* stream outlet */
-	double endtime;		 /* used for send timing */
 	const char *mrk;	 /* marker to send next */
 
 	/* declare a new streaminfo (name: "MyEventStream", content type: "Markers", 1 channel,
