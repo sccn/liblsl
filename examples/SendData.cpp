@@ -71,7 +71,7 @@ int main(int argc, char *argv[]) {
 			// Create random data for the first 8 channels.
 			for (int c = 0; c < 8; c++) sample[c] = (float)((rand() % 1500) / 500.0 - 1.5);
 			// For the remaining channels, fill them with a sample counter (wraps at 1M).
-			std::fill(sample.begin() + 8, sample.end(), t % 1000000);
+			std::fill(sample.begin() + 8, sample.end(), (float)(t % 1000000));
 
 			// Wait until the next expected sample time.
 			next_sample_time += std::chrono::microseconds(sample_dur_us);

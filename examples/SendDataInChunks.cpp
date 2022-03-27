@@ -25,14 +25,14 @@ struct fake_device {
 	*/
 	std::size_t n_channels;
 	double srate;
-	int64_t pattern_samples;
-	int64_t head;
+	std::size_t pattern_samples;
+	std::size_t head;
 	std::vector<int16_t> pattern;
 	std::chrono::steady_clock::time_point last_time;
 
 	fake_device(const int16_t n_channels, const float srate)
 		: n_channels(n_channels), srate(srate), head(0) {
-		pattern_samples = (int64_t)(srate - 0.5) + 1;  // truncate OK.
+		pattern_samples = (std::size_t)(srate - 0.5) + 1;  // truncate OK.
 
 		// Pre-allocate entire test pattern. The data _could_ be generated on the fly
 		//  for a much smaller memory hit, but we also use this example application
@@ -47,8 +47,9 @@ struct fake_device {
 				// sin(2*pi*f*t), where f cycles from 1 Hz to Nyquist: srate / 2
 				double f = (chan_ix + 1) % (int)(srate / 2);
 				pattern.emplace_back(
-					offset_0 + chan_ix * offset_step +
-					magnitude * static_cast<int16_t>(sin(2 * M_PI * f * sample_ix / srate)));
+					static_cast<int16_t>(
+						offset_0 + chan_ix * offset_step +
+						magnitude * sin(2 * M_PI * f * sample_ix / srate)));
 			}
 		}
 		last_time = std::chrono::steady_clock::now();
@@ -70,8 +71,8 @@ struct fake_device {
 		auto now = std::chrono::steady_clock::now();
 		auto elapsed_nano =
 			std::chrono::duration_cast<std::chrono::nanoseconds>(now - last_time).count();
-		int64_t elapsed_samples = std::size_t(elapsed_nano * srate * 1e-9); // truncate OK.
-		elapsed_samples = std::min(elapsed_samples, (int64_t)(buffer.size() / n_channels));
+		std::size_t elapsed_samples = std::size_t(elapsed_nano * srate * 1e-9); // truncate OK.
+		elapsed_samples = std::min(elapsed_samples, (std::size_t)(buffer.size() / n_channels));
 		if (nodata) {
 			// The fastest but no patterns.
 			// memset(&buffer[0], 23, buffer.size() * sizeof buffer[0]);
@@ -116,7 +117,7 @@ int main(int argc, char **argv) {
 			chn.append_child_value("unit", "microvolts");
 			chn.append_child_value("type", type);
 		}
-		int32_t buf_samples = max_buffered * samplingrate;
+		int32_t buf_samples = (int32_t)(max_buffered * samplingrate);
 		lsl::stream_outlet outlet(info, chunk_samples, buf_samples);
 		info = outlet.info(); // Refresh info with whatever the outlet captured.
 		std::cout << "Stream UID: " << info.uid() << std::endl;
