@@ -26,7 +26,7 @@ struct fake_device {
 	std::size_t n_channels;
 	double srate;
 	std::size_t pattern_samples;
-	int64_t head;
+	std::size_t head;
 	std::vector<int16_t> pattern;
 	std::chrono::steady_clock::time_point last_time;
 
@@ -72,7 +72,7 @@ struct fake_device {
 		auto elapsed_nano =
 			std::chrono::duration_cast<std::chrono::nanoseconds>(now - last_time).count();
 		std::size_t elapsed_samples = std::size_t(elapsed_nano * srate * 1e-9); // truncate OK.
-		elapsed_samples = std::min(elapsed_samples, (uint64_t)(buffer.size() / n_channels));
+		elapsed_samples = std::min(elapsed_samples, (std::size_t)(buffer.size() / n_channels));
 		if (nodata) {
 			// The fastest but no patterns.
 			// memset(&buffer[0], 23, buffer.size() * sizeof buffer[0]);
