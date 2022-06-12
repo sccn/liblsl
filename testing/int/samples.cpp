@@ -68,7 +68,7 @@ TEST_CASE("sample conversion", "[basic]") {
 			CHECK(values[j] == static_cast<int64_t>(buf[j]));
 			CHECK(strbuf[j] == std::to_string(buf[j]));
 		}
-		values[0] = buf[0] << 1;
-		values[1] = -buf[0];
+		values[0] = (double)(buf[0] << 1);
+		values[1] = (double)(-buf[0]);
 	}
 }

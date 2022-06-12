@@ -35,8 +35,8 @@ jobs:
         - {name: "ubuntu-20.04", os: "ubuntu-20.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF"}
         - {name: "ubuntu-18.04", os: "ubuntu-latest",  docker: "ubuntu:18.04" }
         - {name: "ubuntu-22.04", os: "ubuntu-latest",  docker: "ubuntu:22.04" }
-        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v140,host=x86"}
-        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "windows-x64",  os: "windows-2019", cmake_extra: "-T v140,host=x86"}
+        - {name: "windows-32",   os: "windows-2019", cmake_extra: "-T v140,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest"}
     
     # runs all steps in the container configured in config.docker or as subprocesses when empty

@@ -91,14 +91,14 @@ TEST_CASE("Flush", "[datatransfer][basic]") {
 	});
 
 	double data_in;
-	double ts_in = sp.in_.pull_sample(&data_in, 1.);
+	double ts_in = sp.in_.pull_sample(&data_in, 1);
 	REQUIRE(ts_in == Approx(data_in));
 	std::this_thread::sleep_for(std::chrono::milliseconds(700));
 	auto pulled = sp.in_.flush() + 1;
 
 	for(; pulled < n; ++pulled) {
 		INFO(pulled);
-		ts_in = sp.in_.pull_sample(&data_in, 1.);
+		ts_in = sp.in_.pull_sample(&data_in, 1);
 		REQUIRE(ts_in == Approx(data_in));
 	}
 

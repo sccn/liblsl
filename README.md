@@ -20,9 +20,15 @@ The most up-to-date instructions are in the
 Precompiled packages are uploaded
 
 - to the [Release page](https://github.com/sccn/liblsl/releases)
-- the [Anaconda cloud](https://anaconda.org/conda-force/liblsl), install with `conda install -c conda-forge liblsl`
+- the [Anaconda cloud](https://anaconda.org/conda-forge/liblsl), install with `conda install -c conda-forge liblsl`
 
-To compile the library yourself from source please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
+liblsl is also available via the following package managers:
+
+- [vcpkg](https://vcpkg.io)
+- [Conan](https://conan.io/center/liblsl)
+
+To compile the library yourself from source,
+please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
 
 For single board computers running linux, you can also try
 `standalone_compilation_linux.sh`.

@@ -1,4 +1,6 @@
 /build*/
+/install/
+/package/
 /CMakeLists.txt.user
 /CMakeLists.json
 /CMakeSettings.json
