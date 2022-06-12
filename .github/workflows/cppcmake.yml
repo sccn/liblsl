@@ -34,6 +34,7 @@ jobs:
         config:
         - {name: "ubuntu-20.04", os: "ubuntu-20.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF"}
         - {name: "ubuntu-18.04", os: "ubuntu-latest",  docker: "ubuntu:18.04" }
+        - {name: "ubuntu-22.04", os: "ubuntu-latest",  docker: "ubuntu:22.04" }
         - {name: "windows-x64",  os: "windows-2019", cmake_extra: "-T v140,host=x86"}
         - {name: "windows-32",   os: "windows-2019", cmake_extra: "-T v140,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest"}
@@ -46,13 +47,15 @@ jobs:
       run: |
          apt update
          apt install -y --no-install-recommends g++ git python3-pip ninja-build file dpkg-dev lsb-release sudo curl
-         python3 -m pip install cmake
+         if [[ "$(apt search cmake | grep ^cmake/ | cut -d" " -f 2 | sort -V | tail -1 | cut -d. -f-2)" == 3.10 ]]
+         then python3 -m pip install cmake
+         else apt install -y --no-install-recommends cmake libpugixml-dev
+         fi
       if: ${{ matrix.config.docker }}
-
     - name: Configure CMake
       run: |
            if [[ "${{ matrix.config.os }}" == "ubuntu-20.04" ]]; then
-                sudo apt-get install libpugixml-dev
+                sudo apt-get install -y --no-install-recommends libpugixml-dev
            fi
            cmake --version
            cmake -S . -B build \
