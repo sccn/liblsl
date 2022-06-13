@@ -172,7 +172,7 @@ bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
 
-void stream_outlet_impl::push_timestamp_sync(double timestamp) {
+void stream_outlet_impl::push_timestamp_sync(const double& timestamp) {
 	static_assert(TAG_TRANSMITTED_TIMESTAMP == 2, "Unexpected TAG_TRANSMITTED_TIMESTAMP");
 	const uint64_t ENDIAN_SAFE_TAG_TRANSMITTED = (2LL << 28) | 2LL;
 	if (timestamp == DEDUCED_TIMESTAMP) {
@@ -193,7 +193,7 @@ void stream_outlet_impl::pushthrough_sync() {
 }
 
 void stream_outlet_impl::enqueue_sync(
-	asio::const_buffer buff, double timestamp, bool pushthrough) {
+	asio::const_buffer buff, const double& timestamp, bool pushthrough) {
 	push_timestamp_sync(timestamp);
 	sync_buffs_.push_back(buff);
 	if (pushthrough) pushthrough_sync();
@@ -221,7 +221,7 @@ template void stream_outlet_impl::enqueue<double>(const double *data, double, bo
 template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
 
 void stream_outlet_impl::enqueue_sync_multi(
-	std::vector<asio::const_buffer> buffs, double timestamp, bool pushthrough) {
+	std::vector<asio::const_buffer> buffs, const double& timestamp, bool pushthrough) {
 	push_timestamp_sync(timestamp);
 	sync_buffs_.insert(sync_buffs_.end(), buffs.begin(), buffs.end());
 	if (pushthrough) pushthrough_sync();

@@ -310,14 +310,14 @@ private:
 
 	/// Append the appropriate timestamp tag and optionally timestamp onto sync_buffs_ for a single
 	/// timestamp.
-	void push_timestamp_sync(double timestamp);
+	void push_timestamp_sync(const double& timestamp);
 
 	/// push sync_buffs_ through each tcp server.
 	void pushthrough_sync();
 
 	/// Append a single timestamp and single buffer to sync_buffs and optionally pushthrough the
 	/// server.
-	void enqueue_sync(asio::const_buffer buff, double timestamp, bool pushthrough);
+	void enqueue_sync(asio::const_buffer buff, const double& timestamp, bool pushthrough);
 
 	/**
 	 * Append a single timestamp and multiple within-sample buffers to sync_buffs_.
@@ -325,7 +325,7 @@ private:
 	 * many channels are included in each buffer.
 	 */
 	void enqueue_sync_multi(
-		std::vector<asio::const_buffer> buffs, double timestamp, bool pushthrough);
+		std::vector<asio::const_buffer> buffs, const double& timestamp, bool pushthrough);
 
 	/**
 	 * Check whether some given number of channels matches the stream's channel_count.
