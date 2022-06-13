@@ -47,3 +47,7 @@ addlslexample(TestSyncWithoutData cpp)
 
 target_link_libraries(TestSyncWithoutData PRIVATE Threads::Threads)
 
+if(NOT WIN32)
+	addlslexample(SendDataCBlocking c)
+	target_link_libraries(SendDataCBlocking PRIVATE Threads::Threads)
+endif()

@@ -139,7 +139,7 @@ void transmit_thread(void *vargp) {
 	lsl_xml_ptr desc = lsl_get_desc(info);
 	lsl_append_child_value(desc, "manufacturer", "LSL");
 	lsl_xml_ptr chns = lsl_append_child(desc, "channels");
-	char chanlabel[12];
+	char chanlabel[20];
 	for (int c = 0; c < device->nchans; c++) {
 		lsl_xml_ptr chn = lsl_append_child(chns, "channel");
 		snprintf(chanlabel, 20, "Chan-%d", c);
@@ -150,7 +150,7 @@ void transmit_thread(void *vargp) {
 
 	/* make a new outlet */
 	lsl_outlet outlet =
-		lsl_create_outlet_d(info, params->chunk_size, params->buffer_dur, params->do_async);
+		lsl_create_outlet_ex(info, params->chunk_size, params->buffer_dur, params->do_async ? transp_sync_blocking : 0);
 
 	printf("Now sending data...\n");
 	params->thread_status = 1;
