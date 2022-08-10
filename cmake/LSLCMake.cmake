@@ -37,6 +37,7 @@ function(LSL_get_target_arch)
 #else
 #error cmake_ARCH unknown
 #endif")
+	enable_language(C)
 	try_compile(dummy_result "${CMAKE_BINARY_DIR}"
 		SOURCES "${CMAKE_BINARY_DIR}/arch.c"
 		OUTPUT_VARIABLE ARCH)
