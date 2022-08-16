@@ -92,6 +92,25 @@ void api_config::load_from_file(const std::string &filename) {
 			}
 		}
 
+		// read the [log] settings
+		int log_level = pt.get("log.level", (int)loguru::Verbosity_INFO);
+		if (log_level < -3 || log_level > 9)
+			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
+
+		std::string log_file = pt.get("log.file", "");
+		if (!log_file.empty()) {
+			loguru::add_file(log_file.c_str(), loguru::Append, log_level);
+			// don't duplicate log to stderr
+			loguru::g_stderr_verbosity = -9;
+		} else
+			loguru::g_stderr_verbosity = log_level;
+
+		// log config filename only after setting the verbosity level
+		if (!filename.empty())
+			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
+		else
+			LOG_F(INFO, "Loaded default config");
+
 		// read out the [ports] parameters
 		multicast_port_ = pt.get("ports.MulticastPort", 16571);
 		base_port_ = pt.get("ports.BasePort", 16572);
@@ -249,25 +268,6 @@ void api_config::load_from_file(const std::string &filename) {
 		socket_receive_buffer_size_ = pt.get("tuning.ReceiveSocketBufferSize", 0);
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
-
-		// read the [log] settings
-		int log_level = pt.get("log.level", (int)loguru::Verbosity_INFO);
-		if (log_level < -3 || log_level > 9)
-			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
-
-		std::string log_file = pt.get("log.file", "");
-		if (!log_file.empty()) {
-			loguru::add_file(log_file.c_str(), loguru::Append, log_level);
-			// don't duplicate log to stderr
-			loguru::g_stderr_verbosity = -9;
-		} else
-			loguru::g_stderr_verbosity = log_level;
-
-		// log config filename only after setting the verbosity level
-		if (!filename.empty())
-			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
-		else
-			LOG_F(INFO, "Loaded default config");
 
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
