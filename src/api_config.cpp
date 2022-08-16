@@ -105,12 +105,6 @@ void api_config::load_from_file(const std::string &filename) {
 		} else
 			loguru::g_stderr_verbosity = log_level;
 
-		// log config filename only after setting the verbosity level
-		if (!filename.empty())
-			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
-		else
-			LOG_F(INFO, "Loaded default config");
-
 		// read out the [ports] parameters
 		multicast_port_ = pt.get("ports.MulticastPort", 16571);
 		base_port_ = pt.get("ports.BasePort", 16572);
@@ -268,6 +262,12 @@ void api_config::load_from_file(const std::string &filename) {
 		socket_receive_buffer_size_ = pt.get("tuning.ReceiveSocketBufferSize", 0);
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
+
+		// log config filename only after setting the verbosity level and all config has been read
+		if (!filename.empty())
+			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
+		else
+			LOG_F(INFO, "Loaded default config");
 
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
