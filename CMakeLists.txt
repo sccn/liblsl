@@ -340,7 +340,7 @@ add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
 installLSLApp(lslver)
 
-if(LSL_TOOLS)
+if(NOT WIN32 AND LSL_TOOLS)
 	add_executable(blackhole testing/blackhole.cpp)
 	target_link_libraries(blackhole PRIVATE Threads::Threads)
 	target_include_directories(blackhole PRIVATE "thirdparty/asio/")
