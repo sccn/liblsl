@@ -78,7 +78,7 @@ int main(int argc, char *argv[]) {
 			std::this_thread::sleep_until(next_sample_time);
 
 			// send the sample
-			std::cout << sample[0] << "\t" << sample[8] << std::endl;
+			std::cout << sample[0] << "\t" << sample[n_channels-1] << std::endl;
 			outlet.push_sample(sample);
 		}
 
