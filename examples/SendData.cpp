@@ -84,7 +84,6 @@ int main(int argc, char *argv[]) {
 		// send data forever
 		std::cout << "Now sending data... " << std::endl;
 		for (unsigned t = 0;; t++) {
-
 			// Create random data for the first 8 channels.
 			for (int c = 0; c < 8; c++) sample[c] = (float)((rand() % 1500) / 500.0 - 1.5);
 			// For the remaining channels, fill them with a sample counter (wraps at 1M).
