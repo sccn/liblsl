@@ -336,7 +336,8 @@ void tcp_server::client_session::handle_read_feedparams(int request_protocol_ver
 				// use least common denominator data protocol version
 				data_protocol_version_ = std::min(api_config::get_instance()->use_protocol_version(),client_protocol_version);
 				// downgrade to 1.00 (portable binary format) if an unsupported binary conversion is involved
-				if (serv_->info_->channel_bytes() != client_value_size)
+				if (serv_->info_->channel_format() != cft_string &&
+					serv_->info_->channel_bytes() != client_value_size)
 					data_protocol_version_ = 100;
 				if (!format_ieee754[cft_double64] || (format==cft_float32 && !format_ieee754[cft_float32]) || !client_has_ieee754_floats)
 					data_protocol_version_ = 100;
