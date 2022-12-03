@@ -227,6 +227,8 @@ void data_receiver::data_thread() {
 							// get the header information
 							if (type == "byte-order") {
 								int use_byte_order = std::stoi(rest);
+								// needed for interoperability with liblsl ~1.13 and data protocol 100
+								if(use_byte_order == 0) use_byte_order = LSL_BYTE_ORDER;
 								auto value_size = format_sizes[conn_.type_info().channel_format()];
 								if (!lsl::can_convert_endian(use_byte_order, value_size))
 									throw std::runtime_error(
