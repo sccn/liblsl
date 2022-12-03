@@ -7,6 +7,7 @@
 /docs/liblsl_*
 /docs/_build
 /.vs/
+/.cache/
 .DS_Store
 /out/
 # CLion
