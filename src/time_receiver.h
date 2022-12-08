@@ -114,6 +114,8 @@ private:
 	char recv_buffer_[1024]{0};
 	/// the socket through which the time thread communicates
 	udp_socket time_sock_;
+	/// current outlet address
+	udp::endpoint outlet_addr_;
 	/// schedule the next time estimate
 	steady_timer next_estimate_;
 	/// schedules result aggregation
