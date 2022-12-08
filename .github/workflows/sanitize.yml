@@ -11,6 +11,7 @@ on:
         description: 'Sanitizer to run'
         required: true
         default: 'address'
+        # caution: memory sanitizer is currently broken with Catch
         options: ['address', 'thread', 'memory', 'undefined']
         type: choice
 
@@ -18,19 +19,22 @@ defaults:
   run:
     shell: bash
 
+env:
+  LLVM_VERSION: 15
+
 jobs:
   build:
     name: "${{ github.event.inputs.sanitizer }}"
     runs-on: 'ubuntu-latest'
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - name: Install build toolchain
         run: |
-          wget https://apt.llvm.org/llvm-snapshot.gpg.key
-          echo "deb [signed-by=$PWD/llvm-snapshot.gpg.key] http://apt.llvm.org/focal/ llvm-toolchain-focal-13 main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/llvm.gpg
+          echo "deb http://apt.llvm.org/jammy/ llvm-toolchain-jammy-$LLVM_VERSION main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt update
-          sudo apt install -y libpugixml-dev clang-13 gdb
+          sudo apt install -y libpugixml-dev clang-$LLVM_VERSION gdb
       - name: Configure CMake
         run: |
           # linking a C++ library to a C program fails with ubsan enabled; disable lslver for this run
@@ -38,8 +42,8 @@ jobs:
           cmake --version
           cmake -S . -B build \
                -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-               -DCMAKE_C_COMPILER=clang-13 \
-               -DCMAKE_{CXX_COMPILER,LINKER}=clang++-13 \
+               -DCMAKE_C_COMPILER=clang-$LLVM_VERSION \
+               -DCMAKE_{CXX_COMPILER,LINKER}=clang++-$LLVM_VERSION \
                -DCMAKE_{C,CXX,EXE_LINKER,SHARED_LINKER}_FLAGS="-fsanitize=${{ github.event.inputs.sanitizer }}" \
                -DLSL_COMFY_DEFAULTS=ON \
                -DLSL_UNITTESTS=ON \
