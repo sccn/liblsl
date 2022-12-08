@@ -192,7 +192,7 @@ void inlet_connection::try_recover() {
 					resolver_.resolve_oneshot(query.str(), 1, FOREVER, attempt == 0 ? 1.0 : 5.0);
 				if (!infos.empty()) {
 					// got a result
-					unique_lock_t lock(host_info_mut_);
+					unique_lock_t lock_recover_host_info(host_info_mut_);
 					// check if any of the returned streams is the one that we're currently
 					// connected to
 					for (auto &info : infos)
@@ -207,7 +207,9 @@ void inlet_connection::try_recover() {
 						// cancel all cancellable operations registered with this connection
 						cancel_all_registered();
 						// invoke any callbacks associated with a connection recovery
-						std::lock_guard<std::mutex> lock(onrecover_mut_);
+						std::lock_guard<std::mutex> lock_onrecover_mut(onrecover_mut_);
+						// unlock recover mutex because onrecover callbacks may acquire the lock themselves
+						lock_recover_host_info.unlock();
 						for (auto &pair : onrecover_) (pair.second)();
 					} else {
 						// there are multiple possible streams to connect to in a recovery attempt:
