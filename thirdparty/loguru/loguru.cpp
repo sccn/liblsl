@@ -87,6 +87,17 @@
 	#ifndef LOGURU_STACKTRACES
 		#define LOGURU_STACKTRACES 0
 	#endif
+#if defined(__ANDROID__)
+// Some Android SDKs lack the pthread_getname_np function. Use prctl(PR_GET_NAME) instead
+// https://stackoverflow.com/a/32380917/73299
+// template<T> so NDKs with pthread_getname_np select the NDK function instead of this one
+#include <sys/prctl.h>
+template<typename T> inline int pthread_getname_np(T /*unused*/, char* buf, size_t buflen) {
+	return prctl(PR_GET_NAME, reinterpret_cast<unsigned long>(buf), static_cast<unsigned long>(buflen), 0, 0);
+}
+#endif
+
+
 #else
 	#define LOGURU_PTHREADS    1
 	#define LOGURU_WINTHREADS  0
