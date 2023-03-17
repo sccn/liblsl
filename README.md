@@ -10,12 +10,18 @@ data between applications in a lab, e.g. instrument time series, event markers,
 audio, and so on. For more information, please read the
 [online documentation](https://labstreaminglayer.readthedocs.io)
 
+These repository is for the core library: `liblsl`
+
 ## Getting and using liblsl
 
-The most up-to-date instructions are in the
+The most up-to-date instructions to use liblsl are in the
 [quick start online documentation](https://labstreaminglayer.readthedocs.io/info/getting_started.html).
 
-## Building liblsl
+You might also be interested in
+[apps to connect to recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
+and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder) to record streams to disk.
+
+To retrieve the latest liblsl release, you have a few options.
 
 Precompiled packages are uploaded
 
@@ -26,31 +32,17 @@ liblsl is also available via the following package managers:
 
 - [vcpkg](https://vcpkg.io)
 - [Conan](https://conan.io/center/liblsl)
+- [homebrew](https://brew.sh/) via `brew install labstreaminglayer/tap/lsl`
+
+If you cannot find a liblsl for you via any of the above methods, then fear not because for most users it is simple to build.
+
+## Building liblsl
 
 To compile the library yourself from source,
 please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
 
 For single board computers running linux, you can also try
 `standalone_compilation_linux.sh`.
-
-To build language bindings (e.g. for
-[Matlab](https://github.com/labstreaminglayer/liblsl-Matlab) or
-[Python](https://github.com/labstreaminglayer/liblsl-Python)) take a look at
-the [corresponding directory in the main repository](https://github.com/sccn/labstreaminglayer/tree/master/LSL).
-
-You might also be interested in
-[apps to connect to recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
-and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder) to record streams to disk.
-
-
-## Boost
-
-liblsl uses boost (mainly Boost.ASIO) extensively.
-Because embedding liblsl in an application that links to an other Boost version (notably Matlab)
-causes runtime errors, we bundle a subset of boost in
-`lslboost`.
-
-To update the included lslboost, install Boost bcp and use the `update_lslboost.sh` script.
 
 ## Design goals
 
