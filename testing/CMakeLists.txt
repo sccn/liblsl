@@ -92,17 +92,18 @@ foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	installLSLApp(${lsltest})
 
-	if(WIN32)
-		# Copy dependencies into build directory to enable debugging builds in Windows.
-		add_custom_command(TARGET ${lsltest}
-			POST_BUILD
-			COMMAND
-				${CMAKE_COMMAND} -E copy_if_different
-					$<TARGET_RUNTIME_DLLS:${lsltest}>
-					$<TARGET_FILE_DIR:${lsltest}>
-			COMMAND_EXPAND_LISTS
-		)
-	endif(WIN32)
+#	# Uncomment me if debugging tests on Windows. Commented because it does not work well on CI runners.
+#	if(WIN32)
+#		# Copy dependencies into build directory to enable debugging builds in Windows.
+#		add_custom_command(TARGET ${lsltest}
+#			POST_BUILD
+#			COMMAND
+#				${CMAKE_COMMAND} -E copy_if_different
+#					$<TARGET_RUNTIME_DLLS:${lsltest}>
+#					$<TARGET_FILE_DIR:${lsltest}>
+#			COMMAND_EXPAND_LISTS
+#		)
+#	endif(WIN32)
 endforeach()
 
 installLSLAuxFiles(lsl_test_exported directory lslcfgs)
