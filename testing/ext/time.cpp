@@ -1,6 +1,6 @@
 #include "../common/create_streampair.hpp"
 #include <atomic>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <lsl_cpp.h>
 #include <thread>
 
@@ -37,7 +37,7 @@ TEST_CASE("timeouts", "[pull][basic]") {
 	});
 
 	char val;
-	REQUIRE(sp.in_.pull_sample(&val, 1, 0.5) == Approx(0.0));
+	REQUIRE(sp.in_.pull_sample(&val, 1, 0.5) == Catch::Approx(0.0));
 	done = true;
 	saver.join();
 }

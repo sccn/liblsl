@@ -1,6 +1,6 @@
 #include "../common/create_streampair.hpp"
 #include "../common/lsltypes.hpp"
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <cstdint>
 #include <lsl_cpp.h>
 #include <thread>
@@ -32,8 +32,8 @@ TEMPLATE_TEST_CASE(
 		CHECK(inlet.pull_sample(received_data, 2, .5) != 0.0);
 
 		timestamps[counter][1] = lsl::local_clock();
-		CHECK(received_data[0] == Approx(sent_data[0]));
-		CHECK(received_data[1] == Approx(sent_data[1]));
+		CHECK(received_data[0] == Catch::Approx(sent_data[0]));
+		CHECK(received_data[1] == Catch::Approx(sent_data[1]));
 		sent_data[0] = static_cast<TestType>(static_cast<int64_t>(sent_data[0]) << 1);
 	}
 }
@@ -92,14 +92,14 @@ TEST_CASE("Flush", "[datatransfer][basic]") {
 
 	double data_in;
 	double ts_in = sp.in_.pull_sample(&data_in, 1);
-	REQUIRE(ts_in == Approx(data_in));
+	REQUIRE(ts_in == Catch::Approx(data_in));
 	std::this_thread::sleep_for(std::chrono::milliseconds(700));
 	auto pulled = sp.in_.flush() + 1;
 
 	for(; pulled < n; ++pulled) {
 		INFO(pulled);
 		ts_in = sp.in_.pull_sample(&data_in, 1);
-		REQUIRE(ts_in == Approx(data_in));
+		REQUIRE(ts_in == Catch::Approx(data_in));
 	}
 
 	pusher.join();

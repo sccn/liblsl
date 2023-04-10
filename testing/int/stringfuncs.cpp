@@ -1,5 +1,5 @@
 #include "util/strfuns.hpp"
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 // clazy:excludeall=non-pod-global-static
 

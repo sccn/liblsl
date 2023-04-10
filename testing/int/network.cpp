@@ -7,7 +7,7 @@
 #include <asio/read.hpp>
 #include <asio/use_future.hpp>
 #include <asio/write.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <chrono>
 #include <condition_variable>
 #include <future>
@@ -89,7 +89,7 @@ template <typename T> void cancel_streambuf(T &&task, lsl::cancellable_streambuf
 TEST_CASE("streambuf cancel connect()", "[streambuf][basic][network]") {
 	asio::io_context io_ctx;
 	lsl::cancellable_streambuf sb_connect;
-	INFO("Thread 0: Binding remote socket and keeping it busy…")
+	INFO("Thread 0: Binding remote socket and keeping it busy…");
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ip::tcp::v4());
 	remote.bind(ep);
@@ -110,12 +110,12 @@ TEST_CASE("streambuf cancel connect()", "[streambuf][basic][network]") {
 	lsl::cancellable_streambuf busykeeper;
 	CHECK(busykeeper.connect(ep) != nullptr);
 #endif
-	INFO("Thread 0: Remote socket should be busy")
+	INFO("Thread 0: Remote socket should be busy");
 
 	cancel_streambuf(
 		[&sb_connect, ep]() {
 			sb_connect.connect(ep);
-			MINFO(sb_connect.error().message())
+			MINFO(sb_connect.error().message());
 			REQUIRE(sb_connect.sbumpc() == std::char_traits<char>::eof());
 		},
 		sb_connect);
@@ -136,9 +136,9 @@ TEST_CASE("cancel streambuf reads", "[streambuf][network][!mayfail]") {
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ep, true);
 	remote.listen(1);
-	INFO("Thread 0: Connecting…")
+	INFO("Thread 0: Connecting…");
 	sb_read.connect(ep);
-	INFO("Thread 0: Connected (" << sb_read.error().message() << ')')
+	INFO("Thread 0: Connected (" << sb_read.error().message() << ')');
 	ip::tcp::socket sock(remote.accept());
 	sock.send(asio::buffer(hello, 1));
 	REQUIRE(sb_read.sbumpc() == hello[0]);
@@ -237,7 +237,7 @@ TEST_CASE("reuseport", "[network][basic][!mayfail]") {
 	auto addrstr = GENERATE((const char *)"224.0.0.1", "255.255.255.255", "ff03::1");
 	SECTION(addrstr) {
 		const uint16_t test_port = port++;
-		INFO("Test port " + std::to_string(test_port))
+		INFO("Test port " + std::to_string(test_port));
 		asio::io_context io_ctx(1);
 
 		auto addr = ip::make_address(addrstr);

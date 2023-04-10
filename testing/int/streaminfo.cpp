@@ -3,7 +3,7 @@
 #include <cctype>
 #include <loguru.hpp>
 // include loguru before catch
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 
 // clazy:excludeall=non-pod-global-static
 
@@ -17,7 +17,7 @@ bool contains(const T(&valid)[N], const T target) {
 TEST_CASE("uid", "[basic][streaminfo]") {
 	lsl::stream_info_impl info;
 	const std::string uid = info.reset_uid();
-	INFO(uid)
+	INFO(uid);
 	REQUIRE(uid.length() == 36);
 	for(auto i=0u; i<uid.size(); ++i)
 		if(i==8||i==13||i==18||i==23) REQUIRE(uid[i] == '-');

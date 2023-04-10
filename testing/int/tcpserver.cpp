@@ -6,7 +6,7 @@
 #include <asio/read.hpp>
 #include <asio/read_until.hpp>
 #include <asio/write.hpp>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <functional>
 #include <sstream>
 #include <thread>
@@ -61,11 +61,11 @@ void send_request(asio::io_context &ctx, const tcp::endpoint &ep, asio::const_bu
 	std::function<void(sock_p)> write_cb) {
 	auto sock = std::make_shared<sock_t>(ctx);
 	sock->async_connect(ep, [=](err_t connect_err) {
-		INFO(connect_err.message())
+		INFO(connect_err.message());
 		REQUIRE(connect_err.value() == 0);
 		asio::async_write(*sock, request,
 			[=, expected_bytes = request.size()](err_t write_err, std::size_t sent_bytes) {
-				INFO("Sent " << sent_bytes << " bytes, outcome: " << write_err.message())
+				INFO("Sent " << sent_bytes << " bytes, outcome: " << write_err.message());
 				REQUIRE(write_err.value() == 0);
 				REQUIRE(sent_bytes == expected_bytes);
 				write_cb(sock);
@@ -83,7 +83,7 @@ auto with_read_callback(const char *name, std::function<void(const std::string &
 #endif
 						 ](err_t read_err, std::size_t len) {
 				INFO("Test " << name << "\t– read " << len
-							 << " bytes, outcome: " << read_err.message())
+							 << " bytes, outcome: " << read_err.message());
 				if (read_err) REQUIRE(read_err == asio::error::eof);
 				fun(*buf);
 			});

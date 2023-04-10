@@ -1,6 +1,6 @@
 #include "bytecmp.hpp"
 #include <algorithm>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <cctype>
 #include <iomanip>
 #include <map>
@@ -42,7 +42,7 @@ void cmp_binstr(const std::string &a, const std::string b) {
 		REQUIRE(bytes_to_hexstr(a.substr(0, context_bytes)) ==
 				bytes_to_hexstr(b.substr(0, context_bytes)));
 	else {
-		INFO("First mismatch offset: " << pos)
+		INFO("First mismatch offset: " << pos);
 		std::string cmp_a = bytes_to_hexstr(a.substr(0, context_bytes)) + " ... " +
 							bytes_to_hexstr(a.substr(pos - context_bytes, 2 * context_bytes));
 		std::string cmp_b = bytes_to_hexstr(b.substr(0, context_bytes)) + " ... " +

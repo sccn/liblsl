@@ -1,5 +1,5 @@
 #include "sample.h"
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <fstream>
 #include <limits>
 #include <sstream>
@@ -127,7 +127,7 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		std::string teststr;
 		inarch >> teststr >> in1;
 		REQUIRE(teststr == std::string("Testclass"));
-		REQUIRE(in1.testdouble == Approx(out1.testdouble));
+		REQUIRE(in1.testdouble == Catch::Approx(out1.testdouble));
 		REQUIRE(in1.testbigint == out1.testbigint);
 		REQUIRE(in1.testchar == out1.testchar);
 		REQUIRE(in1.negativeint == out1.negativeint);

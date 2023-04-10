@@ -1,7 +1,7 @@
 #include "../src/consumer_queue.h"
 #include "../src/sample.h"
 #include <atomic>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <thread>
 
 // clazy:excludeall=non-pod-global-static
@@ -49,7 +49,7 @@ TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
 			std::this_thread::yield();
 		}
 	}
-	INFO(flushes)
+	INFO(flushes);
 	CHECK(pulled == size);
 	pusher.join();
 }

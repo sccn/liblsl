@@ -1,7 +1,7 @@
 #include "../common/create_streampair.hpp"
 #include "../common/lsltypes.hpp"
 #include <atomic>
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <list>
 #include <lsl_cpp.h>
 #include <string>

@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <lsl_c.h>
 
 // clazy:excludeall=non-pod-global-static

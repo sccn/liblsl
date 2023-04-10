@@ -1,4 +1,4 @@
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <lsl_cpp.h>
 #include <thread>
 
@@ -36,10 +36,10 @@ TEST_CASE("fullinfo", "[inlet][fullinfo][basic]") {
 	lsl::stream_outlet outlet(info);
 	auto found_streams = lsl::resolve_stream("name", info.name(), 1, 2);
 	REQUIRE(!found_streams.empty());
-	INFO(found_streams[0].as_xml())
+	INFO(found_streams[0].as_xml());
 	CHECK(found_streams[0].desc().first_child().empty());
 	auto fullinfo = lsl::stream_inlet(found_streams[0]).info(2);
-	INFO(fullinfo.as_xml())
+	INFO(fullinfo.as_xml());
 	CHECK(fullinfo.desc().child_value("info") == extinfo);
 }
 

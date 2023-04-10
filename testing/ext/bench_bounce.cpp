@@ -1,6 +1,6 @@
 #include "../common/create_streampair.hpp"
 #include "../common/lsltypes.hpp"
-#include <catch2/catch.hpp>
+#include <catch2/catch_all.hpp>
 #include <lsl_cpp.h>
 
 // clazy:excludeall=non-pod-global-static
