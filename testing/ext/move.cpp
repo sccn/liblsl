@@ -33,7 +33,7 @@ TEST_CASE("move C++ API types", "[move][basic]") {
 	}
 
 	{
-		// move the outlet via the move constructor
+		// move the inlet via the move constructor
 		lsl::stream_inlet inlet2(std::move(inlet));
 		REQUIRE(inlet2.get_channel_count() == 1);
 		inlet2.pull_sample(&data, 1);
@@ -42,8 +42,8 @@ TEST_CASE("move C++ API types", "[move][basic]") {
 		inlet = std::move(inlet2);
 		inlet.pull_sample(&data, 1);
 		CHECK(data == 2);
-		// End of scope, destructor for outlet2 is called
-		// Since the stream_outlet is alive in outlet, it's not deconstructed
+		// End of scope, destructor for inlet2 is called
+		// Since the stream_inlet is alive in inlet, it's not deconstructed
 	}
 
 	{
@@ -60,7 +60,7 @@ TEST_CASE("move C++ API types", "[move][basic]") {
 	}
 
 	// Since the outlet has been destructed in the previous block, it shouldn't
-	// be there any more
+	// be there anymore
 	found_stream_info = lsl::resolve_stream("name", "movetest", 1, 2.0);
 	REQUIRE(found_stream_info.empty());
 
