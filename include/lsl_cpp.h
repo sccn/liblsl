@@ -1705,7 +1705,7 @@ inline int32_t check_error(int32_t ec) {
 		switch (ec) {
 		case lsl_timeout_error: throw timeout_error("The operation has timed out.");
 		case lsl_lost_error:
-			throw timeout_error(
+			throw lost_error(
 				"The stream has been lost; to continue reading, you need to re-resolve it.");
 		case lsl_argument_error:
 			throw std::invalid_argument("An argument was incorrectly specified.");
