@@ -14,6 +14,7 @@
 
 using namespace lsl;
 namespace ip = asio::ip;
+
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
 	  recovery_enabled_(recover), lost_(false), shutdown_(false), last_receive_time_(lsl_clock()),
@@ -28,19 +29,7 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 				") uses a newer protocol version than this inlet. Please update.");
 
 		// select TCP/UDP protocol versions
-		if (api_config::get_instance()->allow_ipv6()) {
-			// if IPv6 is optionally allowed...
-			if (host_info_.v4address().empty() || !host_info_.v4data_port() ||
-				!host_info_.v4service_port()) {
-				// then use it but only iff there are problems with the IPv4 connection data
-				tcp_protocol_ = tcp::v6();
-				udp_protocol_ = udp::v6();
-			} else {
-				// (otherwise stick to IPv4)
-				tcp_protocol_ = tcp::v4();
-				udp_protocol_ = udp::v4();
-			}
-		} else {
+		if (!set_protocols(info, false)) {
 			// otherwise use the protocol type that is selected in the config
 			tcp_protocol_ = api_config::get_instance()->allow_ipv4() ? tcp::v4() : tcp::v6();
 			udp_protocol_ = api_config::get_instance()->allow_ipv4() ? udp::v4() : udp::v6();
@@ -54,7 +43,6 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 				host_info_.name().c_str());
 			recovery_enabled_ = false;
 		}
-
 	} else {
 		// the actual endpoint is not known yet -- we need to discover it later on the fly
 		// check that all the necessary information for this has been fully specified
@@ -202,6 +190,10 @@ void inlet_connection::try_recover() {
 					// ensure that the query result is unique (since someone might have used a
 					// non-unique stream ID)
 					if (infos.size() == 1) {
+						// update the protocols from the stream info,
+						// preferring IPv6 if previously used as well
+						if (!set_protocols(infos[0], tcp_protocol_ == tcp::v6()))
+							throw std::logic_error("No suitable protocol found in discovery");
 						// update the endpoint
 						host_info_ = infos[0];
 						// cancel all cancellable operations registered with this connection
@@ -234,6 +226,23 @@ void inlet_connection::try_recover() {
 			LOG_F(ERROR, "A recovery attempt encountered an unexpected error: %s", e.what());
 		}
 	}
+}
+
+bool inlet_connection::set_protocols(const stream_info_impl &info, bool prefer_v6) {
+	bool has_v4 = !info.v4address().empty() && info.v4data_port() && info.v4service_port();
+	bool has_v6 = !info.v6address().empty() && info.v6data_port() && info.v6service_port();
+	bool can_v4 = api_config::get_instance()->allow_ipv4() && has_v4;
+	bool can_v6 = api_config::get_instance()->allow_ipv6() && has_v6;
+	if ((prefer_v6 && can_v6) || !can_v4) {
+		tcp_protocol_ = tcp::v6();
+		udp_protocol_ = udp::v6();
+		return true;
+	} else if (can_v4) {
+		tcp_protocol_ = tcp::v4();
+		udp_protocol_ = udp::v4();
+		return true;
+	}
+	return false;
 }
 
 void inlet_connection::watchdog_thread() {

@@ -156,6 +156,9 @@ private:
 	/// A (potentially speculative) resolve-and-recover operation.
 	void try_recover();
 
+	/// Sets the endpoints from a stream info considering a previous connection
+	bool set_protocols(const stream_info_impl &info, bool prefer_v6);
+
 	// core connection properties
 	/// static/read-only information of the stream (type & format)
 	const stream_info_impl type_info_;
