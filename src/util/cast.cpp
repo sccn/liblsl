@@ -1,4 +1,5 @@
 #include "cast.hpp"
+#include <cstdint>
 #include <iomanip>
 #include <locale>
 #include <sstream>
