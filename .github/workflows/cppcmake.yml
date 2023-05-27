@@ -2,7 +2,8 @@ name: C/C++ CI
 
 on:
   push:
-    branches: ['*']
+    branches:
+      - master
     tags: ['*']
     paths:
       - '**'

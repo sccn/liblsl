@@ -2,7 +2,8 @@ name: MinGW Windows static test
 
 on:
   push:
-    branches: ['*']
+    branches:
+      - master
     paths:
       - '**'
       - '!docs/**'
