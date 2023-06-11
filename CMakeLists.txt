@@ -262,7 +262,7 @@ else()
 	# build one object file for Asio instead of once every time an Asio function is called. See
 	# https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
 	target_sources(lslobj PRIVATE thirdparty/asio_objects.cpp)
-	target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
+	target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION ASIO_DISABLE_VISIBILITY)
 endif()
 
 
