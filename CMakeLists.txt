@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.12)
+cmake_minimum_required (VERSION 3.16)
 project (liblsl
 	VERSION 1.16.2
 	LANGUAGES C CXX
@@ -11,9 +11,7 @@ set(LSL_ABI_VERSION 2)
 
 set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 set(CMAKE_VISIBILITY_INLINES_HIDDEN ON)
-if(NOT MSVC_VERSION VERSION_LESS 1700)
-	set(CMAKE_CXX_STANDARD 14)
-endif()
+	set(CMAKE_CXX_STANDARD 17)
 # generate a compilation database (compile_commands.json) for clang tooling
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
@@ -195,7 +193,7 @@ target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
 
 # target configuration for the internal lslobj target
 target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
-target_compile_features(lslobj PUBLIC cxx_std_11 cxx_lambda_init_captures)
+target_compile_features(lslobj PUBLIC cxx_std_17)
 target_include_directories(lslobj
 	PUBLIC
 		$<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>

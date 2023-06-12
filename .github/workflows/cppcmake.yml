@@ -36,10 +36,9 @@ jobs:
       matrix:
         config:
         - {name: "ubuntu-20.04", os: "ubuntu-20.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF"}
-        - {name: "ubuntu-18.04", os: "ubuntu-latest",  docker: "ubuntu:18.04" }
-        - {name: "ubuntu-22.04", os: "ubuntu-22.04", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "windows-x64",  os: "windows-2019", cmake_extra: "-T v140,host=x86"}
-        - {name: "windows-32",   os: "windows-2019", cmake_extra: "-T v140,host=x86 -A Win32"}
+        - {name: "ubuntu-22.04", os: "ubuntu-22.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
+        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest"}
     
     # runs all steps in the container configured in config.docker or as subprocesses when empty
@@ -50,12 +49,7 @@ jobs:
       run: |
          set -x
          apt update
-         apt install -y --no-install-recommends g++ git ninja-build file dpkg-dev lsb-release sudo curl
-         if [[ "${{ matrix.config.name }}" = "ubuntu-18.04" ]]; then
-          curl -sSkL https://github.com/Kitware/CMake/releases/download/v3.25.1/cmake-3.25.1-linux-x86_64.tar.gz | \
-            tar -xzf - -C /usr --strip-components=1
-         else apt install -y --no-install-recommends cmake libpugixml-dev
-         fi
+         apt install -y --no-install-recommends g++ git ninja-build file dpkg-dev lsb-release sudo curl cmake libpugixml-dev
       if: ${{ matrix.config.docker }}
     - name: Configure CMake
       run: |
