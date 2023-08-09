@@ -1,6 +1,7 @@
 #include "sample.h"
 #include <catch2/catch.hpp>
 #include <fstream>
+#include <limits>
 #include <sstream>
 #include <type_traits>
 
@@ -11,6 +12,13 @@
 #include "portable_archive/portable_oarchive.hpp"
 
 static lsl::factory doublefac{cft_double64, 4, 1}, strfac{cft_string, 4, 1};
+
+const float test_floats[] = {0.0, -0.0, std::numeric_limits<float>::denorm_min(),
+	std::numeric_limits<float>::max(), std::numeric_limits<float>::infinity(),
+	-std::numeric_limits<float>::infinity()};
+const double test_doubles[] = {0.0, -0.0, std::numeric_limits<double>::denorm_min(),
+	std::numeric_limits<double>::max(), std::numeric_limits<double>::infinity(),
+	-std::numeric_limits<double>::infinity()};
 
 struct Testclass {
 	std::string teststr;
@@ -54,7 +62,18 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 	{
 		eos::portable_oarchive outarch(osb);
 		outarch << out2 << out3;
-		outarch << std::string("Testclass") << out1;
+		outarch << std::string("Testclass") << out1 << 0x00abcd;
+
+		outarch << std::string("Floats");
+		outarch << std::numeric_limits<float>::quiet_NaN();
+		for (float f : test_floats) outarch << f;
+
+		outarch << std::string("    Doubles");
+		outarch << std::numeric_limits<double>::quiet_NaN();
+		for (double d : test_doubles) outarch << d;
+
+		outarch << std::string("Ints");
+		for (int64_t i = 0; i < 64; i += 8) outarch << (1LL << i) << ((1LL << 62) - (1LL << i));
 	}
 
 	// Preserialized, generate with
@@ -67,9 +86,25 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		"a\x03\xef\xcd\xab\xff\xff\x01\xff\x08\xcd\xcc\xcc\xcc\xccL1@\x01\x06"
 		"String\x00\x00\x01\x02\x08\xc9v\xbe\x9f\x0c$\xfe@\x08\x00\x00\x00"
 		"0\x00\x00pA\x08\x00\x00\x00@\x00\x00p\xc1\x08\x00\x00\x00P\x00\x00pA"
-		"\x08\x00\x00\x00`\x00\x00p\xc1\x01\x02\x08\xc9v\xbe\x9f\x0c$\xfe@\x01\x02"
+		"\x8\x0\x0\x0`\x0\x0p\xc1\x1\x2\x8\xc9v\xbe\x9f\x0c$\xfe@\x1\x2"
 		"10\x01\x03-11\x01\x02"
-		"12\x01\x03-13";
+		"12\x01\x03-13"
+		"\x02\xcd\xab\x01\x06"
+		"Floats\x4\xff\xff\xff\x7f\x0\x4\x0\x0\x0\x80\x1\x1"
+		"\x4\xff\xff\x7f\x7f\x4\x0\x0\x80\x7f\x4\x0\x0\x80\xff"
+		"\x1\xb    Doubles\x8\xff\xff\xff\xff\xff\xff\xff\x7f"
+		"\x0\x8\x0\x0\x0\x0\x0\x0\x0\x80\x1\x1"
+		"\x8\xff\xff\xff\xff\xff\xff\xef\x7f"
+		"\x8\x0\x0\x0\x0\x0\x0\xf0\x7f"
+		"\x8\x0\x0\x0\x0\x0\x0\xf0\xff"
+		"\x1\x4Ints\x1\x1\x8\xff\xff\xff\xff\xff\xff\xff?\x2\x0\x1"
+		"\x8\x0\xff\xff\xff\xff\xff\xff?"
+		"\x3\x0\x0\x1\x8\x0\x0\xff\xff\xff\xff\xff?\x4\x0\x0\x0\x1"
+		"\x8\x0\x0\x0\xff\xff\xff\xff?\x5\x0\x0\x0\x0\x1"
+		"\x8\x0\x0\x0\x0\xff\xff\xff?\x6\x0\x0\x0\x0\x0\x1"
+		"\x8\x0\x0\x0\x0\x0\xff\xff?\x7\x0\x0\x0\x0\x0\x0\x1"
+		"\x8\x0\x0\x0\x0\x0\x0\xff?\x8\x0\x0\x0\x0\x0\x0\x0\x1"
+		"\x8\x0\x0\x0\x0\x0\x0\x0?";
 	const std::string preserialized(binpacket, sizeof(binpacket) - 1);
 	std::string res(osb.str());
 
@@ -98,6 +133,32 @@ TEST_CASE("v100 protocol serialization", "[basic][serialization]") {
 		REQUIRE(in1.negativeint == out1.negativeint);
 		REQUIRE(in1.testint == out1.testint);
 		REQUIRE(in1.teststr == out1.teststr);
+
+		inarch >> in1.testint >> teststr;
+		float f_;
+		inarch >> f_;
+		REQUIRE(std::isnan(f_));
+		for (float f : test_floats) {
+			inarch >> f_;
+			REQUIRE(*reinterpret_cast<uint32_t *>(&f) == *reinterpret_cast<uint32_t *>(&f_));
+		}
+		inarch >> teststr;
+		double d_;
+		inarch >> d_;
+		REQUIRE(std::isnan(d_));
+		for (double d : test_doubles) {
+			inarch >> d_;
+			REQUIRE(*reinterpret_cast<uint64_t *>(&d) == *reinterpret_cast<uint64_t *>(&d_));
+		}
+		inarch >> teststr;
+		REQUIRE(teststr == std::string("Ints"));
+		int64_t i_;
+		for (int64_t i = 0; i < 64; i += 8) {
+			inarch >> i_;
+			REQUIRE(i_ == (1LL << i));
+			inarch >> i_;
+			REQUIRE(i_ == ((1LL << 62) - (1LL << i)));
+		}
 
 		if (*in1.s1 != *out1.s1) FAIL("Sample 1 serialization mismatch");
 		if (*in1.s2 != *out1.s2) FAIL("Sample 2 serialization mismatch");
