@@ -1,15 +1,9 @@
 #pragma once
 
 #include "portable_archive_includes.hpp"
+#include "slimarchive.hpp"
 #include <cstring>
 #include <ostream>
-
-#ifdef SLIMARCHIVE
-#include "slimarchive.hpp"
-#else
-#include <boost/archive/basic_binary_oprimitive.hpp>
-#include <boost/archive/basic_binary_oarchive.hpp>
-#endif
 
 namespace eos {
 
@@ -241,32 +235,3 @@ namespace eos {
 		}
 	};
 } // namespace eos
-
-// if you include this header multiple times and your compiler is picky
-// about multiple template instantiations (eg. gcc is) then you need to
-// define NO_EXPLICIT_TEMPLATE_INSTANTIATION before every include but one
-// or you move the instantiation section into an implementation file
-#ifndef NO_EXPLICIT_TEMPLATE_INSTANTIATION
-
-#include <boost/archive/impl/basic_binary_oarchive.ipp>
-#include <boost/archive/impl/basic_binary_oprimitive.ipp>
-
-#if !defined BOOST_ARCHIVE_SERIALIZER_INCLUDED
-#include <boost/archive/impl/archive_serializer_map.ipp>
-#define BOOST_ARCHIVE_SERIALIZER_INCLUDED
-#endif
-
-namespace lslboost { namespace archive {
-	// explicitly instantiate for this type of binary stream
-	template class basic_binary_oarchive<eos::portable_oarchive>;
-
-	template class basic_binary_oprimitive<
-		eos::portable_oarchive
-		, std::ostream::char_type
-		, std::ostream::traits_type
-	>;
-
-	template class detail::archive_serializer_map<eos::portable_oarchive>;
-} } // namespace lslboost::archive
-
-#endif

@@ -13,13 +13,7 @@
 /****************************************************************************/
 
 #pragma once
-
-#ifdef SLIMARCHIVE
 #include "slimarchive.hpp"
-#else
-#include <boost/archive/basic_archive.hpp>
-#include <boost/archive/archive_exception.hpp>
-#endif
 
 namespace eos {
 

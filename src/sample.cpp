@@ -1,3 +1,4 @@
+#include <algorithm>
 #define BOOST_MATH_DISABLE_STD_FPCLASSIFY
 #include "sample.h"
 #include "common.h"
