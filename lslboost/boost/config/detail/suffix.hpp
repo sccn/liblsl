@@ -48,6 +48,22 @@
 #endif
 
 //
+// disable explicitly enforced visibility
+//
+#if defined(BOOST_DISABLE_EXPLICIT_SYMBOL_VISIBILITY)
+
+#undef BOOST_SYMBOL_EXPORT
+#define BOOST_SYMBOL_EXPORT
+
+#undef BOOST_SYMBOL_IMPORT
+#define BOOST_SYMBOL_IMPORT
+
+#undef BOOST_SYMBOL_VISIBLE
+#define BOOST_SYMBOL_VISIBLE
+
+#endif
+
+//
 // look for long long by looking for the appropriate macros in <limits.h>.
 // Note that we use limits.h rather than climits for maximal portability,
 // remember that since these just declare a bunch of macros, there should be
@@ -632,7 +648,7 @@ namespace std{ using ::type_info; }
        // nvcc doesn't always parse __noinline__,
        // see: https://svn.boost.org/trac/boost/ticket/9392
 #      define BOOST_NOINLINE __attribute__ ((noinline))
-#    elif defined(HIP_VERSION)
+#    elif defined(__HIP__)
        // See https://github.com/boostorg/config/issues/392
 #      define BOOST_NOINLINE __attribute__ ((noinline))
 #    else
@@ -666,6 +682,23 @@ namespace std{ using ::type_info; }
 #if !defined(BOOST_NORETURN)
 #  define BOOST_NO_NORETURN
 #  define BOOST_NORETURN
+#endif
+
+// BOOST_DEPRECATED -------------------------------------------//
+// The macro can be used to mark deprecated symbols, such as functions, objects and types.
+// Any code that uses these symbols will produce warnings, possibly with a message specified
+// as an argument. The warnings can be suppressed by defining BOOST_ALLOW_DEPRECATED_SYMBOLS
+// or BOOST_ALLOW_DEPRECATED.
+#if !defined(BOOST_DEPRECATED) && __cplusplus >= 201402
+#define BOOST_DEPRECATED(msg) [[deprecated(msg)]]
+#endif
+
+#if defined(BOOST_ALLOW_DEPRECATED_SYMBOLS) || defined(BOOST_ALLOW_DEPRECATED)
+#undef BOOST_DEPRECATED
+#endif
+
+#if !defined(BOOST_DEPRECATED)
+#define BOOST_DEPRECATED(msg)
 #endif
 
 // Branch prediction hints
@@ -1015,6 +1048,9 @@ namespace std{ using ::type_info; }
 #else
 #define BOOST_CXX14_CONSTEXPR constexpr
 #endif
+#if !defined(BOOST_NO_CXX17_STRUCTURED_BINDINGS) && defined(BOOST_NO_CXX11_HDR_TUPLE)
+#  define BOOST_NO_CXX17_STRUCTURED_BINDINGS
+#endif
 
 //
 // C++17 inline variables
@@ -1039,8 +1075,21 @@ namespace std{ using ::type_info; }
 // Unused variable/typedef workarounds:
 //
 #ifndef BOOST_ATTRIBUTE_UNUSED
+#  if defined(__has_attribute) && defined(__SUNPRO_CC) && (__SUNPRO_CC > 0x5130)
+#    if __has_attribute(maybe_unused)
+#       define BOOST_ATTRIBUTE_UNUSED [[maybe_unused]]
+#    endif
+#  elif defined(__has_cpp_attribute)
+#    if __has_cpp_attribute(maybe_unused)
+#      define BOOST_ATTRIBUTE_UNUSED [[maybe_unused]]
+#    endif
+#  endif
+#endif
+
+#ifndef BOOST_ATTRIBUTE_UNUSED
 #  define BOOST_ATTRIBUTE_UNUSED
 #endif
+
 //
 // [[nodiscard]]:
 //
@@ -1068,6 +1117,12 @@ namespace std{ using ::type_info; }
 #endif
 
 #define BOOST_STATIC_CONSTEXPR  static BOOST_CONSTEXPR_OR_CONST
+
+#if !defined(BOOST_NO_CXX11_NULLPTR)
+# define BOOST_NULLPTR nullptr
+#else
+# define BOOST_NULLPTR 0
+#endif
 
 //
 // Set BOOST_HAS_STATIC_ASSERT when BOOST_NO_CXX11_STATIC_ASSERT is not defined
@@ -1135,9 +1190,14 @@ namespace std{ using ::type_info; }
 #endif
 #endif
 #endif
+//
+// Define the std level that the compiler claims to support:
+//
+#ifndef BOOST_CXX_VERSION
+#  define BOOST_CXX_VERSION __cplusplus
+#endif
 
-#if !defined(_YVALS) && !defined(_CPPLIB_VER)  // msvc std lib already configured
-#if (!defined(__has_include) || (__cplusplus < 201704))
+#if (!defined(__has_include) || (BOOST_CXX_VERSION < 201704))
 #  define BOOST_NO_CXX20_HDR_BARRIER
 #  define BOOST_NO_CXX20_HDR_FORMAT
 #  define BOOST_NO_CXX20_HDR_SOURCE_LOCATION
@@ -1153,74 +1213,73 @@ namespace std{ using ::type_info; }
 #  define BOOST_NO_CXX20_HDR_COROUTINE
 #  define BOOST_NO_CXX20_HDR_SEMAPHORE
 #else
-#if !__has_include(<barrier>)
+#if (!__has_include(<barrier>) || !defined(__cpp_lib_barrier) || (__cpp_lib_barrier < 201907L)) && !defined(BOOST_NO_CXX20_HDR_BARRIER)
 #  define BOOST_NO_CXX20_HDR_BARRIER
 #endif
-#if !__has_include(<format>)
+#if (!__has_include(<format>) || !defined(__cpp_lib_format) || (__cpp_lib_format < 201907L)) && !defined(BOOST_NO_CXX20_HDR_FORMAT)
 #  define BOOST_NO_CXX20_HDR_FORMAT
 #endif
-#if !__has_include(<source_Location>)
+#if (!__has_include(<source_location>) || !defined(__cpp_lib_source_location) || (__cpp_lib_source_location < 201907L)) && !defined(BOOST_NO_CXX20_HDR_SOURCE_LOCATION)
 #  define BOOST_NO_CXX20_HDR_SOURCE_LOCATION
 #endif
-#if !__has_include(<bit>)
+#if (!__has_include(<bit>) || !defined(__cpp_lib_bit_cast) || (__cpp_lib_bit_cast < 201806L) || !defined(__cpp_lib_bitops) || (__cpp_lib_bitops < 201907L) || !defined(__cpp_lib_endian) || (__cpp_lib_endian < 201907L)) && !defined(BOOST_NO_CXX20_HDR_BIT)
 #  define BOOST_NO_CXX20_HDR_BIT
 #endif
-#if !__has_include(<latch>)
+#if (!__has_include(<latch>) || !defined(__cpp_lib_latch) || (__cpp_lib_latch < 201907L)) && !defined(BOOST_NO_CXX20_HDR_LATCH)
 #  define BOOST_NO_CXX20_HDR_LATCH
 #endif
-#if !__has_include(<span>)
+#if (!__has_include(<span>) || !defined(__cpp_lib_span) || (__cpp_lib_span < 202002L)) && !defined(BOOST_NO_CXX20_HDR_SPAN)
 #  define BOOST_NO_CXX20_HDR_SPAN
 #endif
-#if !__has_include(<compare>)
+#if (!__has_include(<compare>) || !defined(__cpp_lib_three_way_comparison) || (__cpp_lib_three_way_comparison < 201907L)) && !defined(BOOST_NO_CXX20_HDR_COMPARE)
 #  define BOOST_NO_CXX20_HDR_COMPARE
 #endif
-#if !__has_include(<numbers>)
+#if (!__has_include(<numbers>) || !defined(__cpp_lib_math_constants) || (__cpp_lib_math_constants < 201907L)) && !defined(BOOST_NO_CXX20_HDR_NUMBERS)
 #  define BOOST_NO_CXX20_HDR_NUMBERS
 #endif
-#if !__has_include(<stop_token>)
+#if (!__has_include(<stop_token>) || !defined(__cpp_lib_jthread) || (__cpp_lib_jthread < 201911L)) && !defined(BOOST_NO_CXX20_HDR_STOP_TOKEN)
 #  define BOOST_NO_CXX20_HDR_STOP_TOKEN
 #endif
-#if !__has_include(<concepts>)
+#if (!__has_include(<concepts>) || !defined(__cpp_lib_concepts) || (__cpp_lib_concepts < 202002L)) && !defined(_YVALS) && !defined(_CPPLIB_VER) && !defined(BOOST_NO_CXX20_HDR_CONCEPTS)
 #  define BOOST_NO_CXX20_HDR_CONCEPTS
 #endif
-#if !__has_include(<ranges>)
+#if (!__has_include(<ranges>) || !defined(__cpp_lib_ranges) || (__cpp_lib_ranges < 201911L)) && !defined(BOOST_NO_CXX20_HDR_RANGES)
 #  define BOOST_NO_CXX20_HDR_RANGES
 #endif
-#if !__has_include(<syncstream>)
+#if (!__has_include(<syncstream>) || !defined(__cpp_lib_syncbuf) || (__cpp_lib_syncbuf < 201803L)) && !defined(BOOST_NO_CXX20_HDR_SYNCSTREAM)
 #  define BOOST_NO_CXX20_HDR_SYNCSTREAM
 #endif
-#if !__has_include(<coroutine>)
+#if (!__has_include(<coroutine>) || !defined(__cpp_lib_coroutine) || (__cpp_lib_coroutine < 201902L)) && !defined(BOOST_NO_CXX20_HDR_COROUTINE)
 #  define BOOST_NO_CXX20_HDR_COROUTINE
 #endif
-#if !__has_include(<semaphore>)
+#if (!__has_include(<semaphore>) || !defined(__cpp_lib_semaphore) || (__cpp_lib_semaphore < 201907L)) && !defined(BOOST_NO_CXX20_HDR_SEMAPHORE)
 #  define BOOST_NO_CXX20_HDR_SEMAPHORE
 #endif
 #endif
+
+#if defined(__cplusplus) && defined(__has_include)
+#if !__has_include(<version>)
+#  define BOOST_NO_CXX20_HDR_VERSION
+#else
+// For convenience, this is always included:
+#  include <version>
+#endif
+#else
+#  define BOOST_NO_CXX20_HDR_VERSION
+#endif
+
+#if defined(BOOST_MSVC)
+#if (BOOST_MSVC < 1914) || (_MSVC_LANG < 201703)
+#  define BOOST_NO_CXX17_DEDUCTION_GUIDES
+#endif
+#elif !defined(__cpp_deduction_guides) || (__cpp_deduction_guides < 201606)
+#  define BOOST_NO_CXX17_DEDUCTION_GUIDES
 #endif
 
 //
 // Define composite agregate macros:
 //
 #include <boost/config/detail/cxx_composite.hpp>
-
-//
-// Define the std level that the compiler claims to support:
-//
-#ifndef BOOST_CXX_VERSION
-#  define BOOST_CXX_VERSION __cplusplus
-#endif
-
-//
-// Define composite agregate macros:
-//
-#include <boost/config/detail/cxx_composite.hpp>
-
-//
-// Define the std level that the compiler claims to support:
-//
-#ifndef BOOST_CXX_VERSION
-#  define BOOST_CXX_VERSION __cplusplus
-#endif
 
 //
 // Finish off with checks for macros that are depricated / no longer supported,
