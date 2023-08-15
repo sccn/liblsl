@@ -69,37 +69,37 @@ public:
 	void push_sample(
 		const std::vector<float> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<double> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<int64_t> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<int32_t> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<int16_t> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<char> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
 		const std::vector<std::string> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
-		enqueue(&data[0], timestamp, pushthrough);
+		enqueue(data.data(), timestamp, pushthrough);
 	}
 
 	/**

@@ -144,8 +144,8 @@ protected:
 			setg(&get_buffer_[0], &get_buffer_[0] + putback_max,
 				&get_buffer_[0] + putback_max + bytes_transferred_);
 			return traits_type::to_int_type(*gptr());
-		} else
-			return traits_type::eof();
+		}
+		return traits_type::eof();
 	}
 
 	int_type overflow(int_type c) override {
@@ -179,7 +179,7 @@ protected:
 
 	int sync() override { return overflow(traits_type::eof()); }
 
-	std::streambuf *setbuf(char_type *, std::streamsize) override {
+	std::streambuf *setbuf(char_type * /*unused*/, std::streamsize /*unused*/) override {
 		// this feature was stripped out...
 		return nullptr;
 	}

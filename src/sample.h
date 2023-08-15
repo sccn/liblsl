@@ -2,8 +2,6 @@
 #define SAMPLE_H
 #include "common.h"
 #include "forward.h"
-#include "util/cast.hpp"
-#include "util/endian.hpp"
 #include <atomic>
 #include <cstdint>
 #include <iosfwd>
@@ -60,13 +58,11 @@ private:
 
 	/// Return the address of a pre-allocated sample, #0 is the sentinel value
 	sample *sample_by_index(std::size_t idx) const {
-		return reinterpret_cast<sample*>(storage_ + idx * sample_size_);
+		return reinterpret_cast<sample *>(storage_ + idx * sample_size_);
 	}
 
 	/// Return the address of the sentinel value
-	sample *sentinel() const {
-		return sample_by_index(0);
-	}
+	sample *sentinel() const { return sample_by_index(0); }
 
 	friend class sample;
 	/// the channel format to construct samples with
@@ -127,7 +123,9 @@ public:
 	bool operator==(const sample &rhs) const noexcept;
 	bool operator!=(const sample &rhs) const noexcept { return !(*this == rhs); }
 
-	std::size_t datasize() const { return format_sizes[format_] * static_cast<std::size_t>(num_channels_); }
+	std::size_t datasize() const {
+		return format_sizes[format_] * static_cast<std::size_t>(num_channels_);
+	}
 
 	uint32_t num_channels() const { return num_channels_; }
 

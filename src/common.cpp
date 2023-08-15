@@ -34,7 +34,8 @@ LIBLSL_C_API double lsl_local_clock() {
 	/* For large timestamps, converting to double and then dividing by 1e9 loses precision
 	   because double has only 53 bits of precision.
 	   So we calculate everything we can as integer and only cast to double at the end */
-	return seconds_since_epoch.quot + static_cast<double>(seconds_since_epoch.rem) / ns_per_s;
+	return static_cast<double>(seconds_since_epoch.quot) +
+		   static_cast<double>(seconds_since_epoch.rem) / ns_per_s;
 }
 
 LIBLSL_C_API void lsl_destroy_string(char *s) {

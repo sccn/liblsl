@@ -80,8 +80,7 @@ void data_receiver::close_stream() {
 	cancel_all_registered();
 }
 
-sample_p lsl::data_receiver::try_get_next_sample(double timeout)
-{
+sample_p lsl::data_receiver::try_get_next_sample(double timeout) {
 	if (conn_.lost())
 		throw lost_error("The stream read by this outlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
@@ -93,9 +92,9 @@ sample_p lsl::data_receiver::try_get_next_sample(double timeout)
 	// get the sample with timeout
 	if (sample_p s = sample_queue_.pop_sample(timeout))
 		return s;
-	else if (conn_.lost())
-			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
-							"re-resolve the source and re-create the inlet.");
+	if (conn_.lost())
+		throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
+						 "re-resolve the source and re-create the inlet.");
 	return nullptr;
 }
 
@@ -109,7 +108,8 @@ double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, dou
 								   "number of channels in the sample.");
 		s->retrieve_typed(buffer);
 		return s->timestamp();
-	} else return 0.0;
+	}
+	return 0.0;
 }
 
 template double data_receiver::pull_sample_typed<char>(char *, uint32_t, double);
@@ -128,7 +128,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 		s->retrieve_untyped(buffer);
 		return s->timestamp();
 	}
-	else return 0.0;
+	return 0.0;
 }
 
 
@@ -260,7 +260,7 @@ void data_receiver::data_thread() {
 
 				if (data_protocol_version == 100) {
 					// portable binary archive (parse archive header)
-					inarch = std::make_unique<eos::portable_iarchive>(server_stream);
+					inarch = std::make_unique<eos::portable_iarchive>(*server_stream.rdbuf());
 					// receive stream_info message from server
 					std::string infomsg;
 					*inarch >> infomsg;

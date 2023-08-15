@@ -40,7 +40,7 @@ public:
 	data_receiver(inlet_connection &conn, int max_buflen = 360, int max_chunklen = 0);
 
 	/// Destructor. Stops the background activities.
-	~data_receiver();
+	~data_receiver() final;
 
 	/**
 	 * Open a new data stream.

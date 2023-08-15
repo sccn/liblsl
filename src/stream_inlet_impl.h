@@ -71,31 +71,31 @@ public:
 	 */
 	double pull_sample(std::vector<float> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<double> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<int64_t> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<int32_t> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<int16_t> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<char> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 	double pull_sample(std::vector<std::string> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
-		return pull_sample(&data[0], (int32_t)data.size(), timeout);
+		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
 
 	/**

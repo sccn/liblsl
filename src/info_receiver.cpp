@@ -62,7 +62,7 @@ void lsl::info_receiver::info_thread() {
 				std::string msg = os.str();
 				info.from_fullinfo_message(msg);
 				// if this is not a valid streaminfo we retry
-				if (!info.created_at()) continue;
+				if (info.created_at() != 0.0) continue;
 				// store the result for pickup & return
 				{
 					std::lock_guard<std::mutex> lock(fullinfo_mut_);

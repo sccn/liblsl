@@ -16,14 +16,14 @@ using namespace lsl;
 /// Substitute the "~" character by the full home directory (according to environment variables).
 std::string expand_tilde(const std::string &filename) {
 	// NOLINTBEGIN(concurrency-mt-unsafe)
+	// NOLINTBEGIN(bugprone-assignment-in-if-condition)
+	const char *home, *path;
 	if (!filename.empty() && filename[0] == '~') {
 		std::string homedir;
-		if (auto *home = getenv("HOME"))
+		if ((home = getenv("HOME")) || (home = getenv("USERPROFILE")))
 			homedir = home;
-		else if (auto *home = getenv("USERPROFILE"))
-			homedir = home;
-		else if (getenv("HOMEDRIVE") && getenv("HOMEPATH"))
-			homedir = std::string(getenv("HOMEDRIVE")) + getenv("HOMEPATH");
+		else if ((home = getenv("HOMEDRIVE")) && (path = getenv("HOMEPATH")))
+			homedir = std::string(home) + path;
 		else {
 			LOG_F(WARNING, "Cannot determine the user's home directory; config files in the home "
 						   "directory will not be discovered.");
@@ -32,6 +32,7 @@ std::string expand_tilde(const std::string &filename) {
 		return homedir + filename.substr(1);
 	}
 	return filename;
+	// NOLINTEND(bugprone-assignment-in-if-condition)
 	// NOLINTEND(concurrency-mt-unsafe)
 }
 
@@ -55,7 +56,7 @@ api_config::api_config() {
 	std::vector<std::string> filenames;
 
 	// NOLINTNEXTLINE(concurrency-mt-unsafe)
-	if (auto cfgpath = getenv("LSLAPICFG")) {
+	if (auto *cfgpath = getenv("LSLAPICFG")) {
 		std::string envcfg(cfgpath);
 		if (!file_is_readable(envcfg))
 			LOG_F(ERROR, "LSLAPICFG file %s not found", envcfg.c_str());
@@ -196,8 +197,8 @@ void api_config::load_from_file(const std::string &filename) {
 		if (!address_override.empty()) mcasttmp = address_override;
 
 		// Parse, validate and store multicast addresses
-		for (std::vector<std::string>::iterator it = mcasttmp.begin(); it != mcasttmp.end(); ++it) {
-			ip::address addr = ip::make_address(*it);
+		for (auto &it : mcasttmp) {
+			ip::address addr = ip::make_address(it);
 			if ((addr.is_v4() && allow_ipv4_) || (addr.is_v6() && allow_ipv6_))
 				multicast_addresses_.push_back(addr);
 		}

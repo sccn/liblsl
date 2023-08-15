@@ -237,7 +237,8 @@ bool inlet_connection::set_protocols(const stream_info_impl &info, bool prefer_v
 		tcp_protocol_ = tcp::v6();
 		udp_protocol_ = udp::v6();
 		return true;
-	} else if (can_v4) {
+	}
+	if (can_v4) {
 		tcp_protocol_ = tcp::v4();
 		udp_protocol_ = udp::v4();
 		return true;
@@ -291,8 +292,8 @@ void inlet_connection::try_recover_from_error() {
 			}
 			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
 							 "re-resolve the source and re-create the inlet.");
-		} else
-			try_recover();
+		}
+		try_recover();
 	}
 }
 

@@ -1,5 +1,6 @@
 #define BOOST_MATH_DISABLE_STD_FPCLASSIFY
 #include "sample.h"
+#include "common.h"
 #include "portable_archive/portable_iarchive.hpp"
 #include "portable_archive/portable_oarchive.hpp"
 #include "util/cast.hpp"
@@ -71,13 +72,13 @@ template <typename T, typename U> void lsl::sample::conv_into(U *dst) {
 }
 
 void sample::operator delete(void *x) noexcept {
-	if(x == nullptr) return;
+	if (x == nullptr) return;
 
 	lsl::factory *factory = reinterpret_cast<sample *>(x)->factory_;
 
 	// delete the underlying memory only if it wasn't allocated in the factory's storage area
 	if (x < factory->storage_ || x >= factory->storage_ + factory->storage_size_)
-		delete[](char *) x;
+		delete[] (char *)x;
 }
 
 /// ensure that a given value is a multiple of some base, round up if necessary
@@ -96,8 +97,7 @@ bool sample::operator==(const sample &rhs) const noexcept {
 	if ((timestamp_ != rhs.timestamp_) || (format_ != rhs.format_) ||
 		(num_channels_ != rhs.num_channels_))
 		return false;
-	if (format_ != cft_string)
-		return memcmp(&(rhs.data_), &data_, datasize()) == 0;
+	if (format_ != cft_string) return memcmp(&(rhs.data_), &data_, datasize()) == 0;
 
 	// For string values, each value has to be compared individually
 	auto thisvals = samplevals<const std::string>(*this);
@@ -154,7 +154,7 @@ void save_raw(std::streambuf &sb, const void *address, std::size_t count) {
 		throw std::runtime_error("Output stream error.");
 }
 
-void save_byte(std::streambuf& sb, uint8_t v) {
+void save_byte(std::streambuf &sb, uint8_t v) {
 	if (sb.sputc(*reinterpret_cast<const char *>(&v)) == std::streambuf::traits_type::eof())
 		throw std::runtime_error("Output stream error.");
 }
@@ -167,8 +167,7 @@ void load_raw(std::streambuf &sb, void *address, std::size_t count) {
 
 uint8_t load_byte(std::streambuf &sb) {
 	auto res = sb.sbumpc();
-	if(res == std::streambuf::traits_type::eof())
-		throw std::runtime_error("Input stream error.");
+	if (res == std::streambuf::traits_type::eof()) throw std::runtime_error("Input stream error.");
 	return static_cast<uint8_t>(res);
 }
 
@@ -257,7 +256,7 @@ void sample::load_streambuf(
 			}
 			// read string contents
 			str.resize(len);
-			if (len > 0) load_raw(sb, &(str[0]), len);
+			if (len > 0) load_raw(sb, str.data(), len);
 		}
 	} else {
 		// read numeric channel data
@@ -375,7 +374,7 @@ sample &sample::assign_test_pattern(int offset) {
 		break;
 	case cft_string: {
 		std::string *data = samplevals<std::string>(*this).begin();
-		for (int32_t k = 0u; k < (int)num_channels_; k++)
+		for (int32_t k = 0U; k < (int)num_channels_; k++)
 			data[k] = to_string((k + 10) * (k % 2 == 0 ? 1 : -1));
 		break;
 	}
@@ -391,7 +390,7 @@ sample &sample::assign_test_pattern(int offset) {
 #ifndef BOOST_NO_INT64_T
 	case cft_int64: {
 		int64_t *data = samplevals<int64_t>(*this).begin();
-		int64_t offset64 = 2147483649ll + offset;
+		int64_t offset64 = 2147483649LL + offset;
 		for (uint32_t k = 0; k < num_channels_; k++) {
 			data[k] = (k + offset64);
 			if (k % 2 == 1) data[k] = -data[k];
@@ -416,9 +415,8 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 	: fmt_(fmt), num_chans_(num_chans),
 	  sample_size_(ensure_multiple(
 		  sizeof(sample) - sizeof(sample::data_) + format_sizes[fmt] * num_chans, 16)),
-	  storage_size_(sample_size_ * std::max(2u, num_reserve + 1)),
+	  storage_size_(sample_size_ * std::max(2U, num_reserve + 1)),
 	  storage_(new char[storage_size_]), head_(sentinel()), tail_(sentinel()) {
-
 	// pre-construct an array of samples in the storage area and chain into a freelist
 	// this is functionally identical to calling `reclaim_sample()` for each sample, but alters
 	// the head_/tail_ positions only once
@@ -434,7 +432,7 @@ factory::factory(lsl_channel_format_t fmt, uint32_t num_chans, uint32_t num_rese
 sample_p factory::new_sample(double timestamp, bool pushthrough) {
 	sample *result;
 	// try to retrieve a free sample, adding fresh samples until it succeeds
-	while((result = pop_freelist()) == nullptr)
+	while ((result = pop_freelist()) == nullptr)
 		reclaim_sample(new (new char[sample_size_]) sample(fmt_, num_chans_, this));
 
 	result->timestamp_ = timestamp;

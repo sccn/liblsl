@@ -161,7 +161,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 				return 0.0;
 			}
 			buffer_lengths[k] = (uint32_t)tmp[k].size();
-			memcpy(buffer[k], &tmp[k][0], tmp[k].size());
+			memcpy(buffer[k], tmp[k].data(), tmp[k].size());
 		}
 		return result;
 	} LSL_STORE_EXCEPTION_IN(ec)
@@ -227,7 +227,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 		// capture output in a temporary string buffer
 		if (data_buffer_elements) {
 			std::vector<std::string> tmp(data_buffer_elements);
-			uint32_t result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
+			uint32_t result = in->pull_chunk_multiplexed(tmp.data(), timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
 			for (std::size_t k = 0; k < tmp.size(); k++) {
@@ -256,7 +256,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 		// capture output in a temporary string buffer
 		if (data_buffer_elements) {
 			std::vector<std::string> tmp(data_buffer_elements);
-			uint32_t result = in->pull_chunk_multiplexed(&tmp[0], timestamp_buffer,
+			uint32_t result = in->pull_chunk_multiplexed(tmp.data(), timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
 			for (uint32_t k = 0; k < tmp.size(); k++) {

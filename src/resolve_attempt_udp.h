@@ -21,9 +21,9 @@ namespace lsl {
 using steady_timer = asio::basic_waitable_timer<asio::chrono::steady_clock, asio::wait_traits<asio::chrono::steady_clock>, asio::io_context::executor_type>;
 
 /// A container for resolve results (map from stream instance UID onto (stream_info,receive-time)).
-typedef std::map<std::string, std::pair<stream_info_impl, double>> result_container;
+using result_container = std::map<std::string, std::pair<stream_info_impl, double>>;
 /// A container for outgoing multicast interfaces
-typedef std::vector<class netif> mcast_interface_list;
+using mcast_interface_list = std::vector<class netif>;
 
 /**
  * An asynchronous resolve attempt for a single query targeted at a set of endpoints, via UDP.
