@@ -39,3 +39,20 @@ void INI::load(std::istream &infile) {
 		values.insert(std::make_pair(key, line.substr(valbegin, valend - valbegin + 1)));
 	}
 }
+
+template <typename T> T INI::get(const char *key, T defaultval) {
+	auto it = values.find(key);
+	if (it == values.end()) return defaultval;
+	return lsl::from_string<T>(it->second);
+}
+
+template float INI::get(const char *, float);
+template int INI::get(const char *, int);
+template double INI::get(const char *, double);
+template bool INI::get(const char *, bool);
+
+template <> const char *INI::get<const char *>(const char *key, const char *defaultval) {
+	static const char empty[] = "";
+	auto it = values.find(key);
+	return it == values.end() ? (defaultval ? defaultval : empty) : it->second.c_str();
+}
