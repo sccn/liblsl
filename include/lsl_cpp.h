@@ -513,6 +513,21 @@ public:
 		lsl_push_sample_vtp(obj.get(), (sample), timestamp, pushthrough);
 	}
 
+	/**
+	 * Push a pointer to an array of buffers of variable size as one sample into the outlet.
+	 *
+	 * @param bufs A pointer to an array of data buffers.
+	 * @param bytes An array of sizes (number of bytes) of buffers in bufs.
+	 * @param nbufs Total number of buffers.
+	 * @param timestamp Optionally the capture time of the sample, in agreement with local_clock();
+	 * @param pushthrough Whether to push the sample through to the receivers immediately instead of
+	 * concatenating with subsequent samples.
+	 */
+	void push_numeric_bufs(void **bufs, uint32_t *bytes, uint32_t nbufs, double timestamp = 0.0,
+		bool pushthrough = true) {
+		lsl_push_sample_rawtpn(obj.get(), bufs, bytes, timestamp, pushthrough, nbufs);
+	}
+
 
 	// ===================================================
 	// === Pushing an chunk of samples into the outlet ===

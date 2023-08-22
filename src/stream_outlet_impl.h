@@ -4,6 +4,7 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <asio/buffer.hpp>
 #include <cstdint>
 #include <loguru.hpp>
 #include <memory>
@@ -136,7 +137,11 @@ public:
 	void push_sample(const std::string *data, double timestamp = 0.0, bool pushthrough = true) {
 		enqueue(data, timestamp, pushthrough);
 	}
-
+	lsl_error_code_t push_sample_gather(
+		std::vector<asio::const_buffer> buffs, double timestamp = 0.0, bool pushthrough = true) {
+		enqueue_sync_multi(buffs, timestamp, pushthrough);
+		return lsl_no_error;
+	}
 
 	template <typename T>
 	inline lsl_error_code_t push_sample_noexcept(
@@ -251,7 +256,6 @@ public:
 			throw std::runtime_error("The number of buffer elements to send is not a multiple of "
 									 "the stream's channel count.");
 		if (num_samples > 0) {
-			if (timestamp == 0.0) timestamp = lsl_clock();
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
 			push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
@@ -294,12 +298,34 @@ public:
 	/// Wait until some consumer shows up.
 	bool wait_for_consumers(double timeout = FOREVER);
 
+	/// If the outlet is intended to use synchronous blocking transfers
+	bool is_sync_blocking() { return do_sync_; };
+
 private:
 	/// Instantiate a new server stack.
 	void instantiate_stack(udp udp_protocol);
 
 	/// Allocate and enqueue a new sample into the send buffer.
 	template <class T> void enqueue(const T *data, double timestamp, bool pushthrough);
+
+	/// Append the appropriate timestamp tag and optionally timestamp onto sync_buffs_ for a single
+	/// timestamp.
+	void push_timestamp_sync(const double& timestamp);
+
+	/// push sync_buffs_ through each tcp server.
+	void pushthrough_sync();
+
+	/// Append a single timestamp and single buffer to sync_buffs and optionally pushthrough the
+	/// server.
+	void enqueue_sync(asio::const_buffer buff, const double& timestamp, bool pushthrough);
+
+	/**
+	 * Append a single timestamp and multiple within-sample buffers to sync_buffs_.
+	 * This is useful when a sample is discontiguous in memory. It makes no assumptions about how
+	 * many channels are included in each buffer.
+	 */
+	void enqueue_sync_multi(
+		std::vector<asio::const_buffer> buffs, const double& timestamp, bool pushthrough);
 
 	/**
 	 * Check whether some given number of channels matches the stream's channel_count.
@@ -319,6 +345,8 @@ private:
 	stream_info_impl_p info_;
 	/// the single-producer, multiple-receiver send buffer
 	send_buffer_p send_buffer_;
+	/// Flag to indicate that push_* operations should be blocking synchronous. false by default.
+	bool do_sync_;
 	/// the IO service objects
 	io_context_p io_ctx_data_, io_ctx_service_;
 
@@ -331,6 +359,10 @@ private:
 	std::vector<udp_server_p> responders_;
 	/// threads that handle the I/O operations (two per stack: one for UDP and one for TCP)
 	std::vector<thread_p> io_threads_;
+	/// buffers used in synchronous call to gather-write data directly to the socket.
+	std::vector<asio::const_buffer> sync_buffs_;
+	/// timestamp buffer for sync transfers
+	std::vector<std::pair<uint64_t, double>> sync_timestamps_;
 };
 
 } // namespace lsl

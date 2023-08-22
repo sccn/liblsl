@@ -6,6 +6,7 @@
 #include "tcp_server.h"
 #include "udp_server.h"
 #include <algorithm>
+#include <asio/post.hpp>
 #include <chrono>
 #include <memory>
 
@@ -22,8 +23,16 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	  chunk_size_(info.calc_transport_buf_samples(requested_bufsize, flags)),
 	  info_(std::make_shared<stream_info_impl>(info)),
 	  send_buffer_(std::make_shared<send_buffer>(chunk_size_)),
-	  io_ctx_data_(std::make_shared<asio::io_context>(1)),
+	  do_sync_(flags & transp_sync_blocking), io_ctx_data_(std::make_shared<asio::io_context>(1)),
 	  io_ctx_service_(std::make_shared<asio::io_context>(1)) {
+
+	if ((info.channel_format() == cft_string) && do_sync_)
+		throw std::invalid_argument("Synchronous push not supported for string-formatted streams.");
+
+	// reserver space for sync timestamps so `push_back` doesn't caused reallocations
+	// to invalidate pointers to elements
+	if(do_sync_) sync_timestamps_.reserve(chunk_size_);
+
 	ensure_lsl_initialized();
 	const api_config *cfg = api_config::get_instance();
 
@@ -41,7 +50,7 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 
 	// create TCP data server
 	tcp_server_ = std::make_shared<tcp_server>(info_, io_ctx_data_, send_buffer_, sample_factory_,
-		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6());
+		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6(), do_sync_);
 
 	// fail if both stacks failed to instantiate
 	if (udp_servers_.empty())
@@ -53,10 +62,8 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	for (auto &responder : responders_) responder->begin_serving();
 
 	// and start the IO threads to handle them
-	const std::string name{"IO_" + this->info().name().substr(0, 11)};
 	for (const auto &io : {io_ctx_data_, io_ctx_service_})
-		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
-			loguru::set_thread_name(name.c_str());
+		io_threads_.emplace_back(std::make_shared<std::thread>([io]() {
 			while (true) {
 				try {
 					io->run();
@@ -66,6 +73,10 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 				}
 			}
 		}));
+
+	const std::string name{this->info().name().substr(0, 11)};
+	asio::post(*io_ctx_data_, [name]() { loguru::set_thread_name(("IO_" + name).c_str()); });
+	asio::post(*io_ctx_service_, [name]() { loguru::set_thread_name(("SVC_" + name).c_str()); });
 }
 
 void stream_outlet_impl::instantiate_stack(udp udp_protocol) {
@@ -147,8 +158,12 @@ void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bo
 	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
 	sample_p smp(
 		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-	smp->assign_untyped(data);
-	send_buffer_->push_sample(smp);
+	if (!do_sync_) {
+		smp->assign_untyped(data); // Note: Makes a copy!
+		send_buffer_->push_sample(smp);
+	} else {
+		enqueue_sync(asio::buffer(data, smp->datasize()), timestamp, pushthrough);
+	}
 }
 
 bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
@@ -157,13 +172,44 @@ bool stream_outlet_impl::wait_for_consumers(double timeout) {
 	return send_buffer_->wait_for_consumers(timeout);
 }
 
+void stream_outlet_impl::push_timestamp_sync(const double& timestamp) {
+	static_assert(TAG_TRANSMITTED_TIMESTAMP == 2, "Unexpected TAG_TRANSMITTED_TIMESTAMP");
+	const uint64_t ENDIAN_SAFE_TAG_TRANSMITTED = (2LL << 28) | 2LL;
+	if (timestamp == DEDUCED_TIMESTAMP) {
+		sync_buffs_.emplace_back(&TAG_DEDUCED_TIMESTAMP, 1);
+	} else {
+		sync_timestamps_.emplace_back(ENDIAN_SAFE_TAG_TRANSMITTED, timestamp);
+		// add a pointer to the memory region containing |TAG_TRANSMITTED_TIMESTAMP|timestamp
+		// one byte for the tag, 8 for the timestamp
+		sync_buffs_.emplace_back(reinterpret_cast<const char*>(&sync_timestamps_.back()) + 7, 9);
+	}
+}
+
+void stream_outlet_impl::pushthrough_sync() {
+	// LOG_F(INFO, "Pushing %u buffers.", sync_buffs_.size());
+	tcp_server_->write_all_blocking(sync_buffs_);
+	sync_buffs_.clear();
+	sync_timestamps_.clear();
+}
+
+void stream_outlet_impl::enqueue_sync(
+	asio::const_buffer buff, const double& timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.push_back(buff);
+	if (pushthrough) pushthrough_sync();
+}
+
 template <class T>
 void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrough) {
-	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
-	sample_p smp(
-		sample_factory_->new_sample(timestamp == 0.0 ? lsl_clock() : timestamp, pushthrough));
-	smp->assign_typed(data);
-	send_buffer_->push_sample(smp);
+	if (timestamp == 0.0 || lsl::api_config::get_instance()->force_default_timestamps()) timestamp = lsl_local_clock();
+	if (!do_sync_) {
+		sample_p smp(
+			sample_factory_->new_sample(timestamp, pushthrough));
+		smp->assign_typed(data);
+		send_buffer_->push_sample(smp);
+	} else {
+		enqueue_sync(asio::buffer(data, sample_factory_->datasize()), timestamp, pushthrough);
+	}
 }
 
 template void stream_outlet_impl::enqueue<char>(const char *data, double, bool);
@@ -173,5 +219,12 @@ template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, 
 template void stream_outlet_impl::enqueue<float>(const float *data, double, bool);
 template void stream_outlet_impl::enqueue<double>(const double *data, double, bool);
 template void stream_outlet_impl::enqueue<std::string>(const std::string *data, double, bool);
+
+void stream_outlet_impl::enqueue_sync_multi(
+	std::vector<asio::const_buffer> buffs, const double& timestamp, bool pushthrough) {
+	push_timestamp_sync(timestamp);
+	sync_buffs_.insert(sync_buffs_.end(), buffs.begin(), buffs.end());
+	if (pushthrough) pushthrough_sync();
+}
 
 } // namespace lsl

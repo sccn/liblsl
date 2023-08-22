@@ -65,7 +65,9 @@ class client_session : public std::enable_shared_from_this<client_session> {
 public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv, tcp_socket &&sock)
-		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {}
+		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {
+		LOG_F(1, "Initialized client session %p", this);
+	}
 
 	/// Destructor.
 	~client_session();
@@ -142,10 +144,31 @@ private:
 	std::condition_variable completion_cond_;
 };
 
+class sync_transfer_handler {
+	bool transfer_is_sync_;
+	// sockets that should receive data in sync mode
+	std::vector<tcp_socket_p> sync_sockets_;
+	// io context for sync mode, app is responsible for running it
+	asio::io_context io_ctx_;
+public:
+	sync_transfer_handler(): io_ctx_(1) {
+
+	}
+
+	/// schedules a native socket handle to be added the next time a push operation is done
+	void add_socket(const tcp_socket::native_handle_type handle, tcp_socket::protocol_type protocol) {
+		asio::post(io_ctx_, [=](){
+			sync_sockets_.push_back(std::make_unique<tcp_socket>(io_ctx_, protocol, handle));
+		});
+	}
+	void write_all_blocking(const std::vector<asio::const_buffer> &bufs);
+};
+
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6)
+	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	if (do_sync) sync_handler = std::make_unique<sync_transfer_handler>();
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -176,6 +199,11 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	}
 	if (!acceptor_v4_ && !acceptor_v6_)
 		throw std::runtime_error("Failed to instantiate socket acceptors for the TCP server");
+}
+
+tcp_server::~tcp_server() noexcept
+{
+	// defined here so the compiler can generate the destructor for the sync_handler
 }
 
 
@@ -209,12 +237,9 @@ void tcp_server::end_serving() {
 
 void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 	try {
-		// Select the IO context for handling the socket
-		auto &sock_io_ctx = *io_;
-
-		// accept a connection on the session's socket
-		acceptor->async_accept(sock_io_ctx, [shared_this = shared_from_this(), &acceptor](
-												err_t err, tcp_socket sock) {
+		// accept a new connection
+		acceptor->async_accept(*io_, [shared_this = shared_from_this(), &acceptor](
+										 err_t err, tcp_socket sock) {
 			if (err == asio::error::operation_aborted || err == asio::error::shut_down) return;
 
 			// no error: create a new session and start processing
@@ -232,7 +257,54 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 }
 
 
-// === graceful cancellation of in-flight sockets ===
+// === synchronous transfer
+
+void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs)
+{
+	sync_handler->write_all_blocking(bufs);
+}
+
+void sync_transfer_handler::write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
+	bool any_session_broken = false;
+
+	for (auto &sock : sync_sockets_) {
+		asio::async_write(*sock, bufs,
+			[this, &sock, &any_session_broken](
+				const asio::error_code &ec, size_t bytes_transferred) {
+				switch (ec.value()) {
+				case 0: break; // success
+				case asio::error::broken_pipe:
+				case asio::error::connection_reset:
+					LOG_F(WARNING, "Broken Pipe / Connection Reset detected. Closing socket.");
+					any_session_broken = true;
+					asio::post(io_ctx_, [sock]() {
+						asio::error_code close_ec;
+						sock->close(close_ec);
+					});
+					break;
+				case asio::error::operation_aborted:
+					LOG_F(INFO, "Socket wasn't fast enough");
+					break;
+				default:
+					LOG_F(ERROR, "Unhandled write_all_blocking error: %s.", ec.message().c_str());
+				}
+			});
+	}
+	try {
+		// prepare the io context for new work
+		io_ctx_.restart();
+		io_ctx_.run();
+
+		if (any_session_broken) {
+			// remove sessions whose socket was closed
+			auto new_end_it = std::remove_if(sync_sockets_.begin(), sync_sockets_.end(),
+				[](const tcp_socket_p &sock) {
+					return !sock->is_open();
+				});
+			sync_sockets_.erase(new_end_it, sync_sockets_.end());
+		}
+	} catch (std::exception &e) { LOG_F(ERROR, "Error during write_all_blocking: %s", e.what()); }
+}
 
 void tcp_server::register_inflight_session(const std::shared_ptr<client_session> &session) {
 	std::lock_guard<std::recursive_mutex> lock(inflight_mut_);
@@ -534,6 +606,18 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
+
+		if (serv->sync_handler) {
+			LOG_F(INFO, "Using synchronous blocking transfers for new client session.");
+			auto protocol = sock_.local_endpoint().protocol();
+			// move the socket into the sync_transfer_io_ctx by releasing it from this
+			// io ctx and re-creating it with sync_transfer_io_ctx.
+			// See https://stackoverflow.com/q/52671836/73299
+			// Then schedule the sync_transfer_io_ctx to add it to the list of sync sockets
+			serv->sync_handler->add_socket(sock_.release(), protocol);
+			serv->unregister_inflight_session(this);
+			return;
+		}
 
 		// determine transfer parameters
 		auto queue = serv->send_buffer_->new_consumer(max_buffered_);

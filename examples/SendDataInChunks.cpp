@@ -92,15 +92,25 @@ struct fake_device {
 
 int main(int argc, char **argv) {
 	std::cout << "SendDataInChunks" << std::endl;
-	std::cout << "SendDataInChunks StreamName StreamType samplerate n_channels max_buffered chunk_rate" << std::endl;
+	std::cout << "SendDataInChunks StreamName StreamType samplerate n_channels max_buffered "
+				 "chunk_rate nodata use_sync"
+			  << std::endl;
 	std::cout << "- max_buffered -- duration in sec (or x100 samples if samplerate is 0) to buffer for each outlet" << std::endl;
 	std::cout << "- chunk_rate -- number of chunks pushed per second. For this example, make it a common factor of samplingrate and 1000." << std::endl;
-	
+	std::cout << "- nodata -- Set non-zero to cause the fake device to not copy pattern data into "
+				 "the buffer."
+			  << std::endl;
+	std::cout << "- use_sync -- Set to non-zero to use blocking send." << std::endl;
+
 	std::string name{argc > 1 ? argv[1] : "MyAudioStream"}, type{argc > 2 ? argv[2] : "Audio"};
 	int samplingrate = argc > 3 ? std::stol(argv[3]) : 44100;  // Here we specify srate, but typically this would come from the device.
 	int n_channels = argc > 4 ? std::stol(argv[4]) : 2;        // Here we specify n_chans, but typically this would come from theh device.
 	double max_buffered = argc > 5 ? std::stod(argv[5]) : 360.;
 	int32_t chunk_rate = argc > 6 ? std::stol(argv[6]) : 10;  // Chunks per second.
+	bool nodata = argc > 7;
+	bool do_sync = argc > 8 ? (bool)std::stol(argv[8]) : true;
+	bool b_contig = true && do_sync; // Set true to test gather-write operations.
+
 	int32_t chunk_samples = samplingrate > 0 ? std::max((samplingrate / chunk_rate), 1) : 100;  // Samples per chunk.
 	int32_t chunk_duration = 1000 / chunk_rate;  // Milliseconds per chunk
 
@@ -118,16 +128,20 @@ int main(int argc, char **argv) {
 			chn.append_child_value("type", type);
 		}
 		int32_t buf_samples = (int32_t)(max_buffered * samplingrate);
-		lsl::stream_outlet outlet(info, chunk_samples, buf_samples);
+		auto flags = static_cast<lsl_transport_options_t>(
+			(do_sync ? transp_sync_blocking : transp_default) | transp_bufsize_samples);
+		lsl::stream_outlet outlet(info, chunk_samples, buf_samples, flags);
 		info = outlet.info(); // Refresh info with whatever the outlet captured.
 		std::cout << "Stream UID: " << info.uid() << std::endl;
 
 		// Create a connection to our device.
-		fake_device my_device(n_channels, (float)samplingrate);
+		int dev_chans = b_contig ? n_channels : n_channels + 1;
+		fake_device my_device(dev_chans, (float)samplingrate);
 
 		// Prepare buffer to get data from 'device'.
 		//  The buffer should be larger than you think you need. Here we make it 4x as large.
-		std::vector<int16_t> chunk_buffer(4 * chunk_samples * n_channels);
+		std::vector<int16_t> dev_buffer(4 * chunk_samples * dev_chans);
+		std::fill(dev_buffer.begin(), dev_buffer.end(), 0);
 
 		std::cout << "Now sending data..." << std::endl;
 
@@ -141,13 +155,24 @@ int main(int argc, char **argv) {
 			std::this_thread::sleep_until(next_chunk_time);
 
 			// Get data from device
-			std::size_t returned_samples = my_device.get_data(chunk_buffer);
+			std::size_t returned_samples = my_device.get_data(dev_buffer, nodata);
 
 			// send it to the outlet. push_chunk_multiplexed is one of the more complicated approaches.
 			//  other push_chunk methods are easier but slightly slower.
 			double ts = lsl::local_clock();
-			outlet.push_chunk_multiplexed(
-				chunk_buffer.data(), returned_samples * n_channels, ts, true);
+			if (b_contig) {
+				// Push a chunk of a contiguous buffer.
+				outlet.push_chunk_multiplexed(
+					dev_buffer.data(), returned_samples * n_channels, ts, true);
+			} else {
+				std::cout << "Discontiguous push_chunk not yet supported." << std::endl;
+				std::cout << "See SendData.cpp for discontiguous push_sample, then set "
+						  << std::endl;
+				std::cout << "timestamps as LSL_DEDUCED_TIMESTAMP and pushtrough as false "
+						  << std::endl;
+				std::cout << "for all samples except the the first or last in a chunk."
+						  << std::endl;
+			}
 		}
 	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
 	std::cout << "Press any key to exit. " << std::endl;

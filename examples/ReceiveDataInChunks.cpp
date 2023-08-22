@@ -21,8 +21,9 @@ int main(int argc, char **argv) {
 		double max_buffered = argc > 2 ? std::stod(argv[2]) : 360.;
 		bool flush = argc > 3;
 		// resolve the stream of interest & make an inlet
+		int32_t buf_samples = (int32_t)(max_buffered * 1000);
 		lsl::stream_info inlet_info = lsl::resolve_stream("name", name).at(0);
-		lsl::stream_inlet inlet(inlet_info, (int32_t)max_buffered);
+		lsl::stream_inlet inlet(inlet_info, buf_samples, transp_bufsize_thousandths);
 
 		// Use set_postprocessing to get the timestamps in a common base clock.
 		// Do not use if this application will record timestamps to disk -- it is better to 
