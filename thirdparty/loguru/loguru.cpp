@@ -32,6 +32,7 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <chrono>
 #include <cstdarg>
 #include <cstdio>
@@ -81,28 +82,17 @@
 	#ifndef LOGURU_STACKTRACES
 		#define LOGURU_STACKTRACES 0
 	#endif
-#elif defined(__rtems__) || defined(__ANDROID__) || defined(__FreeBSD__)
-	#define LOGURU_PTHREADS    1
-	#define LOGURU_WINTHREADS  0
-	#ifndef LOGURU_STACKTRACES
-		#define LOGURU_STACKTRACES 0
-	#endif
-#if defined(__ANDROID__)
-// Some Android SDKs lack the pthread_getname_np function. Use prctl(PR_GET_NAME) instead
-// https://stackoverflow.com/a/32380917/73299
-// template<T> so NDKs with pthread_getname_np select the NDK function instead of this one
-#include <sys/prctl.h>
-template<typename T> inline int pthread_getname_np(T /*unused*/, char* buf, size_t buflen) {
-	return prctl(PR_GET_NAME, reinterpret_cast<unsigned long>(buf), static_cast<unsigned long>(buflen), 0, 0);
-}
-#endif
-
-
 #else
 	#define LOGURU_PTHREADS    1
 	#define LOGURU_WINTHREADS  0
-	#ifndef LOGURU_STACKTRACES
-		#define LOGURU_STACKTRACES 1
+	#ifdef __GLIBC__
+		#ifndef LOGURU_STACKTRACES
+			#define LOGURU_STACKTRACES 1
+		#endif
+	#else
+		#ifndef LOGURU_STACKTRACES
+			#define LOGURU_STACKTRACES 0
+		#endif
 	#endif
 #endif
 
@@ -120,6 +110,16 @@ template<typename T> inline int pthread_getname_np(T /*unused*/, char* buf, size
 	#elif defined(__OpenBSD__)
 		#include <pthread_np.h>
 	#endif
+
+	#ifdef __linux__
+		/* On Linux, the default thread name is the same as the name of the binary.
+		   Additionally, all new threads inherit the name of the thread it got forked from.
+		   For this reason, Loguru use the pthread Thread Local Storage
+		   for storing thread names on Linux. */
+		#ifndef LOGURU_PTLS_NAMES
+			#define LOGURU_PTLS_NAMES 1
+		#endif
+	#endif
 #endif
 
 #if LOGURU_WINTHREADS
@@ -135,6 +135,7 @@ template<typename T> inline int pthread_getname_np(T /*unused*/, char* buf, size
    #define LOGURU_PTLS_NAMES 0
 #endif
 
+LOGURU_ANONYMOUS_NAMESPACE_BEGIN
 
 namespace loguru
 {
@@ -471,7 +472,20 @@ namespace loguru
 		for (int arg_it = 1; arg_it < argc; ++arg_it) {
 			auto cmd = argv[arg_it];
 			auto arg_len = strlen(verbosity_flag);
-			if (strncmp(cmd, verbosity_flag, arg_len) == 0 && !std::isalpha(cmd[arg_len], std::locale(""))) {
+
+			bool last_is_alpha = false;
+			#if LOGURU_USE_LOCALE
+			try {  // locale variant of isalpha will throw on error
+				last_is_alpha = std::isalpha(cmd[arg_len], std::locale(""));
+			}
+			catch (...) {
+				last_is_alpha = std::isalpha(static_cast<int>(cmd[arg_len]));
+			}
+			#else
+			last_is_alpha = std::isalpha(static_cast<int>(cmd[arg_len]));
+			#endif
+
+			if (strncmp(cmd, verbosity_flag, arg_len) == 0 && !last_is_alpha) {
 				out_argc -= 1;
 				auto value_str = cmd + arg_len;
 				if (value_str[0] == '\0') {
@@ -664,7 +678,7 @@ namespace loguru
 		set_name_to_verbosity_callback(nullptr);
 	}
 
-	void write_date_time(char* buff, size_t buff_size)
+	void write_date_time(char* buff, unsigned long long buff_size)
 	{
 		auto now = system_clock::now();
 		long long ms_since_epoch = duration_cast<milliseconds>(now.time_since_epoch()).count();
@@ -710,7 +724,7 @@ namespace loguru
 		#endif // _WIN32
 	}
 
-	void suggest_log_path(const char* prefix, char* buff, unsigned buff_size)
+	void suggest_log_path(const char* prefix, char* buff, unsigned long long buff_size)
 	{
 		if (prefix[0] == '~') {
 			snprintf(buff, buff_size - 1, "%s%s", home_dir(), prefix + 1);
@@ -787,12 +801,11 @@ namespace loguru
 		const char* mode_str = (mode == FileMode::Truncate ? "w" : "a");
 		FILE* file;
 	#ifdef _WIN32
-		errno_t file_error = fopen_s(&file, path, mode_str);
-		if (file_error) {
+		file = _fsopen(path, mode_str, _SH_DENYNO);
 	#else
 		file = fopen(path, mode_str);
-		if (!file) {
 	#endif
+		if (!file) {
 			LOG_F(ERROR, "Failed to open '" LOGURU_FMT(s) "'", path);
 			return false;
 		}
@@ -1021,7 +1034,7 @@ namespace loguru
 	// Where we store the custom thread name set by `set_thread_name`
 	char* thread_name_buffer()
 	{
-		thread_local static char thread_name[LOGURU_THREADNAME_WIDTH + 1] = {0};
+		__declspec( thread ) static char thread_name[LOGURU_THREADNAME_WIDTH + 1] = {0};
 		return &thread_name[0];
 	}
 #endif // LOGURU_WINTHREADS
@@ -1067,8 +1080,7 @@ namespace loguru
 			// Ask the OS about the thread name.
 			// This is what we *want* to do on all platforms, but
 			// only some platforms support it (currently).
-			if(pthread_getname_np(pthread_self(), buffer, length) != 0)
-				buffer[0] = 0;
+			pthread_getname_np(pthread_self(), buffer, length);
 		#elif LOGURU_WINTHREADS
 			snprintf(buffer, static_cast<size_t>(length), "%s", thread_name_buffer());
 		#else
@@ -1313,7 +1325,7 @@ namespace loguru
 		if (custom_level_name) {
 			snprintf(level_buff, sizeof(level_buff) - 1, "%s", custom_level_name);
 		} else {
-			snprintf(level_buff, sizeof(level_buff) - 1, "% 4d", verbosity);
+			snprintf(level_buff, sizeof(level_buff) - 1, "% 4d", static_cast<int8_t>(verbosity));
 		}
 
 		size_t pos = 0;
@@ -1500,9 +1512,14 @@ namespace loguru
 	{
 		va_list vlist;
 		va_start(vlist, format);
+		vlog(verbosity, file, line, format, vlist);
+		va_end(vlist);
+	}
+
+	void vlog(Verbosity verbosity, const char* file, unsigned line, const char* format, va_list vlist)
+	{
 		auto buff = vtextprintf(format, vlist);
 		log_to_everywhere(1, verbosity, file, line, "", buff.c_str());
-		va_end(vlist);
 	}
 
 	void raw_log(Verbosity verbosity, const char* file, unsigned line, const char* format, ...)
@@ -1529,31 +1546,19 @@ namespace loguru
 		s_needs_flushing = false;
 	}
 
-	LogScopeRAII::LogScopeRAII(Verbosity verbosity, const char* file, unsigned line, const char* format, ...)
-		: _verbosity(verbosity), _file(file), _line(line)
+	LogScopeRAII::LogScopeRAII(Verbosity verbosity, const char* file, unsigned line, const char* format, va_list vlist) :
+		_verbosity(verbosity), _file(file), _line(line)
 	{
-		if (verbosity <= current_verbosity_cutoff()) {
-			std::lock_guard<std::recursive_mutex> lock(s_mutex);
-			_indent_stderr = (verbosity <= g_stderr_verbosity);
-			_start_time_ns = now_ns();
-			va_list vlist;
-			va_start(vlist, format);
-			vsnprintf(_name, sizeof(_name), format, vlist);
-			log_to_everywhere(1, _verbosity, file, line, "{ ", _name);
-			va_end(vlist);
+		this->Init(format, vlist);
+	}
 
-			if (_indent_stderr) {
-				++s_stderr_indentation;
-			}
-
-			for (auto& p : s_callbacks) {
-				if (verbosity <= p.verbosity) {
-					++p.indentation;
-				}
-			}
-		} else {
-			_file = nullptr;
-		}
+	LogScopeRAII::LogScopeRAII(Verbosity verbosity, const char* file, unsigned line, const char* format, ...) :
+		_verbosity(verbosity), _file(file), _line(line)
+	{
+		va_list vlist;
+		va_start(vlist, format);
+		this->Init(format, vlist);
+		va_end(vlist);
 	}
 
 	LogScopeRAII::~LogScopeRAII()
@@ -1583,6 +1588,29 @@ namespace loguru
 #else
 			log_to_everywhere(1, _verbosity, _file, _line, "}", "");
 #endif
+		}
+	}
+
+	void LogScopeRAII::Init(const char* format, va_list vlist)
+	{
+		if (_verbosity <= current_verbosity_cutoff()) {
+			std::lock_guard<std::recursive_mutex> lock(s_mutex);
+			_indent_stderr = (_verbosity <= g_stderr_verbosity);
+			_start_time_ns = now_ns();
+			vsnprintf(_name, sizeof(_name), format, vlist);
+			log_to_everywhere(1, _verbosity, _file, _line, "{ ", _name);
+
+			if (_indent_stderr) {
+				++s_stderr_indentation;
+			}
+
+			for (auto& p : s_callbacks) {
+				if (_verbosity <= p.verbosity) {
+					++p.indentation;
+				}
+			}
+		} else {
+			_file = nullptr;
 		}
 	}
 
@@ -2003,5 +2031,7 @@ namespace loguru
 #elif defined(_MSC_VER)
 #pragma warning(pop)
 #endif
+
+LOGURU_ANONYMOUS_NAMESPACE_END
 
 #endif // LOGURU_IMPLEMENTATION

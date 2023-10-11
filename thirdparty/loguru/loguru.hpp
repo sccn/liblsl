@@ -175,6 +175,10 @@ Website: www.ilikebigbits.com
 	#define LOGURU_USE_FMTLIB 0
 #endif
 
+#ifndef LOGURU_USE_LOCALE
+        #define LOGURU_USE_LOCALE 0
+#endif
+
 #ifndef LOGURU_WITH_FILEABS
 	#define LOGURU_WITH_FILEABS 0
 #endif
@@ -193,6 +197,14 @@ Website: www.ilikebigbits.com
 		#define LOGURU_RTTI 1
 	#endif
 #endif
+#endif
+
+#ifdef LOGURU_USE_ANONYMOUS_NAMESPACE
+	#define LOGURU_ANONYMOUS_NAMESPACE_BEGIN namespace {
+	#define LOGURU_ANONYMOUS_NAMESPACE_END }
+#else
+	#define LOGURU_ANONYMOUS_NAMESPACE_BEGIN
+	#define LOGURU_ANONYMOUS_NAMESPACE_END
 #endif
 
 // --------------------------------------------------------------------
@@ -248,7 +260,10 @@ Website: www.ilikebigbits.com
 	#define STRDUP(str) strdup(str)
 #endif
 
+#include <stdarg.h>
+
 // --------------------------------------------------------------------
+LOGURU_ANONYMOUS_NAMESPACE_BEGIN
 
 namespace loguru
 {
@@ -518,7 +533,7 @@ namespace loguru
 
 	// Writes date and time with millisecond precision, e.g. "20151017_161503.123"
 	LOGURU_EXPORT
-	void write_date_time(char* buff, unsigned buff_size);
+	void write_date_time(char* buff, unsigned long long buff_size);
 
 	// Helper: thread-safe version strerror
 	LOGURU_EXPORT
@@ -530,7 +545,7 @@ namespace loguru
 	   where "app_name" is a sanitized version of argv[0].
 	*/
 	LOGURU_EXPORT
-	void suggest_log_path(const char* prefix, char* buff, unsigned buff_size);
+	void suggest_log_path(const char* prefix, char* buff, unsigned long long buff_size);
 
 	enum FileMode { Truncate, Append };
 
@@ -635,6 +650,10 @@ namespace loguru
 	LOGURU_EXPORT
 	void log(Verbosity verbosity, const char* file, unsigned line, LOGURU_FORMAT_STRING_TYPE format, ...) LOGURU_PRINTF_LIKE(4, 5);
 
+	// Actual logging function.
+	LOGURU_EXPORT
+	void vlog(Verbosity verbosity, const char* file, unsigned line, LOGURU_FORMAT_STRING_TYPE format, va_list) LOGURU_PRINTF_LIKE(4, 0);
+
 	// Log without any preamble or indentation.
 	LOGURU_EXPORT
 	void raw_log(Verbosity verbosity, const char* file, unsigned line, LOGURU_FORMAT_STRING_TYPE format, ...) LOGURU_PRINTF_LIKE(4, 5);
@@ -645,8 +664,11 @@ namespace loguru
 	{
 	public:
 		LogScopeRAII() : _file(nullptr) {} // No logging
+		LogScopeRAII(Verbosity verbosity, const char* file, unsigned line, LOGURU_FORMAT_STRING_TYPE format, va_list vlist) LOGURU_PRINTF_LIKE(5, 0);
 		LogScopeRAII(Verbosity verbosity, const char* file, unsigned line, LOGURU_FORMAT_STRING_TYPE format, ...) LOGURU_PRINTF_LIKE(5, 6);
 		~LogScopeRAII();
+
+		void Init(LOGURU_FORMAT_STRING_TYPE format, va_list vlist) LOGURU_PRINTF_LIKE(2, 0);
 
 #if defined(_MSC_VER) && _MSC_VER > 1800
 		// older MSVC default move ctors close the scope on move. See
@@ -708,13 +730,22 @@ namespace loguru
 	template<class T> inline Text format_value(const T&)                    { return textprintf("N/A");     }
 	template<>        inline Text format_value(const char& v)               { return textprintf(LOGURU_FMT(c),   v); }
 	template<>        inline Text format_value(const int& v)                { return textprintf(LOGURU_FMT(d),   v); }
+	template<>        inline Text format_value(const float& v)              { return textprintf(LOGURU_FMT(f),   v); }
+	template<>        inline Text format_value(const double& v)             { return textprintf(LOGURU_FMT(f),   v); }
+
+#if LOGURU_USE_FMTLIB
+	template<>        inline Text format_value(const unsigned int& v)       { return textprintf(LOGURU_FMT(d), v); }
+	template<>        inline Text format_value(const long& v)               { return textprintf(LOGURU_FMT(d), v); }
+	template<>        inline Text format_value(const unsigned long& v)      { return textprintf(LOGURU_FMT(d), v); }
+	template<>        inline Text format_value(const long long& v)          { return textprintf(LOGURU_FMT(d), v); }
+	template<>        inline Text format_value(const unsigned long long& v) { return textprintf(LOGURU_FMT(d), v); }
+#else
 	template<>        inline Text format_value(const unsigned int& v)       { return textprintf(LOGURU_FMT(u),   v); }
 	template<>        inline Text format_value(const long& v)               { return textprintf(LOGURU_FMT(lu),  v); }
 	template<>        inline Text format_value(const unsigned long& v)      { return textprintf(LOGURU_FMT(ld),  v); }
 	template<>        inline Text format_value(const long long& v)          { return textprintf(LOGURU_FMT(llu), v); }
 	template<>        inline Text format_value(const unsigned long long& v) { return textprintf(LOGURU_FMT(lld), v); }
-	template<>        inline Text format_value(const float& v)              { return textprintf(LOGURU_FMT(f),   v); }
-	template<>        inline Text format_value(const double& v)             { return textprintf(LOGURU_FMT(f),   v); }
+#endif
 
 	/* Thread names can be set for the benefit of readable logs.
 	   If you do not set the thread name, a hex id will be shown instead.
@@ -1020,6 +1051,8 @@ namespace loguru
 	*/
 } // namespace loguru
 
+LOGURU_ANONYMOUS_NAMESPACE_END
+
 // --------------------------------------------------------------------
 // Logging macros
 
@@ -1189,6 +1222,8 @@ namespace loguru
 #include <sstream> // Adds about 38 kLoC on clang.
 #include <string>
 
+LOGURU_ANONYMOUS_NAMESPACE_BEGIN
+
 namespace loguru
 {
 	// Like sprintf, but returns the formated text.
@@ -1303,6 +1338,8 @@ namespace loguru
 	inline long long          referenceable_value(long long          t) { return t; }
 	inline unsigned long long referenceable_value(unsigned long long t) { return t; }
 } // namespace loguru
+
+LOGURU_ANONYMOUS_NAMESPACE_END
 
 // -----------------------------------------------
 // Logging macros:
