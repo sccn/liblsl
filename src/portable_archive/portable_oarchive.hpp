@@ -53,7 +53,7 @@ class portable_oarchive : public portable_oprimitive
 		// to be parsed with a newer version of lslboost::serialization
 		// therefor we create a header, no header means lslboost 1.33
 		if (flags & lslboost::archive::no_header)
-			BOOST_ASSERT(archive_version == 3);
+			assert(archive_version == 3);
 		else {
 			// write our minimalistic header (magic byte plus version)
 			// the lslboost archives write a string instead - by calling

@@ -2,6 +2,7 @@
 
 /// Small shim implementing the needed Boost serialization classes for liblsl
 
+#include <cassert>
 #include <cstdint>
 #include <stdexcept>
 #include <streambuf>
