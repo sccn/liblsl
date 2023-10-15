@@ -25,10 +25,9 @@ option(LSL_OPTIMIZATIONS "Enable some more compiler optimizations" ON)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
-option(LSL_SLIMARCHIVE "Use experimental but smaller serialization code" OFF)
 option(LSL_TOOLS "Build some experimental tools for in-depth tests" OFF)
 
-mark_as_advanced(LSL_SLIMARCHIVE LSL_FORCE_FANCY_LIBNAME)
+mark_as_advanced(LSL_FORCE_FANCY_LIBNAME)
 
 set(LSL_WINVER "0x0601" CACHE STRING
 	"Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
@@ -182,13 +181,6 @@ else()
 	target_link_libraries(lslboost INTERFACE Boost::boost Boost::disable_autolinking)
 endif()
 
-if(LSL_SLIMARCHIVE OR NOT LSL_BUNDLED_BOOST)
-	message(STATUS "Using shim instead of full Boost.Archive")
-	target_compile_definitions(lslboost INTERFACE SLIMARCHIVE)
-elseif(LSL_BUNDLED_BOOST)
-	# compile Boost.Serialization objects as part of lslobj
-	target_sources(lslobj PRIVATE lslboost/serialization_objects.cpp)
-endif()
 target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
 
 # target configuration for the internal lslobj target

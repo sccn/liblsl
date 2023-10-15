@@ -2,15 +2,7 @@
 
 #include <istream>
 #include "portable_archive_includes.hpp"
-
-#ifdef SLIMARCHIVE
 #include "slimarchive.hpp"
-#else
-#include <boost/archive/basic_binary_iprimitive.hpp>
-#include <boost/archive/basic_binary_iarchive.hpp>
-
-#include <boost/archive/detail/polymorphic_iarchive_route.hpp>
-#endif
 
 
 namespace eos {
@@ -249,36 +241,3 @@ namespace eos {
 		}
 	};
 } // namespace eos
-
-// this is required by export which registers all of your
-// classes with all the inbuilt archives plus our archive.
-BOOST_SERIALIZATION_REGISTER_ARCHIVE(eos::portable_iarchive)
-
-// if you include this header multiple times and your compiler is picky
-// about multiple template instantiations (eg. gcc is) then you need to
-// define NO_EXPLICIT_TEMPLATE_INSTANTIATION before every include but one
-// or you move the instantiation section into an implementation file
-#ifndef NO_EXPLICIT_TEMPLATE_INSTANTIATION
-
-#include <boost/archive/impl/basic_binary_iarchive.ipp>
-#include <boost/archive/impl/basic_binary_iprimitive.ipp>
-
-#if !defined BOOST_ARCHIVE_SERIALIZER_INCLUDED
-#include <boost/archive/impl/archive_serializer_map.ipp>
-#define BOOST_ARCHIVE_SERIALIZER_INCLUDED
-#endif
-
-namespace lslboost { namespace archive {
-	// explicitly instantiate for this type of binary stream
-	template class basic_binary_iarchive<eos::portable_iarchive>;
-
-	template class basic_binary_iprimitive<
-		eos::portable_iarchive
-		, std::istream::char_type
-		, std::istream::traits_type
-	>;
-
-	template class detail::archive_serializer_map<eos::portable_iarchive>;
-} } // namespace lslboost::archive
-
-#endif
