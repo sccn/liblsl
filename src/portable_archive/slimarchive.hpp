@@ -19,10 +19,16 @@ class sample;
 
 /// Maps LSL types to an index without needing full RTTI
 template <typename T> struct lsl_type_index {};
-template <> struct lsl_type_index<lsl::sample> { static const int idx = 0; };
+template <> struct lsl_type_index<lsl::sample> {
+	static const int idx = 0;
+};
 /// two classes used in unit tests
-template <> struct lsl_type_index<struct Testclass> { static const int idx = 1; };
-template <> struct lsl_type_index<struct Testclass2> { static const int idx = 2; };
+template <> struct lsl_type_index<struct Testclass> {
+	static const int idx = 1;
+};
+template <> struct lsl_type_index<struct Testclass2> {
+	static const int idx = 2;
+};
 
 /// keep track of classes already seen once, needed for a field in Boost.Archive
 class serialized_class_tracker {
@@ -41,10 +47,18 @@ namespace lslboost {
 #ifndef BOOST_INTEGER_HPP
 /// Maps a type size in bits to the corresponding uintXY_t type
 template <int Size> struct uint_t {};
-template <> struct uint_t<8> { using least = uint8_t; };
-template <> struct uint_t<16> { using least = uint16_t; };
-template <> struct uint_t<32> { using least = uint32_t; };
-template <> struct uint_t<64> { using least = uint64_t; };
+template <> struct uint_t<8> {
+	using least = uint8_t;
+};
+template <> struct uint_t<16> {
+	using least = uint16_t;
+};
+template <> struct uint_t<32> {
+	using least = uint32_t;
+};
+template <> struct uint_t<64> {
+	using least = uint64_t;
+};
 #endif
 
 namespace archive {
