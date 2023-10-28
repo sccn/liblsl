@@ -1,6 +1,8 @@
 #include "../common/create_streampair.hpp"
 #include "../common/lsltypes.hpp"
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_approx.hpp>
+#include <catch2/catch_template_test_macros.hpp>
+#include <catch2/catch_test_macros.hpp>
 #include <cstdint>
 #include <lsl_cpp.h>
 #include <thread>

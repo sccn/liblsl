@@ -1,7 +1,7 @@
 #include <loguru.hpp>
 #include <thread>
 // Include loguru before catch
-#include <catch2/catch_all.hpp>
+#include <catch2/catch_test_macros.hpp>
 
 // clazy:excludeall=non-pod-global-static
 
