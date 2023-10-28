@@ -17,7 +17,6 @@ ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} ${CXXFLAGS} -Ilslboost \
 	thirdparty/pugixml/pugixml.cpp -Ithirdparty/pugixml \
 	thirdparty/loguru/loguru.cpp -Ithirdparty/loguru \
 	-Ithirdparty/asio \
-	lslboost/serialization_objects.cpp \
 	${LDFLAGS} \
 	-shared -o liblsl.so -lpthread -lrt -ldl
 ${CC:-gcc} -O2 ${CFLAGS} -Iinclude testing/lslver.c -o lslver -L. -llsl
