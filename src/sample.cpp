@@ -257,7 +257,7 @@ void sample::load_streambuf(
 			}
 			// read string contents
 			str.resize(len);
-			if (len > 0) load_raw(sb, str.data(), len);
+			if (len > 0) load_raw(sb, (void*) str.data(), len);
 		}
 	} else {
 		// read numeric channel data
