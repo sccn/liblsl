@@ -1,7 +1,7 @@
 # the absolute path to the extracted boost source archive (https://www.boost.org/users/download/)
 set -e
 set -x
-BOOSTPATH=/tmp/boost_1_83_0
+BOOSTPATH=/tmp/boost_1_84_0
 TMPPATH=/tmp/lslboost
 
 # copy all needed boost files and rename all mentions of boost to lslboost
