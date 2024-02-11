@@ -3,6 +3,7 @@
 #include "portable_archive_includes.hpp"
 #include "slimarchive.hpp"
 #include <istream>
+#include <limits.h>
 
 
 namespace eos {
@@ -193,8 +194,8 @@ public:
 		// after reading the note above you still might decide to
 		// deactivate this static assert and try if it works out.
 		typename traits::bits bits;
-		BOOST_STATIC_ASSERT(sizeof(bits) == sizeof(T));
-		BOOST_STATIC_ASSERT(std::numeric_limits<T>::is_iec559);
+		static_assert(sizeof(bits) == sizeof(T));
+		static_assert(std::numeric_limits<T>::is_iec559);
 
 		load(bits);
 		traits::set_bits(t, bits);
