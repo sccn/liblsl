@@ -20,7 +20,7 @@ defaults:
     shell: bash
 
 env:
-  LLVM_VERSION: 17
+  LLVM_VERSION: 18
 
 jobs:
   build:
@@ -28,7 +28,7 @@ jobs:
     runs-on: 'ubuntu-latest'
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Install build toolchain
         run: |
           curl -sSL https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor --yes -o /etc/apt/trusted.gpg.d/llvm.gpg

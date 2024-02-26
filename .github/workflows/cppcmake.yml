@@ -44,7 +44,7 @@ jobs:
     # runs all steps in the container configured in config.docker or as subprocesses when empty
     container: ${{ matrix.config.docker }}
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
     - name: set up build environment in container
       run: |
          set -x
@@ -112,14 +112,22 @@ jobs:
            fi
     
     # run internal tests, ignore test failures on docker (missing IPv6 connectivity)
-    - name: unit tests (internal functions)
-      run: 'install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes || test ! -z "${{ matrix.config.docker }}"'
-      timeout-minutes: 5
-    
-    - name: unit tests (exported functions)
-      run: install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
-      timeout-minutes: 5
-      if: ${{ success() || failure() }}
+    - name: unit tests
+      run: |
+        if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
+          ulimit -c unlimited
+          echo "$PWD/dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
+        fi
+        mkdir -p dumps
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes || test ! -z "${{ matrix.config.docker }}"
+        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 10
+    - name: upload dump
+      if: failure()
+      uses: actions/upload-artifact@master
+      with:
+        name: dumps-${{ matrix.config.name }}
+        path: dumps
     - name: upload to release page
       if: github.event_name == 'release'
       env:
