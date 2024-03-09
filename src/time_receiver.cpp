@@ -173,9 +173,9 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 					((t1 - t0) + (t2 - t3)) /
 					2; // averaged clock offset (other clock - my clock) with rtt bias averaged out
 				// store it
-				estimates_.push_back(std::make_pair(rtt, offset));
-				estimate_times_.push_back(
-					std::make_pair((t3 + t0) / 2.0, (t2 + t1) / 2.0)); // local_time, remote_time
+				estimates_.emplace_back(rtt, offset);
+				// local_time, remote_time
+				estimate_times_.emplace_back((t3 + t0) / 2.0, (t2 + t1) / 2.0);
 			}
 		}
 	} catch (std::exception &e) {

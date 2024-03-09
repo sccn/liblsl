@@ -128,6 +128,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 				LOG_F(ERROR, "Detaching io_threads for %s", name);
 				for (auto &thread : io_threads_) thread->detach();
 				return;
+			default: break;
 			}
 
 			std::this_thread::sleep_for(std::chrono::milliseconds(25));

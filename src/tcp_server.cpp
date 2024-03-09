@@ -255,7 +255,7 @@ void tcp_server::close_inflight_sessions() {
 			asio::error_code ec;
 			auto &sock = session->socket();
 			if (sock.is_open()) {
-				sock.shutdown(sock.shutdown_both, ec);
+				sock.shutdown(tcp_socket::shutdown_both, ec);
 				sock.close(ec);
 				if (ec) LOG_F(WARNING, "Error during shutdown_and_close: %s", ec.message().c_str());
 			}
