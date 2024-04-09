@@ -822,7 +822,7 @@ private:
  */
 inline std::vector<stream_info> resolve_streams(double wait_time = 1.0) {
 	lsl_streaminfo buffer[1024];
-	int nres = check_error(lsl_resolve_all(buffer, sizeof(buffer), wait_time));
+	int nres = check_error(lsl_resolve_all(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), wait_time));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
 
@@ -843,7 +843,7 @@ inline std::vector<stream_info> resolve_stream(const std::string &prop, const st
 	int32_t minimum = 1, double timeout = FOREVER) {
 	lsl_streaminfo buffer[1024];
 	int nres = check_error(
-		lsl_resolve_byprop(buffer, sizeof(buffer), prop.c_str(), value.c_str(), minimum, timeout));
+		lsl_resolve_byprop(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), prop.c_str(), value.c_str(), minimum, timeout));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
 
@@ -865,7 +865,7 @@ inline std::vector<stream_info> resolve_stream(
 	const std::string &pred, int32_t minimum = 1, double timeout = FOREVER) {
 	lsl_streaminfo buffer[1024];
 	int nres =
-		check_error(lsl_resolve_bypred(buffer, sizeof(buffer), pred.c_str(), minimum, timeout));
+		check_error(lsl_resolve_bypred(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), pred.c_str(), minimum, timeout));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
 
