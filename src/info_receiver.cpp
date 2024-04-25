@@ -52,7 +52,10 @@ void lsl::info_receiver::info_thread() {
 				buffer.register_at(&conn_);
 				std::iostream server_stream(&buffer);
 				// connect...
-				buffer.connect(conn_.get_tcp_endpoint());
+				if (nullptr == buffer.connect(conn_.get_tcp_endpoint()))
+				{
+					throw asio::system_error(buffer.error());
+				}
 				// send the query
 				server_stream << "LSL:fullinfo\r\n" << std::flush;
 				// receive and parse the response

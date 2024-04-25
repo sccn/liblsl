@@ -43,5 +43,21 @@ TEST_CASE("fullinfo", "[inlet][fullinfo][basic]") {
 	CHECK(fullinfo.desc().child_value("info") == extinfo);
 }
 
+TEST_CASE("downed outlet deadlock", "[inlet][streaminfo]")
+{
+	// This test verifies that calling info on a resolved inlet that has become disconnected
+	// does not get locked waiting on a response.
+	auto outlet = std::make_unique<lsl::stream_outlet>(lsl::stream_info("deadtest", "type"));
+
+	auto resolved = lsl::resolve_streams();
+	REQUIRE(!resolved.empty());
+	lsl::stream_inlet inlet(resolved[0]);
+
+	outlet.reset();
+
+	// this would previously deadlock
+	CHECK_THROWS(inlet.info());
+}
+
 
 } // namespace
