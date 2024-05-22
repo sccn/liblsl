@@ -324,7 +324,8 @@ public:
 
 	/// lsl_stream_info_matches_query
 	bool matches_query(const char *query) const {
-		return lsl_stream_info_matches_query(obj.get(), query);
+		int result = lsl_stream_info_matches_query(obj.get(), query);
+		return result != 0; 
 	}
 
 
