@@ -203,6 +203,9 @@ target_compile_definitions(lslobj PRIVATE
 	LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
 	PUBLIC ASIO_NO_DEPRECATED
 )
+if(MINGW)
+	target_link_libraries(lslobj PRIVATE bcrypt)
+endif()
 
 # platform specific configuration
 if(UNIX AND NOT APPLE)
