@@ -58,17 +58,21 @@ add_executable(lsl_test_exported
 target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
 
 
-add_executable(lsl_test_internal
-	int/inireader.cpp
-	int/loguruthreadnames.cpp
-	int/network.cpp
-	int/stringfuncs.cpp
-	int/streaminfo.cpp
-	int/samples.cpp
-	int/postproc.cpp
-	int/serialization_v100.cpp
-	int/tcpserver.cpp
+set(LSL_TEST_INTERNAL_SRCS
+		int/inireader.cpp
+		int/network.cpp
+		int/stringfuncs.cpp
+		int/streaminfo.cpp
+		int/samples.cpp
+		int/postproc.cpp
+		int/serialization_v100.cpp
+		int/tcpserver.cpp
 )
+if(NOT MINGW)
+	LIST(APPEND LSL_INTERNAL_SRCS int/loguruthreadnames.cpp)
+endif()
+message(STATUS ${LSL_TEST_INTERNAL_SRCS})
+add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
 
 
