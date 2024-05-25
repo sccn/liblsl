@@ -467,7 +467,7 @@ sample *factory::pop_freelist() {
 
 factory::~factory() {
 	for (sample *cur = tail_, *next = cur->next_;; cur = next, next = next->next_) {
-		if (cur != sentinel()) delete cur;
+		if (cur->format_ > cft_undefined && cur->format_ <= _cft_maxval && cur != sentinel()) delete cur;
 		if (!next) break;
 	}
 	delete[] storage_;
