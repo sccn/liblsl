@@ -8,6 +8,7 @@
 #include <asio/ip/address.hpp>
 #include <asio/ip/multicast.hpp>
 #include <exception>
+#include <iostream>
 #include <loguru.hpp>
 #include <sstream>
 
@@ -33,12 +34,15 @@ resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protoc
 			e.what());
 	}
 	unicast_socket_.open(protocol);
+
+
 	try {
 		broadcast_socket_.open(protocol);
 		broadcast_socket_.set_option(asio::socket_base::broadcast(true));
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Cannot open UDP broadcast socket for resolves: %s", e.what());
 	}
+
 	try {
 		multicast_socket_.open(protocol);
 		multicast_socket_.set_option(
@@ -165,9 +169,15 @@ void resolve_attempt_udp::send_next_query(
 		// Mismatching protocols? Skip this round
 		if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
 			next = targets_.end();
-		else
-			multicast_socket_.set_option(mcit->addr.is_v4() ? outbound_interface(mcit->addr.to_v4())
-															: outbound_interface(mcit->ifindex));
+		else {
+			try {
+				multicast_socket_.set_option(mcit->addr.is_v4() ? outbound_interface(mcit->addr.to_v4())
+																: outbound_interface(mcit->ifindex));
+			} catch (std::exception &e) {
+				LOG_F(INFO, "Could not set multicast interface: %s", e.what());
+				next = targets_.end();
+			}
+		}
 	}
 	if (next != targets_.end()) {
 		udp::endpoint ep(*next++);
