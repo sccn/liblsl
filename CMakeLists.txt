@@ -26,6 +26,11 @@ option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 option(LSL_TOOLS "Build some experimental tools for in-depth tests" OFF)
+option(
+	LSL_NO_PACKAGING
+	"Disable LSLGenerateCPackConfig and skip creating a package for liblsl"
+	OFF
+)
 
 mark_as_advanced(LSL_FORCE_FANCY_LIBNAME)
 
@@ -348,12 +353,6 @@ endif()
 if(LSL_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
-
-option(
-	LSL_NO_PACKAGING
-	"Disable LSLGenerateCPackConfig and skip creating a package for liblsl"
-	OFF
-)
 
 if(NOT LSL_NO_PACKAGING)
 	LSLGenerateCPackConfig()
