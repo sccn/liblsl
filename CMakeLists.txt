@@ -349,6 +349,12 @@ if(LSL_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
 
+option(
+	LSL_NO_PACKAGING
+	"Disable LSLGenerateCPackConfig and skip creating a package for liblsl"
+	OFF
+)
+
 if(NOT LSL_NO_PACKAGING)
 	LSLGenerateCPackConfig()
 endif()
