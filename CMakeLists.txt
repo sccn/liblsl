@@ -349,4 +349,6 @@ if(LSL_BUILD_EXAMPLES)
 	add_subdirectory(examples)
 endif()
 
-LSLGenerateCPackConfig()
+if(NOT LSL_NO_PACKAGING)
+	LSLGenerateCPackConfig()
+endif()
