@@ -81,8 +81,7 @@ To connect an application to the lab streaming layer:
 * To receive data, resolve a stream that matches your citeria (e.g. name or type), which gives you a 
   streaminfo and create a new inlet with that streaminfo. Pull samples from the inlet. 
   Destroy the inlet when you're done.
-* Have a look at the example sources in the
-  [examples/ folder](https://github.com/labstreaminglayer/App-Examples)
+* Have a look at the example sources in the [`examples/`](examples/) folder.
 
 The library and example applications are licensed under the MIT license.  
 The library uses code that is licensed under the Boost software license.

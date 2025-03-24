@@ -160,7 +160,7 @@ extern LIBLSL_C_API lsl_xml_ptr lsl_get_desc(lsl_streaminfo info);
  * This yields an XML document (in string form) whose top-level element is `<info>`. The info
  * element contains one element for each field of the streaminfo class, including:
  *
- *   - the core elements `<name>`, `<type>`, `<channel_count`, `<nominal_srate>`,
+ *   - the core elements `<name>`, `<type>`, `<channel_count>`, `<nominal_srate>`,
  *   `<channel_format>`, `<source_id>`
  *   - the misc elements `<version>`, `<created_at>`, `<uid>`, `<session_id>`,
  *   `<v4address>`, `<v4data_port>`, `<v4service_port>`, `<v6address>`, `<v6data_port>`,

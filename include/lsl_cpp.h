@@ -336,7 +336,7 @@ public:
 	 * This yields an XML document (in string form) whose top-level element is `<info>`. The info
 	 * element contains one element for each field of the streaminfo class, including:
 	 *
-	 *   - the core elements `<name>`, `<type>`, `<channel_count`, `<nominal_srate>`,
+	 *   - the core elements `<name>`, `<type>`, `<channel_count>`, `<nominal_srate>`,
 	 *   `<channel_format>`, `<source_id>`
 	 *   - the misc elements `<version>`, `<created_at>`, `<uid>`, `<session_id>`,
 	 *   `<v4address>`, `<v4data_port>`, `<v4service_port>`, `<v6address>`, `<v6data_port>`,
@@ -1484,8 +1484,7 @@ private:
  * Has a name and can have multiple named children or have text content as value; attributes are
  * omitted. Insider note: The interface is modeled after a subset of pugixml's node type and is
  * compatible with it. See also
- * http://pugixml.googlecode.com/svn/tags/latest/docs/manual/access.html for additional
- * documentation.
+ * https://pugixml.org/docs/manual.html#access for additional documentation.
  */
 class xml_element {
 public:

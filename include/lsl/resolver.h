@@ -15,7 +15,7 @@
 /**
  * Construct a new #lsl_continuous_resolver that resolves all streams on the network.
  *
- * This is analogous to the functionality offered by the free function lsl_resolve_streams().
+ * This is analogous to the functionality offered by the free function lsl_resolve_all().
  * @param forget_after When a stream is no longer visible on the network (e.g. because it was shut
  * down), this is the time in seconds after which it is no longer reported by the resolver.
  *
