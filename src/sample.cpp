@@ -356,7 +356,7 @@ void lsl::sample::serialize(eos::portable_iarchive &ar, const uint32_t archive_v
 template <typename T> void test_pattern(T *data, uint32_t num_channels, int offset) {
 	for (std::size_t k = 0; k < num_channels; k++) {
 		std::size_t val = k + static_cast<std::size_t>(offset);
-		if (std::is_integral_v<T>) val %= static_cast<std::size_t>(std::numeric_limits<T>::max());
+		if (std::is_integral<T>::value) val %= static_cast<std::size_t>(std::numeric_limits<T>::max());
 		data[k] = (k % 2 == 0) ? static_cast<T>(val) : -static_cast<T>(val);
 	}
 }

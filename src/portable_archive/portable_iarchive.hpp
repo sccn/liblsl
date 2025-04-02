@@ -194,8 +194,9 @@ public:
 		// after reading the note above you still might decide to
 		// deactivate this static assert and try if it works out.
 		typename traits::bits bits;
-		static_assert(sizeof(bits) == sizeof(T));
-		static_assert(std::numeric_limits<T>::is_iec559);
+		static_assert(sizeof(bits) == sizeof(T), "mismatching type sizes");
+		static_assert(std::numeric_limits<T>::is_iec559,
+			"floating point type does not conform to IEC 559 (IEEE 754)");
 
 		load(bits);
 		traits::set_bits(t, bits);
