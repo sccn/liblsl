@@ -466,11 +466,13 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	for (sample *cur = tail_, *next = cur->next_;; cur = next, next = next->next_) {
-		if (cur != sentinel()) delete cur;
-		if (!next) break;
-	}
-	delete[] storage_;
+	sample *cur = tail_;
+    while (cur) {
+        sample *next = cur->next_;  // Save next pointer before potentially deleting cur
+        if (cur != sentinel()) delete cur;
+        cur = next;
+    }
+    delete[] storage_;
 }
 
 void factory::reclaim_sample(sample *s) {
