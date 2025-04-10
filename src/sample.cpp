@@ -466,13 +466,25 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	sample *cur = tail_;
-    while (cur) {
-        sample *next = cur->next_;  // Save next pointer before potentially deleting cur
-        if (cur != sentinel()) delete cur;
-        cur = next;
-    }
-    delete[] storage_;
+	// get pending samples
+	std::vector<sample*> pending;
+	sample *cur = tail_.load();
+
+	// add them without deleting
+	while (cur) {
+		if (cur != sentinel()) {
+			pending.push_back(cur);
+		}
+		sample *next = cur->next_.load();
+		cur = next;
+	}
+
+	// now delete the samples
+	for (sample* s : pending) {
+		delete s;
+	}
+
+	delete[] storage_;
 }
 
 void factory::reclaim_sample(sample *s) {
