@@ -466,24 +466,17 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	// get pending samples
-	std::vector<sample*> pending;
 	sample *cur = tail_.load();
-
-	// add them without deleting
 	while (cur) {
-		if (cur != sentinel()) {
-			pending.push_back(cur);
-		}
 		sample *next = cur->next_.load();
+
+		// Only delete samples that are outside of storage area
+		if (cur != sentinel() && (static_cast<void*>(cur) < storage_ || 
+								 static_cast<void*>(cur) >= storage_ + storage_size_))
+			delete cur;
+
 		cur = next;
 	}
-
-	// now delete the samples
-	for (sample* s : pending) {
-		delete s;
-	}
-
 	delete[] storage_;
 }
 
