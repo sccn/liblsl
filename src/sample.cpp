@@ -466,9 +466,16 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	for (sample *cur = tail_, *next = cur->next_;; cur = next, next = next->next_) {
-		if (cur != sentinel()) delete cur;
-		if (!next) break;
+	sample *cur = tail_.load();
+	while (cur) {
+		sample *next = cur->next_.load();
+
+		// Only delete samples that are outside of storage area
+		if (cur != sentinel() && (static_cast<void*>(cur) < storage_ || 
+								 static_cast<void*>(cur) >= storage_ + storage_size_))
+			delete cur;
+
+		cur = next;
 	}
 	delete[] storage_;
 }

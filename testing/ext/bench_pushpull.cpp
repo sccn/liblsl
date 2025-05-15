@@ -32,10 +32,11 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 		auto found_stream_info(lsl::resolve_stream("name", name, 1, 2.0));
 		REQUIRE(!found_stream_info.empty());
 
-		std::list<lsl::stream_inlet> inlet_list;
 		for (auto n_inlets : param_inlets) {
+			std::list<lsl::stream_inlet> inlet_list;
 			while (inlet_list.size() < n_inlets) {
-				inlet_list.emplace_front(found_stream_info[0], 300, false);
+				lsl::stream_info info_copy(found_stream_info[0]);
+				inlet_list.emplace_front(info_copy, 300, false);
 				inlet_list.front().open_stream(.5);
 			}
 			std::string suffix(std::to_string(nchan) + "_inlets_" + std::to_string(n_inlets));
@@ -49,7 +50,20 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 				out.push_chunk_multiplexed(data, chunk_size);
 				for (auto &inlet : inlet_list) inlet.flush();
 			};
+
+			// Explicitly close and delete the inlets to ensure that they are not
+			// still in use when the next inlet is created.
+			for (int i = 0; i < n_inlets; i++) {
+				inlet_list.back().close_stream();
+				inlet_list.pop_back();
+			}
+			
 		}
+		// Wait until all inlets are closed
+		// this hangs forever
+		// while (out.have_consumers()) {
+		// 	std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		// }
 	}
 }
 
