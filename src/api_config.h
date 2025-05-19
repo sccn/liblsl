@@ -77,6 +77,21 @@ public:
 	bool allow_ipv4() const { return allow_ipv4_; }
 
 	/**
+	 * @brief An additional settings path to load configuration from.
+	 */
+	const std::string &api_config_filename() const { return api_config_filename_; }
+
+	/**
+	 * @brief Set the config file name used to load the settings.
+	 * 
+	 * This MUST be called before the first call to get_instance() to have any effect.
+	 */
+	static void set_api_config_filename(const std::string &filename) {
+		api_config_filename_ = filename;
+	}
+
+
+	/**
 	 * @brief The range or scope of stream lookup when using multicast-based discovery
 	 *
 	 * determines the output of the member functions multicast_addresses() and multicast_ttl().
@@ -220,6 +235,8 @@ private:
 	 * @param filename Platform-native config file name
 	 */
 	void load_from_file(const std::string &filename = std::string());
+
+	static std::string api_config_filename_ = "";
 
 	// core parameters
 	bool allow_ipv6_, allow_ipv4_;
