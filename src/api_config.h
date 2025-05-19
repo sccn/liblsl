@@ -236,7 +236,7 @@ private:
 	 */
 	void load_from_file(const std::string &filename = std::string());
 
-	static std::string api_config_filename_ = "";
+	static std::string api_config_filename_;
 
 	// core parameters
 	bool allow_ipv6_, allow_ipv4_;
@@ -275,6 +275,10 @@ private:
 	float smoothing_halftime_;
 	bool force_default_timestamps_;
 };
+
+// initialize configuration file name
+inline std::string api_config::api_config_filename_ = "";
+
 } // namespace lsl
 
 #endif
