@@ -2,6 +2,7 @@
 #define API_CONFIG_H
 
 #include "netinterfaces.h"
+#include "util/inireader.hpp"
 #include <cstdint>
 #include <loguru.hpp>
 #include <string>
@@ -14,9 +15,11 @@ namespace lsl {
  * A configuration object: holds all the configurable settings of liblsl.
  * These settings can be set via a configuration file that is automatically searched
  * by stream providers and recipients in a series of locations:
- *  - lsl_api.cfg
- *  - ~/lsl_api/lsl_api.cfg
- *  - /etc/lsl_api/lsl_api.cfg
+ *  - First, the content set via `lsl_set_config_content()`
+ *  - Second, the file set via `lsl_set_config_filename()`
+ *  - Third, the file `lsl_api.cfg` in the current working directory
+ *  - Fourth, the file `lsl_api.cfg` in the home directory (e.g., `~/lsl_api/lsl_api.cfg`)
+ *  - Fifth, the file `lsl_api.cfg` in the system configuration directory (e.g., `/etc/lsl_api/lsl_api.cfg`)
  *
  * Note that, while in some cases it might seem sufficient to override configurations
  * only for a subset of machines involved in a recording session (e.g., the servers),
@@ -75,6 +78,33 @@ public:
 	 */
 	bool allow_ipv6() const { return allow_ipv6_; }
 	bool allow_ipv4() const { return allow_ipv4_; }
+
+
+
+	/**
+	* @brief Set the configuration directly from a string.
+	* 
+	* This allows passing in configuration content directly rather than from a file.
+	* This MUST be called before the first call to get_instance() to have any effect.
+	*/
+    static void set_api_config_content(const std::string &content) {
+        api_config_content_ = content;
+    }
+
+	/**
+	 * @brief An additional settings path to load configuration from.
+	 */
+	const std::string &api_config_filename() const { return api_config_filename_; }
+
+	/**
+	 * @brief Set the config file name used to load the settings.
+	 * 
+	 * This MUST be called before the first call to get_instance() to have any effect.
+	 */
+	static void set_api_config_filename(const std::string &filename) {
+		api_config_filename_ = filename;
+	}
+
 
 	/**
 	 * @brief The range or scope of stream lookup when using multicast-based discovery
@@ -221,6 +251,22 @@ private:
 	 */
 	void load_from_file(const std::string &filename = std::string());
 
+	/**
+	 * @brief Load a configuration from a string.
+	 * @param content The configuration content to parse
+	 */
+	void load_from_content(const std::string &content);
+
+	/**
+	 * @brief Load the configuration from an INI object.
+	 * @param pt The INI object to load the configuration from
+	 */
+	void load(INI &pt);
+
+	// config overrides
+	static std::string api_config_filename_;
+	static std::string api_config_content_;
+
 	// core parameters
 	bool allow_ipv6_, allow_ipv4_;
 	uint16_t base_port_;
@@ -258,6 +304,11 @@ private:
 	float smoothing_halftime_;
 	bool force_default_timestamps_;
 };
+
+// initialize configuration file name
+inline std::string api_config::api_config_filename_ = "";
+inline std::string api_config::api_config_content_ = "";
+
 } // namespace lsl
 
 #endif
