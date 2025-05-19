@@ -56,6 +56,16 @@ api_config::api_config() {
 	std::vector<std::string> filenames;
 
 	// NOLINTNEXTLINE(concurrency-mt-unsafe)
+	if (api_config_filename_ != "") {
+		// if a config file name was set, use it if it is readable
+		if (file_is_readable(api_config_filename_)) {
+			filenames.insert(filenames.begin(), api_config_filename_);
+		} else {
+			LOG_F(ERROR, "Config file %s not found", api_config_filename_.c_str());
+		}
+	}
+
+	// NOLINTNEXTLINE(concurrency-mt-unsafe)
 	if (auto *cfgpath = getenv("LSLAPICFG")) {
 		std::string envcfg(cfgpath);
 		if (!file_is_readable(envcfg))
