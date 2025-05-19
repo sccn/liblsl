@@ -236,3 +236,14 @@ extern LIBLSL_C_API void lsl_destroy_string(char *s);
  * is called before the first call to any other LSL function.
  */
 extern LIBLSL_C_API void lsl_set_config_filename(const char *filename);
+
+/**
+ * Set the content of the configuration file to be used.
+ *
+ * This is a global setting that will be used by all LSL
+ * after this function is called. If, and only if, this function
+ * is called before the first call to any other LSL function.
+ *
+ * @note the configuration content is wiped after LSL has initialized.
+ */
+extern LIBLSL_C_API void lsl_set_config_content(const char *content);
