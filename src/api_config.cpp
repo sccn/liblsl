@@ -56,7 +56,7 @@ api_config::api_config() {
 	std::vector<std::string> filenames;
 
 	// NOLINTNEXTLINE(concurrency-mt-unsafe)
-	if (api_config_filename_ != "") {
+	if (!api_config_filename_.empty()) {
 		// if a config file name was set, use it if it is readable
 		if (file_is_readable(api_config_filename_)) {
 			filenames.insert(filenames.begin(), api_config_filename_);
