@@ -6,6 +6,7 @@
 #include "portable_archive/portable_oarchive.hpp"
 #include "util/cast.hpp"
 #include <boost/endian/conversion.hpp>
+#include <thread>
 
 using namespace lsl;
 using lslboost::endian::endian_reverse_inplace;
@@ -466,19 +467,15 @@ sample *factory::pop_freelist() {
 }
 
 factory::~factory() {
-	sample *cur = tail_.load();
-	while (cur) {
-		sample *next = cur->next_.load();
-
-		// Delete sample if it's not the sentinel and not in the storage area
-		if (cur != sentinel() && 
-			(reinterpret_cast<char*>(cur) < storage_ || 
-			 reinterpret_cast<char*>(cur) >= storage_ + storage_size_)) {
-			delete cur;
-		}
-		cur = next;
-	}
-	delete[] storage_;
+    sample* cur = tail_.load();
+    while (cur) {
+        sample* next = cur->next_.load();
+        if (cur != sentinel()) {
+            delete cur;
+        }
+        cur = next;
+    }
+    delete[] storage_;
 }
 
 void factory::reclaim_sample(sample *s) {
