@@ -470,11 +470,12 @@ factory::~factory() {
 	while (cur) {
 		sample *next = cur->next_.load();
 
-		// Only delete samples that are outside of storage area
-		if (cur != sentinel() && (static_cast<void*>(cur) < storage_ || 
-								 static_cast<void*>(cur) >= storage_ + storage_size_))
+		// Delete sample if it's not the sentinel and not in the storage area
+		if (cur != sentinel() && 
+			(reinterpret_cast<char*>(cur) < storage_ || 
+			 reinterpret_cast<char*>(cur) >= storage_ + storage_size_)) {
 			delete cur;
-
+		}
 		cur = next;
 	}
 	delete[] storage_;
