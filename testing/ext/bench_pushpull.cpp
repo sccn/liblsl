@@ -78,14 +78,12 @@ TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string)
 						inlet->flush();
 					}
 				};
-
 				BENCHMARK("push_chunk_nchan_" + suffix) {
 					out->push_chunk_multiplexed(data, chunk_size);
 					for (auto &inlet : inlets) {
 						inlet->flush();
 					}
 				};
-				
 			} catch (const std::exception& e) {
 				WARN("Exception in benchmark: " << e.what());
 			}
