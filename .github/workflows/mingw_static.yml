@@ -44,7 +44,7 @@ jobs:
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 -DLSL_OPTIMIZATIONS=OFF \
-                -G 'MSYS Makefiles'
+                -G Ninja
 
     - name: make
       run: cmake --build build --target install --config Release -j --verbose
