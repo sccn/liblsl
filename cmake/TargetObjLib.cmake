@@ -4,30 +4,9 @@ add_library(lslobj OBJECT
         ${lslheaders}
 )
 
-target_compile_features(lslobj PUBLIC cxx_std_17)  # Note: Redundant with project-wide setting in CompilerSettings.cmake
+target_link_libraries(lslobj PRIVATE lslboost Threads::Threads) # TODO: Seems out of order here
 
-target_compile_definitions(lslobj
-    PRIVATE
-        LIBLSL_EXPORTS
-        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
-    PUBLIC
-        ASIO_NO_DEPRECATED
-        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
-)
-if(WIN32)
-    if(BUILD_SHARED_LIBS)
-        set_target_properties(lslobj
-            PROPERTIES
-                WINDOWS_EXPORT_ALL_SYMBOLS ON
-        )
-    endif(BUILD_SHARED_LIBS)
-    target_compile_definitions(lslobj
-        PRIVATE
-            _CRT_SECURE_NO_WARNINGS
-        PUBLIC
-            _WIN32_WINNT=${LSL_WINVER}
-    )
-endif(WIN32)
+target_compile_features(lslobj PUBLIC cxx_std_17)  # TODO: Redundant with project-wide setting in CompilerSettings.cmake
 
 # Set the includes/headers for the lslobj target.
 # Note: We cannot use the PUBLIC_HEADER property of the target, because
@@ -44,14 +23,32 @@ endif(WIN32)
 # If we used the FILET_SET approach then we would remove the PUBLIC includes below.
 target_include_directories(lslobj
     PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
         $<INSTALL_INTERFACE:include>
     INTERFACE
         # Propagate include directories to consumers
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>  # for unit tests
 )
 
-# Link in dependencies -- some of which are header-only libraries
+target_include_directories(lslobj
+        SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/loguru>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio>
+)
+
+target_compile_definitions(lslobj
+    PRIVATE
+        LIBLSL_EXPORTS
+        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+    PUBLIC
+        ASIO_NO_DEPRECATED
+        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
+)
+
+if(MINGW)
+    target_link_libraries(lslobj PRIVATE bcrypt)
+endif()
+
 # - System libs
 if(UNIX AND NOT APPLE)
     # check that clock_gettime is present in the stdlib, link against librt otherwise
@@ -65,23 +62,33 @@ if(UNIX AND NOT APPLE)
     endif()
 elseif(WIN32)
     target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
+    target_compile_definitions(lslobj
+        PRIVATE
+            _CRT_SECURE_NO_WARNINGS
+        PUBLIC
+            _WIN32_WINNT=${LSL_WINVER}
+    )
+    if(BUILD_SHARED_LIBS)
+        #        set_target_properties(lslobj
+        #            PROPERTIES
+        #                WINDOWS_EXPORT_ALL_SYMBOLS ON
+        #        )
+    endif(BUILD_SHARED_LIBS)
 endif()
-if(MINGW)
-    target_link_libraries(lslobj PRIVATE bcrypt)
-endif()
-target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
+
+# Link in dependencies -- some of which are header-only libraries
+
 # - loguru and asio header-only
 if(NOT LSL_OPTIMIZATIONS)
     # build one object file for Asio instead of once every time an Asio function is called. See
     # https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
     target_sources(lslobj PRIVATE thirdparty/asio_objects.cpp)
-    target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION ASIO_DISABLE_VISIBILITY)
+    target_compile_definitions(lslobj
+        PUBLIC
+            ASIO_SEPARATE_COMPILATION
+            ASIO_DISABLE_VISIBILITY
+    )
 endif()
-target_include_directories(lslobj
-    SYSTEM PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/loguru>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio>
-)
 # - pugixml
 if(LSL_BUNDLED_PUGIXML)
     target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)

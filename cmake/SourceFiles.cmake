@@ -73,10 +73,3 @@ set(lslheaders
         include/lsl/types.h
         include/lsl/xml.h
 )
-# LSL_LIB_TYPE set by ProjectOptions.cmake
-# LSL_VERSION_INFO set by GitVersion.cmake < Dependencies.cmake
-# These are used to set the version information in the buildinfo.cpp file
-set_source_files_properties("src/buildinfo.cpp"
-        PROPERTIES COMPILE_DEFINITIONS
-        LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:${LSL_LIB_TYPE}"
-)
