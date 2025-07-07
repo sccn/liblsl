@@ -27,7 +27,7 @@ endif()
 # Platform-specific settings
 if(WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-    set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
+    
     set(LSL_WINVER "0x0601" CACHE STRING
             "Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 elseif(APPLE)

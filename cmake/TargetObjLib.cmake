@@ -15,7 +15,12 @@ target_compile_definitions(lslobj
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
 )
 if(WIN32)
-    # TODO: Maybe these can be moved above with boolean conditionals?
+    if(BUILD_SHARED_LIBS)
+        set_target_properties(lslobj
+            PROPERTIES
+                WINDOWS_EXPORT_ALL_SYMBOLS ON
+        )
+    endif(BUILD_SHARED_LIBS)
     target_compile_definitions(lslobj
         PRIVATE
             _CRT_SECURE_NO_WARNINGS
