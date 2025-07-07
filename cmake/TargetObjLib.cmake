@@ -43,6 +43,18 @@ if(UNIX AND NOT APPLE)
     endif()
 elseif(WIN32)
     target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
+    target_compile_definitions(lslobj
+        PRIVATE
+            _CRT_SECURE_NO_WARNINGS
+        PUBLIC
+            _WIN32_WINNT=${LSL_WINVER}
+    )
+    if(BUILD_SHARED_LIBS)
+        #        set_target_properties(lslobj
+        #            PROPERTIES
+        #                WINDOWS_EXPORT_ALL_SYMBOLS ON
+        #        )
+    endif(BUILD_SHARED_LIBS)
 endif()
 
 # Compiler settings
