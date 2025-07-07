@@ -1,4 +1,5 @@
 # Configure installation
+include(CMakePackageConfigHelpers)
 
 # Paths
 if(LSL_UNIXFOLDERS)
@@ -9,33 +10,6 @@ else()
     set(CMAKE_INSTALL_INCLUDEDIR LSL/include)
 endif()
 
-# Define installation targets
-set(LSLTargets lsl)
-if(LSL_BUILD_STATIC)
-    list(APPEND LSLTargets lslobj lslboost)
-endif()
-install(TARGETS ${LSLTargets}
-    EXPORT lslTargets  # generates a CMake package config; should not be same name as the list of targets
-    COMPONENT liblsl
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-    # If we use CMake 3.23 FILE_SET, replace INCLUDES line with: FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-# Install the public headers.
-# TODO: Verify that this is necessary, given that we already installed the INCLUDES above.
-# TODO: Verify if it is still necessary to install the headers if we use FILE_SET.
-install(DIRECTORY include/
-        COMPONENT liblsl
-        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-
-# Generate and install CMake package config.
-# This allows other CMake projects to find and use the lsl library
-# using find_package(lsl).
-include(CMakePackageConfigHelpers)
-
 # Generate a version file for the package.
 write_basic_package_version_file(
         "${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake"
@@ -43,19 +17,35 @@ write_basic_package_version_file(
         COMPATIBILITY AnyNewerVersion
 )
 
+# Define installation targets
+set(LSLTargets lsl)
+if(LSL_BUILD_STATIC)
+    list(APPEND LSLTargets lslobj lslboost)
+endif()
+
+# Install the targets and store configuration information.
+install(TARGETS ${LSLTargets}
+    EXPORT LSLTargets  # generates a CMake package config; TODO: Why the same name as the list of targets?
+    COMPONENT liblsl
+    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+    # If we use CMake 3.23 FILE_SET, replace INCLUDES line with: FILE_SET HEADERS DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+
 # TODO: What does this do? Why do we need LSLTargets.cmake in the build dir?
-export(EXPORT lslTargets
+export(EXPORT LSLTargets
         FILE "${CMAKE_CURRENT_BINARY_DIR}/LSLTargets.cmake"
         NAMESPACE LSL::
 )
 
 # Generate the LSLConfig.cmake file and mark it for installation
-install(
-    EXPORT lslTargets
-    FILE LSLTargets.cmake  # TODO: I think we can use this to generate LSLConfig.cmake, no?
-    COMPONENT liblsl
-    NAMESPACE "LSL::"
-    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LSL
+install(EXPORT LSLTargets
+        FILE LSLTargets.cmake  # TODO: I think we can use this to generate LSLConfig.cmake, no?
+        COMPONENT liblsl
+        NAMESPACE "LSL::"
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/LSL
 )
 # A common alternative to installing the exported package config file is to generate it from a template.
 #configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/lslConfig.cmake.in
@@ -69,6 +59,14 @@ configure_file(cmake/LSLCMake.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLCMake.cmake"
 # TODO: Why bother with this copy? Is it not enough to install (into cmake/LSL)?
 # TODO: Why use hardcoded files? We can generate the LSLConfig.cmake.
 configure_file(cmake/LSLConfig.cmake "${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake" COPYONLY)
+
+# Install the public headers.
+# TODO: Verify that this is necessary, given that we already installed the INCLUDES above.
+# TODO: Verify if it is still necessary to install the headers if we use FILE_SET.
+install(DIRECTORY include/
+        COMPONENT liblsl
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
 
 # Install the version file and the helper CMake script.
 install(
