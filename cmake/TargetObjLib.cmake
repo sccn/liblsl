@@ -43,10 +43,22 @@ if(UNIX AND NOT APPLE)
     endif()
 elseif(WIN32)
     target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
+endif()
+
+# Compiler settings
+target_compile_definitions(lslobj
+    PRIVATE
+        LIBLSL_EXPORTS
+        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+    PUBLIC
+        ASIO_NO_DEPRECATED
+        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
+)
+if(WIN32)
     target_compile_definitions(lslobj
-        PRIVATE
+            PRIVATE
             _CRT_SECURE_NO_WARNINGS
-        PUBLIC
+            PUBLIC
             _WIN32_WINNT=${LSL_WINVER}
     )
     if(BUILD_SHARED_LIBS)
