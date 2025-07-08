@@ -1,32 +1,22 @@
 # Create object library so all files are only compiled once
 add_library(lslobj OBJECT
         ${lslsources}
-        ${lslheaders}
+#        ${lslheaders}  # Headers are added later using FILE_SET
 )
 
 # Set the includes/headers for the lslobj target
-# Note: We cannot use the PUBLIC_HEADER property of the target, because
-#  it flattens the include directories.
-# We could use the new FILE_SET feature that comes with CMake 3.23.
-# This is how it would look. Note that HEADERS is a special set name and implies its type.
-#target_sources(lslobj
-#    PUBLIC
-#        FILE_SET HEADERS
-#        BASE_DIRS include
-#        FILES ${lslheaders}
-#)
-# We settle on the older and more common target_include_directories PUBLIC approach.
-# If we used the FILET_SET approach then we would remove the PUBLIC includes below.
-target_include_directories(lslobj
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
-        $<INSTALL_INTERFACE:include>
+# Note: We cannot use the PUBLIC_HEADER property of the target,
+#  because it flattens the include directories.
+# Note: IME, this approach is less error prone than target_include_directories
+target_sources(lslobj
     INTERFACE
-        # Propagate include directories to consumers
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>  # for unit tests
+        FILE_SET HEADERS  # special set name; implies TYPE.
+        BASE_DIRS include
+        FILES ${lslheaders}
 )
 
 # Link system libs
+# (boost might be bundled or system)
 target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
 if(MINGW)
     target_link_libraries(lslobj PRIVATE bcrypt)
@@ -96,6 +86,8 @@ endif(WIN32)
 # Link in 3rd party dependencies
 # - loguru and asio header-only
 target_include_directories(lslobj
+    # Note: We use `SYSTEM` to suppress warnings from 3rd party headers and put these at the end of the include path.
+    # Note: We use `PUBLIC` because 'internal tests' import individual source files and link lslobj.
     SYSTEM PUBLIC
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/loguru>
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio>
@@ -112,6 +104,7 @@ if(NOT LSL_OPTIMIZATIONS)
 endif()
 
 # - pugixml
+# Note: We use `PUBLIC` because 'internal tests' import individual source files and link lslobj.
 if(LSL_BUNDLED_PUGIXML)
     target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
     target_include_directories(lslobj

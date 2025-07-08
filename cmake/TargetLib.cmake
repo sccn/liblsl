@@ -6,6 +6,7 @@ set_source_files_properties("src/buildinfo.cpp"
         LSL_LIBRARY_INFO_STR="${LSL_VERSION_INFO}/link:${LSL_LIB_TYPE}"
 )
 add_library(lsl ${LSL_LIB_TYPE} src/buildinfo.cpp)
+add_library(LSL::lsl ALIAS lsl)
 
 # Configure main library
 
@@ -23,19 +24,19 @@ if(LSL_FORCE_FANCY_LIBNAME)
     )
 endif()
 
-# Includes. TODO: Can we not inherit these from lslobj?
-target_include_directories(lsl
-        INTERFACE
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-        $<INSTALL_INTERFACE:include>
-)
+# Link dependencies. The only dependency is lslobj, which contains the bulk of the library code and linkages.
+# Note: We link PRIVATE because lslobj exposes extra symbols that are not part of the public API
+#  but are used by the internal tests.
+target_link_libraries(lsl PRIVATE lslobj)
 
-# Link dependencies. The biggest dependency is lslobj, which contains the bulk of the library code.
-target_link_libraries(lsl
-    PRIVATE
-        lslobj  # TODO: If this is public, does that improve inheritance of includes and compile definitions?
-        lslboost  # TODO: Shouldn't be needed -- lslobj already links it
-        ${PUGIXML_LIBRARIES}
+# Set the include directories for the lsl target.
+# Note: We had to link lslobj as a PRIVATE dependency, therefore we must manually expose the include directories
+get_target_property(LSLOBJ_HEADERS lslobj HEADER_SET)
+target_sources(lsl
+    INTERFACE
+        FILE_SET HEADERS
+        BASE_DIRS include
+        FILES ${LSLOBJ_HEADERS}
 )
 
 # Set compile definitions for lsl
