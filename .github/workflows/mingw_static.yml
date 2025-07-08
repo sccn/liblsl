@@ -1,14 +1,14 @@
 name: MinGW Windows static test
 
 on:
-  push:
-    branches: ['*']
-    paths:
-      - '**'
-      - '!docs/**'
-      - '!.github/**'
-      - '.github/workflows/mingw_static.yml'
-  pull_request:
+#  push:
+#    branches: ['*']
+#    paths:
+#      - '**'
+#      - '!docs/**'
+#      - '!.github/**'
+#      - '.github/workflows/mingw_static.yml'
+#  pull_request:
   workflow_dispatch:
 
 concurrency:
@@ -18,8 +18,8 @@ concurrency:
 jobs:
   build:
     name: MinGW batteries-included
-    runs-on: windows-latest
-    
+    runs-on: windows-2019
+
     defaults:
       run:
         shell: 'msys2 {0}'
@@ -29,6 +29,9 @@ jobs:
     - uses: msys2/setup-msys2@v2
       with:
         release: false
+        cache: true
+#        install: >-
+#            cmake
     - name: Configure CMake
       run: |
            cmake --version

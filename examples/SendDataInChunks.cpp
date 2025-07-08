@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 
 		// Your device might have its own timer. Or you can decide how often to poll
 		//  your device, as we do here.
-		auto t_start = std::chrono::high_resolution_clock::now();
+		auto t_start = std::chrono::steady_clock::now();
 		auto next_chunk_time = t_start;
 		for (unsigned c = 0;; c++) {
 			// wait a bit
