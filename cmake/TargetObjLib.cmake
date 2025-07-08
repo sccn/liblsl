@@ -4,11 +4,7 @@ add_library(lslobj OBJECT
         ${lslheaders}
 )
 
-target_link_libraries(lslobj PRIVATE lslboost Threads::Threads) # TODO: Seems out of order here
-
-target_compile_features(lslobj PUBLIC cxx_std_17)  # TODO: Redundant with project-wide setting in CompilerSettings.cmake
-
-# Set the includes/headers for the lslobj target.
+# Set the includes/headers for the lslobj target
 # Note: We cannot use the PUBLIC_HEADER property of the target, because
 #  it flattens the include directories.
 # We could use the new FILE_SET feature that comes with CMake 3.23.
@@ -30,26 +26,11 @@ target_include_directories(lslobj
         $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/src>  # for unit tests
 )
 
-target_include_directories(lslobj
-        SYSTEM PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/loguru>
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio>
-)
-
-target_compile_definitions(lslobj
-    PRIVATE
-        LIBLSL_EXPORTS
-        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
-    PUBLIC
-        ASIO_NO_DEPRECATED
-        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
-)
-
+# Link system libs
+target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
 if(MINGW)
     target_link_libraries(lslobj PRIVATE bcrypt)
 endif()
-
-# - System libs
 if(UNIX AND NOT APPLE)
     # check that clock_gettime is present in the stdlib, link against librt otherwise
     include(CheckSymbolExists)
@@ -62,10 +43,22 @@ if(UNIX AND NOT APPLE)
     endif()
 elseif(WIN32)
     target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
+endif()
+
+# Compiler settings
+target_compile_definitions(lslobj
+    PRIVATE
+        LIBLSL_EXPORTS
+        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
+    PUBLIC
+        ASIO_NO_DEPRECATED
+        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
+)
+if(WIN32)
     target_compile_definitions(lslobj
-        PRIVATE
+            PRIVATE
             _CRT_SECURE_NO_WARNINGS
-        PUBLIC
+            PUBLIC
             _WIN32_WINNT=${LSL_WINVER}
     )
     if(BUILD_SHARED_LIBS)
@@ -74,11 +67,15 @@ elseif(WIN32)
         #                WINDOWS_EXPORT_ALL_SYMBOLS ON
         #        )
     endif(BUILD_SHARED_LIBS)
-endif()
+endif(WIN32)
 
-# Link in dependencies -- some of which are header-only libraries
-
+# Link in 3rd party dependencies
 # - loguru and asio header-only
+target_include_directories(lslobj
+    SYSTEM PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/loguru>
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/asio>
+)
 if(NOT LSL_OPTIMIZATIONS)
     # build one object file for Asio instead of once every time an Asio function is called. See
     # https://think-async.com/Asio/asio-1.18.2/doc/asio/using.html#asio.using.optional_separate_compilation
@@ -89,6 +86,7 @@ if(NOT LSL_OPTIMIZATIONS)
             ASIO_DISABLE_VISIBILITY
     )
 endif()
+
 # - pugixml
 if(LSL_BUNDLED_PUGIXML)
     target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
