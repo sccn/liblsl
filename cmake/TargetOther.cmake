@@ -1,3 +1,5 @@
+include(cmake/LSLCMake.cmake)  # Needed for `installLSLApp`
+
 # Build utilities
 add_executable(lslver testing/lslver.c)
 target_link_libraries(lslver PRIVATE lsl)
