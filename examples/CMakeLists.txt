@@ -2,12 +2,16 @@ cmake_minimum_required(VERSION 3.23)
 project(lslexamples
 	LANGUAGES C CXX
 	VERSION 0.2.0)
+
+include(GNUInstallDirs)
+
 find_package(LSL REQUIRED
 	HINTS
         ${LSL_INSTALL_ROOT}
         "${CMAKE_CURRENT_LIST_DIR}/../install"  # GHA scripts default install directory
         "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release/install"  # CLion default if using -DCMAKE_INSTALL_PREFIX=install
-        "${CMAKE_CURRENT_LIST_DIR}/../out/x64-Release/install"  # MSVC default if using -DCMAKE_INSTALL_PREFIX=install  TODO: Check this
+        "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release-visual-studio/install"  # CLion default if using VS compiler
+        "${CMAKE_CURRENT_LIST_DIR}/../out/build/x64-Release/install"  # MSVC default if using -DCMAKE_INSTALL_PREFIX=install
 	PATH_SUFFIXES share/LSL
 )
 get_filename_component(LSL_PATH ${LSL_CONFIG} DIRECTORY)
@@ -50,15 +54,6 @@ function(addlslexample name extension)
         COMPONENT ${PROJECT_NAME}
         RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
-    if(WIN32)
-        # On Windows, we need to copy the DLLs to the same directory as the executable
-        #  if we wish to run the example without putting the DLLs in the PATH.
-        install(
-            FILES $<TARGET_FILE:LSL::lsl>
-            DESTINATION ${CMAKE_INSTALL_BINDIR}
-            COMPONENT ${PROJECT_NAME}
-        )
-    endif(WIN32)
 endfunction()
 
 find_package(Threads)
@@ -84,3 +79,19 @@ addlslexample(SendStringMarkersC c)
 addlslexample(TestSyncWithoutData cpp)
 
 target_link_libraries(TestSyncWithoutData PRIVATE Threads::Threads)
+
+# Windows doesn't have RPATH so we put the dll into the same directory as the executable.
+if(WIN32)
+	# For one of the targets, copy the lsl.dll into the build directory so we can debug the examples if needed.
+	add_custom_command(TARGET HandleMetaData POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "$<TARGET_FILE:LSL::lsl>"
+        $<TARGET_FILE_DIR:HandleMetaData>
+        COMMENT "Copying lsl.dll to examples build directory"
+    )
+	# Install the lsl.dll to the same directory as the executable.
+	install(
+        CODE "file(INSTALL DESTINATION \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\" TYPE SHARED_LIBRARY FILES \"$<TARGET_FILE:LSL::lsl>\")"
+        COMPONENT ${PROJECT_NAME}
+    )#install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different \"$<TARGET_FILE:LSL::lsl>\" \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")")
+endif()
