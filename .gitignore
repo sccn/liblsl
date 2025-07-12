@@ -13,3 +13,4 @@
 # CLion
 .idea/
 /cmake-build-*/
+/examples/build*/

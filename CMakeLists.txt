@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.16)
+cmake_minimum_required (VERSION 3.23)
 project (liblsl
 	VERSION 1.16.2
 	LANGUAGES C CXX
@@ -17,16 +17,10 @@ include(cmake/SourceFiles.cmake)  #
 include(cmake/TargetObjLib.cmake)  #
 include(cmake/TargetLib.cmake)  #
 include(cmake/Installation.cmake)  #
-include(cmake/LSLCMake.cmake)
 include(cmake/TargetOther.cmake)
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
-endif()
-
-if(LSL_BUILD_EXAMPLES)
-    set(LSL_INSTALL_ROOT ${CMAKE_CURRENT_BINARY_DIR})
-	add_subdirectory(examples)
 endif()
 
 # Config for packaging
