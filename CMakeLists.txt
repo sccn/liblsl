@@ -23,11 +23,6 @@ if(LSL_UNITTESTS)
 	add_subdirectory(testing)
 endif()
 
-if(LSL_BUILD_EXAMPLES)
-    set(LSL_INSTALL_ROOT ${CMAKE_CURRENT_BINARY_DIR})
-	add_subdirectory(examples)
-endif()
-
 # Config for packaging
 # TODO: Config for packaging for the library itself is likely to diverge from config for packing applications. e.g.,
 # -> Optionally install to system directories
