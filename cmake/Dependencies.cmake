@@ -20,7 +20,7 @@ add_library(lslboost INTERFACE)
 if(LSL_BUNDLED_BOOST)
     message(STATUS "Using bundled header-only Boost")
     target_include_directories(lslboost
-        SYSTEM INTERFACE
+        INTERFACE
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/lslboost>
     )
 else()
