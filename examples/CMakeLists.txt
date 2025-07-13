@@ -93,5 +93,5 @@ if(WIN32)
 	install(
         CODE "file(INSTALL DESTINATION \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\" TYPE SHARED_LIBRARY FILES \"$<TARGET_FILE:LSL::lsl>\")"
         COMPONENT ${PROJECT_NAME}
-    )#install(CODE "execute_process(COMMAND ${CMAKE_COMMAND} -E copy_if_different \"$<TARGET_FILE:LSL::lsl>\" \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\")")
+    )
 endif()
