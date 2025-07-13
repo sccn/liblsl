@@ -1,6 +1,8 @@
 # the absolute path to the extracted boost source archive (https://www.boost.org/users/download/)
 set -e
 set -x
+cd "$(dirname "$0")/.."
+
 BOOSTPATH=/tmp/boost_1_84_0
 TMPPATH=/tmp/lslboost
 
