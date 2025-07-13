@@ -47,3 +47,34 @@ target_compile_definitions(lsl
         # don't use #pragma(lib) in MSVC builds. TODO: Maybe this can be inherited from lslobj or removed on lslobj?
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>
 )
+
+# Extra configuration for Apple targets -- set xcode attributes
+if(APPLE)
+    set_target_properties(lsl PROPERTIES
+            XCODE_ATTRIBUTE_PRODUCT_BUNDLE_IDENTIFIER "org.labstreaminglayer.liblsl"
+    )
+    # If environment variables are set for Apple Development Team and Code Sign Identity then add these to the target
+    # -> if `-G Xcode` generator is used then Xcode will use these variables to sign the framework.
+    # Note, however, that it is likely that the build products will be modified post-build, invalidating the signature,
+    #  so post-hoc signing will be required. Nevertheless, this is useful for initial signing and normal Xcode workflow.
+    if(DEFINED ENV{APPLE_DEVELOPMENT_TEAM} AND DEFINED ENV{APPLE_CODE_SIGN_IDENTITY_APP})
+        set_target_properties(lsl PROPERTIES
+                XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY $ENV{APPLE_CODE_SIGN_IDENTITY_APP}
+                XCODE_ATTRIBUTE_DEVELOPMENT_TEAM $ENV{APPLE_DEVELOPMENT_TEAM}
+                XCODE_ATTRIBUTE_CODE_SIGN_STYLE "Manual"
+                XCODE_ATTRIBUTE_DEPLOYMENT_POSTPROCESSING YES   # this is needed for strip symbols
+                XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep"
+        )
+    endif()
+    # Configure Apple Framework
+    if(LSL_FRAMEWORK)
+        set_target_properties(lsl PROPERTIES
+                FRAMEWORK TRUE
+                FRAMEWORK_VERSION A
+                MACOSX_FRAMEWORK_IDENTIFIER "org.labstreaminglayer.liblsl"
+                MACOSX_FRAMEWORK_SHORT_VERSION_STRING "${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}"
+                MACOSX_FRAMEWORK_BUNDLE_VERSION ${PROJECT_VERSION}
+                XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/lsl.entitlements"
+        )
+    endif(LSL_FRAMEWORK)
+endif(APPLE)

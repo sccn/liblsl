@@ -6,6 +6,7 @@
 # (pip install cmake) or as binary download from cmake.org
 
 set -e -x
+cd "$(dirname "$0")/.."
 # Try to read LSLGITREVISION from git if the variable isn't set
 echo ${LSLGITREVISION:="$(git describe --tags HEAD)"}
 ${CXX:-g++} -fPIC -fvisibility=hidden -O2 ${CFLAGS} ${CXXFLAGS} -Ilslboost \
