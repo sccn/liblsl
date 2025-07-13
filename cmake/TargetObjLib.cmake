@@ -108,7 +108,7 @@ endif()
 if(LSL_BUNDLED_PUGIXML)
     target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
     target_include_directories(lslobj
-        SYSTEM PUBLIC
+        PUBLIC
             $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>
     )
 else()
