@@ -66,4 +66,15 @@ if(APPLE)
                 XCODE_ATTRIBUTE_OTHER_CODE_SIGN_FLAGS "--deep"
         )
     endif()
+    # Configure Apple Framework
+    if(LSL_FRAMEWORK)
+        set_target_properties(lsl PROPERTIES
+                FRAMEWORK TRUE
+                FRAMEWORK_VERSION A
+                MACOSX_FRAMEWORK_IDENTIFIER "org.labstreaminglayer.liblsl"
+                MACOSX_FRAMEWORK_SHORT_VERSION_STRING "${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}"
+                MACOSX_FRAMEWORK_BUNDLE_VERSION ${PROJECT_VERSION}
+                XCODE_ATTRIBUTE_CODE_SIGN_ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/lsl.entitlements"
+        )
+    endif(LSL_FRAMEWORK)
 endif(APPLE)
