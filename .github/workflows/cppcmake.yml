@@ -39,25 +39,10 @@ jobs:
         - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
         - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
         - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
-        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 DCMAKE_SYSTEM_NAME=Darwin -DLSL_FRAMEWORK=ON -G Xcode" }
-    
-    # runs all steps in the container configured in config.docker or as subprocesses when empty
-    container: ${{ matrix.config.docker }}
+        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 -DLSL_FRAMEWORK=ON" }
+
     steps:
     - uses: actions/checkout@v4
-
-    - name: set up build environment in container
-      if: ${{ matrix.config.docker }}
-      run: |
-         set -x
-         apt update
-         apt install -y --no-install-recommends g++ git ninja-build file dpkg-dev lsb-release sudo curl cmake libpugixml-dev
-
-    - name: Setup Xcode
-      if: ${{ matrix.config.name == 'macOS-latest' }}
-      uses: maxim-lobanov/setup-xcode@v1
-      with:
-        xcode-version: 'latest-stable'
 
     - name: Configure CMake
       run: |
@@ -136,7 +121,7 @@ jobs:
               ip -6 route
            fi
     
-    # run internal tests, ignore test failures on docker (missing IPv6 connectivity)
+    # run internal tests
     - name: unit tests
       run: |
         if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
@@ -144,7 +129,7 @@ jobs:
           echo "$PWD/dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
         fi
         mkdir -p dumps
-        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes || test ! -z "${{ matrix.config.docker }}"
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
         install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 10
 
