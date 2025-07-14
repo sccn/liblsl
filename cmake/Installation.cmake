@@ -42,6 +42,9 @@ write_basic_package_version_file(
 
 # Define installation targets
 set(LSLTargets lsl)
+if(LSL_BUILD_STATIC)
+    list(APPEND LSLTargets lslobj lslboost)
+endif()
 
 # Install the targets and store configuration information.
 install(TARGETS ${LSLTargets}
