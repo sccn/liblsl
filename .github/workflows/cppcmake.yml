@@ -62,7 +62,6 @@ jobs:
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
                 -DLSL_UNITTESTS=ON \
                 -DLSL_BENCHMARKS=ON \
-                -DLSL_BUILD_EXAMPLES=ON \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
@@ -71,6 +70,18 @@ jobs:
             echo ${PWD}
     - name: make
       run: cmake --build build --target install --config Release -j
+
+    - name: test install using examples
+      run: |
+          # Test that the in-tree install was successful by building the examples
+          cmake -S examples -B examples/build \
+            -DLSL_INSTALL_ROOT=${PWD}/install \
+            -DCMAKE_INSTALL_PREFIX=examples/build/install \
+            -DLSL_COMFY_DEFAULTS=ON \
+            ${{ matrix.config.cmake_extra }} \
+            ${{ github.event.inputs.cmakeextra }}
+          cmake --build examples/build --target install --config Release -j
+          ./examples/build/install/bin/HandleMetaData
   
     - name: package
       run: |

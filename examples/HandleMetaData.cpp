@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
 		}
 
 	} catch (std::exception &e) { std::cerr << "Got an exception: " << e.what() << std::endl; }
-	std::cout << "Press any key to exit. " << std::endl;
-	std::cin.get();
+	// std::cout << "Press any key to exit. " << std::endl;
+	// std::cin.get();
 	return 0;
 }

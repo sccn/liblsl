@@ -1,5 +1,4 @@
 [![GitHub Actions Status](https://github.com/sccn/liblsl/workflows/C%2FC++%20CI/badge.svg)](https://github.com/sccn/liblsl/actions)
-[![Travis Build Status](https://travis-ci.org/sccn/liblsl.svg?branch=master)](https://travis-ci.org/sccn/liblsl)
 [![Azure Build Status](https://dev.azure.com/labstreaminglayer/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/labstreaminglayer/liblsl/_build/latest?definitionId=1&branchName=master)
 [![DOI](https://zenodo.org/badge/123265865.svg)](https://zenodo.org/badge/latestdoi/123265865)
 
