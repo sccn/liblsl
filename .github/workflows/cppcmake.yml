@@ -39,7 +39,7 @@ jobs:
 #        - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
 #        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
 #        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
-        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 -DLSL_FRAMEWORK=ON" }
+        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\" -DLSL_FRAMEWORK=ON" }
 
     steps:
     - uses: actions/checkout@v4
