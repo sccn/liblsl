@@ -30,6 +30,4 @@ endif()
 # Platform-specific settings
 if(WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
-elseif(APPLE)
-    set(CMAKE_MACOSX_RPATH ON)
 endif()
