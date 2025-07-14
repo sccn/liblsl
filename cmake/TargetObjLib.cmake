@@ -59,30 +59,6 @@ if(WIN32)
     endif(BUILD_SHARED_LIBS)
 endif()
 
-# Compiler settings
-target_compile_definitions(lslobj
-    PRIVATE
-        LIBLSL_EXPORTS
-        LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
-    PUBLIC
-        ASIO_NO_DEPRECATED
-        $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
-)
-if(WIN32)
-    target_compile_definitions(lslobj
-            PRIVATE
-            _CRT_SECURE_NO_WARNINGS
-            PUBLIC
-            _WIN32_WINNT=${LSL_WINVER}
-    )
-    if(BUILD_SHARED_LIBS)
-        #        set_target_properties(lslobj
-        #            PROPERTIES
-        #                WINDOWS_EXPORT_ALL_SYMBOLS ON
-        #        )
-    endif(BUILD_SHARED_LIBS)
-endif(WIN32)
-
 # Link in 3rd party dependencies
 # - loguru and asio header-only
 target_include_directories(lslobj
