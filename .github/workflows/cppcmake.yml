@@ -35,16 +35,52 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {name: "ubuntu-22.04", os: "ubuntu-22.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
-        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
+#        - {name: "ubuntu-22.04", os: "ubuntu-22.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+#        - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+#        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
+#        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=x86_64;arm64 -DLSL_FRAMEWORK=ON" }
 
     steps:
     - uses: actions/checkout@v4
 
+    - name: Install certificates and provisioning profiles
+      if: matrix.config.os == 'macOS-latest'
+      env:
+        MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+        MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+        security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security default-keychain -s $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        
+        # Import certificates from secrets ...
+        CERTIFICATE_PATH_APP=$RUNNER_TEMP/build_certificate_app.p12
+        CERTIFICATE_PATH_INST=$RUNNER_TEMP/build_certificate_inst.p12
+        echo -n "$MACOS_CERTIFICATE_APP" | base64 --decode -o $CERTIFICATE_PATH_APP
+        echo -n "$MACOS_CERTIFICATE_INST" | base64 --decode -o $CERTIFICATE_PATH_INST
+        # ... to keychain
+        security import $CERTIFICATE_PATH_APP -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        security import $CERTIFICATE_PATH_INST -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        
+        # Set trusted partitions (groups of applications) that can access the keychain items
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        
+        # Get certificate identities into environment variables
+        CERT_IDENTITY_APP=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_APP=$CERT_IDENTITY_APP" >> $GITHUB_ENV
+        CERT_IDENTITY_INST=$(security find-identity -v -p basic $KEYCHAIN_PATH | grep "Developer ID Installer" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_INST=$CERT_IDENTITY_INST" >> $GITHUB_ENV
+
     - name: Configure CMake
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
       run: |
            if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
                 sudo apt-get install -y --no-install-recommends libpugixml-dev
@@ -60,7 +96,7 @@ jobs:
                 -Dlslgitbranch=${{ github.ref }} \
                 ${{ matrix.config.cmake_extra }} \
                 ${{ github.event.inputs.cmakeextra }}
-            echo ${PWD}
+           echo ${PWD}
 
     - name: make
       run: cmake --build build --config Release -j
@@ -99,6 +135,31 @@ jobs:
            cmake -E remove_directory package/_CPack_Packages
            cp testing/lslcfgs/default.cfg .
 
+    - name: package and notarize (macOS)
+      if: matrix.config.os == 'macOS-latest'
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
+          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
+      run: |
+          # CMake does a lousy job of creating .pkg files for macOS, so we do it manually
+          # TODO: However, we need to get the version number from the CMake package!
+          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
+            --component install/Frameworks/lsl.framework \
+            /Library/Frameworks liblsl-1.16.2-Darwin-universal.pkg
+          # Notarize the package
+          xcrun notarytool submit liblsl-1.16.2-Darwin-universal.pkg \
+            --apple-id "$APPLE_NOTARIZE_USERNAME" \
+            --password "$APPLE_NOTARIZE_PASSWORD" \
+            --team-id "$APPLE_DEVELOPMENT_TEAM" \
+            --wait
+          # Staple the notarization ticket to the package
+          xcrun stapler staple liblsl-1.16.2-Darwin-universal.pkg
+          # If notarization fails, you can get the history of notarization requests:
+          # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
+          # Then you can check the status of a specific request:
+          # xcrun notarytool log <request-id> --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
+
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
@@ -120,7 +181,7 @@ jobs:
               ip route
               ip -6 route
            fi
-    
+
     # run internal tests
     - name: unit tests
       run: |
@@ -159,3 +220,8 @@ jobs:
                 MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
                 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
               done
+
+    - name: Clean up keychain
+      if: matrix.config.os == 'macOS-latest'
+      run: |
+          security delete-keychain $RUNNER_TEMP/app-signing.keychain-db || true
