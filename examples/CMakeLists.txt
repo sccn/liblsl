@@ -42,7 +42,7 @@ function(addlslexample name extension)
     # However, this is not necessary for the examples, as they are not intended to be relocated.
 #    if(APPLE)
 #        set_target_properties(${name} PROPERTIES
-#                INSTALL_RPATH "@loader_path;@loader_path/../lib"
+#                INSTALL_RPATH "@loader_path;@loader_path/../lib;@loader_path/../Frameworks"
 #        )
 #    elseif(UNIX)
 #        set_target_properties(${name} PROPERTIES

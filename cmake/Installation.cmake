@@ -4,7 +4,12 @@ include(CMakePackageConfigHelpers)
 # Paths
 if(LSL_UNIXFOLDERS)
     include(GNUInstallDirs)
-    set(CMAKE_INSTALL_FRAMEWORK_DIR Library/Frameworks CACHE PATH "Install directory for frameworks on macOS")
+    if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+        set(FRAMEWORK_DIR_DEFAULT Library/Frameworks)
+    else()
+        set(FRAMEWORK_DIR_DEFAULT Frameworks)
+    endif()
+    set(CMAKE_INSTALL_FRAMEWORK_DIR ${FRAMEWORK_DIR_DEFAULT} CACHE PATH "Install directory for frameworks on macOS")
 else()
     set(CMAKE_INSTALL_BINDIR LSL)
     set(CMAKE_INSTALL_LIBDIR LSL)
@@ -39,6 +44,7 @@ install(TARGETS ${LSLTargets}
     RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+    FRAMEWORK DESTINATION ${CMAKE_INSTALL_FRAMEWORK_DIR}
     FILE_SET HEADERS DESTINATION ${LSL_INSTALL_INCLUDEDIR}
 )
 
