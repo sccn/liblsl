@@ -1,18 +1,16 @@
 # Create object library so all files are only compiled once
 add_library(lslobj OBJECT
         ${lslsources}
-#        ${lslheaders}  # Headers are added later using FILE_SET
+        ${lslheaders}
 )
 
 # Set the includes/headers for the lslobj target
-# Note: We cannot use the PUBLIC_HEADER property of the target,
-#  because it flattens the include directories.
-# Note: IME, this approach is less error prone than target_include_directories
-target_sources(lslobj
-    INTERFACE
-        FILE_SET HEADERS  # special set name; implies TYPE.
-        BASE_DIRS include
-        FILES ${lslheaders}
+# Note: We cannot use PUBLIC_HEADER because it flattens the include tree upon install
+# Note: We cannot use FILE_SET because it is not compatible with HEADERS.
+target_include_directories(lslobj
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:include> # For targets that link to the installed lslobj
 )
 
 # Link system libs
