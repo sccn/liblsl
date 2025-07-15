@@ -31,12 +31,20 @@ target_link_libraries(lsl PRIVATE lslobj)
 
 # Set the include directories for the lsl target.
 # Note: We had to link lslobj as a PRIVATE dependency, therefore we must manually expose the include directories
-get_target_property(LSLOBJ_HEADERS lslobj HEADER_SET)
-target_sources(lsl
-    INTERFACE
-        FILE_SET HEADERS
-        BASE_DIRS include
-        FILES ${LSLOBJ_HEADERS}
+if(APPLE AND LSL_FRAMEWORK)
+    # For frameworks, the install interface needs to point into the framework bundle
+    if(LSL_UNIXFOLDERS)
+        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${FRAMEWORK_DIR_DEFAULT}/lsl.framework/Versions/A/Headers")
+    else()
+        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "LSL/Frameworks/lsl.framework/Versions/A/Headers")
+    endif()
+else()
+    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "include")
+endif()
+target_include_directories(lsl
+    PUBLIC
+        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+        $<INSTALL_INTERFACE:${LSL_INSTALL_INTERFACE_INCLUDE_DIR}>
 )
 
 # Set compile definitions for lsl

@@ -11,3 +11,11 @@ option(LSL_TOOLS "Build some experimental tools for in-depth tests" OFF)
 option(LSL_UNITTESTS "Build LSL library unit tests" OFF)
 option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF)
 mark_as_advanced(LSL_FORCE_FANCY_LIBNAME)
+
+# If we install to the system then we want the framework to land in
+# `Library/Frameworks`, otherwise (e.g., Homebrew) we want `Frameworks`
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+    set(FRAMEWORK_DIR_DEFAULT Library/Frameworks)
+else()
+    set(FRAMEWORK_DIR_DEFAULT Frameworks)
+endif()
