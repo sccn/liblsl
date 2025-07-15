@@ -115,8 +115,9 @@ jobs:
             ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j
           ./examples/build/install/bin/HandleMetaData
-  
-    - name: package
+
+    - name: package (!macOS)
+      if: matrix.config.os != 'macOS-latest'
       run: |
            echo $GITHUB_REF
            cmake --build build --target package --config Release -j
@@ -134,6 +135,19 @@ jobs:
            fi
            cmake -E remove_directory package/_CPack_Packages
            cp testing/lslcfgs/default.cfg .
+
+    - name: Codesign (macOS)
+      if: matrix.config.os == 'macOS-latest'
+      run: |
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework/Versions/A/lsl
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework
+          echo "✅ Verifying binary signatures in install target..."
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
 
     - name: package and notarize (macOS)
       if: matrix.config.os == 'macOS-latest'
