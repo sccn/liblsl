@@ -5,13 +5,28 @@ project(lslexamples
 
 include(GNUInstallDirs)
 
-find_package(LSL REQUIRED
-	HINTS
-        ${LSL_INSTALL_ROOT}
-        "${CMAKE_CURRENT_LIST_DIR}/../install"  # GHA scripts default install directory
-        "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release/install"  # CLion default if using -DCMAKE_INSTALL_PREFIX=install
+set(LSL_SEARCH_PATHS
+    ${LSL_INSTALL_ROOT}
+    "${CMAKE_CURRENT_LIST_DIR}/../install"  # GHA scripts default install directory
+    "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release/install"  # CLion default if using -DCMAKE_INSTALL_PREFIX=install
+)
+if(APPLE)
+    # Also search in a Frameworks subdirectory for each path
+    foreach(p IN LISTS LSL_SEARCH_PATHS)
+        if(p)
+            list(APPEND LSL_SEARCH_PATHS "${p}/Frameworks")
+        endif()
+    endforeach()
+else()
+    # Add MSVC-specific paths if not on Apple
+    list(APPEND LSL_SEARCH_PATHS
         "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release-visual-studio/install"  # CLion default if using VS compiler
         "${CMAKE_CURRENT_LIST_DIR}/../out/build/x64-Release/install"  # MSVC default if using -DCMAKE_INSTALL_PREFIX=install
+    )
+endif()
+
+find_package(LSL REQUIRED
+	HINTS ${LSL_SEARCH_PATHS}
 	PATH_SUFFIXES share/LSL
 )
 get_filename_component(LSL_PATH ${LSL_CONFIG} DIRECTORY)
@@ -42,7 +57,7 @@ function(addlslexample name extension)
     # However, this is not necessary for the examples, as they are not intended to be relocated.
 #    if(APPLE)
 #        set_target_properties(${name} PROPERTIES
-#                INSTALL_RPATH "@loader_path;@loader_path/../lib"
+#                INSTALL_RPATH "@loader_path;@loader_path/../lib;@loader_path/../Frameworks"
 #        )
 #    elseif(UNIX)
 #        set_target_properties(${name} PROPERTIES
