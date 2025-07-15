@@ -149,6 +149,7 @@ jobs:
           codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
           codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
 
+    # CMake does a lousy job of creating .pkg files for macOS, so we do it manually
     - name: package and notarize (macOS)
       if: matrix.config.os == 'macOS-latest'
       env:
@@ -156,19 +157,22 @@ jobs:
           APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
           APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
       run: |
-          # CMake does a lousy job of creating .pkg files for macOS, so we do it manually
-          # TODO: However, we need to get the version number from the CMake package!
+          # Get the version number from the framework's Info.plist
+          VERSION=$(plutil -extract CFBundleShortVersionString xml1 -o - install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+          echo "LSL_VERSION=$VERSION" >> $GITHUB_ENV
+
+          mkdir -p package
           productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
             --component install/Frameworks/lsl.framework \
-            /Library/Frameworks liblsl-1.16.2-Darwin-universal.pkg
+            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
           # Notarize the package
-          xcrun notarytool submit liblsl-1.16.2-Darwin-universal.pkg \
+          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
             --apple-id "$APPLE_NOTARIZE_USERNAME" \
             --password "$APPLE_NOTARIZE_PASSWORD" \
             --team-id "$APPLE_DEVELOPMENT_TEAM" \
             --wait
           # Staple the notarization ticket to the package
-          xcrun stapler staple liblsl-1.16.2-Darwin-universal.pkg
+          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
           # If notarization fails, you can get the history of notarization requests:
           # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
           # Then you can check the status of a specific request:
