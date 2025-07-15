@@ -38,36 +38,11 @@ jobs:
       fail-fast: false
       matrix:
         config:
-<<<<<<< HEAD
-        # x86_64 Linux builds
-        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-
-        # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
-        # SHLIBDEPS must be disabled for cross-compiled packages as the host system
-        # does not have the target architecture libraries installed
-        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
-        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
-
-        # Native ARM build
-        # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-
-        # Windows builds
-        - {name: "windows-x64", os: "windows-latest", arch: "x86_64", cmake_extra: "-T v142,host=x86"}
-        - {name: "windows-x86", os: "windows-latest", arch: "x86", cmake_extra: "-T v142,host=x86 -A Win32"}
-        - {name: "windows-arm64", os: "windows-11-arm", arch: "aarch64", cmake_extra: "-T v143,host=ARM64 -A ARM64"}
-
-        # macOS non-framework builds (build-only, no tests or release uploads)
-        # These verify compatibility with package managers like conda-forge
-        - {name: "macos-dylib-x64", os: "macos-15-intel", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
-        - {name: "macos-dylib-arm64", os: "macos-latest", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
-=======
 #        - {name: "ubuntu-22.04", os: "ubuntu-22.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
 #        - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
 #        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
 #        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\" -DLSL_FRAMEWORK=ON" }
->>>>>>> 8ca5b871 (Fix some cmake errors that snuck in during rebase.)
 
     steps:
     - uses: actions/checkout@v5
