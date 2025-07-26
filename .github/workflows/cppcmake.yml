@@ -43,6 +43,7 @@ jobs:
 #        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
 #        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
         - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\" -DLSL_FRAMEWORK=ON" }
+        - {name: "iOS", os: "macOS-latest", cmake_extra: "-DCMAKE_IOS_DEPLOYMENT_TARGET=12.0 -DCMAKE_TOOLCHAIN_FILE=\"make/ios.toolchain.cmake\" -DLSL_FRAMEWORK=ON" }
 
     steps:
     - uses: actions/checkout@v5
