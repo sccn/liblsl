@@ -2,7 +2,9 @@ name: C/C++ CI
 
 on:
   push:
-    branches: ['*']
+    branches:
+      - main
+      - dev
     tags: ['*']
     paths:
       - '**'
@@ -39,18 +41,10 @@ jobs:
         - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
         - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
         - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
-        - {name: "macOS-latest", os: "macOS-latest"}
-    
-    # runs all steps in the container configured in config.docker or as subprocesses when empty
-    container: ${{ matrix.config.docker }}
+
     steps:
     - uses: actions/checkout@v4
-    - name: set up build environment in container
-      run: |
-         set -x
-         apt update
-         apt install -y --no-install-recommends g++ git ninja-build file dpkg-dev lsb-release sudo curl cmake libpugixml-dev
-      if: ${{ matrix.config.docker }}
+
     - name: Configure CMake
       run: |
            if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
@@ -67,9 +61,13 @@ jobs:
                 -Dlslgitbranch=${{ github.ref }} \
                 ${{ matrix.config.cmake_extra }} \
                 ${{ github.event.inputs.cmakeextra }}
-            echo ${PWD}
+           echo ${PWD}
+
     - name: make
-      run: cmake --build build --target install --config Release -j
+      run: cmake --build build --config Release -j
+
+    - name: make install
+      run: cmake --build build --config Release --target install
 
     - name: test install using examples
       run: |
@@ -82,7 +80,7 @@ jobs:
             ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j
           ./examples/build/install/bin/HandleMetaData
-  
+
     - name: package
       run: |
            echo $GITHUB_REF
@@ -101,6 +99,7 @@ jobs:
            fi
            cmake -E remove_directory package/_CPack_Packages
            cp testing/lslcfgs/default.cfg .
+
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
@@ -112,6 +111,7 @@ jobs:
       with:
         name: pkg-${{ matrix.config.name }}
         path: package
+
     - name: print network config
       run: |
            which ifconfig && ifconfig
@@ -121,8 +121,8 @@ jobs:
               ip route
               ip -6 route
            fi
-    
-    # run internal tests, ignore test failures on docker (missing IPv6 connectivity)
+
+    # run internal tests
     - name: unit tests
       run: |
         if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
@@ -130,15 +130,17 @@ jobs:
           echo "$PWD/dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
         fi
         mkdir -p dumps
-        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes || test ! -z "${{ matrix.config.docker }}"
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
         install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 10
+
     - name: upload dump
       if: failure()
       uses: actions/upload-artifact@master
       with:
         name: dumps-${{ matrix.config.name }}
         path: dumps
+
     - name: upload to release page
       if: github.event_name == 'release'
       env:
