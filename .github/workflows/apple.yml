@@ -44,37 +44,12 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Install certificates and provisioning profiles
-      env:
+      uses: ./.github/actions/install-apple-certs
+      with:
         MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
         MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
         MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
-      run: |
-        # Create temporary keychain
-        KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-        security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
-        security default-keychain -s $KEYCHAIN_PATH
-        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-        security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
-        
-        # Import certificates from secrets ...
-        CERTIFICATE_PATH_APP=$RUNNER_TEMP/build_certificate_app.p12
-        CERTIFICATE_PATH_INST=$RUNNER_TEMP/build_certificate_inst.p12
-        echo -n "$MACOS_CERTIFICATE_APP" | base64 --decode -o $CERTIFICATE_PATH_APP
-        echo -n "$MACOS_CERTIFICATE_INST" | base64 --decode -o $CERTIFICATE_PATH_INST
-        # ... to keychain
-        security import $CERTIFICATE_PATH_APP -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
-        security import $CERTIFICATE_PATH_INST -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
-        
-        # Set trusted partitions (groups of applications) that can access the keychain items
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
-        security list-keychain -d user -s $KEYCHAIN_PATH
-        
-        # Get certificate identities into environment variables
-        CERT_IDENTITY_APP=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
-        echo "APPLE_CODE_SIGN_IDENTITY_APP=$CERT_IDENTITY_APP" >> $GITHUB_ENV
-        CERT_IDENTITY_INST=$(security find-identity -v -p basic $KEYCHAIN_PATH | grep "Developer ID Installer" | head -1 | awk -F'"' '{print $2}')
-        echo "APPLE_CODE_SIGN_IDENTITY_INST=$CERT_IDENTITY_INST" >> $GITHUB_ENV
 
     - name: Configure CMake
       env:
@@ -158,31 +133,54 @@ jobs:
           name: build-iOS
           path: build-iOS
 
-      - name: Create XCFramework
-        run: |
-          xcodebuild -create-xcframework \
-            -framework build-macOS-latest/install/Frameworks/lsl.framework \
-            -framework build-iOS/install/Frameworks/lsl.framework \
-            -output lsl.xcframework
-          xcodebuild -show-sdk-version
+      - name: Install certificates and provisioning profiles
+        uses: ./.github/actions/install-apple-certs
+        with:
+          MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+          MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+          MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
 
-      - name: Codesign XCFramework
+      - name: Package and Notarize macOS Installer
         env:
-          APPLE_CODE_SIGN_IDENTITY_APP: ${{ secrets.PROD_MACOS_CERTIFICATE_IDENTITY_APP }}
+            APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+            APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
+            APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
         run: |
-          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
-          echo "✅ Verifying binary signatures in XCFramework..."
-          codesign -vvv --verify --deep --strict lsl.xcframework
+            # Get the version number from the framework's Info.plist
+            VERSION=$(plutil -extract CFBundleShortVersionString xml1 -o - build-macOS-latest/install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+            echo "LSL_VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Create zip archive
-        run: ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.zip
+            mkdir -p package
+            productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
+              --component build-macOS-latest/install/Frameworks/lsl.framework \
+              /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+            # Notarize the package
+            xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
+              --apple-id "$APPLE_NOTARIZE_USERNAME" \
+              --password "$APPLE_NOTARIZE_PASSWORD" \
+              --team-id "$APPLE_DEVELOPMENT_TEAM" \
+              --wait
+            # Staple the notarization ticket to the package
+            xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
 
-      - name: Notarize XCFramework
+      - name: Create, Sign, and Notarize XCFramework
         env:
           APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
           APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
           APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
         run: |
+          xcodebuild -create-xcframework \
+            -framework build-macOS-latest/install/Frameworks/lsl.framework \
+            -framework build-iOS/install/Frameworks/lsl.framework \
+            -output lsl.xcframework
+          
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
+          echo "✅ Verifying binary signatures in XCFramework..."
+          codesign -vvv --verify --deep --strict lsl.xcframework
+
+          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.zip
+
           xcrun notarytool submit lsl.xcframework.zip \
             --apple-id "$APPLE_NOTARIZE_USERNAME" \
             --password "$APPLE_NOTARIZE_PASSWORD" \
@@ -190,11 +188,13 @@ jobs:
             --wait
           xcrun stapler staple lsl.xcframework
 
-      - name: upload xcframework
+      - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: xcframework
-          path: lsl.xcframework.zip
+          name: mac-packages
+          path: |
+            lsl.xcframework.zip
+            package/
 
       - name: upload to release page
         if: github.event_name == 'release'
@@ -204,7 +204,7 @@ jobs:
           UPLOAD_URL: ${{ github.event.release.upload_url }}
         run: |
               UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
-              for pkg in lsl.xcframework.zip; do
+              for pkg in lsl.xcframework.zip package/*.*; do
                 NAME=$(basename $pkg)
                 MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
                 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
