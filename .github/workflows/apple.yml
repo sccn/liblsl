@@ -1,0 +1,211 @@
+name: Apple CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags: ['*']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
+      - '.github/workflows/apple.yml'
+  pull_request:
+  release:
+    types: ['created']
+  workflow_dispatch:
+    inputs:
+      cmakeextra:
+        description: 'Extra CMake options'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\" -DLSL_FRAMEWORK=ON" }
+        - {name: "iOS", os: "macOS-latest", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=12.0 -DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\" -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DLSL_FRAMEWORK=ON" }
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install certificates and provisioning profiles
+      env:
+        MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+        MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+        security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security default-keychain -s $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        
+        # Import certificates from secrets ...
+        CERTIFICATE_PATH_APP=$RUNNER_TEMP/build_certificate_app.p12
+        CERTIFICATE_PATH_INST=$RUNNER_TEMP/build_certificate_inst.p12
+        echo -n "$MACOS_CERTIFICATE_APP" | base64 --decode -o $CERTIFICATE_PATH_APP
+        echo -n "$MACOS_CERTIFICATE_INST" | base64 --decode -o $CERTIFICATE_PATH_INST
+        # ... to keychain
+        security import $CERTIFICATE_PATH_APP -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        security import $CERTIFICATE_PATH_INST -P "$MACOS_CERTIFICATE_PWD" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        
+        # Set trusted partitions (groups of applications) that can access the keychain items
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        
+        # Get certificate identities into environment variables
+        CERT_IDENTITY_APP=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_APP=$CERT_IDENTITY_APP" >> $GITHUB_ENV
+        CERT_IDENTITY_INST=$(security find-identity -v -p basic $KEYCHAIN_PATH | grep "Developer ID Installer" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_INST=$CERT_IDENTITY_INST" >> $GITHUB_ENV
+
+    - name: Configure CMake
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+      run: |
+           cmake --version
+           cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BENCHMARKS=ON \
+                -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
+                -Dlslgitrevision=${{ github.sha }} \
+                -Dlslgitbranch=${{ github.ref }} \
+                ${{ matrix.config.cmake_extra }} \
+                ${{ github.event.inputs.cmakeextra }}
+           echo ${PWD}
+
+    - name: make
+      run: cmake --build build --config Release -j
+
+    - name: make install
+      run: cmake --build build --config Release --target install
+
+    - name: test install using examples
+      run: |
+          # Test that the in-tree install was successful by building the examples
+          cmake -S examples -B examples/build \
+            -DLSL_INSTALL_ROOT=${PWD}/install \
+            -DCMAKE_INSTALL_PREFIX=examples/build/install \
+            -DLSL_COMFY_DEFAULTS=ON \
+            ${{ matrix.config.cmake_extra }} \
+            ${{ github.event.inputs.cmakeextra }}
+          cmake --build examples/build --target install --config Release -j
+          ./examples/build/install/bin/HandleMetaData
+
+    - name: Codesign
+      run: |
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework/Versions/A/lsl
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework
+          echo "✅ Verifying binary signatures in install target..."
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
+
+    - name: upload install dir
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-${{ matrix.config.name }}
+        path: install
+
+    # run internal tests
+    - name: unit tests
+      run: |
+        mkdir -p dumps
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 10
+
+    - name: upload dump
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dumps-${{ matrix.config.name }}
+        path: dumps
+
+  package_and_deploy:
+    name: Package and Deploy
+    needs: build
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-macOS-latest
+          path: build-macOS-latest
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-iOS
+          path: build-iOS
+
+      - name: Create XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -framework build-macOS-latest/install/Frameworks/lsl.framework \
+            -framework build-iOS/install/Frameworks/lsl.framework \
+            -output lsl.xcframework
+          xcodebuild -show-sdk-version
+
+      - name: Codesign XCFramework
+        env:
+          APPLE_CODE_SIGN_IDENTITY_APP: ${{ secrets.PROD_MACOS_CERTIFICATE_IDENTITY_APP }}
+        run: |
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
+          echo "✅ Verifying binary signatures in XCFramework..."
+          codesign -vvv --verify --deep --strict lsl.xcframework
+
+      - name: Create zip archive
+        run: ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.zip
+
+      - name: Notarize XCFramework
+        env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
+          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
+        run: |
+          xcrun notarytool submit lsl.xcframework.zip \
+            --apple-id "$APPLE_NOTARIZE_USERNAME" \
+            --password "$APPLE_NOTARIZE_PASSWORD" \
+            --team-id "$APPLE_DEVELOPMENT_TEAM" \
+            --wait
+          xcrun stapler staple lsl.xcframework
+
+      - name: upload xcframework
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcframework
+          path: lsl.xcframework.zip
+
+      - name: upload to release page
+        if: github.event_name == 'release'
+        env:
+          TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
+          TAG: ${{ github.event.release.tag_name }}
+          UPLOAD_URL: ${{ github.event.release.upload_url }}
+        run: |
+              UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
+              for pkg in lsl.xcframework.zip; do
+                NAME=$(basename $pkg)
+                MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
+                curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
+              done
