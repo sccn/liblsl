@@ -75,6 +75,7 @@ jobs:
       run: cmake --build build --config Release --target install
 
     - name: test install using examples
+      if: matrix.config.name != 'iOS'
       run: |
           # Test that the in-tree install was successful by building the examples
           cmake -S examples -B examples/build \
@@ -106,6 +107,7 @@ jobs:
 
     # run internal tests
     - name: unit tests
+      if: matrix.config.name != 'iOS'
       run: |
         mkdir -p dumps
         install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
