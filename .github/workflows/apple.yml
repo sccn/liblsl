@@ -182,15 +182,15 @@ jobs:
             mkdir -p package
             productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
                 --component build-macOS-latest/Frameworks/lsl.framework \
-                /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+                /Library/Frameworks package/liblsl-$LSL_VERSION-Darwin-universal.pkg
             # Notarize the package
-            xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
+            xcrun notarytool submit package/liblsl-$LSL_VERSION-Darwin-universal.pkg \
               --apple-id "$APPLE_NOTARIZE_USERNAME" \
               --password "$APPLE_NOTARIZE_PASSWORD" \
               --team-id "$APPLE_DEVELOPMENT_TEAM" \
               --wait --verbose
             # Staple the notarization ticket to the package
-            xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+            xcrun stapler staple package/liblsl-$LSL_VERSION-Darwin-universal.pkg
             
             # If notarization fails, you can get the history of notarization requests:
             # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
@@ -212,7 +212,7 @@ jobs:
           echo "✅ Verifying binary signatures in XCFramework..."
           codesign -vvv --verify --deep --strict lsl.xcframework
 
-          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.${LSL_VERSION}.zip
+          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.$LSL_VERSION.zip
 
       - name: upload artifacts
         uses: actions/upload-artifact@v4
