@@ -19,7 +19,7 @@ include(cmake/TargetLib.cmake)  #
 include(cmake/Installation.cmake)  #
 include(cmake/TargetOther.cmake)
 
-if(LSL_UNITTESTS)
+if(LSL_UNITTESTS AND NOT IOS)
 	add_subdirectory(testing)
 endif()
 

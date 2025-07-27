@@ -15,8 +15,14 @@ endif()
 # For Apple frameworks, we need to next the install directories within the framework.
 if(APPLE AND LSL_FRAMEWORK)
     # For the includes, this is insufficient. Later we will create more accessible symlinks.
-    set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Versions/A/include)
-    set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Resources/CMake)
+    if(IOS)
+        set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Headers)
+        set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/CMake)
+    else()
+        set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Versions/A/include)
+        set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Resources/CMake)
+    endif()
+
 else()
     set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
     set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/lsl)
@@ -73,7 +79,7 @@ install(
     DESTINATION ${LSL_CONFIG_INSTALL_DIR}
 )
 
-if(APPLE AND LSL_FRAMEWORK)
+if(APPLE AND LSL_FRAMEWORK AND NOT IOS)
     # Create symlinks for the framework. The variables we want to use to identify the symlink locations
     #  are not available at install time. Instead, we create a script during configuration time that will
     #  be run at install time to create the symlinks.
