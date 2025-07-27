@@ -173,6 +173,14 @@ jobs:
           unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
           unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
 
+      - name: Unzip macOS Framework
+        run: |
+          unzip build-macOS-latest/lsl.framework.zip -d build-macOS-latest/Frameworks
+
+      - name: Unzip iOS Framework
+        run: |
+          unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
+
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
         with:
