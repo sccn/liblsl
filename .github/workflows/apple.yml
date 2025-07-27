@@ -93,33 +93,16 @@ jobs:
             codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
               --entitlements lsl.entitlements --options runtime \
               install/Frameworks/lsl.framework/Versions/A/lsl
-            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
-              --entitlements lsl.entitlements --options runtime \
-              install/Frameworks/lsl.framework
-            echo "✅ Verifying binary signatures in install target..."
             codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
-            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
           elif [[ "${{ matrix.config.name }}" == "iOS" ]]; then
             codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
               install/Frameworks/lsl.framework/lsl
-            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
-              install/Frameworks/lsl.framework
-            echo "✅ Verifying binary signatures in install target..."
             codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/lsl
-            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
           fi
-
-    - name: Zip LSL Framework
-      run: |
-        cd install/Frameworks
-        zip -r lsl.framework.zip lsl.framework
-        cd ../..
-
-    - name: Upload LSL Framework Zip
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-${{ matrix.config.name }}
-        path: install/Frameworks/lsl.framework.zip
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
 
     # run internal tests
 #    - name: unit tests
@@ -130,6 +113,31 @@ jobs:
 #        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
 #      timeout-minutes: 10
 
+    - name: Package and Notarize macOS Installer
+      if: matrix.config.name == 'macOS-latest'
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
+          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
+      run: |
+          # Get the version number from the framework's Info.plist
+          LSL_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
+          echo "LSL_VERSION=$LSL_VERSION" >> $GITHUB_ENV
+          echo "Debug: LSL_VERSION=$LSL_VERSION"
+
+          mkdir -p package
+          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
+            --component install/Frameworks/lsl.framework \
+            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+          # Notarize the package
+          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
+            --apple-id "$APPLE_NOTARIZE_USERNAME" \
+            --password "$APPLE_NOTARIZE_PASSWORD" \
+            --team-id "$APPLE_DEVELOPMENT_TEAM" \
+            --wait
+          # Staple the notarization ticket to the package
+          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+
     - name: upload dump
       if: failure()
       uses: actions/upload-artifact@v4
@@ -137,8 +145,32 @@ jobs:
         name: dumps-${{ matrix.config.name }}
         path: dumps
 
-  package_and_deploy:
-    name: Package and Deploy
+    - name: Zip LSL Framework
+      run: |
+        cd install/Frameworks
+        zip -ry lsl.framework.zip lsl.framework
+        cd ../..
+
+    - name: Upload macOS Package and Framework
+      if: matrix.config.name == 'macOS-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-macOS-latest
+        path: |
+          package/*.pkg
+          install/Frameworks/lsl.framework.zip
+        # Note: the artifact will preserves the folder structure up to the common root, in this case all.
+
+    - name: Upload iOS Framework
+      if: matrix.config.name == 'iOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-iOS
+        path: install/Frameworks/lsl.framework.zip
+        # Note: the artifact drops the folder structure and only keeps the zip.
+
+  xcframework_and_deploy:
+    name: XCFramework and Deploy
     needs: build
     runs-on: macOS-latest
     steps:
@@ -154,7 +186,7 @@ jobs:
 
       - name: Unzip macOS Framework
         run: |
-          unzip build-macOS-latest/lsl.framework.zip -d build-macOS-latest/Frameworks
+          unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
 
       - name: Unzip iOS Framework
         run: |
@@ -163,45 +195,12 @@ jobs:
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
         with:
-          MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
-          MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
-          MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-          MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
+            MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+            MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+            MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+            MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
 
-      - name: Package and Notarize macOS Installer
-        env:
-            APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
-            APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-            APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
-        run: |
-            set -x
-            # Get the version number from the framework's Info.plist
-            VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" build-macOS-latest/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
-            echo "LSL_VERSION=$VERSION" >> $GITHUB_ENV
-
-            mkdir -p package
-            productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
-                --component build-macOS-latest/Frameworks/lsl.framework \
-                /Library/Frameworks package/liblsl-$LSL_VERSION-Darwin-universal.pkg
-            # Notarize the package
-            xcrun notarytool submit package/liblsl-$LSL_VERSION-Darwin-universal.pkg \
-              --apple-id "$APPLE_NOTARIZE_USERNAME" \
-              --password "$APPLE_NOTARIZE_PASSWORD" \
-              --team-id "$APPLE_DEVELOPMENT_TEAM" \
-              --wait --verbose
-            # Staple the notarization ticket to the package
-            xcrun stapler staple package/liblsl-$LSL_VERSION-Darwin-universal.pkg
-            
-            # If notarization fails, you can get the history of notarization requests:
-            # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
-            # Then you can check the status of a specific request:
-            # xcrun notarytool log <request-id> --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
-
-      - name: Create, Sign, and Notarize XCFramework
-        env:
-          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
-          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
+      - name: Create and Sign XCFramework
         run: |
           xcodebuild -create-xcframework \
             -framework build-macOS-latest/Frameworks/lsl.framework \
