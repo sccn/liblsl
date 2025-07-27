@@ -74,18 +74,18 @@ jobs:
     - name: make install
       run: cmake --build build --config Release --target install
 
-#    - name: test install using examples
-#      if: matrix.config.name != 'iOS'
-#      run: |
-#          # Test that the in-tree install was successful by building the examples
-#          cmake -S examples -B examples/build \
-#            -DLSL_INSTALL_ROOT=${PWD}/install \
-#            -DCMAKE_INSTALL_PREFIX=examples/build/install \
-#            -DLSL_COMFY_DEFAULTS=ON \
-#            ${{ matrix.config.cmake_extra }} \
-#            ${{ github.event.inputs.cmakeextra }}
-#          cmake --build examples/build --target install --config Release -j
-#          ./examples/build/install/bin/HandleMetaData
+    - name: test install using examples
+      if: matrix.config.name != 'iOS'
+      run: |
+          # Test that the in-tree install was successful by building the examples
+          cmake -S examples -B examples/build \
+            -DLSL_INSTALL_ROOT=${PWD}/install \
+            -DCMAKE_INSTALL_PREFIX=examples/build/install \
+            -DLSL_COMFY_DEFAULTS=ON \
+            ${{ matrix.config.cmake_extra }} \
+            ${{ github.event.inputs.cmakeextra }}
+          cmake --build examples/build --target install --config Release -j
+          ./examples/build/install/bin/HandleMetaData
 
     - name: Codesign
       run: |
@@ -105,13 +105,13 @@ jobs:
           codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
 
     # run internal tests
-#    - name: unit tests
-#      if: matrix.config.name != 'iOS'
-#      run: |
-#        mkdir -p dumps
-#        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
-#        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
-#      timeout-minutes: 10
+    - name: unit tests
+      if: matrix.config.name != 'iOS'
+      run: |
+        mkdir -p dumps
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 10
 
     - name: Package and Notarize macOS Installer
       if: matrix.config.name == 'macOS-latest'
