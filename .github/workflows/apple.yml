@@ -109,11 +109,17 @@ jobs:
             codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
           fi
 
-    - name: upload install dir
+    - name: Zip LSL Framework
+      run: |
+        cd install/Frameworks
+        zip -r lsl.framework.zip lsl.framework
+        cd ../..
+
+    - name: Upload LSL Framework Zip
       uses: actions/upload-artifact@v4
       with:
         name: build-${{ matrix.config.name }}
-        path: install
+        path: install/Frameworks/lsl.framework.zip
 
     # run internal tests
     - name: unit tests
@@ -146,6 +152,14 @@ jobs:
           name: build-iOS
           path: build-iOS
 
+      - name: Unzip macOS Framework
+        run: |
+          unzip build-macOS-latest/lsl.framework.zip -d build-macOS-latest/Frameworks
+
+      - name: Unzip iOS Framework
+        run: |
+          unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
+
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
         with:
@@ -160,22 +174,28 @@ jobs:
             APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
             APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
         run: |
+            set -x
             # Get the version number from the framework's Info.plist
-            VERSION=$(plutil -extract CFBundleShortVersionString xml1 -o - build-macOS-latest/install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
+            VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" build-macOS-latest/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
             echo "LSL_VERSION=$VERSION" >> $GITHUB_ENV
 
             mkdir -p package
             productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
-              --component build-macOS-latest/install/Frameworks/lsl.framework \
-              /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+                --component build-macOS-latest/Frameworks/lsl.framework \
+                /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
             # Notarize the package
             xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
               --apple-id "$APPLE_NOTARIZE_USERNAME" \
               --password "$APPLE_NOTARIZE_PASSWORD" \
               --team-id "$APPLE_DEVELOPMENT_TEAM" \
-              --wait
+              --wait --verbose
             # Staple the notarization ticket to the package
             xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+            
+            # If notarization fails, you can get the history of notarization requests:
+            # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
+            # Then you can check the status of a specific request:
+            # xcrun notarytool log <request-id> --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
 
       - name: Create, Sign, and Notarize XCFramework
         env:
@@ -184,22 +204,22 @@ jobs:
           APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
         run: |
           xcodebuild -create-xcframework \
-            -framework build-macOS-latest/install/Frameworks/lsl.framework \
-            -framework build-iOS/install/Frameworks/lsl.framework \
+            -framework build-macOS-latest/Frameworks/lsl.framework \
+            -framework build-iOS/Frameworks/lsl.framework \
             -output lsl.xcframework
           
           codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
           echo "✅ Verifying binary signatures in XCFramework..."
           codesign -vvv --verify --deep --strict lsl.xcframework
 
-          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.zip
+          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.${LSL_VERSION}.zip
 
       - name: upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: mac-packages
           path: |
-            lsl.xcframework.zip
+            lsl.xcframework.*.zip
             package/
 
       - name: upload to release page
