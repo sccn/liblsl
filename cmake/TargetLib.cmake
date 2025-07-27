@@ -78,7 +78,7 @@ if(APPLE)
     if(LSL_FRAMEWORK)
         set_target_properties(lsl PROPERTIES
                 FRAMEWORK TRUE
-                FRAMEWORK_VERSION A
+                FRAMEWORK_VERSION A  # Ignored on iOS
                 MACOSX_FRAMEWORK_IDENTIFIER "org.labstreaminglayer.liblsl"
                 MACOSX_FRAMEWORK_SHORT_VERSION_STRING "${liblsl_VERSION_MAJOR}.${liblsl_VERSION_MINOR}"
                 MACOSX_FRAMEWORK_BUNDLE_VERSION ${PROJECT_VERSION}
