@@ -1,0 +1,42 @@
+name: 'Install Apple Certificates'
+description: 'Installs Apple signing and notarization certificates and sets up the keychain'
+inputs:
+  MACOS_CERTIFICATE_APP:
+    required: true
+  MACOS_CERTIFICATE_INST:
+    required: true
+  MACOS_CERTIFICATE_PWD:
+    required: true
+  MACOS_CI_KEYCHAIN_PWD:
+    required: true
+runs:
+  using: "composite"
+  steps:
+    - name: Install certificates and provisioning profiles
+      shell: bash
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+        security create-keychain -p "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        security default-keychain -s $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        
+        # Import certificates from secrets ...
+        CERTIFICATE_PATH_APP=$RUNNER_TEMP/build_certificate_app.p12
+        CERTIFICATE_PATH_INST=$RUNNER_TEMP/build_certificate_inst.p12
+        echo -n "${{ inputs.MACOS_CERTIFICATE_APP }}" | base64 --decode -o $CERTIFICATE_PATH_APP
+        echo -n "${{ inputs.MACOS_CERTIFICATE_INST }}" | base64 --decode -o $CERTIFICATE_PATH_INST
+        # ... to keychain
+        security import $CERTIFICATE_PATH_APP -P "${{ inputs.MACOS_CERTIFICATE_PWD }}" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        security import $CERTIFICATE_PATH_INST -P "${{ inputs.MACOS_CERTIFICATE_PWD }}" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+        
+        # Set trusted partitions (groups of applications) that can access the keychain items
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+        
+        # Get certificate identities into environment variables
+        CERT_IDENTITY_APP=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_APP=$CERT_IDENTITY_APP" >> $GITHUB_ENV
+        CERT_IDENTITY_INST=$(security find-identity -v -p basic $KEYCHAIN_PATH | grep "Developer ID Installer" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_INST=$CERT_IDENTITY_INST" >> $GITHUB_ENV

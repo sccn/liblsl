@@ -1,0 +1,252 @@
+name: Apple CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    tags: ['*']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
+      - '.github/workflows/apple.yml'
+  pull_request:
+  release:
+    types: ['created']
+  workflow_dispatch:
+    inputs:
+      cmakeextra:
+        description: 'Extra CMake options'
+        required: false
+        default: ''
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: ${{ matrix.config.name }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
+        - {name: "iOS", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
+        - {name: "iOS Simulator", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install certificates and provisioning profiles
+      uses: ./.github/actions/install-apple-certs
+      with:
+        MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+        MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+        MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+        MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
+
+    - name: Configure CMake
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+      run: |
+           cmake --version
+           cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
+                -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
+                -DLSL_FRAMEWORK=ON \
+                -Dlslgitrevision=${{ github.sha }} \
+                -Dlslgitbranch=${{ github.ref }} \
+                ${{ matrix.config.cmake_extra }} \
+                ${{ github.event.inputs.cmakeextra }}
+           echo ${PWD}
+
+    - name: make
+      run: cmake --build build --config Release -j
+
+    - name: make install
+      run: cmake --build build --config Release --target install
+
+    - name: test install using examples
+      if: matrix.config.name == 'macOS-latest'
+      run: |
+          # Test that the in-tree install was successful by building the examples
+          cmake -S examples -B examples/build \
+            -DLSL_INSTALL_ROOT=${PWD}/install \
+            -DCMAKE_INSTALL_PREFIX=examples/build/install \
+            -DLSL_COMFY_DEFAULTS=ON \
+            ${{ matrix.config.cmake_extra }} \
+            ${{ github.event.inputs.cmakeextra }}
+          cmake --build examples/build --target install --config Release -j
+          ./examples/build/install/bin/HandleMetaData
+
+    - name: Codesign
+      run: |
+          if [[ "${{ matrix.config.name }}" == "macOS-latest" ]]; then
+            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+              --entitlements lsl.entitlements --options runtime \
+              install/Frameworks/lsl.framework/Versions/A/lsl
+            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
+          elif [[ "${{ matrix.config.name }}" == "iOS" || "${{ matrix.config.name }}" == "iOS Simulator" ]]; then
+            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+              install/Frameworks/lsl.framework/lsl
+            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/lsl
+          fi
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
+            --entitlements lsl.entitlements --options runtime \
+            install/Frameworks/lsl.framework
+          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
+
+    # run internal tests
+    - name: unit tests
+      if: matrix.config.name == 'macOS-latest'
+      run: |
+        mkdir -p dumps
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 10
+
+    - name: Package and Notarize macOS Installer
+      if: matrix.config.name == 'macOS-latest'
+      env:
+          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
+          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
+          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
+      run: |
+          # Get the version number from the framework's Info.plist
+          LSL_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
+          echo "LSL_VERSION=$LSL_VERSION" >> $GITHUB_ENV
+          echo "Debug: LSL_VERSION=$LSL_VERSION"
+
+          mkdir -p package
+          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
+            --component install/Frameworks/lsl.framework \
+            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+          # Notarize the package
+          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
+            --apple-id "$APPLE_NOTARIZE_USERNAME" \
+            --password "$APPLE_NOTARIZE_PASSWORD" \
+            --team-id "$APPLE_DEVELOPMENT_TEAM" \
+            --wait
+          # Staple the notarization ticket to the package
+          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+
+    - name: upload dump
+      if: failure()
+      uses: actions/upload-artifact@v4
+      with:
+        name: dumps-${{ matrix.config.name }}
+        path: dumps
+
+    - name: Zip LSL Framework
+      run: |
+        cd install/Frameworks
+        zip -ry lsl.framework.zip lsl.framework
+        cd ../..
+
+    - name: Upload macOS Package and Framework
+      if: matrix.config.name == 'macOS-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-macOS-latest
+        path: |
+          package/*.pkg
+          install/Frameworks/lsl.framework.zip
+        # Note: the artifact will preserve the folder structure up to the common root, in this case all.
+
+    - name: Upload iOS Framework
+      if: matrix.config.name == 'iOS'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-iOS
+        path: install/Frameworks/lsl.framework.zip
+        # Note: the artifact drops the folder structure and only keeps the zip.
+
+    - name: Upload iOS Simulator Framework
+      if: matrix.config.name == 'iOS Simulator'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-iOS-Simulator
+        path: install/Frameworks/lsl.framework.zip
+
+  xcframework_and_deploy:
+    name: XCFramework and Deploy
+    needs: build
+    runs-on: macOS-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-macOS-latest
+          path: build-macOS-latest
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-iOS
+          path: build-iOS
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-iOS-Simulator
+          path: build-iOS-Simulator
+
+      - name: Unzip macOS Framework
+        run: |
+          unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
+
+      - name: Unzip iOS Framework
+        run: |
+          unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
+
+      - name: Unzip iOS Simulator Framework
+        run: |
+          unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
+
+      - name: Install certificates and provisioning profiles
+        uses: ./.github/actions/install-apple-certs
+        with:
+            MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
+            MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+            MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
+            MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
+
+      - name: Create and Sign XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -framework build-macOS-latest/Frameworks/lsl.framework \
+            -framework build-iOS/Frameworks/lsl.framework \
+            -framework build-iOS-Simulator/Frameworks/lsl.framework \
+            -output lsl.xcframework
+          
+          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
+          echo "✅ Verifying binary signatures in XCFramework..."
+          codesign -vvv --verify --deep --strict lsl.xcframework
+
+          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.$LSL_VERSION.zip
+
+      - name: upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: mac-packages
+          path: |
+            lsl.xcframework.*.zip
+            package/
+
+      - name: upload to release page
+        if: github.event_name == 'release'
+        env:
+          TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
+          TAG: ${{ github.event.release.tag_name }}
+          UPLOAD_URL: ${{ github.event.release.upload_url }}
+        run: |
+              UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
+              for pkg in lsl.xcframework.zip package/*.*; do
+                NAME=$(basename $pkg)
+                MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
+                curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
+              done

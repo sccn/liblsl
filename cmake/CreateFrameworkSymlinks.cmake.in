@@ -1,0 +1,39 @@
+# This script is executed at install time.
+# It was generated from CreateFrameworkSymlinks.cmake.in
+
+set(FRAMEWORK_DIR "${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_FRAMEWORK_DIR@/lsl.framework")
+
+message(STATUS "Executing configured symlink script.")
+message(STATUS "  -- Target Directory='${FRAMEWORK_DIR}'")
+
+if(NOT EXISTS "${FRAMEWORK_DIR}")
+    message(FATAL_ERROR "Framework version directory does not exist. Cannot create symlink.")
+endif()
+
+message(STATUS "  -- Framework version directory exists. Creating symlink...")
+
+execute_process(
+    COMMAND ln -sf include Headers
+    WORKING_DIRECTORY "${FRAMEWORK_DIR}/Versions/A"
+    RESULT_VARIABLE result
+    ERROR_VARIABLE error
+)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Failed to create Headers->include symlink: ${error}")
+endif()
+
+execute_process(
+        COMMAND ln -sf Versions/Current/Headers
+        WORKING_DIRECTORY "${FRAMEWORK_DIR}"
+        RESULT_VARIABLE result
+        ERROR_VARIABLE error
+)
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Failed to create <root>Headers->Versions/Current/Headers symlink: ${error}")
+endif()
+
+if(NOT result EQUAL 0)
+    message(FATAL_ERROR "Failed to create Headers symlink in framework: ${error}")
+endif()
+
+message(STATUS "  -- Framework symlink created successfully.")
