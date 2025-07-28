@@ -173,6 +173,13 @@ jobs:
         name: build-iOS-Simulator
         path: install/Frameworks/lsl.framework.zip
 
+    - name: Upload iOS Simulator Framework
+      if: matrix.config.name == 'iOS Simulator'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-iOS-Simulator
+        path: install/Frameworks/lsl.framework.zip
+
   xcframework_and_deploy:
     name: XCFramework and Deploy
     needs: build
@@ -205,6 +212,10 @@ jobs:
       - name: Unzip iOS Framework
         run: |
           unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
+
+      - name: Unzip iOS Simulator Framework
+        run: |
+          unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
 
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
