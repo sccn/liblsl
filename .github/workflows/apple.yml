@@ -37,8 +37,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON" }
+        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
         - {name: "iOS", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
+        - {name: "iOS Simulator", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
 
     steps:
     - uses: actions/checkout@v4
@@ -60,7 +61,6 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
-                -DCMAKE_OSX_ARCHITECTURES="x86_64;arm64" \
                 -DLSL_FRAMEWORK=ON \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
@@ -75,7 +75,7 @@ jobs:
       run: cmake --build build --config Release --target install
 
     - name: test install using examples
-      if: matrix.config.name != 'iOS'
+      if: matrix.config.name == 'macOS-latest'
       run: |
           # Test that the in-tree install was successful by building the examples
           cmake -S examples -B examples/build \
@@ -94,7 +94,7 @@ jobs:
               --entitlements lsl.entitlements --options runtime \
               install/Frameworks/lsl.framework/Versions/A/lsl
             codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
-          elif [[ "${{ matrix.config.name }}" == "iOS" ]]; then
+          elif [[ "${{ matrix.config.name }}" == "iOS" || "${{ matrix.config.name }}" == "iOS Simulator" ]]; then
             codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
               install/Frameworks/lsl.framework/lsl
             codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/lsl
@@ -106,7 +106,7 @@ jobs:
 
     # run internal tests
     - name: unit tests
-      if: matrix.config.name != 'iOS'
+      if: matrix.config.name == 'macOS-latest'
       run: |
         mkdir -p dumps
         install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
@@ -159,7 +159,7 @@ jobs:
         path: |
           package/*.pkg
           install/Frameworks/lsl.framework.zip
-        # Note: the artifact will preserves the folder structure up to the common root, in this case all.
+        # Note: the artifact will preserve the folder structure up to the common root, in this case all.
 
     - name: Upload iOS Framework
       if: matrix.config.name == 'iOS'
@@ -168,6 +168,13 @@ jobs:
         name: build-iOS
         path: install/Frameworks/lsl.framework.zip
         # Note: the artifact drops the folder structure and only keeps the zip.
+
+    - name: Upload iOS Simulator Framework
+      if: matrix.config.name == 'iOS Simulator'
+      uses: actions/upload-artifact@v4
+      with:
+        name: build-iOS-Simulator
+        path: install/Frameworks/lsl.framework.zip
 
   xcframework_and_deploy:
     name: XCFramework and Deploy
@@ -183,6 +190,10 @@ jobs:
         with:
           name: build-iOS
           path: build-iOS
+      - uses: actions/download-artifact@v4
+        with:
+          name: build-iOS-Simulator
+          path: build-iOS-Simulator
 
       - name: Unzip macOS Framework
         run: |
@@ -191,6 +202,10 @@ jobs:
       - name: Unzip iOS Framework
         run: |
           unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
+
+      - name: Unzip iOS Simulator Framework
+        run: |
+          unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
 
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
@@ -205,6 +220,7 @@ jobs:
           xcodebuild -create-xcframework \
             -framework build-macOS-latest/Frameworks/lsl.framework \
             -framework build-iOS/Frameworks/lsl.framework \
+            -framework build-iOS-Simulator/Frameworks/lsl.framework \
             -output lsl.xcframework
           
           codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
