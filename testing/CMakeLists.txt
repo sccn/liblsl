@@ -74,7 +74,8 @@ endif()
 message(STATUS ${LSL_TEST_INTERNAL_SRCS})
 add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
-
+# Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
+target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
