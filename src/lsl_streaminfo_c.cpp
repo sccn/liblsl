@@ -49,6 +49,10 @@ LIBLSL_C_API const char *lsl_get_source_id(lsl_streaminfo info) {
 LIBLSL_C_API int32_t lsl_get_version(lsl_streaminfo info) { return info->version(); }
 LIBLSL_C_API double lsl_get_created_at(lsl_streaminfo info) { return info->created_at(); }
 LIBLSL_C_API const char *lsl_get_uid(lsl_streaminfo info) { return info->uid().c_str(); }
+LIBLSL_C_API const char *lsl_reset_uid(lsl_streaminfo info) {
+	return info->reset_uid().c_str();
+	
+}
 LIBLSL_C_API const char *lsl_get_session_id(lsl_streaminfo info) {
 	return info->session_id().c_str();
 }
