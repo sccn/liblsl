@@ -126,6 +126,14 @@ extern LIBLSL_C_API double lsl_get_created_at(lsl_streaminfo info);
 extern LIBLSL_C_API const char *lsl_get_uid(lsl_streaminfo info);
 
 /**
+ * Reset the UID of the stream info to a new random value.
+ *
+ * This can be used to generate a UID if one doesn't exist.
+ * @return An immutable library-owned pointer to the new string value. @sa lsl_destroy_string()
+ */
+extern LIBLSL_C_API const char *lsl_reset_uid(lsl_streaminfo info);
+
+/**
  * Session ID for the given stream.
  *
  * The session id is an optional human-assigned identifier of the recording session.
