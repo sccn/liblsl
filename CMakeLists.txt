@@ -16,15 +16,24 @@ include(cmake/Dependencies.cmake)  #
 include(cmake/SourceFiles.cmake)  #
 include(cmake/TargetObjLib.cmake)  #
 include(cmake/TargetLib.cmake)  #
-include(cmake/Installation.cmake)  #
-include(cmake/TargetOther.cmake)
+
+if(LSL_INSTALL)
+  include(cmake/Installation.cmake)  #
+endif()
+
+if(LSL_ADDITIONAL_TARGETS)
+  include(cmake/TargetOther.cmake)
+endif()
 
 if(LSL_UNITTESTS)
 	add_subdirectory(testing)
 endif()
 
-# Config for packaging
-# TODO: Config for packaging for the library itself is likely to diverge from config for packing applications. e.g.,
-# -> Optionally install to system directories
-# -> Apple Framework -- different installer type; uses entitlements
-LSLGenerateCPackConfig()
+
+if(LSL_INSTALL)
+  # Config for packaging
+  # TODO: Config for packaging for the library itself is likely to diverge from config for packing applications. e.g.,
+  # -> Optionally install to system directories
+  # -> Apple Framework -- different installer type; uses entitlements
+  LSLGenerateCPackConfig()
+endif()

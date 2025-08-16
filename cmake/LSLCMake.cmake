@@ -90,6 +90,10 @@ endfunction()
 # After the target, additional libraries to install alongside the target can be
 # specified, e.g. 	installLSLApp(FooApp libXY libZ)
 function(installLSLApp target)
+	if(NOT LSL_INSTALL)
+		return()
+	endif()
+
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
 	string(REGEX MATCH ";Qt[56]?::" qtapp ";${TARGET_LIBRARIES}")
 	if(qtapp)
