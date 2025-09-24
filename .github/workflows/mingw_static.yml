@@ -4,11 +4,14 @@ on:
   push:
     branches: ['*']
     paths:
-      - '**'
-      - '!docs/**'
-      - '!.github/**'
+      - 'src'
+      - 'include'
+      - 'cmake'
+#      - '!docs/**'
+#      - '!.github/**'
       - '.github/workflows/mingw_static.yml'
   pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -17,17 +20,31 @@ concurrency:
 jobs:
   build:
     name: MinGW batteries-included
-    runs-on: windows-2019
-    
+    strategy:
+      matrix:
+        include:
+#          - { sys: mingw64, env: x86_64 }
+#          - { sys: mingw32, env: i686 }
+          - { sys: ucrt64,  env: ucrt-x86_64 }
+#          - { sys: clang64, env: clang-x86_64 }
+    runs-on: windows-latest
     defaults:
       run:
         shell: 'msys2 {0}'
-
     steps:
     - uses: actions/checkout@v4
     - uses: msys2/setup-msys2@v2
       with:
-        release: false
+        msystem: ${{matrix.sys}}
+        update: true
+        cache: true
+        install: >-
+            git
+            make
+        pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
     - name: Configure CMake
       run: |
            cmake --version
@@ -35,12 +52,11 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
                 -DLSL_UNITTESTS=ON \
-                -DLSL_BUILD_EXAMPLES=ON \
                 -DLSL_BUILD_STATIC=ON \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 -DLSL_OPTIMIZATIONS=OFF \
-                -G 'MSYS Makefiles'
+                -G Ninja
 
     - name: make
       run: cmake --build build --target install --config Release -j --verbose
