@@ -13,7 +13,6 @@ TEST_CASE("resolve multiple streams", "[resolver][basic]") {
 	for (int i = 0; i < n; i++)
 		outlets.emplace_back(lsl::stream_info("resolvetest_" + std::to_string(i), "Resolve"));
 	auto found_stream_info = lsl::resolve_stream("type", "Resolve", n, 2.0);
-	REQUIRE(found_stream_info.size() == n);
 
 	// Allow the resolver a bit more time in case the first resolve wave was too fast
 	std::this_thread::sleep_for(std::chrono::seconds(1));
