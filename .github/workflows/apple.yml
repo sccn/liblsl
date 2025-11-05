@@ -112,6 +112,13 @@ jobs:
         install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
         install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 10
+    - name: unit test (intel)
+      if: matrix.config.name == 'macOS-15-intel'
+      run: |
+        mkdir -p dumps
+        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+      timeout-minutes: 10
 
     - name: Package and Notarize macOS Installer
       if: matrix.config.name == 'macOS-latest'
