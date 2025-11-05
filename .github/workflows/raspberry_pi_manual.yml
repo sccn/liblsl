@@ -1,0 +1,136 @@
+name: Raspberry Pi Native Build (Manual trigger)
+on:
+  workflow_dispatch:
+    inputs:
+      cmakeextra:
+        description: 'Extra CMake options'
+        required: false
+        default: ''
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  build:
+    name: Raspberry Pi ${{ matrix.config.name }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        config:
+        # cortex-a7 -> RPi 3+, if we need 1,2,zero, needs to use arm1176
+        # see: https://github.com/marketplace/actions/arm-runner
+        # adapted from: https://github.com/castle-engine/castle-engine/blob/master/.github/workflows/test-and-pack-arm-runner.yml
+        - {name: "rpi-armv7l", os: "raspios_lite:latest", cpu: "cortex-a7", cpu_info: "cpuinfo/raspberrypi_3b", cmake_extra: "-DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON" }
+        - {name: "rpi-aarch64", os: "raspios_lite_arm64:latest", cpu: "cortex-a53", cpu_info: "cpuinfo/raspberrypi_4b", cmake_extra: "-DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON" }
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pguyot/arm-runner-action@v2
+        with:
+          base_image: ${{ matrix.config.os }}
+          cpu: ${{ matrix.config.cpu }}
+          cpu_info: ${{ matrix.config.cpu_info }}
+          shell: /bin/bash -eo pipefail
+          image_additional_mb: 1024
+          bind_mount_repository: true
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake build-essential pkg-config
+      - name: Configure CMake
+        run: |
+           cmake --version
+           cmake -S . -B build \
+                -DCMAKE_BUILD_TYPE=Release \
+                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
+                -DLSL_UNITTESTS=ON \
+                -DLSL_BENCHMARKS=ON \
+                -Dlslgitrevision=${{ github.sha }} \
+                -Dlslgitbranch=${{ github.ref }} \
+                ${{ matrix.config.cmake_extra }}
+
+      - name: make
+        run: cmake --build build --config Release -j
+
+      - name: make install
+        run: cmake --build build --config Release --target install -j
+
+      - name: test install using examples
+        run: |
+          # Test that the in-tree install was successful by building the examples
+          cmake -S examples -B examples/build \
+                -DLSL_INSTALL_ROOT=${PWD}/install \
+                -DCMAKE_INSTALL_PREFIX=examples/build/install \
+                -DLSL_COMFY_DEFAULTS=ON \
+                ${{ matrix.config.cmake_extra }} \
+                ${{ github.event.inputs.cmakeextra }}
+          cmake --build examples/build --target install --config Release -j
+          ./examples/build/install/bin/HandleMetaData
+
+      - name: package
+        run: |
+           echo $GITHUB_REF
+           cmake --build build --target package --config Release -j
+           echo $PWD
+           ls -la
+           cmake -DCPACK_DEBIAN_PACKAGE_SHLIBDEPS=ON .
+           sudo dpkg -i build/*.deb
+           cmake --build build --target package --config Release -j
+           dpkg -I build/liblsl*.deb
+           cmake -E remove_directory build/_CPack_Packages
+           cp testing/lslcfgs/default.cfg .
+
+      - name: upload install dir
+        uses: actions/upload-artifact@master
+        with:
+          name: build-${{ matrix.config.name }}
+          path: install
+      - name: upload package
+        uses: actions/upload-artifact@master
+        with:
+          name: pkg-${{ matrix.config.name }}
+          path: package
+
+      # Run tests
+      - name: unit tests
+        run: |
+          if [[ "${{ matrix.config.name }}" = ubuntu-2* ]]; then
+            ulimit -c unlimited
+            echo "$PWD/dumps/corefile-%e-%p-%t" | sudo tee /proc/sys/kernel/core_pattern
+          fi
+          mkdir -p dumps
+          install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
+          install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
+        timeout-minutes: 10
+
+      - name: upload dump
+        if: failure()
+        uses: actions/upload-artifact@master
+        with:
+          name: dumps-${{ matrix.config.name }}
+          path: dumps
+
+      - name: upload to release page
+        if: github.event_name == 'release'
+        env:
+          TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
+          TAG: ${{ github.event.release.tag_name }}
+          UPLOAD_URL: ${{ github.event.release.upload_url }}
+        run: |
+                # Do try this at home! The REST API is documented at
+                # https://docs.github.com/en/free-pro-team@latest/rest and you can get a personal
+                # access token at https://github.com/settings/tokens
+                # (set TOKEN to "bearer abcdef1234")
+                # you can get the UPLOAD_URL with a short bash snippet; make sure to set the env var TAG:
+                # UPLOAD_URL=$(curl -H 'Accept: application/vnd.github.v3+json' $GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$TAG | jq -r .upload_url)
+                UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
+                for pkg in package/*.*; do
+                  NAME=$(basename $pkg)
+                  MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
+                  curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
+                done
