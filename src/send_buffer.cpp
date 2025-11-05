@@ -39,7 +39,11 @@ void send_buffer::register_consumer(consumer_queue *q) {
 void send_buffer::unregister_consumer(consumer_queue *q) {
 	std::lock_guard<std::mutex> lock(consumers_mut_);
 	auto pos = std::find(consumers_.begin(), consumers_.end(), q);
-	if (pos == consumers_.end()) LOG_F(ERROR, "Trying to remove consumer queue not in send buffer");
+	// If not found, log an error and return
+	if (pos == consumers_.end()) {
+		LOG_F(ERROR, "Trying to remove consumer queue not in send buffer");
+		return;
+	}
 
 	// Put the element to be removed at the end (if it isn't there already) and
 	// remove the last element
