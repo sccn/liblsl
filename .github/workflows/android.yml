@@ -3,7 +3,11 @@ name: Android
 on:
   push:
     branches: ['androidci']
-    paths_ignore: ['docs/**', '.travis.yml']
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
+      - '.github/workflows/android.yml'
   workflow_dispatch:
     inputs:
       cmakeextra:
@@ -53,4 +57,3 @@ jobs:
       with:
         name: build-android-${{ matrix.config.arch }}
         path: install
-
