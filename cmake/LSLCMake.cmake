@@ -1,6 +1,6 @@
 # Common functions and settings for LSL
 
-option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ON)
+option(LSL_DEPLOYAPPLIBS "Copy library dependencies (at the moment Qt + liblsl) to the installation dir" ${WIN32})
 option(LSL_COMFY_DEFAULTS "Set some quality of life options, e.g. a sensible 'install' directory" OFF)
 
 macro(LSLAPP_Setup_Boilerplate)
@@ -90,8 +90,13 @@ endfunction()
 # After the target, additional libraries to install alongside the target can be
 # specified, e.g. 	installLSLApp(FooApp libXY libZ)
 function(installLSLApp target)
+    # We use some generator expressions that only became available in CMake 3.16.
+    cmake_minimum_required(VERSION 3.16)
+
+    # Identify if the application links qt libraries.
 	get_target_property(TARGET_LIBRARIES ${target} LINK_LIBRARIES)
 	string(REGEX MATCH ";Qt[56]?::" qtapp ";${TARGET_LIBRARIES}")
+
 	if(qtapp)
 		# Enable automatic compilation of .cpp->.moc, xy.ui->ui_xy.h and resource files
 		set_target_properties(${target} PROPERTIES
@@ -101,25 +106,31 @@ function(installLSLApp target)
 		)
 	endif()
 
-	# Set runtime path, i.e. where shared libs are searched relative to the exe
-	# CMake>=3.16: set(LIBDIR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
-	if(LSL_UNIXFOLDERS)
-		set(LIBDIR "../lib")
-	else()
-		set(LIBDIR "../LSL/lib")
-	endif()
-	if(APPLE AND NOT CMAKE_INSTALL_RPATH)
-		set_property(TARGET ${target} APPEND
-			PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR};@executable_path/../Frameworks")
-	elseif(UNIX AND NOT CMAKE_INSTALL_RPATH)
-		set_property(TARGET ${target}
-			PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
-	endif()
+	# Provide a default rpath if not set.
+	if(NOT CMAKE_INSTALL_RPATH)
+        # If not otherwise provided, our default RPATH is the same directory as the executable,
+        #  and on Mac into the ../Frameworks directory.
+        # We additionally search a specific path for the LSL library.
+        # If `LSL_UNIXFOLDERS` is set, we use the ../lib/ directory (assumes target in bin/).
+        # Otherwise, we use the ../LSL/lib/ directory.
+        set(LIBDIR "../$<IF:$<BOOL:${LSL_UNIXFOLDERS}>,lib/,LSL/lib/>")
+        if(APPLE AND NOT CMAKE_INSTALL_RPATH)
+            set_property(TARGET ${target} APPEND
+                PROPERTY INSTALL_RPATH "@executable_path/;@executable_path/${LIBDIR};@executable_path/../Frameworks")
+        elseif(UNIX AND NOT CMAKE_INSTALL_RPATH)
+            set_property(TARGET ${target}
+                PROPERTY INSTALL_RPATH "\$ORIGIN:\$ORIGIN/${LIBDIR}")
+        endif()
+    endif()
 
 	if(LSL_UNIXFOLDERS)
+        # Use common folders for libraries and executables
 		include(GNUInstallDirs)
 		set(lsldir "\${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}")
-	else()
+    else()
+        # Dump everything into ${CMAKE_INSTALL_PREFIX}/${PROJECT_NAME}
+        #  except LSL specifically goes into ${CMAKE_INSTALL_PREFIX}/LSL
+        #  This is why above we set the INSTALL_RPATH to include ../LSL/lib
 		set(CMAKE_INSTALL_BINDIR ${PROJECT_NAME})
 		set(CMAKE_INSTALL_LIBDIR ${PROJECT_NAME})
 		set(lsldir "\${CMAKE_INSTALL_PREFIX}/LSL")
@@ -140,13 +151,18 @@ function(installLSLApp target)
 	if(NOT PROJECT_NAME STREQUAL "liblsl")
 		set_property(GLOBAL APPEND PROPERTY "LSLDEPENDS_${PROJECT_NAME}" liblsl)
 	endif()
-	install(TARGETS ${target} COMPONENT ${PROJECT_NAME}
+	install(
+        TARGETS ${target}
+        COMPONENT ${PROJECT_NAME}
+        # EXPORTS ?
 		RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
 		LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 		ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-		BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR})
-	# skip copying libraries if disabled or on Linux
-	if(NOT LSL_DEPLOYAPPLIBS OR UNIX AND NOT APPLE)
+		BUNDLE DESTINATION ${CMAKE_INSTALL_BINDIR}
+    )
+
+	# skip copying libraries if disabled
+	if(NOT LSL_DEPLOYAPPLIBS)
 		return()
 	endif()
 
@@ -154,7 +170,9 @@ function(installLSLApp target)
 	get_target_property(target_type ${target} TYPE)
 	if(NOT target_type STREQUAL "EXECUTABLE")
 		return()
-	endif()
+    endif()
+
+    message(STATUS "Preparing to deploy libraries for target ${target}")
 	
 	# Some Windows installers have problems with several components having the same file,
 	# so libs shared between targets are copied into the SHAREDLIBCOMPONENT component if set
@@ -174,7 +192,7 @@ function(installLSLApp target)
 	# then the application needs to have liblsl in an expected location.
 	if(NOT TARGET liblsl AND NOT LSL_UNIXFOLDERS)
 		if(APPLE AND target_is_bundle)
-			# Copy the dylib into the bundle
+			# Copy the framework into the bundle
 			install(FILES $<TARGET_FILE:LSL::lsl>
 				DESTINATION ${CMAKE_INSTALL_BINDIR}/${target}.app/Contents/MacOS/
 				COMPONENT ${SHAREDLIBCOMPONENT})
@@ -206,7 +224,6 @@ function(installLSLApp target)
 		return()
 	endif()
 
-	cmake_minimum_required(VERSION 3.15) # generator expressions in install(CODE)
 	if(WIN32)
 		findQtInstallationTool("windeployqt")
 		install(CODE "
@@ -287,28 +304,29 @@ macro(LSLGenerateCPackConfig)
 		set(CPACK_STRIP_FILES ON)
 		set(CPACK_ARCHIVE_COMPONENT_INSTALL ON)
 		set(CPACK_PACKAGE_NAME lsl)
-		set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
+        if(NOT CPACK_PACKAGE_VENDOR)
+            message(STATUS "CPACK_PACKAGE_VENDOR is not set, using default.")
+            set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
+        endif()
+        # The remaining options are platform-specific.
 		if(APPLE)
 			set(LSL_CPACK_DEFAULT_GEN TBZ2)
-			if(DEFINED ENV{OSXVER})
-				# Configured by Travis-CI for multi-osx builds.
-				set(LSL_OS "$ENV{OSXVER}")
-			else()
-				set(LSL_OS "OSX${lslplatform}")
-			endif(DEFINED ENV{OSXVER})
+			set(LSL_OS "OSX${lslplatform}")
 		elseif(WIN32)
 			set(LSL_CPACK_DEFAULT_GEN ZIP)
+            set(LSL_OS "Win")
 			set(CPACK_NSIS_MODIFY_PATH ON)
 			set(CPACK_WIX_CMAKE_PACKAGE_REGISTRY ON)
 			set(CPACK_WIX_UPGRADE_GUID "ee28a351-3b27-4c2b-8b48-259c87d1b1b4")
 			set(CPACK_WIX_PROPERTY_ARPHELPLINK
 				"https://labstreaminglayer.readthedocs.io/info/getting_started.html#getting-help")
-			set(LSL_OS "Win")
 		elseif(UNIX)
 			set(LSL_CPACK_DEFAULT_GEN DEB)
 			set(LSL_OS "Linux")
-			set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tristan Stenner <ttstenner@gmail.com>")
-
+            if(NOT CPACK_DEBIAN_PACKAGE_MAINTAINER)
+                message(STATUS "CPACK_DEBIAN_PACKAGE_MAINTAINER is not set, using default.")
+                set(CPACK_DEBIAN_PACKAGE_MAINTAINER "Tristan Stenner <ttstenner@gmail.com>")
+            endif()
 			set(CPACK_DEBIAN_ENABLE_COMPONENT_DEPENDS ON)
 			set(CPACK_DEB_COMPONENT_INSTALL ON)
 			set(CPACK_DEBIAN_PACKAGE_PRIORITY optional)
@@ -326,7 +344,8 @@ macro(LSLGenerateCPackConfig)
 				set(CPACK_DEBIAN_PACKAGE_RELEASE ${LSB_RELEASE_CODENAME})
 				set(LSL_OS "${LSB_RELEASE_CODENAME}")
 			endif()
-		endif()
+        endif()
+        # https://cmake.org/cmake/help/latest/manual/cpack-generators.7.html
 		set(CPACK_GENERATOR ${LSL_CPACK_DEFAULT_GEN} CACHE STRING "CPack pkg type(s) to generate")
 		get_cmake_property(LSL_COMPONENTS COMPONENTS)
 		foreach(component ${LSL_COMPONENTS})
@@ -343,9 +362,10 @@ macro(LSLGenerateCPackConfig)
 				endif()
 				set("CPACK_COMPONENT_${COMPONENT}_DEPENDS" ${LSLDEPENDS})
 			endif()
-
-			set("CPACK_DEBIAN_${COMPONENT}_PACKAGE_NAME" ${component})
-			set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
+            if(UNIX)
+                set("CPACK_DEBIAN_${COMPONENT}_PACKAGE_NAME" ${component})
+                set("CPACK_DEBIAN_${COMPONENT}_FILE_NAME" "${LSL_CPACK_FILENAME}.deb")
+            endif()
 			set("CPACK_ARCHIVE_${COMPONENT}_FILE_NAME" ${LSL_CPACK_FILENAME})
 		endforeach()
 
