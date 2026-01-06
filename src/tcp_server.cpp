@@ -199,9 +199,9 @@ void tcp_server::end_serving() {
 	});
 	// issue closure of all active client session sockets; cancels the related outstanding IO jobs
 	close_inflight_sessions();
-	// also notify any transfer threads that are blocked waiting for a sample by sending them one (=
-	// a ping)
-	send_buffer_->push_sample(factory_->new_sample(lsl_clock(), true));
+	// also notify any transfer threads that are blocked waiting for a sample by pushing an empty
+	// sample pointer (the threads check for !samp and skip it, see transfer_samples_thread)
+	send_buffer_->push_sample(sample_p());
 }
 
 // === accept loop ===
