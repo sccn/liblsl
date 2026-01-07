@@ -67,6 +67,7 @@ set(LSL_TEST_INTERNAL_SRCS
 		int/postproc.cpp
 		int/serialization_v100.cpp
 		int/tcpserver.cpp
+		int/sendbuffer.cpp
 )
 if(NOT MINGW)
 	LIST(APPEND LSL_INTERNAL_SRCS int/loguruthreadnames.cpp)
