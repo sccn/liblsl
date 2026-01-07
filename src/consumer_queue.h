@@ -157,7 +157,7 @@ private:
 	inline static void copy_or_move(sample_p &dst, const sample_p &src) { dst = src; }
 	inline static void copy_or_move(sample_p &dst, sample_p &&src) { dst = std::move(src); }
 	// helper to either move or drop a value, depending on whether a dst argument is given
-	inline static void move_or_drop(sample_p &src) { src.~sample_p(); }
+	inline static void move_or_drop(sample_p &src) { src.reset(); }
 	inline static void move_or_drop(sample_p &src, sample_p &dst) { dst = std::move(src); }
 
 	/// helper to add a delta to the given index and wrap correctly
