@@ -8,6 +8,15 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(LSL_WINVER "0x0601" CACHE STRING
         "Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
+# Configure RPATH for installed executables (must be set before targets are created)
+# This ensures test executables can find lsl.framework at runtime
+if(APPLE AND LSL_FRAMEWORK)
+    set(CMAKE_INSTALL_RPATH "@executable_path/../Frameworks")
+elseif(UNIX AND NOT ANDROID)
+    set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+endif()
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
 # Determine library type
 if(LSL_BUILD_STATIC)
     set(LSL_LIB_TYPE STATIC)
