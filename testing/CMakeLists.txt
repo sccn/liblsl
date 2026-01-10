@@ -5,6 +5,7 @@ project(lsltests
 	)
 cmake_minimum_required (VERSION 3.12)
 enable_testing()
+include(GNUInstallDirs)
 
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
@@ -95,7 +96,7 @@ endif()
 set(LSL_TESTS lsl_test_exported lsl_test_internal)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
-	installLSLApp(${lsltest})
+	install(TARGETS ${lsltest} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 #	# Uncomment me if debugging tests on Windows. Commented because it does not work well on CI runners.
 #	if(WIN32)
@@ -111,4 +112,4 @@ foreach(lsltest ${LSL_TESTS})
 #	endif(WIN32)
 endforeach()
 
-installLSLAuxFiles(lsl_test_exported directory lslcfgs)
+install(DIRECTORY lslcfgs DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}")
