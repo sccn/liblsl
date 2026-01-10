@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 project (liblsl
-	VERSION 1.16.2
+	VERSION 1.17.0
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
@@ -24,9 +24,6 @@ if(LSL_UNITTESTS AND NOT IOS)
 endif()
 
 # Config for packaging
-# TODO: Config for packaging for the library itself is likely to diverge from config for packing applications. e.g.,
-# -> Optionally install to system directories
-# -> Apple Framework -- different installer type; uses entitlements
 include(cmake/LSLCMake.cmake)
 LSL_get_target_arch()
 LSL_get_os_name()
