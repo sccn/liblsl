@@ -37,9 +37,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {name: "macOS-latest", os: "macOS-latest", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
-        - {name: "iOS", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
-        - {name: "iOS Simulator", os: "macOS-latest", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
+        - {name: "macOS-latest", os: "macOS-latest", platform: "macos", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
+        - {name: "iOS", os: "macOS-latest", platform: "ios", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
+        - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
 
     steps:
     - uses: actions/checkout@v4
@@ -87,33 +87,14 @@ jobs:
           cmake --build examples/build --target install --config Release -j
           ./examples/build/install/bin/HandleMetaData
 
-    - name: Codesign
+    - name: Codesign Framework
       run: |
-          if [[ "${{ matrix.config.name }}" == "macOS-latest" ]]; then
-            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
-              --entitlements lsl.entitlements --options runtime \
-              install/Frameworks/lsl.framework/Versions/A/lsl
-            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/Versions/A/lsl
-          elif [[ "${{ matrix.config.name }}" == "iOS" || "${{ matrix.config.name }}" == "iOS Simulator" ]]; then
-            codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
-              install/Frameworks/lsl.framework/lsl
-            codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework/lsl
-          fi
-          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" \
-            --entitlements lsl.entitlements --options runtime \
-            install/Frameworks/lsl.framework
-          codesign -vvv --verify --deep --strict install/Frameworks/lsl.framework
+          ./scripts/apple_codesign.sh install/Frameworks/lsl.framework \
+            --platform ${{ matrix.config.platform }}
 
     # run internal tests
     - name: unit tests
       if: matrix.config.name == 'macOS-latest'
-      run: |
-        mkdir -p dumps
-        install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
-        install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
-      timeout-minutes: 10
-    - name: unit test (intel)
-      if: matrix.config.name == 'macOS-15-intel'
       run: |
         mkdir -p dumps
         install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
@@ -127,23 +108,9 @@ jobs:
           APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
           APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
       run: |
-          # Get the version number from the framework's Info.plist
-          LSL_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
-          echo "LSL_VERSION=$LSL_VERSION" >> $GITHUB_ENV
-          echo "Debug: LSL_VERSION=$LSL_VERSION"
-
-          mkdir -p package
-          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
-            --component install/Frameworks/lsl.framework \
-            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
-          # Notarize the package
-          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
-            --apple-id "$APPLE_NOTARIZE_USERNAME" \
-            --password "$APPLE_NOTARIZE_PASSWORD" \
-            --team-id "$APPLE_DEVELOPMENT_TEAM" \
-            --wait
-          # Staple the notarization ticket to the package
-          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
+          ./scripts/apple_package_notarize.sh install/Frameworks/lsl.framework \
+            --notarize \
+            --output package
 
     - name: upload dump
       if: failure()
@@ -166,7 +133,6 @@ jobs:
         path: |
           package/*.pkg
           install/Frameworks/lsl.framework.zip
-        # Note: the artifact will preserve the folder structure up to the common root, in this case all.
 
     - name: Upload iOS Framework
       if: matrix.config.name == 'iOS'
@@ -174,7 +140,6 @@ jobs:
       with:
         name: build-iOS
         path: install/Frameworks/lsl.framework.zip
-        # Note: the artifact drops the folder structure and only keeps the zip.
 
     - name: Upload iOS Simulator Framework
       if: matrix.config.name == 'iOS Simulator'
@@ -202,16 +167,10 @@ jobs:
           name: build-iOS-Simulator
           path: build-iOS-Simulator
 
-      - name: Unzip macOS Framework
+      - name: Unzip Frameworks
         run: |
           unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
-
-      - name: Unzip iOS Framework
-        run: |
           unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
-
-      - name: Unzip iOS Simulator Framework
-        run: |
           unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
 
       - name: Install certificates and provisioning profiles
@@ -224,17 +183,11 @@ jobs:
 
       - name: Create and Sign XCFramework
         run: |
-          xcodebuild -create-xcframework \
-            -framework build-macOS-latest/Frameworks/lsl.framework \
-            -framework build-iOS/Frameworks/lsl.framework \
-            -framework build-iOS-Simulator/Frameworks/lsl.framework \
-            -output lsl.xcframework
-          
-          codesign -vvv --force --deep --sign "$APPLE_CODE_SIGN_IDENTITY_APP" lsl.xcframework
-          echo "✅ Verifying binary signatures in XCFramework..."
-          codesign -vvv --verify --deep --strict lsl.xcframework
-
-          ditto -c -k --sequesterRsrc --keepParent lsl.xcframework lsl.xcframework.$LSL_VERSION.zip
+          ./scripts/apple_create_xcframework.sh \
+            --macos build-macOS-latest/Frameworks/lsl.framework \
+            --ios build-iOS/Frameworks/lsl.framework \
+            --ios-simulator build-iOS-Simulator/Frameworks/lsl.framework \
+            --output .
 
       - name: upload artifacts
         uses: actions/upload-artifact@v4
@@ -242,7 +195,7 @@ jobs:
           name: mac-packages
           path: |
             lsl.xcframework.*.zip
-            package/
+            build-macOS-latest/package/
 
       - name: upload to release page
         if: github.event_name == 'release'
@@ -252,7 +205,7 @@ jobs:
           UPLOAD_URL: ${{ github.event.release.upload_url }}
         run: |
               UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
-              for pkg in lsl.xcframework.zip package/*.*; do
+              for pkg in lsl.xcframework.*.zip build-macOS-latest/package/*.*; do
                 NAME=$(basename $pkg)
                 MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
                 curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
