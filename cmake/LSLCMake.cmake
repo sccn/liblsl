@@ -9,6 +9,8 @@
 #   LSL_configure_rpath()       - Configure RPATH for all platforms
 #   LSL_install_liblsl()        - Install liblsl with the application
 #   LSL_install_mingw_runtime() - Install MinGW runtime DLLs (Windows only)
+#   LSL_deploy_qt()             - Deploy Qt libraries with the application
+#   LSL_codesign()              - Sign macOS app bundles with entitlements
 #
 # Usage:
 #   find_package(LSL REQUIRED)
@@ -22,7 +24,7 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-message(STATUS "Included LSLCMake helpers, rev. 16")
+message(STATUS "Included LSLCMake helpers, rev. 18")
 
 # =============================================================================
 # LSL_get_target_arch()
@@ -257,6 +259,173 @@ function(LSL_install_mingw_runtime)
             install(FILES "${_dll}" DESTINATION "${ARG_DESTINATION}")
         endif()
     endforeach()
+endfunction()
+
+# =============================================================================
+# LSL_deploy_qt()
+# =============================================================================
+# Deploys Qt libraries alongside the application using platform-specific tools.
+# - Windows: Uses windeployqt to copy Qt DLLs and plugins
+# - macOS: Uses macdeployqt to bundle Qt frameworks
+# - Linux: No-op (Qt libraries typically come from system packages)
+#
+# Requires Qt6::qmake target to be available (from find_package(Qt6)).
+#
+# Arguments:
+#   TARGET      - Target name (without .exe or .app extension)
+#   DESTINATION - Install destination directory
+#
+# Example:
+#   LSL_deploy_qt(TARGET "${PROJECT_NAME}" DESTINATION ".")
+# =============================================================================
+function(LSL_deploy_qt)
+    cmake_parse_arguments(ARG "" "TARGET;DESTINATION" "" ${ARGN})
+
+    if(NOT ARG_TARGET)
+        message(FATAL_ERROR "LSL_deploy_qt: TARGET required")
+    endif()
+    if(NOT ARG_DESTINATION)
+        message(FATAL_ERROR "LSL_deploy_qt: DESTINATION required")
+    endif()
+
+    if(NOT TARGET Qt6::qmake)
+        message(WARNING "LSL_deploy_qt: Qt6::qmake not found, skipping Qt deployment")
+        return()
+    endif()
+
+    get_target_property(_qt_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qt_qmake_executable}" DIRECTORY)
+
+    if(WIN32)
+        find_program(_windeployqt_executable windeployqt HINTS "${_qt_bin_dir}")
+        if(_windeployqt_executable)
+            install(CODE "
+                message(STATUS \"Running windeployqt...\")
+                execute_process(
+                    COMMAND \"${_windeployqt_executable}\"
+                        --no-translations
+                        --no-system-d3d-compiler
+                        --no-opengl-sw
+                        --no-compiler-runtime
+                        --dir \"\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}\"
+                        \"\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}/${ARG_TARGET}.exe\"
+                )
+            ")
+        else()
+            message(WARNING "LSL_deploy_qt: windeployqt not found")
+        endif()
+    elseif(APPLE)
+        find_program(_macdeployqt_executable macdeployqt HINTS "${_qt_bin_dir}")
+        if(_macdeployqt_executable)
+            install(CODE "
+                message(STATUS \"Running macdeployqt...\")
+                execute_process(
+                    COMMAND \"${_macdeployqt_executable}\"
+                        \"\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}/${ARG_TARGET}.app\"
+                        -verbose=0
+                        -always-overwrite
+                    RESULT_VARIABLE _deploy_result
+                    ERROR_QUIET
+                )
+                if(NOT _deploy_result EQUAL 0)
+                    message(WARNING \"macdeployqt returned \${_deploy_result}\")
+                endif()
+            ")
+        else()
+            message(WARNING "LSL_deploy_qt: macdeployqt not found")
+        endif()
+    endif()
+    # Linux: No-op - Qt libraries typically installed via system packages
+endfunction()
+
+# =============================================================================
+# LSL_codesign()
+# =============================================================================
+# Signs macOS app bundles or executables with entitlements for ad-hoc local development.
+# Uses the "-" identity (ad-hoc signing) which doesn't require a Developer ID certificate.
+#
+# For release builds with proper signing/notarization, use a separate CI script
+# with an actual Developer ID certificate.
+#
+# Arguments:
+#   TARGET       - Target name (without .app extension for bundles)
+#   DESTINATION  - Install destination directory
+#   ENTITLEMENTS - Path to entitlements file (required)
+#   BUNDLE       - If set, signs as app bundle (.app), otherwise signs as executable
+#   FRAMEWORK    - Optional: Path to framework to sign before the executable (for CLI apps)
+#
+# Example (GUI app bundle):
+#   LSL_codesign(
+#       TARGET "${PROJECT_NAME}"
+#       DESTINATION "${INSTALL_BINDIR}"
+#       ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/app.entitlements"
+#       BUNDLE
+#   )
+#
+# Example (CLI executable with framework):
+#   LSL_codesign(
+#       TARGET "${PROJECT_NAME}CLI"
+#       DESTINATION "${INSTALL_BINDIR}"
+#       ENTITLEMENTS "${CMAKE_CURRENT_SOURCE_DIR}/app.entitlements"
+#       FRAMEWORK "Frameworks/lsl.framework"
+#   )
+# =============================================================================
+function(LSL_codesign)
+    if(NOT APPLE)
+        return()
+    endif()
+
+    cmake_parse_arguments(ARG "BUNDLE" "TARGET;DESTINATION;ENTITLEMENTS;FRAMEWORK" "" ${ARGN})
+
+    if(NOT ARG_TARGET)
+        message(FATAL_ERROR "LSL_codesign: TARGET required")
+    endif()
+    if(NOT ARG_DESTINATION)
+        message(FATAL_ERROR "LSL_codesign: DESTINATION required")
+    endif()
+    if(NOT ARG_ENTITLEMENTS)
+        message(FATAL_ERROR "LSL_codesign: ENTITLEMENTS required")
+    endif()
+
+    if(ARG_BUNDLE)
+        # Sign app bundle
+        install(CODE "
+            set(_app \"\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}/${ARG_TARGET}.app\")
+            set(_ent \"${ARG_ENTITLEMENTS}\")
+
+            message(STATUS \"Signing app bundle...\")
+            execute_process(
+                COMMAND codesign --force --deep --sign - --entitlements \"\${_ent}\" \"\${_app}\"
+                RESULT_VARIABLE _sign_result
+            )
+
+            execute_process(COMMAND codesign --verify --verbose \"\${_app}\" RESULT_VARIABLE _verify_result)
+            if(_verify_result EQUAL 0)
+                message(STATUS \"App bundle signature verified successfully\")
+            else()
+                message(WARNING \"App bundle signature verification failed!\")
+            endif()
+        ")
+    else()
+        # Sign executable (and optionally framework first)
+        install(CODE "
+            set(_exe \"\${CMAKE_INSTALL_PREFIX}/${ARG_DESTINATION}/${ARG_TARGET}\")
+            set(_ent \"${ARG_ENTITLEMENTS}\")
+
+            # Sign framework first if specified
+            if(NOT \"${ARG_FRAMEWORK}\" STREQUAL \"\")
+                set(_fw \"\${CMAKE_INSTALL_PREFIX}/${ARG_FRAMEWORK}\")
+                message(STATUS \"Signing framework: \${_fw}\")
+                execute_process(COMMAND codesign --force --sign - \"\${_fw}\")
+            endif()
+
+            message(STATUS \"Signing executable: \${_exe}\")
+            execute_process(
+                COMMAND codesign --force --sign - --entitlements \"\${_ent}\" \"\${_exe}\"
+                RESULT_VARIABLE _sign_result
+            )
+        ")
+    endif()
 endfunction()
 
 
