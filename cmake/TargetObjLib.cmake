@@ -3,6 +3,7 @@ add_library(lslobj OBJECT
         ${lslsources}
         ${lslheaders}
 )
+set_target_properties(lslobj PROPERTIES FOLDER "liblsl")
 
 # Set the includes/headers for the lslobj target
 # Note: We cannot use PUBLIC_HEADER because it flattens the include tree upon install

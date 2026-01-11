@@ -17,6 +17,7 @@ endif()
 
 # Create lslboost target
 add_library(lslboost INTERFACE)
+set_target_properties(lslboost PROPERTIES FOLDER "liblsl")
 if(LSL_BUNDLED_BOOST)
     message(STATUS "Using bundled header-only Boost")
     target_include_directories(lslboost
