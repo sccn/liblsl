@@ -58,8 +58,7 @@ jobs:
 
         # macOS non-framework builds (build-only, no tests or release uploads)
         # These verify compatibility with package managers like conda-forge
-        # Note: macos-13 is the last GitHub runner with x86_64; macos-14+ are ARM64 only
-        - {name: "macos-13-x64", os: "macos-13", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
+        - {name: "macos-14-x64", os: "macos-14", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
         - {name: "macos-14-arm64", os: "macos-14", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
