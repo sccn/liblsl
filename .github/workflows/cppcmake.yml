@@ -246,22 +246,8 @@ jobs:
         name: dumps-${{ matrix.config.name }}
         path: dumps
 
-    - name: upload to release page
+    - name: Upload to release
       if: github.event_name == 'release' && matrix.config.build_only != true
-      env:
-        TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
-        TAG: ${{ github.event.release.tag_name }}
-        UPLOAD_URL: ${{ github.event.release.upload_url }}
-      run: |
-              # Do try this at home! The REST API is documented at
-              # https://docs.github.com/en/free-pro-team@latest/rest and you can get a personal
-              # access token at https://github.com/settings/tokens
-              # (set TOKEN to "bearer abcdef1234")
-              # you can get the UPLOAD_URL with a short bash snippet; make sure to set the env var TAG:
-              # UPLOAD_URL=$(curl -H 'Accept: application/vnd.github.v3+json' $GITHUB_API_URL/repos/$GITHUB_REPOSITORY/releases/tags/$TAG | jq -r .upload_url)
-              UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
-              for pkg in package/*.*; do
-                NAME=$(basename $pkg)
-                MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
-                curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
-              done
+      uses: softprops/action-gh-release@v2
+      with:
+        files: package/*.*
