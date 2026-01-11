@@ -46,7 +46,7 @@ extern "C" {
 const int LSL_PROTOCOL_VERSION = 110;
 
 // the library version
-const int LSL_LIBRARY_VERSION = 116;
+const int LSL_LIBRARY_VERSION = 117;
 
 /// size of the lsl_last_error() buffer size
 const int LAST_ERROR_SIZE = 512;
