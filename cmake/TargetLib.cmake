@@ -7,6 +7,7 @@ set_source_files_properties("src/buildinfo.cpp"
 )
 add_library(lsl ${LSL_LIB_TYPE} src/buildinfo.cpp)
 add_library(LSL::lsl ALIAS lsl)
+set_target_properties(lsl PROPERTIES FOLDER "liblsl")
 
 # Configure main library
 
