@@ -9,6 +9,9 @@ project (liblsl
 # API version, to be incremented on backwards-incompatible ABI changes
 set(LSL_ABI_VERSION 2)
 
+# Enable folder organization in IDEs (Visual Studio, Xcode, CLion)
+set_property(GLOBAL PROPERTY USE_FOLDERS ON)
+
 # Include modular configuration files
 include(cmake/ProjectOptions.cmake)  #
 include(cmake/CompilerSettings.cmake)  #
