@@ -56,8 +56,11 @@ jobs:
         - {name: "windows-x86", os: "windows-latest", arch: "x86", cmake_extra: "-T v142,host=x86 -A Win32"}
         - {name: "windows-arm64", os: "windows-11-arm", arch: "aarch64", cmake_extra: "-T v143,host=ARM64 -A ARM64"}
 
-        # macOS builds (Apple Silicon + Intel)
-        # - {name: "macos-latest", os: "macos-latest", arch: "universal"}
+        # macOS non-framework builds (build-only, no tests or release uploads)
+        # These verify compatibility with package managers like conda-forge
+        # Note: macos-13 is the last GitHub runner with x86_64; macos-14+ are ARM64 only
+        - {name: "macos-13-x64", os: "macos-13", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
+        - {name: "macos-14-arm64", os: "macos-14", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
     - uses: actions/checkout@v5
@@ -175,6 +178,7 @@ jobs:
         fi
 
     - name: Package
+      if: matrix.config.build_only != true
       run: |
         echo "Creating package for ${{ matrix.config.arch }}"
         cmake --build build --target package --config Release -j
@@ -197,12 +201,14 @@ jobs:
         cp testing/lslcfgs/default.cfg . 2>/dev/null || true
 
     - name: upload install dir
+      if: matrix.config.build_only != true
       uses: actions/upload-artifact@master
       with:
         name: build-${{ matrix.config.name }}
         path: install
 
     - name: upload package
+      if: matrix.config.build_only != true
       uses: actions/upload-artifact@master
       with:
         name: pkg-${{ matrix.config.name }}
@@ -218,9 +224,9 @@ jobs:
               ip -6 route
            fi
 
-    # Run tests (native builds only)
+    # Run tests (native builds only, skip build_only configs)
     - name: Unit tests
-      if: matrix.config.cross_compile != true
+      if: matrix.config.cross_compile != true && matrix.config.build_only != true
       run: |
         # Set up core dumps for debugging
         if [[ "${{ matrix.config.name }}" == ubuntu-* ]]; then
@@ -242,7 +248,7 @@ jobs:
         path: dumps
 
     - name: upload to release page
-      if: github.event_name == 'release'
+      if: github.event_name == 'release' && matrix.config.build_only != true
       env:
         TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
         TAG: ${{ github.event.release.tag_name }}
