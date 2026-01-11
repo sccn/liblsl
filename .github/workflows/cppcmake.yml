@@ -58,8 +58,8 @@ jobs:
 
         # macOS non-framework builds (build-only, no tests or release uploads)
         # These verify compatibility with package managers like conda-forge
-        - {name: "macos-14-x64", os: "macos-14", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
-        - {name: "macos-14-arm64", os: "macos-14", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
+        - {name: "macos-dylib-x64", os: "macos-15-intel", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
+        - {name: "macos-dylib-arm64", os: "macos-latest", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
     - uses: actions/checkout@v5
