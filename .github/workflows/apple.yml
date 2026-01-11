@@ -197,16 +197,10 @@ jobs:
             lsl.xcframework.*.zip
             build-macOS-latest/package/
 
-      - name: upload to release page
+      - name: Upload to release
         if: github.event_name == 'release'
-        env:
-          TOKEN: "token ${{ secrets.GITHUB_TOKEN }}"
-          TAG: ${{ github.event.release.tag_name }}
-          UPLOAD_URL: ${{ github.event.release.upload_url }}
-        run: |
-              UPLOAD_URL=${UPLOAD_URL%\{*} # remove "{name,label}" suffix
-              for pkg in lsl.xcframework.*.zip build-macOS-latest/package/*.*; do
-                NAME=$(basename $pkg)
-                MIME=$(file --mime-type $pkg|cut -d ' ' -f2)
-                curl -X POST -H "Accept: application/vnd.github.v3+json" -H "Authorization: $TOKEN" -H "Content-Type: $MIME" --data-binary @$pkg $UPLOAD_URL?name=$NAME
-              done
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            lsl.xcframework.*.zip
+            build-macOS-latest/package/*.*
