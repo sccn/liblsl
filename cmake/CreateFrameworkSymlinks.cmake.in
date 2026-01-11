@@ -1,7 +1,12 @@
 # This script is executed at install time.
 # It was generated from CreateFrameworkSymlinks.cmake.in
 
-set(FRAMEWORK_DIR "${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_FRAMEWORK_DIR@/lsl.framework")
+# Handle both absolute and relative CMAKE_INSTALL_FRAMEWORK_DIR paths
+if(IS_ABSOLUTE "@CMAKE_INSTALL_FRAMEWORK_DIR@")
+    set(FRAMEWORK_DIR "@CMAKE_INSTALL_FRAMEWORK_DIR@/lsl.framework")
+else()
+    set(FRAMEWORK_DIR "${CMAKE_INSTALL_PREFIX}/@CMAKE_INSTALL_FRAMEWORK_DIR@/lsl.framework")
+endif()
 
 message(STATUS "Executing configured symlink script.")
 message(STATUS "  -- Target Directory='${FRAMEWORK_DIR}'")
