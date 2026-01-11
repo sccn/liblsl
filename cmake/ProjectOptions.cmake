@@ -11,6 +11,7 @@ option(LSL_BUNDLED_BOOST "Use the bundled Boost by default" ON)
 option(LSL_BUNDLED_PUGIXML "Use the bundled pugixml by default" ON)
 cmake_dependent_option(LSL_TOOLS "Build some experimental tools for in-depth tests" OFF "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 cmake_dependent_option(LSL_UNITTESTS "Build LSL library unit tests" OFF "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
+cmake_dependent_option(LSL_INSTALL "Generate install targets" ON "CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR" OFF)
 option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF)
 mark_as_advanced(LSL_FORCE_FANCY_LIBNAME)
 
