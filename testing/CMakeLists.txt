@@ -97,7 +97,9 @@ endif()
 set(LSL_TESTS lsl_test_exported lsl_test_internal)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
-	install(TARGETS ${lsltest} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+	if(LSL_INSTALL)
+		install(TARGETS ${lsltest} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+	endif()
 
 #	# Uncomment me if debugging tests on Windows. Commented because it does not work well on CI runners.
 #	if(WIN32)
@@ -113,4 +115,6 @@ foreach(lsltest ${LSL_TESTS})
 #	endif(WIN32)
 endforeach()
 
-install(DIRECTORY lslcfgs DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}")
+if(LSL_INSTALL)
+	install(DIRECTORY lslcfgs DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}")
+endif()
