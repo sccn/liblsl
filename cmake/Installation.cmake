@@ -1,3 +1,8 @@
+# Skip installation when included as a subproject (controlled by LSL_INSTALL option)
+if(NOT LSL_INSTALL)
+    return()
+endif()
+
 # Configure installation
 include(CMakePackageConfigHelpers)
 
