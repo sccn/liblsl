@@ -38,10 +38,28 @@ jobs:
       fail-fast: false
       matrix:
         config:
-        - {name: "ubuntu-22.04", os: "ubuntu-22.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "ubuntu-24.04", os: "ubuntu-24.04",   cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "windows-x64",  os: "windows-latest", cmake_extra: "-T v142,host=x86"}
-        - {name: "windows-32",   os: "windows-latest", cmake_extra: "-T v142,host=x86 -A Win32"}
+        # x86_64 Linux builds
+        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+        - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+
+        # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
+        # SHLIBDEPS must be disabled for cross-compiled packages as the host system
+        # does not have the target architecture libraries installed
+        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+
+        # Native ARM build
+        # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+
+        # Windows builds
+        - {name: "windows-x64", os: "windows-latest", arch: "x86_64", cmake_extra: "-T v142,host=x86"}
+        - {name: "windows-x86", os: "windows-latest", arch: "x86", cmake_extra: "-T v142,host=x86 -A Win32"}
+        - {name: "windows-arm64", os: "windows-11-arm", arch: "aarch64", cmake_extra: "-T v143,host=ARM64 -A ARM64"}
+
+        # macOS non-framework builds (build-only, no tests or release uploads)
+        # These verify compatibility with package managers like conda-forge
+        - {name: "macos-dylib-x64", os: "macos-15-intel", arch: "x86_64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
+        - {name: "macos-dylib-arm64", os: "macos-latest", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
     - uses: actions/checkout@v5
@@ -180,35 +198,6 @@ jobs:
 
         cmake -E remove_directory package/_CPack_Packages
         cp testing/lslcfgs/default.cfg . 2>/dev/null || true
-
-    # CMake does a lousy job of creating .pkg files for macOS, so we do it manually
-    - name: package and notarize (macOS)
-      if: matrix.config.os == 'macOS-latest'
-      env:
-          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
-          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
-      run: |
-          # Get the version number from the framework's Info.plist
-          VERSION=$(plutil -extract CFBundleShortVersionString xml1 -o - install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p')
-          echo "LSL_VERSION=$VERSION" >> $GITHUB_ENV
-
-          mkdir -p package
-          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
-            --component install/Frameworks/lsl.framework \
-            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
-          # Notarize the package
-          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
-            --apple-id "$APPLE_NOTARIZE_USERNAME" \
-            --password "$APPLE_NOTARIZE_PASSWORD" \
-            --team-id "$APPLE_DEVELOPMENT_TEAM" \
-            --wait
-          # Staple the notarization ticket to the package
-          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
-          # If notarization fails, you can get the history of notarization requests:
-          # xcrun notarytool history --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
-          # Then you can check the status of a specific request:
-          # xcrun notarytool log <request-id> --apple-id "$APPLE_NOTARIZE_USERNAME" --password "$APPLE_NOTARIZE_PASSWORD" --team-id "$APPLE_DEVELOPMENT_TEAM"
 
     - name: upload install dir
       if: matrix.config.build_only != true

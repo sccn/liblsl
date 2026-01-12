@@ -112,31 +112,6 @@ jobs:
             --notarize \
             --output package
 
-    - name: Package and Notarize macOS Installer
-      if: matrix.config.name == 'macOS-latest'
-      env:
-          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
-          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
-      run: |
-          # Get the version number from the framework's Info.plist
-          LSL_VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" install/Frameworks/lsl.framework/Versions/A/Resources/Info.plist)
-          echo "LSL_VERSION=$LSL_VERSION" >> $GITHUB_ENV
-          echo "Debug: LSL_VERSION=$LSL_VERSION"
-
-          mkdir -p package
-          productbuild --sign "$APPLE_CODE_SIGN_IDENTITY_INST" \
-            --component install/Frameworks/lsl.framework \
-            /Library/Frameworks package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
-          # Notarize the package
-          xcrun notarytool submit package/liblsl-${LSL_VERSION}-Darwin-universal.pkg \
-            --apple-id "$APPLE_NOTARIZE_USERNAME" \
-            --password "$APPLE_NOTARIZE_PASSWORD" \
-            --team-id "$APPLE_DEVELOPMENT_TEAM" \
-            --wait
-          # Staple the notarization ticket to the package
-          xcrun stapler staple package/liblsl-${LSL_VERSION}-Darwin-universal.pkg
-
     - name: upload dump
       if: failure()
       uses: actions/upload-artifact@v4
@@ -173,13 +148,6 @@ jobs:
         name: build-iOS-Simulator
         path: install/Frameworks/lsl.framework.zip
 
-    - name: Upload iOS Simulator Framework
-      if: matrix.config.name == 'iOS Simulator'
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-iOS-Simulator
-        path: install/Frameworks/lsl.framework.zip
-
   xcframework_and_deploy:
     name: XCFramework and Deploy
     needs: build
@@ -203,18 +171,6 @@ jobs:
         run: |
           unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
           unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
-          unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
-
-      - name: Unzip macOS Framework
-        run: |
-          unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
-
-      - name: Unzip iOS Framework
-        run: |
-          unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
-
-      - name: Unzip iOS Simulator Framework
-        run: |
           unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
 
       - name: Install certificates and provisioning profiles
