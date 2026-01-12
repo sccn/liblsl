@@ -1,6 +1,6 @@
 cmake_minimum_required (VERSION 3.23)
 project (liblsl
-	VERSION 1.17.3
+	VERSION 1.17.4
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
