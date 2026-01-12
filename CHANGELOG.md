@@ -1,3 +1,9 @@
+# Changes for liblsl 1.17
+
+* Refactor CMake builds for clarity, for apple frameworks, code-signing and notarization, less interference with user-projects (Chadwick Boulay)
+* Update dependencies (@zeyus)
+* Fix extra dereference that led to sigsegv upon cleanup in some scenarios (Mathieu Scheltienne)
+
 # Changes for liblsl 1.16
 
 * add: optional, minimal header-only replacement for Boost.Serialization (Tristan Stenner)
