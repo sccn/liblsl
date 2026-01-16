@@ -3,12 +3,13 @@ description: 'Installs Apple signing and notarization certificates and sets up t
 inputs:
   MACOS_CERTIFICATE_APP:
     required: true
+    description: 'Base64-encoded Developer ID Application certificate in PKCS#12 format'
   MACOS_CERTIFICATE_INST:
     required: true
+    description: 'Base64-encoded Developer ID Installer certificate in PKCS#12 format'
   MACOS_CERTIFICATE_PWD:
     required: true
-  MACOS_CI_KEYCHAIN_PWD:
-    required: true
+    description: 'Password to decode the Apple certificates'
 runs:
   using: "composite"
   steps:
@@ -17,10 +18,11 @@ runs:
       run: |
         # Create temporary keychain
         KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
-        security create-keychain -p "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        MACOS_CI_KEYCHAIN_PWD=$(openssl rand -base64 32)
+        security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
         security default-keychain -s $KEYCHAIN_PATH
         security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-        security unlock-keychain -p "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
         
         # Import certificates from secrets ...
         CERTIFICATE_PATH_APP=$RUNNER_TEMP/build_certificate_app.p12
@@ -32,7 +34,7 @@ runs:
         security import $CERTIFICATE_PATH_INST -P "${{ inputs.MACOS_CERTIFICATE_PWD }}" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
         
         # Set trusted partitions (groups of applications) that can access the keychain items
-        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "${{ inputs.MACOS_CI_KEYCHAIN_PWD }}" $KEYCHAIN_PATH
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
         security list-keychain -d user -s $KEYCHAIN_PATH
         
         # Get certificate identities into environment variables
