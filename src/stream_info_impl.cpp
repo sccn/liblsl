@@ -47,7 +47,11 @@ template <typename T> void append_text_node(xml_node &node, const char *name, co
 }
 
 template <> void append_text_node(xml_node &node, const char *name, const std::string &value) {
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	node.append_child(name).append_child(node_pcdata).set_value(value);
+#else
 	node.append_child(name).append_child(node_pcdata).set_value(value.c_str());
+#endif
 }
 
 void stream_info_impl::write_xml(xml_document &doc) {
@@ -264,17 +268,29 @@ uint32_t lsl::stream_info_impl::calc_transport_buf_samples(
 
 void stream_info_impl::version(int v) {
 	version_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("version").first_child().set_value(to_string(version_ / 100.));
+#else
 	doc_.child("info").child("version").first_child().set_value(to_string(version_ / 100.).c_str());
+#endif
 }
 
 void stream_info_impl::created_at(double v) {
 	created_at_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("created_at").first_child().set_value(to_string(created_at_));
+#else
 	doc_.child("info").child("created_at").first_child().set_value(to_string(created_at_).c_str());
+#endif
 }
 
 void stream_info_impl::uid(const std::string &v) {
 	uid_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("uid").first_child().set_value(uid_);
+#else
 	doc_.child("info").child("uid").first_child().set_value(uid_.c_str());
+#endif
 }
 
 const std::string& stream_info_impl::reset_uid()
@@ -285,17 +301,29 @@ const std::string& stream_info_impl::reset_uid()
 
 void stream_info_impl::session_id(const std::string &v) {
 	session_id_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("session_id").first_child().set_value(session_id_);
+#else
 	doc_.child("info").child("session_id").first_child().set_value(session_id_.c_str());
+#endif
 }
 
 void stream_info_impl::hostname(const std::string &v) {
 	hostname_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("hostname").first_child().set_value(hostname_);
+#else
 	doc_.child("info").child("hostname").first_child().set_value(hostname_.c_str());
+#endif
 }
 
 void stream_info_impl::v4address(const std::string &v) {
 	v4address_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("v4address").first_child().set_value(v4address_);
+#else
 	doc_.child("info").child("v4address").first_child().set_value(v4address_.c_str());
+#endif
 }
 
 void stream_info_impl::v4data_port(uint16_t v) {
@@ -310,7 +338,11 @@ void stream_info_impl::v4service_port(uint16_t v) {
 
 void stream_info_impl::v6address(const std::string &v) {
 	v6address_ = v;
+#if defined(PUGIXML_HAS_STRING_VIEW)
+	doc_.child("info").child("v6address").first_child().set_value(v6address_);
+#else
 	doc_.child("info").child("v6address").first_child().set_value(v6address_.c_str());
+#endif
 }
 
 void stream_info_impl::v6data_port(uint16_t v) {
