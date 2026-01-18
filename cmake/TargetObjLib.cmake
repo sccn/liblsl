@@ -80,7 +80,9 @@ if(NOT LSL_OPTIMIZATIONS)
 endif()
 
 # - pugixml (fetched via FetchContent, linked statically and privately)
-target_link_libraries(lslobj PRIVATE pugixml::pugixml)
+# Use BUILD_INTERFACE to avoid requiring pugixml in the export set - the static
+# library objects are linked into lsl directly, so consumers don't need pugixml.
+target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
 # Hide pugixml symbols from the shared library on Linux
 if(UNIX AND NOT APPLE)
     target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
