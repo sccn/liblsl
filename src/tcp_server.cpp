@@ -60,6 +60,84 @@ namespace lsl {
  * - So memory is generally owned by the code (functors and stack frames) that needs to refer to
  * it for the duration of the execution.
  */
+/**
+ * Handler for synchronous (blocking) writes to all connected clients.
+ * This class manages sockets that have been handed off from client_session
+ * for zero-copy synchronous data transfer.
+ */
+class sync_write_handler {
+public:
+	sync_write_handler() : io_ctx_(1) {}
+
+	~sync_write_handler() {
+		// Close all sockets
+		for (auto &sock : sockets_) {
+			if (sock && sock->is_open()) {
+				asio::error_code ec;
+				sock->close(ec);
+			}
+		}
+	}
+
+	/// Add a socket for sync writes (called from client_session after handshake)
+	void add_socket(tcp_socket::native_handle_type handle, tcp_socket::protocol_type protocol) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		sockets_.push_back(std::make_unique<tcp_socket>(io_ctx_, protocol, handle));
+		LOG_F(INFO, "Added sync socket, now have %zu consumers", sockets_.size());
+	}
+
+	/// Write buffers to all connected sockets (blocking gather-write)
+	void write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		if (sockets_.empty()) return;
+
+		bool any_broken = false;
+
+		for (auto &sock : sockets_) {
+			if (!sock || !sock->is_open()) continue;
+
+			asio::error_code ec;
+			asio::write(*sock, bufs, ec);
+
+			if (ec) {
+				switch (ec.value()) {
+				case asio::error::broken_pipe:
+				case asio::error::connection_reset:
+				case asio::error::not_connected:
+					LOG_F(WARNING, "Sync socket disconnected: %s", ec.message().c_str());
+					sock->close(ec);
+					any_broken = true;
+					break;
+				default:
+					LOG_F(ERROR, "Sync write error: %s", ec.message().c_str());
+					sock->close(ec);
+					any_broken = true;
+				}
+			}
+		}
+
+		// Remove closed sockets
+		if (any_broken) {
+			sockets_.erase(
+				std::remove_if(sockets_.begin(), sockets_.end(),
+					[](const tcp_socket_p &s) { return !s || !s->is_open(); }),
+				sockets_.end());
+			LOG_F(INFO, "After cleanup, have %zu sync consumers", sockets_.size());
+		}
+	}
+
+	/// Check if there are any connected consumers
+	bool have_consumers() const {
+		std::lock_guard<std::mutex> lock(mutex_);
+		return !sockets_.empty();
+	}
+
+private:
+	asio::io_context io_ctx_;
+	std::vector<tcp_socket_p> sockets_;
+	mutable std::mutex mutex_;
+};
+
 class client_session : public std::enable_shared_from_this<client_session> {
 
 public:
@@ -143,9 +221,14 @@ private:
 };
 
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6)
+	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	// Create sync handler if sync mode is requested
+	if (do_sync) {
+		sync_handler_ = std::make_unique<sync_write_handler>();
+		LOG_F(INFO, "TCP server initialized in synchronous (zero-copy) mode");
+	}
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -178,6 +261,15 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 		throw std::runtime_error("Failed to instantiate socket acceptors for the TCP server");
 }
 
+tcp_server::~tcp_server() {
+	// sync_handler_ destructor will close all sync sockets
+}
+
+void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
+	if (sync_handler_) {
+		sync_handler_->write_all_blocking(bufs);
+	}
+}
 
 // === externally issued asynchronous commands ===
 
@@ -534,6 +626,18 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
+
+		// If server is in sync mode, hand off the socket to the sync handler
+		if (serv->is_sync_mode()) {
+			LOG_F(INFO, "Handing off socket to sync handler for zero-copy transfer");
+			auto protocol = sock_.local_endpoint().protocol();
+			// Release the socket from this io_context and add to sync handler
+			// See https://stackoverflow.com/q/52671836/73299
+			serv->sync_handler_->add_socket(sock_.release(), protocol);
+			// Unregister this session since we're handing off the socket
+			serv->unregister_inflight_session(this);
+			return;
+		}
 
 		// determine transfer parameters
 		auto queue = serv->send_buffer_->new_consumer(max_buffered_);

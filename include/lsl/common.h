@@ -161,6 +161,12 @@ typedef enum {
 	/// The supplied max_buf should be scaled by 0.001.
 	transp_bufsize_thousandths = 2,
 
+	/// Use synchronous (blocking) socket writes for zero-copy data transfer.
+	/// When enabled, push_sample/push_chunk will block until data is written to all consumers.
+	/// Reduces CPU usage for high-bandwidth streams at the cost of increased call latency.
+	/// Not compatible with string-format streams.
+	transp_sync_blocking = 4,
+
 	// prevent compilers from assuming an instance fits in a single byte
 	_lsl_transport_options_maxval = 0x7f000000
 } lsl_transport_options_t;

@@ -91,6 +91,7 @@ addlslexample(SendDataSimple cpp)
 addlslexample(SendMultipleStreams cpp)
 addlslexample(SendStringMarkers cpp)
 addlslexample(SendStringMarkersC c)
+addlslexample(SendDataSyncBlocking cpp)
 addlslexample(TestSyncWithoutData cpp)
 
 target_link_libraries(TestSyncWithoutData PRIVATE Threads::Threads)
