@@ -28,7 +28,9 @@ endif()
 # Link dependencies. The only dependency is lslobj, which contains the bulk of the library code and linkages.
 # Note: We link PRIVATE because lslobj exposes extra symbols that are not part of the public API
 #  but are used by the internal tests.
-target_link_libraries(lsl PRIVATE lslobj)
+# Note: We use BUILD_INTERFACE to avoid requiring lslobj in the export set - the object library's
+#  objects are linked directly into lsl, so consumers don't need lslobj.
+target_link_libraries(lsl PRIVATE $<BUILD_INTERFACE:lslobj>)
 
 # Set the include directories for the lsl target.
 # Note: We had to link lslobj as a PRIVATE dependency, therefore we must manually expose the include directories
