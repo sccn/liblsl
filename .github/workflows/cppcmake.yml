@@ -39,17 +39,17 @@ jobs:
       matrix:
         config:
         # x86_64 Linux builds
-        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
-        - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64" }
+        - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64" }
 
         # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
         # SHLIBDEPS must be disabled for cross-compiled packages as the host system
         # does not have the target architecture libraries installed
-        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
-        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_BUNDLED_PUGIXML=ON -DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
 
         # Native ARM build
-        # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64", cmake_extra: "-DLSL_BUNDLED_PUGIXML=OFF" }
+        # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64" }
 
         # Windows builds
         - {name: "windows-x64", os: "windows-latest", arch: "x86_64", cmake_extra: "-T v142,host=x86"}
@@ -113,13 +113,6 @@ jobs:
         fi
         ccache --max-size=500M
         ccache --set-config=compression=true
-
-    - name: Install dependencies
-      if: runner.os == 'Linux'
-      run: |
-        if [[ "${{ matrix.config.cross_compile }}" != "true" ]]; then
-          sudo apt-get install -y --no-install-recommends libpugixml-dev
-        fi
 
     - name: Configure CMake
       run: |
