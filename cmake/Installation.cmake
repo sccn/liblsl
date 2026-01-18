@@ -41,10 +41,9 @@ write_basic_package_version_file(
 )
 
 # Define installation targets
+# Note: We only export the final 'lsl' library, not intermediate targets like lslobj.
+# Consumers should link to LSL::lsl, not internal object libraries.
 set(LSLTargets lsl)
-if(LSL_BUILD_STATIC)
-    list(APPEND LSLTargets lslobj lslboost)
-endif()
 
 # Install the targets and store configuration information.
 install(TARGETS ${LSLTargets}
