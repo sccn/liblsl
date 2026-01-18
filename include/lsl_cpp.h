@@ -400,7 +400,9 @@ public:
 		lsl_transport_options_t flags = transp_default)
 		: channel_count(info.channel_count()), sample_rate(info.nominal_srate()),
 		  obj(lsl_create_outlet_ex(info.handle().get(), chunk_size, max_buffered, flags),
-			  &lsl_destroy_outlet) {}
+			  &lsl_destroy_outlet) {
+		if (obj == nullptr) throw std::invalid_argument(lsl_last_error());
+	}
 
 	// ========================================
 	// === Pushing a sample into the outlet ===
