@@ -12,6 +12,7 @@
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
+#define NOMINMAX
 #include <windows.h>
 #else
 #include <sys/resource.h>
@@ -176,7 +177,7 @@ Stats run_benchmark(const std::string &name, int nchannels, int nsamples, int nc
 	}
 
 	// Measure CPU time before and after
-	auto [cpu_user_start, cpu_sys_start] = get_cpu_time_ms();
+	auto cpu_start = get_cpu_time_ms();
 	auto start = std::chrono::high_resolution_clock::now();
 	auto next_chunk_time = start;
 
@@ -205,11 +206,11 @@ Stats run_benchmark(const std::string &name, int nchannels, int nsamples, int nc
 	}
 
 	auto end = std::chrono::high_resolution_clock::now();
-	auto [cpu_user_end, cpu_sys_end] = get_cpu_time_ms();
+	auto cpu_end = get_cpu_time_ms();
 
 	double total_ms = std::chrono::duration<double, std::milli>(end - start).count();
-	double cpu_user_ms = cpu_user_end - cpu_user_start;
-	double cpu_sys_ms = cpu_sys_end - cpu_sys_start;
+	double cpu_user_ms = cpu_end.first - cpu_start.first;
+	double cpu_sys_ms = cpu_end.second - cpu_start.second;
 	std::cout << " done.\n" << std::flush;
 
 	// Stop consumers
