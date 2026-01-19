@@ -259,14 +259,18 @@ public:
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
 			// Use optimized sync path for non-string types in sync mode
-			if (sync_mode_ && !std::is_same<T, std::string>::value) {
-				enqueue_chunk_sync(buffer, num_samples, timestamp, pushthrough);
-			} else {
-				push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
-				for (std::size_t k = 1; k < num_samples; k++)
-					push_sample(&buffer[k * num_chans], DEDUCED_TIMESTAMP,
-						pushthrough && (k == num_samples - 1));
+			// if constexpr prevents instantiation of enqueue_chunk_sync<std::string>
+			if constexpr (!std::is_same<T, std::string>::value) {
+				if (sync_mode_) {
+					enqueue_chunk_sync(buffer, num_samples, timestamp, pushthrough);
+					return;
+				}
 			}
+			// Async path (or string types which don't support sync mode)
+			push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
+			for (std::size_t k = 1; k < num_samples; k++)
+				push_sample(&buffer[k * num_chans], DEDUCED_TIMESTAMP,
+					pushthrough && (k == num_samples - 1));
 		}
 	}
 
