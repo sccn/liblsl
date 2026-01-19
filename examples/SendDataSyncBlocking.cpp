@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 	// Create outlet with transp_sync_blocking flag for zero-copy transfer
 	// Note: The third parameter (max_buffered) is less important in sync mode
 	// since data goes directly to the socket without intermediate buffering.
-	lsl::stream_outlet outlet(info, 0, 360, lsl::transp_sync_blocking);
+	lsl::stream_outlet outlet(info, 0, 360, transp_sync_blocking);
 
 	std::cout << "Waiting for consumers...\n";
 	while (!outlet.wait_for_consumers(5)) {
