@@ -7,9 +7,15 @@
 #include <iostream>
 #include <lsl_cpp.h>
 #include <numeric>
-#include <sys/resource.h>
 #include <thread>
 #include <vector>
+
+#ifdef _WIN32
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#else
+#include <sys/resource.h>
+#endif
 
 /**
  * Benchmark comparing synchronous (zero-copy) vs asynchronous outlet performance.
@@ -35,11 +41,26 @@ struct Stats {
 
 // Get current CPU time (user, system) for this process in ms
 std::pair<double, double> get_cpu_time_ms() {
+#ifdef _WIN32
+	FILETIME creation, exit, kernel, user;
+	if (GetProcessTimes(GetCurrentProcess(), &creation, &exit, &kernel, &user)) {
+		// FILETIME is in 100-nanosecond intervals
+		auto to_ms = [](const FILETIME &ft) {
+			ULARGE_INTEGER li;
+			li.LowPart = ft.dwLowDateTime;
+			li.HighPart = ft.dwHighDateTime;
+			return static_cast<double>(li.QuadPart) / 10000.0;  // 100ns -> ms
+		};
+		return {to_ms(user), to_ms(kernel)};
+	}
+	return {0.0, 0.0};
+#else
 	struct rusage usage;
 	getrusage(RUSAGE_SELF, &usage);
 	double user_ms = usage.ru_utime.tv_sec * 1000.0 + usage.ru_utime.tv_usec / 1000.0;
 	double sys_ms = usage.ru_stime.tv_sec * 1000.0 + usage.ru_stime.tv_usec / 1000.0;
 	return {user_ms, sys_ms};
+#endif
 }
 
 Stats compute_stats(std::vector<double> &latencies_us, double total_time_ms, int num_samples,
