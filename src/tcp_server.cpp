@@ -367,6 +367,10 @@ void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs)
 	}
 }
 
+bool tcp_server::have_sync_consumers() const {
+	return sync_handler_ && sync_handler_->have_consumers();
+}
+
 // === externally issued asynchronous commands ===
 
 void tcp_server::begin_serving() {

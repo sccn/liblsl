@@ -173,9 +173,23 @@ void stream_outlet_impl::push_numeric_raw(const void *data, double timestamp, bo
 	}
 }
 
-bool stream_outlet_impl::have_consumers() { return send_buffer_->have_consumers(); }
+bool stream_outlet_impl::have_consumers() {
+	// Check both async consumers (via send_buffer) and sync consumers (via tcp_server)
+	return send_buffer_->have_consumers() || tcp_server_->have_sync_consumers();
+}
 
 bool stream_outlet_impl::wait_for_consumers(double timeout) {
+	// For sync mode, we need to poll since sync consumers aren't registered with send_buffer
+	if (sync_mode_) {
+		auto start = std::chrono::steady_clock::now();
+		double elapsed = 0.0;
+		while (elapsed < timeout) {
+			if (tcp_server_->have_sync_consumers()) return true;
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+		}
+		return tcp_server_->have_sync_consumers();
+	}
 	return send_buffer_->wait_for_consumers(timeout);
 }
 
@@ -208,12 +222,18 @@ template void stream_outlet_impl::enqueue<std::string>(const std::string *data, 
 
 void stream_outlet_impl::push_timestamp_sync(double timestamp) {
 	// Allocate storage for timestamp tag + value in sync_timestamps_
-	// Use TAG_TRANSMITTED_TIMESTAMP (2) for explicit timestamps
-	sync_timestamps_.emplace_back(TAG_TRANSMITTED_TIMESTAMP, timestamp);
-	auto &ts_entry = sync_timestamps_.back();
-	// Add buffers for tag and timestamp
-	sync_buffers_.push_back(asio::const_buffer(&ts_entry.first, 1));  // tag byte
-	sync_buffers_.push_back(asio::const_buffer(&ts_entry.second, sizeof(double)));
+	if (timestamp == DEDUCED_TIMESTAMP) {
+		// Deduced timestamp: just send the 1-byte tag, no timestamp value
+		sync_timestamps_.emplace_back(TAG_DEDUCED_TIMESTAMP, 0.0);
+		auto &ts_entry = sync_timestamps_.back();
+		sync_buffers_.push_back(asio::const_buffer(&ts_entry.first, 1));  // tag byte only
+	} else {
+		// Explicit timestamp: send tag + 8-byte timestamp value
+		sync_timestamps_.emplace_back(TAG_TRANSMITTED_TIMESTAMP, timestamp);
+		auto &ts_entry = sync_timestamps_.back();
+		sync_buffers_.push_back(asio::const_buffer(&ts_entry.first, 1));  // tag byte
+		sync_buffers_.push_back(asio::const_buffer(&ts_entry.second, sizeof(double)));
+	}
 }
 
 void stream_outlet_impl::flush_sync() {
@@ -235,5 +255,47 @@ void stream_outlet_impl::enqueue_sync(asio::const_buffer buf, double timestamp, 
 		flush_sync();
 	}
 }
+
+template <class T>
+void stream_outlet_impl::enqueue_chunk_sync(
+	const T *data, std::size_t num_samples, double timestamp, bool pushthrough) {
+	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
+	if (timestamp == 0.0) timestamp = lsl_clock();
+
+	std::size_t sample_bytes = sample_factory_->datasize();
+	std::size_t num_chans = info_->channel_count();
+
+	// Reserve space upfront to avoid reallocations in sync_buffers_
+	// Each sample needs: 1-2 buffers for timestamp + 1 buffer for data
+	// Note: sync_timestamps_ is a deque (no reserve) to ensure pointer stability
+	sync_buffers_.reserve(sync_buffers_.size() + num_samples * 3);
+
+	// First sample: explicit timestamp
+	push_timestamp_sync(timestamp);
+	sync_buffers_.push_back(asio::const_buffer(data, sample_bytes));
+
+	// Remaining samples: deduced timestamps, contiguous data
+	for (std::size_t k = 1; k < num_samples; k++) {
+		push_timestamp_sync(DEDUCED_TIMESTAMP);
+		sync_buffers_.push_back(
+			asio::const_buffer(data + k * num_chans, sample_bytes));
+	}
+
+	if (pushthrough) flush_sync();
+}
+
+// Explicit template instantiations for enqueue_chunk_sync
+template void stream_outlet_impl::enqueue_chunk_sync<char>(
+	const char *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<int16_t>(
+	const int16_t *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<int32_t>(
+	const int32_t *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<int64_t>(
+	const int64_t *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<float>(
+	const float *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<double>(
+	const double *, std::size_t, double, bool);
 
 } // namespace lsl
