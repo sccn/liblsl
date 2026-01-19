@@ -86,7 +86,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 	for (auto *addr = ifs; addr != nullptr; addr = addr->ifa_next) {
 		// No address? Skip.
 		if (addr->ifa_addr == nullptr) continue;
-		LOG_F(INFO, "netif '%s' (status: %d, multicast: %d, broadcast: %d)", addr->ifa_name,
+		LOG_F(1, "netif '%s' (status: %d, multicast: %d, broadcast: %d)", addr->ifa_name,
 			addr->ifa_flags & IFF_UP, addr->ifa_flags & IFF_MULTICAST,
 			addr->ifa_flags & IFF_BROADCAST);
 		// Interface doesn't support multicast? Skip.
@@ -99,10 +99,10 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 		if (addr->ifa_addr->sa_family == AF_INET) {
 			if_.addr = asio::ip::make_address_v4(
 				ntohl(reinterpret_cast<sockaddr_in *>(addr->ifa_addr)->sin_addr.s_addr));
-			LOG_F(INFO, "\tIPv4 addr: %x", if_.addr.to_v4().to_uint());
+			LOG_F(1, "\tIPv4 addr: %x", if_.addr.to_v4().to_uint());
 		} else if (addr->ifa_addr->sa_family == AF_INET6) {
 			if_.addr = sinaddr_to_asio(reinterpret_cast<sockaddr_in6 *>(addr->ifa_addr));
-			LOG_F(INFO, "\tIPv6 addr: %s", if_.addr.to_string().c_str());
+			LOG_F(1, "\tIPv6 addr: %s", if_.addr.to_string().c_str());
 		} else
 			continue;
 
