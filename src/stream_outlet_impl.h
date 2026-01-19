@@ -6,10 +6,12 @@
 #include "stream_info_impl.h"
 #include <asio/buffer.hpp>
 #include <cstdint>
+#include <deque>
 #include <loguru.hpp>
 #include <memory>
 #include <string>
 #include <thread>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -256,10 +258,15 @@ public:
 			if (timestamp == 0.0) timestamp = lsl_clock();
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
-			push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
-			for (std::size_t k = 1; k < num_samples; k++)
-				push_sample(&buffer[k * num_chans], DEDUCED_TIMESTAMP,
-					pushthrough && (k == num_samples - 1));
+			// Use optimized sync path for non-string types in sync mode
+			if (sync_mode_ && !std::is_same<T, std::string>::value) {
+				enqueue_chunk_sync(buffer, num_samples, timestamp, pushthrough);
+			} else {
+				push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
+				for (std::size_t k = 1; k < num_samples; k++)
+					push_sample(&buffer[k * num_chans], DEDUCED_TIMESTAMP,
+						pushthrough && (k == num_samples - 1));
+			}
 		}
 	}
 
@@ -317,6 +324,11 @@ private:
 	/// Enqueue a buffer for sync transfer (single sample)
 	void enqueue_sync(asio::const_buffer buf, double timestamp, bool pushthrough);
 
+	/// Enqueue a chunk for sync transfer (optimized for multiple samples)
+	template <class T>
+	void enqueue_chunk_sync(
+		const T *data, std::size_t num_samples, double timestamp, bool pushthrough);
+
 	/**
 	 * Check whether some given number of channels matches the stream's channel_count.
 	 * Throws an error if not.
@@ -355,7 +367,8 @@ private:
 	/// Buffers accumulated for sync gather-write
 	std::vector<asio::const_buffer> sync_buffers_;
 	/// Storage for timestamps in sync mode (tag + timestamp pairs)
-	std::vector<std::pair<uint64_t, double>> sync_timestamps_;
+	/// Using deque instead of vector to ensure pointers remain valid when adding elements
+	std::deque<std::pair<uint64_t, double>> sync_timestamps_;
 };
 
 } // namespace lsl

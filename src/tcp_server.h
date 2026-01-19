@@ -86,6 +86,9 @@ public:
 	/// Check if this server is in sync mode
 	bool is_sync_mode() const { return sync_handler_ != nullptr; }
 
+	/// Check if there are any sync consumers connected (only valid if is_sync_mode())
+	bool have_sync_consumers() const;
+
 private:
 	friend class client_session;
 
