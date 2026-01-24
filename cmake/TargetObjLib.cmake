@@ -79,11 +79,17 @@ if(NOT LSL_OPTIMIZATIONS)
     target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
-# - pugixml (fetched via FetchContent, linked statically and privately)
-# Use BUILD_INTERFACE to avoid requiring pugixml in the export set - the static
-# library objects are linked into lsl directly, so consumers don't need pugixml.
-target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
-# Hide pugixml symbols from the shared library on Linux
-if(UNIX AND NOT APPLE)
-    target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
+# - pugixml (either fetched via FetchContent or system package)
+if(LSL_PUGIXML_IS_FETCHED)
+    # Fetched pugixml is always static - use BUILD_INTERFACE to avoid requiring
+    # pugixml in the export set since the static library objects are linked
+    # into lsl directly.
+    target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
+    # Hide pugixml symbols from the shared library on Linux
+    if(UNIX AND NOT APPLE)
+        target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
+    endif()
+else()
+    # System pugixml may be shared or static
+    target_link_libraries(lslobj PRIVATE pugixml::pugixml)
 endif()

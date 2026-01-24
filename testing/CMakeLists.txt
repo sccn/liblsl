@@ -77,7 +77,11 @@ message(STATUS ${LSL_TEST_INTERNAL_SRCS})
 add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
 # Internal tests need pugixml headers (lslobj links pugixml privately)
-target_include_directories(lsl_test_internal PRIVATE ${pugixml_SOURCE_DIR}/src)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_internal PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_internal PRIVATE pugixml::pugixml)
+endif()
 # Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
 target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
 

@@ -39,7 +39,7 @@ jobs:
       matrix:
         config:
         # x86_64 Linux builds
-        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64" }
+        - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64", cmake_extra: "-DLSL_FETCH_PUGIXML=OFF", system_pugixml: true }
         - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64" }
 
         # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
@@ -80,6 +80,13 @@ jobs:
             g++-arm-linux-gnueabihf
           echo "CMAKE_TOOLCHAIN=-DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/cmake/toolchains/arm-linux-gnueabihf.cmake" >> $GITHUB_ENV
         fi
+
+    # Install system pugixml for configs that test LSL_FETCH_PUGIXML=OFF
+    - name: Install system pugixml
+      if: matrix.config.system_pugixml
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y --no-install-recommends libpugixml-dev
 
     # Cache dependencies for Linux
     - name: Cache APT packages
