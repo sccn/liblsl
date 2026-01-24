@@ -1,7 +1,9 @@
 include(CMakeDependentOption)
 
 # Project build options
-option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" OFF)
+# Default LSL_DEBUGLOG to ON for Debug builds (single-config generators only)
+string(COMPARE EQUAL "${CMAKE_BUILD_TYPE}" "Debug" _LSL_DEBUGLOG_DEFAULT)
+option(LSL_DEBUGLOG "Enable (lots of) additional debug messages" ${_LSL_DEBUGLOG_DEFAULT})
 option(LSL_UNIXFOLDERS "Use the unix folder layout for install targets" ON)
 option(LSL_BUILD_STATIC "Build LSL as a static library." OFF)
 option(LSL_FRAMEWORK "Build LSL as an Apple Framework (Mac only)" ON)

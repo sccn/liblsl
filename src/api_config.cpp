@@ -94,7 +94,12 @@ void api_config::load_from_file(const std::string &filename) {
 		}
 
 		// read the [log] settings
-		int log_level = pt.get("log.level", (int)loguru::Verbosity_INFO);
+#if LOGURU_DEBUG_LOGGING
+		// When built with LSL_DEBUGLOG=ON, default to verbose logging
+		int log_level = pt.get("log.level", 1);
+#else
+		int log_level = pt.get("log.level", static_cast<int>(loguru::Verbosity_INFO));
+#endif
 		if (log_level < -3 || log_level > 9)
 			throw std::runtime_error("Invalid log.level (valid range: -3 to 9");
 
