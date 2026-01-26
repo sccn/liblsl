@@ -26,6 +26,18 @@ LIBLSL_C_API int32_t lsl_protocol_version() {
 	return lsl::api_config::get_instance()->use_protocol_version();
 }
 
+LIBLSL_C_API void lsl_set_config_filename(const char *filename) {
+	if (filename) {
+		lsl::api_config::set_api_config_filename(filename);
+	}
+}
+
+LIBLSL_C_API void lsl_set_config_content(const char *content) {
+	if (content) {
+		lsl::api_config::set_api_config_content(content);
+	}
+}
+
 LIBLSL_C_API int32_t lsl_library_version() { return LSL_LIBRARY_VERSION; }
 
 LIBLSL_C_API double lsl_local_clock() {

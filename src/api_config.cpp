@@ -1,7 +1,6 @@
 #include "api_config.h"
 #include "common.h"
 #include "util/cast.hpp"
-#include "util/inireader.hpp"
 #include "util/strfuns.hpp"
 #include <algorithm>
 #include <cstdlib>
@@ -10,6 +9,7 @@
 #include <loguru.hpp>
 #include <mutex>
 #include <stdexcept>
+#include <sstream>
 
 using namespace lsl;
 
@@ -52,8 +52,35 @@ bool file_is_readable(const std::string &filename) {
 }
 
 api_config::api_config() {
+	// first check to see if a config content was provided
+	if (!api_config_content_.empty()) {
+		try {
+			// if so, load it from the content
+			load_from_content(api_config_content_);
+			// free the content this can only be called once
+			api_config_content_.clear();
+			// config loaded successfully, so return
+			return;
+		} catch (std::exception &e) {
+			LOG_F(ERROR, "Error parsing config content: '%s', rolling back to defaults", e.what());
+			// clear the content, it was invalid anyway
+			api_config_content_.clear();
+		}
+	}
+	// otherwise, load the config from a file
+
 	// for each config file location under consideration...
 	std::vector<std::string> filenames;
+
+	// NOLINTNEXTLINE(concurrency-mt-unsafe)
+	if (!api_config_filename_.empty()) {
+		// if a config file name was set, use it if it is readable
+		if (file_is_readable(api_config_filename_)) {
+			filenames.insert(filenames.begin(), api_config_filename_);
+		} else {
+			LOG_F(ERROR, "Config file %s not found", api_config_filename_.c_str());
+		}
+	}
 
 	// NOLINTNEXTLINE(concurrency-mt-unsafe)
 	if (auto *cfgpath = getenv("LSLAPICFG")) {
@@ -82,7 +109,6 @@ api_config::api_config() {
 	load_from_file();
 }
 
-
 void api_config::load_from_file(const std::string &filename) {
 	try {
 		INI pt;
@@ -92,7 +118,35 @@ void api_config::load_from_file(const std::string &filename) {
 				pt.load(infile);
 			}
 		}
+		api_config::load(pt);
+		// log config filename only after setting the verbosity level and all config has been read
+		if (!filename.empty())
+			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
+		else
+			LOG_F(INFO, "Loaded default config");
 
+	} catch (std::exception &e) {
+		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
+			filename.c_str(), e.what());
+		// any error: assign defaults
+		load_from_file();
+		// and rethrow
+		throw e;
+	}
+}
+
+void api_config::load_from_content(const std::string &content) {
+	// load the content into an INI object
+	INI pt;
+	if (!content.empty()) {
+		std::istringstream content_stream(content);
+		pt.load(content_stream);
+	}
+	api_config::load(pt);
+	LOG_F(INFO, "Configuration loaded from content");
+}
+
+void api_config::load(INI &pt) {
 		// read the [log] settings
 #if LOGURU_DEBUG_LOGGING
 		// When built with LSL_DEBUGLOG=ON, default to verbose logging
@@ -269,20 +323,7 @@ void api_config::load_from_file(const std::string &filename) {
 		smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
 		force_default_timestamps_ = pt.get("tuning.ForceDefaultTimestamps", false);
 
-		// log config filename only after setting the verbosity level and all config has been read
-		if (!filename.empty())
-			LOG_F(INFO, "Configuration loaded from %s", filename.c_str());
-		else
-			LOG_F(INFO, "Loaded default config");
-
-	} catch (std::exception &e) {
-		LOG_F(ERROR, "Error parsing config file '%s': '%s', rolling back to defaults",
-			filename.c_str(), e.what());
-		// any error: assign defaults
-		load_from_file();
-		// and rethrow
-		throw e;
-	}
+		
 }
 
 static std::once_flag api_config_once_flag;
