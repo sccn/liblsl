@@ -78,7 +78,7 @@ udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, ip::addres
 				socket_->set_option(
 					ip::multicast::join_group(addr.to_v6(), if_.addr.to_v6().scope_id()), err);
 			if (err)
-				LOG_F(WARNING, "Could not bind multicast responder for %s to interface %s (%s)",
+				LOG_F(1, "Could not bind multicast responder for %s to interface %s (%s)",
 					addr.to_string().c_str(), if_.addr.to_string().c_str(), err.message().c_str());
 			else
 				joined_anywhere = true;

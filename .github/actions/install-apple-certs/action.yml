@@ -1,0 +1,37 @@
+name: 'Install Apple Certificates'
+description: 'Installs Apple signing and notarization certificates and sets up the keychain'
+inputs:
+  MACOS_CERTIFICATE:
+    required: true
+    description: 'Base64-encoded Developer ID certificates (Application and Installer) in PKCS#12 format'
+  MACOS_CERTIFICATE_PWD:
+    required: true
+    description: 'Password to decode the Apple certificates'
+runs:
+  using: "composite"
+  steps:
+    - name: Install certificates and provisioning profiles
+      shell: bash
+      run: |
+        # Create temporary keychain
+        KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+        MACOS_CI_KEYCHAIN_PWD=$(openssl rand -base64 32)
+        security create-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security default-keychain -s $KEYCHAIN_PATH
+        security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+        security unlock-keychain -p "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+
+        # Import certificate (containing both Application and Installer identities) from secret to keychain
+        CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+        echo -n "${{ inputs.MACOS_CERTIFICATE }}" | base64 --decode -o $CERTIFICATE_PATH
+        security import $CERTIFICATE_PATH -P "${{ inputs.MACOS_CERTIFICATE_PWD }}" -k $KEYCHAIN_PATH -A -t cert -f pkcs12
+
+        # Set trusted partitions (groups of applications) that can access the keychain items
+        security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$MACOS_CI_KEYCHAIN_PWD" $KEYCHAIN_PATH
+        security list-keychain -d user -s $KEYCHAIN_PATH
+
+        # Get certificate identities into environment variables
+        CERT_IDENTITY_APP=$(security find-identity -v -p codesigning $KEYCHAIN_PATH | grep "Developer ID Application" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_APP=$CERT_IDENTITY_APP" >> $GITHUB_ENV
+        CERT_IDENTITY_INST=$(security find-identity -v -p basic $KEYCHAIN_PATH | grep "Developer ID Installer" | head -1 | awk -F'"' '{print $2}')
+        echo "APPLE_CODE_SIGN_IDENTITY_INST=$CERT_IDENTITY_INST" >> $GITHUB_ENV

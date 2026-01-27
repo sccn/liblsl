@@ -5,6 +5,7 @@ project(lsltests
 	)
 cmake_minimum_required (VERSION 3.12)
 enable_testing()
+include(GNUInstallDirs)
 
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
@@ -67,6 +68,7 @@ set(LSL_TEST_INTERNAL_SRCS
 		int/postproc.cpp
 		int/serialization_v100.cpp
 		int/tcpserver.cpp
+		int/sendbuffer.cpp
 )
 if(NOT MINGW)
 	LIST(APPEND LSL_INTERNAL_SRCS int/loguruthreadnames.cpp)
@@ -74,7 +76,14 @@ endif()
 message(STATUS ${LSL_TEST_INTERNAL_SRCS})
 add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
-
+# Internal tests need pugixml headers (lslobj links pugixml privately)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_internal PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_internal PRIVATE pugixml::pugixml)
+endif()
+# Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
+target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
@@ -94,7 +103,9 @@ endif()
 set(LSL_TESTS lsl_test_exported lsl_test_internal)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
-	installLSLApp(${lsltest})
+	if(LSL_INSTALL)
+		install(TARGETS ${lsltest} RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+	endif()
 
 #	# Uncomment me if debugging tests on Windows. Commented because it does not work well on CI runners.
 #	if(WIN32)
@@ -110,4 +121,6 @@ foreach(lsltest ${LSL_TESTS})
 #	endif(WIN32)
 endforeach()
 
-installLSLAuxFiles(lsl_test_exported directory lslcfgs)
+if(LSL_INSTALL)
+	install(DIRECTORY lslcfgs DESTINATION "${CMAKE_INSTALL_DATADIR}/${PROJECT_NAME}")
+endif()
