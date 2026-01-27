@@ -57,7 +57,7 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 	for (const auto &io : {io_ctx_data_, io_ctx_service_})
 		io_threads_.emplace_back(std::make_shared<std::thread>([io, name]() {
 			loguru::set_thread_name(name.c_str());
-			while (true) {
+			while (!io->stopped()) {
 				try {
 					io->run();
 					return;

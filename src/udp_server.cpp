@@ -170,8 +170,9 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 void udp_server::handle_receive_outcome(err_t err, std::size_t len) {
 	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err) {
-		// non-critical error? Wait for the next packet
-		if (err != asio::error::operation_aborted || err != asio::error::shut_down)
+		// non-critical error? Wait for the next packet if the socket is still open
+		if (err != asio::error::operation_aborted && err != asio::error::shut_down
+			&& socket_ && socket_->is_open())
 			request_next_packet();
 		return;
 	}
