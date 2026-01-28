@@ -243,7 +243,7 @@ bool query_cache::matches_query(const xml_document &doc, const std::string &quer
 }
 
 int stream_info_impl::channel_bytes() const {
-	const int channel_format_sizes[] = {0, sizeof(float), sizeof(double), sizeof(std::string),
+	const int channel_format_sizes[] = {0, sizeof(float), sizeof(double), 0,
 		sizeof(int32_t), sizeof(int16_t), sizeof(int8_t), 8};
 	return channel_format_sizes[channel_format_];
 }
