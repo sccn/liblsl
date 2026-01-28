@@ -4,11 +4,15 @@
 #include "common.h"
 #include "forward.h"
 #include "stream_info_impl.h"
+#include <asio/buffer.hpp>
 #include <cstdint>
+#include <deque>
 #include <loguru.hpp>
 #include <memory>
 #include <string>
 #include <thread>
+#include <type_traits>
+#include <utility>
 #include <vector>
 
 using asio::ip::tcp;
@@ -254,6 +258,15 @@ public:
 			if (timestamp == 0.0) timestamp = lsl_clock();
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
+			// Use optimized sync path for non-string types in sync mode
+			// if constexpr prevents instantiation of enqueue_chunk_sync<std::string>
+			if constexpr (!std::is_same<T, std::string>::value) {
+				if (sync_mode_) {
+					enqueue_chunk_sync(buffer, num_samples, timestamp, pushthrough);
+					return;
+				}
+			}
+			// Async path (or string types which don't support sync mode)
 			push_sample(buffer, timestamp, pushthrough && (num_samples == 1));
 			for (std::size_t k = 1; k < num_samples; k++)
 				push_sample(&buffer[k * num_chans], DEDUCED_TIMESTAMP,
@@ -294,12 +307,31 @@ public:
 	/// Wait until some consumer shows up.
 	bool wait_for_consumers(double timeout = FOREVER);
 
+	/// Check if this outlet is in synchronous (zero-copy) mode
+	bool is_sync_mode() const { return sync_mode_; }
+
 private:
 	/// Instantiate a new server stack.
 	void instantiate_stack(udp udp_protocol);
 
 	/// Allocate and enqueue a new sample into the send buffer.
 	template <class T> void enqueue(const T *data, double timestamp, bool pushthrough);
+
+	// === Sync mode helpers ===
+
+	/// Append timestamp encoding to sync_buffers_
+	void push_timestamp_sync(double timestamp);
+
+	/// Flush sync_buffers_ to all connected consumers (blocking)
+	void flush_sync();
+
+	/// Enqueue a buffer for sync transfer (single sample)
+	void enqueue_sync(asio::const_buffer buf, double timestamp, bool pushthrough);
+
+	/// Enqueue a chunk for sync transfer (optimized for multiple samples)
+	template <class T>
+	void enqueue_chunk_sync(
+		const T *data, std::size_t num_samples, double timestamp, bool pushthrough);
 
 	/**
 	 * Check whether some given number of channels matches the stream's channel_count.
@@ -331,6 +363,16 @@ private:
 	std::vector<udp_server_p> responders_;
 	/// threads that handle the I/O operations (two per stack: one for UDP and one for TCP)
 	std::vector<thread_p> io_threads_;
+
+	// === Sync mode members ===
+
+	/// Flag indicating sync (zero-copy blocking) mode is enabled
+	bool sync_mode_{false};
+	/// Buffers accumulated for sync gather-write
+	std::vector<asio::const_buffer> sync_buffers_;
+	/// Storage for timestamps in sync mode (tag + timestamp pairs)
+	/// Using deque instead of vector to ensure pointers remain valid when adding elements
+	std::deque<std::pair<uint64_t, double>> sync_timestamps_;
 };
 
 } // namespace lsl

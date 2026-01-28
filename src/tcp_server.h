@@ -3,11 +3,13 @@
 
 #include "forward.h"
 #include "socket_utils.h"
+#include <asio/buffer.hpp>
 #include <atomic>
 #include <map>
 #include <memory>
 #include <mutex>
 #include <string>
+#include <vector>
 
 using asio::ip::tcp;
 using err_t = const asio::error_code &;
@@ -18,6 +20,9 @@ namespace lsl {
 using tcp_socket_p = std::shared_ptr<tcp_socket>;
 /// shared pointer to an acceptor socket
 using tcp_acceptor_p = std::unique_ptr<tcp_acceptor>;
+
+/// Forward declaration for synchronous write handler
+class sync_write_handler;
 
 /**
  * The TCP data server.
@@ -47,9 +52,13 @@ public:
 	 * @param protocol The protocol (IPv4 or IPv6) that shall be serviced by this server.
 	 * @param chunk_size The preferred chunk size, in samples. If 0, the pushthrough flag determines
 	 * the effective chunking.
+	 * @param do_sync If true, use synchronous (blocking) socket writes for zero-copy transfer.
 	 */
 	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
-		int chunk_size, bool allow_v4, bool allow_v6);
+		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
+
+	/// Destructor (must be defined in .cpp due to unique_ptr to incomplete type)
+	~tcp_server();
 
 	/**
 	 * Begin serving TCP connections.
@@ -66,6 +75,19 @@ public:
 	 * this server.
 	 */
 	void end_serving();
+
+	/**
+	 * Write buffers to all connected sync sockets (blocking).
+	 * Only valid when the server was created with do_sync=true.
+	 * @param bufs Vector of const_buffers to write (gather-write).
+	 */
+	void write_all_blocking(const std::vector<asio::const_buffer> &bufs);
+
+	/// Check if this server is in sync mode
+	bool is_sync_mode() const { return sync_handler_ != nullptr; }
+
+	/// Check if there are any sync consumers connected (only valid if is_sync_mode())
+	bool have_sync_consumers() const;
 
 private:
 	friend class client_session;
@@ -102,6 +124,9 @@ private:
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response
 	std::string fullinfo_msg_;	// pre-computed full-info server response
+
+	// synchronous write handler (only set when do_sync=true)
+	std::unique_ptr<sync_write_handler> sync_handler_;
 };
 } // namespace lsl
 

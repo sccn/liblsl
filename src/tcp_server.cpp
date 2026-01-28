@@ -16,6 +16,7 @@
 #include <asio/write.hpp>
 #include <condition_variable>
 #include <cstdint>
+#include <cstring>
 #include <exception>
 #include <istream>
 #include <loguru.hpp>
@@ -60,6 +61,176 @@ namespace lsl {
  * - So memory is generally owned by the code (functors and stack frames) that needs to refer to
  * it for the duration of the execution.
  */
+/**
+ * Handler for synchronous (blocking) writes to all connected clients.
+ * This class manages sockets that have been handed off from client_session
+ * for zero-copy synchronous data transfer.
+ *
+ * Supports clients with different endianness by maintaining two socket groups:
+ * - sockets_native_: clients with same endianness (zero-copy writes)
+ * - sockets_swapped_: clients needing byte-swapped data (one copy for all)
+ */
+class sync_write_handler {
+public:
+	/**
+	 * @param sample_bytes Total bytes per sample (channel_count * value_size)
+	 * @param value_size Bytes per channel value (for byte-swapping)
+	 * @param num_channels Number of channels in the stream
+	 */
+	sync_write_handler(std::size_t sample_bytes, std::size_t value_size, uint32_t num_channels)
+		: io_ctx_(1), sample_bytes_(sample_bytes), value_size_(value_size),
+		  num_channels_(num_channels) {
+		// Pre-allocate scratch buffer for byte-swapping (sample + timestamp)
+		scratch_.resize(sample_bytes + sizeof(double));
+	}
+
+	~sync_write_handler() {
+		// Close all sockets
+		auto close_sockets = [](std::vector<tcp_socket_p> &sockets) {
+			for (auto &sock : sockets) {
+				if (sock && sock->is_open()) {
+					asio::error_code ec;
+					sock->close(ec);
+				}
+			}
+		};
+		close_sockets(sockets_native_);
+		close_sockets(sockets_swapped_);
+	}
+
+	/// Add a socket for sync writes (called from client_session after handshake)
+	void add_socket(tcp_socket::native_handle_type handle, tcp_socket::protocol_type protocol,
+		bool reverse_byte_order) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		auto sock = std::make_unique<tcp_socket>(io_ctx_, protocol, handle);
+		if (reverse_byte_order) {
+			sockets_swapped_.push_back(std::move(sock));
+			LOG_F(INFO, "Added sync socket (swapped endian), now have %zu native + %zu swapped",
+				sockets_native_.size(), sockets_swapped_.size());
+		} else {
+			sockets_native_.push_back(std::move(sock));
+			LOG_F(INFO, "Added sync socket (native endian), now have %zu native + %zu swapped",
+				sockets_native_.size(), sockets_swapped_.size());
+		}
+	}
+
+	/// Write buffers to all connected sockets (blocking gather-write)
+	void write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
+		std::lock_guard<std::mutex> lock(mutex_);
+		if (sockets_native_.empty() && sockets_swapped_.empty()) return;
+
+		bool any_broken = false;
+
+		// Write to same-endianness clients (zero-copy)
+		if (!sockets_native_.empty()) {
+			any_broken |= write_to_group(sockets_native_, bufs);
+		}
+
+		// Write to reverse-endianness clients (one copy, byte-swapped)
+		if (!sockets_swapped_.empty()) {
+			auto swapped_bufs = swap_buffers(bufs);
+			any_broken |= write_to_group(sockets_swapped_, swapped_bufs);
+		}
+
+		// Remove closed sockets from both groups
+		if (any_broken) {
+			auto remove_closed = [](std::vector<tcp_socket_p> &sockets) {
+				sockets.erase(std::remove_if(sockets.begin(), sockets.end(),
+								  [](const tcp_socket_p &s) { return !s || !s->is_open(); }),
+					sockets.end());
+			};
+			remove_closed(sockets_native_);
+			remove_closed(sockets_swapped_);
+			LOG_F(INFO, "After cleanup, have %zu native + %zu swapped sync consumers",
+				sockets_native_.size(), sockets_swapped_.size());
+		}
+	}
+
+	/// Check if there are any connected consumers
+	bool have_consumers() const {
+		std::lock_guard<std::mutex> lock(mutex_);
+		return !sockets_native_.empty() || !sockets_swapped_.empty();
+	}
+
+private:
+	/// Write buffers to a group of sockets, returns true if any socket was broken
+	bool write_to_group(std::vector<tcp_socket_p> &sockets,
+		const std::vector<asio::const_buffer> &bufs) {
+		bool any_broken = false;
+		for (auto &sock : sockets) {
+			if (!sock || !sock->is_open()) continue;
+
+			asio::error_code ec;
+			asio::write(*sock, bufs, ec);
+
+			if (ec) {
+				switch (ec.value()) {
+				case asio::error::broken_pipe:
+				case asio::error::connection_reset:
+				case asio::error::not_connected:
+					LOG_F(WARNING, "Sync socket disconnected: %s", ec.message().c_str());
+					break;
+				default: LOG_F(ERROR, "Sync write error: %s", ec.message().c_str());
+				}
+				sock->close(ec);
+				any_broken = true;
+			}
+		}
+		return any_broken;
+	}
+
+	/// Byte-swap buffers for reverse-endianness clients
+	/// Buffer structure: [tag:1][timestamp:8][sample:N] repeated
+	std::vector<asio::const_buffer> swap_buffers(const std::vector<asio::const_buffer> &bufs) {
+		swapped_data_.clear();
+		std::vector<asio::const_buffer> result;
+		result.reserve(bufs.size());
+
+		for (size_t i = 0; i < bufs.size(); ++i) {
+			const auto &buf = bufs[i];
+			size_t size = buf.size();
+			const char *data = static_cast<const char *>(buf.data());
+
+			if (size == 1) {
+				// Tag byte - no swap needed, pass through directly
+				result.push_back(buf);
+			} else if (size == sizeof(double)) {
+				// Timestamp - swap as double
+				size_t offset = swapped_data_.size();
+				swapped_data_.resize(offset + sizeof(double));
+				std::memcpy(swapped_data_.data() + offset, data, sizeof(double));
+				endian_reverse_inplace(*reinterpret_cast<double *>(swapped_data_.data() + offset));
+				result.push_back(asio::const_buffer(swapped_data_.data() + offset, sizeof(double)));
+			} else if (size == sample_bytes_) {
+				// Sample data - swap each value
+				size_t offset = swapped_data_.size();
+				swapped_data_.resize(offset + sample_bytes_);
+				std::memcpy(swapped_data_.data() + offset, data, sample_bytes_);
+				sample::convert_endian(
+					swapped_data_.data() + offset, num_channels_, static_cast<uint32_t>(value_size_));
+				result.push_back(asio::const_buffer(swapped_data_.data() + offset, sample_bytes_));
+			} else {
+				// Unknown buffer size - pass through (shouldn't happen)
+				LOG_F(WARNING, "Unexpected buffer size %zu in sync write", size);
+				result.push_back(buf);
+			}
+		}
+		return result;
+	}
+
+	asio::io_context io_ctx_;
+	std::vector<tcp_socket_p> sockets_native_;  // same endianness as server
+	std::vector<tcp_socket_p> sockets_swapped_; // need byte-swapped data
+	mutable std::mutex mutex_;
+
+	// For byte-swapping
+	std::size_t sample_bytes_;	// total bytes per sample
+	std::size_t value_size_;	// bytes per channel value
+	uint32_t num_channels_;		// number of channels
+	std::vector<char> scratch_; // pre-allocated scratch buffer (unused, kept for potential future use)
+	std::vector<char> swapped_data_; // storage for byte-swapped data
+};
+
 class client_session : public std::enable_shared_from_this<client_session> {
 
 public:
@@ -143,9 +314,17 @@ private:
 };
 
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6)
+	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
 	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	// Create sync handler if sync mode is requested
+	if (do_sync) {
+		std::size_t sample_bytes = factory_->datasize();
+		std::size_t value_size = format_sizes[info_->channel_format()];
+		uint32_t num_channels = info_->channel_count();
+		sync_handler_ = std::make_unique<sync_write_handler>(sample_bytes, value_size, num_channels);
+		LOG_F(INFO, "TCP server initialized in synchronous (zero-copy) mode");
+	}
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());
 	info_->reset_uid();
@@ -178,6 +357,19 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 		throw std::runtime_error("Failed to instantiate socket acceptors for the TCP server");
 }
 
+tcp_server::~tcp_server() {
+	// sync_handler_ destructor will close all sync sockets
+}
+
+void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs) {
+	if (sync_handler_) {
+		sync_handler_->write_all_blocking(bufs);
+	}
+}
+
+bool tcp_server::have_sync_consumers() const {
+	return sync_handler_ && sync_handler_->have_consumers();
+}
 
 // === externally issued asynchronous commands ===
 
@@ -534,6 +726,19 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
+
+		// If server is in sync mode, hand off the socket to the sync handler
+		if (serv->is_sync_mode()) {
+			LOG_F(INFO, "Handing off socket to sync handler for zero-copy transfer (reverse_byte_order=%d)",
+				reverse_byte_order_);
+			auto protocol = sock_.local_endpoint().protocol();
+			// Release the socket from this io_context and add to sync handler
+			// See https://stackoverflow.com/q/52671836/73299
+			serv->sync_handler_->add_socket(sock_.release(), protocol, reverse_byte_order_);
+			// Unregister this session since we're handing off the socket
+			serv->unregister_inflight_session(this);
+			return;
+		}
 
 		// determine transfer parameters
 		auto queue = serv->send_buffer_->new_consumer(max_buffered_);

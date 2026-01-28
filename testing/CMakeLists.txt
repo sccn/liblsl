@@ -54,6 +54,7 @@ add_executable(lsl_test_exported
 	ext/discovery.cpp
 	ext/move.cpp
 	ext/streaminfo.cpp
+	ext/sync_outlet.cpp
 	ext/time.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
@@ -67,6 +68,7 @@ set(LSL_TEST_INTERNAL_SRCS
 		int/samples.cpp
 		int/postproc.cpp
 		int/serialization_v100.cpp
+		int/sync_endian.cpp
 		int/tcpserver.cpp
 		int/sendbuffer.cpp
 )
