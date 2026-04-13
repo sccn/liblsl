@@ -9,14 +9,16 @@ include(GNUInstallDirs)
 
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
-
-Include(FetchContent)
-FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG        v3.4.0 # or a later release
-)
-FetchContent_MakeAvailable(Catch2)
+find_package(Catch2 3 CONFIG QUIET)
+if(NOT TARGET Catch2::Catch2)
+	include(FetchContent)
+	FetchContent_Declare(
+			Catch2
+			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+			GIT_TAG        v3.4.0 # or a later release
+	)
+	FetchContent_MakeAvailable(Catch2)
+endif()
 
 
 add_library(catch_main OBJECT catch_main.cpp)
