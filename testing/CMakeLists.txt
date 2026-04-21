@@ -9,7 +9,22 @@ include(GNUInstallDirs)
 
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
-find_package(Catch2 3 CONFIG QUIET)
+# Default to system Catch2, but disable for macOS universal builds since
+# Homebrew only installs for the host arch.
+set(_lsl_prefer_system_catch2_default ON)
+list(LENGTH CMAKE_OSX_ARCHITECTURES _lsl_n_osx_archs)
+if(_lsl_n_osx_archs GREATER 1)
+	set(_lsl_prefer_system_catch2_default OFF)
+endif()
+option(LSL_TESTS_PREFER_SYSTEM_CATCH2
+	"Use system-installed Catch2 if found (auto-disabled for macOS universal builds)"
+	${_lsl_prefer_system_catch2_default})
+unset(_lsl_prefer_system_catch2_default)
+unset(_lsl_n_osx_archs)
+
+if(LSL_TESTS_PREFER_SYSTEM_CATCH2)
+	find_package(Catch2 3 CONFIG QUIET)
+endif()
 if(NOT TARGET Catch2::Catch2)
 	include(FetchContent)
 	FetchContent_Declare(
