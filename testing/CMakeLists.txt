@@ -102,6 +102,11 @@ endif()
 # Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
 target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
 
+# runtime_config test needs a fresh api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_runtime_config int/runtime_config.cpp)
+target_link_libraries(lsl_test_runtime_config PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_runtime_config PRIVATE LIBLSL_EXPORTS)
+
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
 	# /usr/bin/time -v testing/lsl_test_exported --benchmark-samples 100  bounce
@@ -117,7 +122,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	if(LSL_INSTALL)
