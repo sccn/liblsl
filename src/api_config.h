@@ -13,13 +13,18 @@ namespace ip = asio::ip;
 namespace lsl {
 /**
  * A configuration object: holds all the configurable settings of liblsl.
- * These settings can be set via a configuration file that is automatically searched
- * by stream providers and recipients in a series of locations:
- *  - First, the content set via `lsl_set_config_content()`
- *  - Second, the file set via `lsl_set_config_filename()`
- *  - Third, the file `lsl_api.cfg` in the current working directory
- *  - Fourth, the file `lsl_api.cfg` in the home directory (e.g., `~/lsl_api/lsl_api.cfg`)
- *  - Fifth, the file `lsl_api.cfg` in the system configuration directory (e.g., `/etc/lsl_api/lsl_api.cfg`)
+ * Settings are resolved in the following order of precedence (first match wins):
+ *  1. Content set via `lsl_set_config_content()` (used directly, no file lookup)
+ *  2. File named by the `LSLAPICFG` environment variable
+ *  3. File set via `lsl_set_config_filename()`
+ *  4. `lsl_api.cfg` in the current working directory
+ *  5. `lsl_api.cfg` in the user's home directory (e.g. `~/lsl_api/lsl_api.cfg`)
+ *  6. `lsl_api.cfg` in the system configuration directory (e.g. `/etc/lsl_api/lsl_api.cfg`)
+ *  7. Built-in defaults
+ *
+ * Both `lsl_set_config_content()` and `lsl_set_config_filename()` must be called
+ * before any other LSL function, since the configuration is loaded lazily on
+ * first use and not re-read afterwards.
  *
  * Note that, while in some cases it might seem sufficient to override configurations
  * only for a subset of machines involved in a recording session (e.g., the servers),
@@ -79,17 +84,15 @@ public:
 	bool allow_ipv6() const { return allow_ipv6_; }
 	bool allow_ipv4() const { return allow_ipv4_; }
 
-
-
 	/**
-	* @brief Set the configuration directly from a string.
-	* 
-	* This allows passing in configuration content directly rather than from a file.
-	* This MUST be called before the first call to get_instance() to have any effect.
-	*/
-    static void set_api_config_content(const std::string &content) {
-        api_config_content_ = content;
-    }
+	 * @brief Set the configuration directly from an INI-formatted string.
+	 *
+	 * Allows passing in configuration content rather than reading from a file.
+	 * MUST be called before the first call to get_instance() to have any effect.
+	 */
+	static void set_api_config_content(const std::string &content) {
+		api_config_content_ = content;
+	}
 
 	/**
 	 * @brief An additional settings path to load configuration from.
@@ -97,14 +100,13 @@ public:
 	const std::string &api_config_filename() const { return api_config_filename_; }
 
 	/**
-	 * @brief Set the config file name used to load the settings.
-	 * 
-	 * This MUST be called before the first call to get_instance() to have any effect.
+	 * @brief Set the config file path used to load the settings.
+	 *
+	 * MUST be called before the first call to get_instance() to have any effect.
 	 */
 	static void set_api_config_filename(const std::string &filename) {
 		api_config_filename_ = filename;
 	}
-
 
 	/**
 	 * @brief The range or scope of stream lookup when using multicast-based discovery
