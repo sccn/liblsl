@@ -229,21 +229,21 @@ extern LIBLSL_C_API double lsl_local_clock();
 extern LIBLSL_C_API void lsl_destroy_string(char *s);
 
 /**
- * Set the name of the configuration file to be used.
+ * Set the path of the configuration file to be used by liblsl.
  *
- * This is a global setting that will be used by all LSL
- * after this function is called. If, and only if, this function
- * is called before the first call to any other LSL function.
+ * This must be called before any other LSL function; otherwise the setting
+ * has no effect, as the configuration is loaded lazily on first use.
+ * See also the precedence list in api_config.h.
  */
 extern LIBLSL_C_API void lsl_set_config_filename(const char *filename);
 
 /**
- * Set the content of the configuration file to be used.
+ * Set the configuration content (as an INI string) to be used by liblsl.
  *
- * This is a global setting that will be used by all LSL
- * after this function is called. If, and only if, this function
- * is called before the first call to any other LSL function.
+ * This must be called before any other LSL function; otherwise the setting
+ * has no effect, as the configuration is loaded lazily on first use.
+ * When set, this content takes precedence over any configuration file.
  *
- * @note the configuration content is wiped after LSL has initialized.
+ * @note The content is discarded after liblsl has initialized.
  */
 extern LIBLSL_C_API void lsl_set_config_content(const char *content);
