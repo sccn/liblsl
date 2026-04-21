@@ -3,7 +3,7 @@
 #include <random>
 #include <thread>
 // include loguru before catch
-#include <catch2/catch_approx.cpp>
+#include <catch2/catch_approx.hpp>
 #include <catch2/catch_test_macros.hpp>
 
 // clazy:excludeall=non-pod-global-static
