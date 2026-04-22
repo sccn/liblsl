@@ -79,14 +79,17 @@ if(NOT LSL_OPTIMIZATIONS)
     target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
-# - pugixml
-# Note: We use `PUBLIC` because 'internal tests' import individual source files and link lslobj.
-if(LSL_BUNDLED_PUGIXML)
-    target_sources(lslobj PRIVATE thirdparty/pugixml/pugixml.cpp)
-    target_include_directories(lslobj
-        PUBLIC
-            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/thirdparty/pugixml>
-    )
+# - pugixml (either fetched via FetchContent or system package)
+if(LSL_PUGIXML_IS_FETCHED)
+    # Fetched pugixml is always static - use BUILD_INTERFACE to avoid requiring
+    # pugixml in the export set since the static library objects are linked
+    # into lsl directly.
+    target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
+    # Hide pugixml symbols from the shared library on Linux
+    if(UNIX AND NOT APPLE)
+        target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
+    endif()
 else()
-    target_link_libraries(lslobj PUBLIC pugixml::pugixml)
+    # System pugixml may be shared or static
+    target_link_libraries(lslobj PRIVATE pugixml::pugixml)
 endif()

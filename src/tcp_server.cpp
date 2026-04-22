@@ -209,6 +209,8 @@ void tcp_server::end_serving() {
 
 void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 	try {
+		if (!acceptor || !acceptor->is_open()) return;
+
 		// Select the IO context for handling the socket
 		auto &sock_io_ctx = *io_;
 
@@ -223,8 +225,9 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 			else
 				LOG_F(WARNING, "Unhandled accept error: %s", err.message().c_str());
 
-			// and move on to the next connection
-			shared_this->accept_next_connection(acceptor);
+			// move on to the next connection if the acceptor is still open
+			if (acceptor && acceptor->is_open())
+				shared_this->accept_next_connection(acceptor);
 		});
 	} catch (std::exception &e) {
 		LOG_F(ERROR, "Error during tcp_server::accept_next_connection: %s", e.what());

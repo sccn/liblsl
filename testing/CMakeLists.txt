@@ -9,14 +9,31 @@ include(GNUInstallDirs)
 
 option(LSL_BENCHMARKS "Enable benchmarks in unit tests" OFF)
 
+# Default to system Catch2, but disable for macOS universal builds since
+# Homebrew only installs for the host arch.
+set(_lsl_prefer_system_catch2_default ON)
+list(LENGTH CMAKE_OSX_ARCHITECTURES _lsl_n_osx_archs)
+if(_lsl_n_osx_archs GREATER 1)
+	set(_lsl_prefer_system_catch2_default OFF)
+endif()
+option(LSL_TESTS_PREFER_SYSTEM_CATCH2
+	"Use system-installed Catch2 if found (auto-disabled for macOS universal builds)"
+	${_lsl_prefer_system_catch2_default})
+unset(_lsl_prefer_system_catch2_default)
+unset(_lsl_n_osx_archs)
 
-Include(FetchContent)
-FetchContent_Declare(
-		Catch2
-		GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-		GIT_TAG        v3.4.0 # or a later release
-)
-FetchContent_MakeAvailable(Catch2)
+if(LSL_TESTS_PREFER_SYSTEM_CATCH2)
+	find_package(Catch2 3 CONFIG QUIET)
+endif()
+if(NOT TARGET Catch2::Catch2)
+	include(FetchContent)
+	FetchContent_Declare(
+			Catch2
+			GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+			GIT_TAG        v3.4.0 # or a later release
+	)
+	FetchContent_MakeAvailable(Catch2)
+endif()
 
 
 add_library(catch_main OBJECT catch_main.cpp)
@@ -76,8 +93,19 @@ endif()
 message(STATUS ${LSL_TEST_INTERNAL_SRCS})
 add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
+# Internal tests need pugixml headers (lslobj links pugixml privately)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_internal PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_internal PRIVATE pugixml::pugixml)
+endif()
 # Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
 target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
+
+# runtime_config test needs a fresh api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_runtime_config int/runtime_config.cpp)
+target_link_libraries(lsl_test_runtime_config PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_runtime_config PRIVATE LIBLSL_EXPORTS)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
@@ -94,7 +122,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	if(LSL_INSTALL)

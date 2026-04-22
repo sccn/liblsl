@@ -78,7 +78,7 @@ udp_server::udp_server(stream_info_impl_p info, asio::io_context &io, ip::addres
 				socket_->set_option(
 					ip::multicast::join_group(addr.to_v6(), if_.addr.to_v6().scope_id()), err);
 			if (err)
-				LOG_F(WARNING, "Could not bind multicast responder for %s to interface %s (%s)",
+				LOG_F(1, "Could not bind multicast responder for %s to interface %s (%s)",
 					addr.to_string().c_str(), if_.addr.to_string().c_str(), err.message().c_str());
 			else
 				joined_anywhere = true;
@@ -170,8 +170,9 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 void udp_server::handle_receive_outcome(err_t err, std::size_t len) {
 	DLOG_F(6, "udp_server::handle_receive_outcome (%lub)", len);
 	if (err) {
-		// non-critical error? Wait for the next packet
-		if (err != asio::error::operation_aborted || err != asio::error::shut_down)
+		// non-critical error? Wait for the next packet if the socket is still open
+		if (err != asio::error::operation_aborted && err != asio::error::shut_down
+			&& socket_ && socket_->is_open())
 			request_next_packet();
 		return;
 	}

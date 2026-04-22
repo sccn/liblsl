@@ -47,10 +47,8 @@ jobs:
     - name: Install certificates and provisioning profiles
       uses: ./.github/actions/install-apple-certs
       with:
-        MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
-        MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+        MACOS_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
         MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-        MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
 
     - name: Configure CMake
       env:
@@ -176,10 +174,8 @@ jobs:
       - name: Install certificates and provisioning profiles
         uses: ./.github/actions/install-apple-certs
         with:
-            MACOS_CERTIFICATE_APP: ${{ secrets.PROD_MACOS_CERTIFICATE }}
-            MACOS_CERTIFICATE_INST: ${{ secrets.PROD_MACOS_CERTIFICATE_INST }}
+            MACOS_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
             MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-            MACOS_CI_KEYCHAIN_PWD: ${{ secrets.PROD_MACOS_CI_KEYCHAIN_PWD }}
 
       - name: Create and Sign XCFramework
         run: |

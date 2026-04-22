@@ -16,6 +16,13 @@ namespace lsl {
 using namespace pugi;
 using lsl::to_string;
 
+// Helper to support both pugixml < 1.15 (no string_view) and >= 1.15
+#if PUGIXML_VERSION >= 1150
+inline std::string_view pugi_str(const std::string &value) { return value; }
+#else
+inline const char *pugi_str(const std::string &value) { return value.c_str(); }
+#endif
+
 stream_info_impl::stream_info_impl()
 	: channel_count_(0), nominal_srate_(0), channel_format_(cft_undefined), version_(0),
 	  v4data_port_(0), v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
@@ -47,7 +54,7 @@ template <typename T> void append_text_node(xml_node &node, const char *name, co
 }
 
 template <> void append_text_node(xml_node &node, const char *name, const std::string &value) {
-	node.append_child(name).append_child(node_pcdata).set_value(value.c_str());
+	node.append_child(name).append_child(node_pcdata).set_value(pugi_str(value));
 }
 
 void stream_info_impl::write_xml(xml_document &doc) {
@@ -264,17 +271,17 @@ uint32_t lsl::stream_info_impl::calc_transport_buf_samples(
 
 void stream_info_impl::version(int v) {
 	version_ = v;
-	doc_.child("info").child("version").first_child().set_value(to_string(version_ / 100.).c_str());
+	doc_.child("info").child("version").first_child().set_value(pugi_str(to_string(version_ / 100.)));
 }
 
 void stream_info_impl::created_at(double v) {
 	created_at_ = v;
-	doc_.child("info").child("created_at").first_child().set_value(to_string(created_at_).c_str());
+	doc_.child("info").child("created_at").first_child().set_value(pugi_str(to_string(created_at_)));
 }
 
 void stream_info_impl::uid(const std::string &v) {
 	uid_ = v;
-	doc_.child("info").child("uid").first_child().set_value(uid_.c_str());
+	doc_.child("info").child("uid").first_child().set_value(pugi_str(uid_));
 }
 
 const std::string& stream_info_impl::reset_uid()
@@ -285,17 +292,17 @@ const std::string& stream_info_impl::reset_uid()
 
 void stream_info_impl::session_id(const std::string &v) {
 	session_id_ = v;
-	doc_.child("info").child("session_id").first_child().set_value(session_id_.c_str());
+	doc_.child("info").child("session_id").first_child().set_value(pugi_str(session_id_));
 }
 
 void stream_info_impl::hostname(const std::string &v) {
 	hostname_ = v;
-	doc_.child("info").child("hostname").first_child().set_value(hostname_.c_str());
+	doc_.child("info").child("hostname").first_child().set_value(pugi_str(hostname_));
 }
 
 void stream_info_impl::v4address(const std::string &v) {
 	v4address_ = v;
-	doc_.child("info").child("v4address").first_child().set_value(v4address_.c_str());
+	doc_.child("info").child("v4address").first_child().set_value(pugi_str(v4address_));
 }
 
 void stream_info_impl::v4data_port(uint16_t v) {
@@ -310,7 +317,7 @@ void stream_info_impl::v4service_port(uint16_t v) {
 
 void stream_info_impl::v6address(const std::string &v) {
 	v6address_ = v;
-	doc_.child("info").child("v6address").first_child().set_value(v6address_.c_str());
+	doc_.child("info").child("v6address").first_child().set_value(pugi_str(v6address_));
 }
 
 void stream_info_impl::v6data_port(uint16_t v) {

@@ -5,13 +5,13 @@ if(lslgitrevision AND lslgitbranch)
 elseif(GIT_FOUND)
     execute_process(
             COMMAND ${GIT_EXECUTABLE} describe --tags HEAD
-            WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             OUTPUT_VARIABLE lslgitrevision
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     execute_process(
             COMMAND ${GIT_EXECUTABLE} rev-parse --symbolic-full-name --abbrev-ref @
-            WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}"
+            WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
             OUTPUT_VARIABLE lslgitbranch
             OUTPUT_STRIP_TRAILING_WHITESPACE
     )
