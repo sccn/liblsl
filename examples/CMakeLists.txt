@@ -91,9 +91,12 @@ addlslexample(SendDataSimple cpp)
 addlslexample(SendMultipleStreams cpp)
 addlslexample(SendStringMarkers cpp)
 addlslexample(SendStringMarkersC c)
+addlslexample(SendDataSyncBlocking cpp)
 addlslexample(TestSyncWithoutData cpp)
+addlslexample(BenchmarkSyncVsAsync cpp)
 
 target_link_libraries(TestSyncWithoutData PRIVATE Threads::Threads)
+target_link_libraries(BenchmarkSyncVsAsync PRIVATE Threads::Threads)
 
 # Windows doesn't have RPATH so we put the dll into the same directory as the executable.
 if(WIN32)
