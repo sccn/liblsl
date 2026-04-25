@@ -73,7 +73,3 @@ else()
     target_link_libraries(lslboost INTERFACE Boost::boost Boost::disable_autolinking)
 endif()
 target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
-
-# Enable LOGURU stack traces if LSL_DEBUGLOG is enabled.
-set_source_files_properties("thirdparty/loguru/loguru.cpp"
-        PROPERTIES COMPILE_DEFINITIONS LOGURU_STACKTRACES=$<BOOL:${LSL_DEBUGLOG}>)
