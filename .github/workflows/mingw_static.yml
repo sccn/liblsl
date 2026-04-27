@@ -7,15 +7,18 @@ on:
       - 'src'
       - 'include'
       - 'cmake'
-#      - '!docs/**'
-#      - '!.github/**'
       - '.github/workflows/mingw_static.yml'
   pull_request:
+  release:
+    types: ['created']
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -41,6 +44,7 @@ jobs:
         install: >-
             git
             make
+            zip
         pacboy: >-
             toolchain:p
             cmake:p
@@ -60,7 +64,7 @@ jobs:
 
     - name: make
       run: cmake --build build --target install --config Release -j --verbose
-  
+
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
@@ -71,8 +75,23 @@ jobs:
       run: 'install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes'
       timeout-minutes: 5
       if: matrix.msys == 'ucrt64' # skip experimental clangarm64 builds
-    
+
     - name: unit tests (exported functions)
       run: install/bin/lsl_test_exported --wait-for-keypress never --durations yes
       timeout-minutes: 5
       if: matrix.msys == 'ucrt64' # skip experimental clangarm64 builds
+
+    - name: Create release zip
+      if: github.event_name == 'release'
+      run: |
+           version="${GITHUB_REF_NAME#v}"
+           asset_name="liblsl-${version}-MinGW-${{ matrix.msys }}-${{ matrix.lib_type }}.zip"
+           mkdir -p release-assets
+           cd install
+           zip -r "../release-assets/${asset_name}" .
+
+    - name: Upload release assets
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v3
+      with:
+        files: release-assets/*.zip
