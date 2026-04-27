@@ -1,4 +1,4 @@
-name: MinGW Windows static test
+name: MinGW Windows Builds
 
 on:
   push:
@@ -7,40 +7,44 @@ on:
       - 'src'
       - 'include'
       - 'cmake'
-#      - '!docs/**'
-#      - '!.github/**'
       - '.github/workflows/mingw_static.yml'
   pull_request:
+  release:
+    types: ['created']
   workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions:
+  contents: write
+
 jobs:
   build:
-    name: MinGW batteries-included
+    name: MinGW ${{ matrix.msys }} ${{ matrix.lib_type }}
     strategy:
       matrix:
         include:
-#          - { sys: mingw64, env: x86_64 }
-#          - { sys: mingw32, env: i686 }
-          - { sys: ucrt64,  env: ucrt-x86_64 }
-#          - { sys: clang64, env: clang-x86_64 }
-    runs-on: windows-latest
+          - { runs_on: windows-latest, msys: ucrt64,     lib_type: DLL }
+          - { runs_on: windows-11-arm, msys: clangarm64, lib_type: DLL }
+          - { runs_on: windows-latest, msys: ucrt64,     lib_type: static }
+          - { runs_on: windows-11-arm, msys: clangarm64, lib_type: static }
+    runs-on: ${{ matrix.runs_on }}
     defaults:
       run:
         shell: 'msys2 {0}'
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v5
     - uses: msys2/setup-msys2@v2
       with:
-        msystem: ${{matrix.sys}}
+        msystem: ${{matrix.msys}}
         update: true
         cache: true
         install: >-
             git
             make
+            zip
         pacboy: >-
             toolchain:p
             cmake:p
@@ -52,7 +56,7 @@ jobs:
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
                 -DLSL_UNITTESTS=ON \
-                -DLSL_BUILD_STATIC=ON \
+                -DLSL_BUILD_STATIC=${{ matrix.lib_type == 'DLL' && 'OFF' || 'ON' }} \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 -DLSL_OPTIMIZATIONS=OFF \
@@ -60,19 +64,34 @@ jobs:
 
     - name: make
       run: cmake --build build --target install --config Release -j --verbose
-  
+
     - name: upload install dir
       uses: actions/upload-artifact@master
       with:
-        name: mingw_artifacts
+        name: mingw_${{ matrix.msys }}_${{ matrix.lib_type }}_artifacts
         path: install
 
-    # run internal tests, ignore test failures on docker (missing IPv6 connectivity)
     - name: unit tests (internal functions)
       run: 'install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes'
       timeout-minutes: 5
-    
+      if: matrix.msys == 'ucrt64' # skip experimental clangarm64 builds
+
     - name: unit tests (exported functions)
       run: install/bin/lsl_test_exported --wait-for-keypress never --durations yes
       timeout-minutes: 5
+      if: matrix.msys == 'ucrt64' # skip experimental clangarm64 builds
 
+    - name: Create release zip
+      if: github.event_name == 'release'
+      run: |
+           version="${GITHUB_REF_NAME#v}"
+           asset_name="liblsl-${version}-MinGW-${{ matrix.msys }}-${{ matrix.lib_type }}.zip"
+           mkdir -p release-assets
+           cd install
+           zip -r "../release-assets/${asset_name}" .
+
+    - name: Upload release assets
+      if: github.event_name == 'release'
+      uses: softprops/action-gh-release@v3
+      with:
+        files: release-assets/*.zip
