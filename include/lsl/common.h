@@ -191,7 +191,7 @@ extern LIBLSL_C_API const char *lsl_last_error(void);
  * Clients with different minor versions are protocol-compatible while clients
  * with different major versions will refuse to work together.
  */
-extern LIBLSL_C_API int32_t lsl_protocol_version();
+extern LIBLSL_C_API int32_t lsl_protocol_version( void );
 
 /**
  * Version of the liblsl library.
@@ -199,7 +199,7 @@ extern LIBLSL_C_API int32_t lsl_protocol_version();
  * The major version is `library_version() / 100;`
  * The minor version is `library_version() % 100;`
  */
-extern LIBLSL_C_API int32_t lsl_library_version();
+extern LIBLSL_C_API int32_t lsl_library_version( void );
 
 /**
  * Get a string containing library information.
@@ -217,7 +217,7 @@ extern LIBLSL_C_API const char *lsl_library_info(void);
  * delays), it can be used as an offset to lsl_local_clock() to obtain a better estimate of
  * when a sample was actually captured. See lsl_push_sample() for a use case.
  */
-extern LIBLSL_C_API double lsl_local_clock();
+extern LIBLSL_C_API double lsl_local_clock( void );
 
 /**
  * Deallocate a string that has been transferred to the application.
