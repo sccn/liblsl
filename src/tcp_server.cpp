@@ -5,6 +5,7 @@
 #include "send_buffer.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
+#include "sync_serialization.h"
 #include "util/cast.hpp"
 #include "util/endian.hpp"
 #include "util/strfuns.hpp"
@@ -79,10 +80,7 @@ public:
 	 */
 	sync_write_handler(std::size_t sample_bytes, std::size_t value_size, uint32_t num_channels)
 		: io_ctx_(1), sample_bytes_(sample_bytes), value_size_(value_size),
-		  num_channels_(num_channels) {
-		// Pre-allocate scratch buffer for byte-swapping (sample + timestamp)
-		scratch_.resize(sample_bytes + sizeof(double));
-	}
+		  num_channels_(num_channels) {}
 
 	~sync_write_handler() {
 		// Close all sockets
@@ -179,43 +177,9 @@ private:
 		return any_broken;
 	}
 
-	/// Byte-swap buffers for reverse-endianness clients
-	/// Buffer structure: [tag:1][timestamp:8][sample:N] repeated
+	/// Byte-swap buffers for reverse-endianness clients (see sync_swap_buffers).
 	std::vector<asio::const_buffer> swap_buffers(const std::vector<asio::const_buffer> &bufs) {
-		swapped_data_.clear();
-		std::vector<asio::const_buffer> result;
-		result.reserve(bufs.size());
-
-		for (size_t i = 0; i < bufs.size(); ++i) {
-			const auto &buf = bufs[i];
-			size_t size = buf.size();
-			const char *data = static_cast<const char *>(buf.data());
-
-			if (size == 1) {
-				// Tag byte - no swap needed, pass through directly
-				result.push_back(buf);
-			} else if (size == sizeof(double)) {
-				// Timestamp - swap as double
-				size_t offset = swapped_data_.size();
-				swapped_data_.resize(offset + sizeof(double));
-				std::memcpy(swapped_data_.data() + offset, data, sizeof(double));
-				endian_reverse_inplace(*reinterpret_cast<double *>(swapped_data_.data() + offset));
-				result.push_back(asio::const_buffer(swapped_data_.data() + offset, sizeof(double)));
-			} else if (size == sample_bytes_) {
-				// Sample data - swap each value
-				size_t offset = swapped_data_.size();
-				swapped_data_.resize(offset + sample_bytes_);
-				std::memcpy(swapped_data_.data() + offset, data, sample_bytes_);
-				sample::convert_endian(
-					swapped_data_.data() + offset, num_channels_, static_cast<uint32_t>(value_size_));
-				result.push_back(asio::const_buffer(swapped_data_.data() + offset, sample_bytes_));
-			} else {
-				// Unknown buffer size - pass through (shouldn't happen)
-				LOG_F(WARNING, "Unexpected buffer size %zu in sync write", size);
-				result.push_back(buf);
-			}
-		}
-		return result;
+		return sync_swap_buffers(bufs, swapped_data_, sample_bytes_, value_size_, num_channels_);
 	}
 
 	asio::io_context io_ctx_;
@@ -227,8 +191,7 @@ private:
 	std::size_t sample_bytes_;	// total bytes per sample
 	std::size_t value_size_;	// bytes per channel value
 	uint32_t num_channels_;		// number of channels
-	std::vector<char> scratch_; // pre-allocated scratch buffer (unused, kept for potential future use)
-	std::vector<char> swapped_data_; // storage for byte-swapped data
+	std::vector<char> swapped_data_; // backing storage for byte-swapped buffers
 };
 
 class client_session : public std::enable_shared_from_this<client_session> {

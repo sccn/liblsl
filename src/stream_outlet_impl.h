@@ -258,8 +258,9 @@ public:
 			if (timestamp == 0.0) timestamp = lsl_clock();
 			if (info().nominal_srate() != IRREGULAR_RATE)
 				timestamp = timestamp - (num_samples - 1) / info().nominal_srate();
-			// Use optimized sync path for non-string types in sync mode
-			// if constexpr prevents instantiation of enqueue_chunk_sync<std::string>
+			// Use optimized sync path for non-string types in sync mode. Sync mode always
+			// sends immediately, so pushthrough is ignored (the whole chunk is one blocking
+			// gather-write). if constexpr prevents instantiation of enqueue_chunk_sync<std::string>.
 			if constexpr (!std::is_same<T, std::string>::value) {
 				if (sync_mode_) {
 					enqueue_chunk_sync(buffer, num_samples, timestamp, pushthrough);
@@ -325,10 +326,12 @@ private:
 	/// Flush sync_buffers_ to all connected consumers (blocking)
 	void flush_sync();
 
-	/// Enqueue a buffer for sync transfer (single sample)
+	/// Enqueue a buffer for sync transfer (single sample). Always flushes before returning;
+	/// the pushthrough argument is ignored (see enqueue_sync in the .cpp for why).
 	void enqueue_sync(asio::const_buffer buf, double timestamp, bool pushthrough);
 
-	/// Enqueue a chunk for sync transfer (optimized for multiple samples)
+	/// Enqueue a chunk for sync transfer (optimized for multiple samples). Always flushes the
+	/// whole chunk before returning; the pushthrough argument is ignored.
 	template <class T>
 	void enqueue_chunk_sync(
 		const T *data, std::size_t num_samples, double timestamp, bool pushthrough);
@@ -365,14 +368,27 @@ private:
 	std::vector<thread_p> io_threads_;
 
 	// === Sync mode members ===
+	//
+	// Sync mode is single-producer: push_sample/push_chunk must be called from one thread
+	// at a time. Unlike the async path (which feeds a lock-free send_buffer), the sync path
+	// mutates sync_buffers_/sync_timestamps_ directly without locking, so concurrent pushes
+	// from multiple threads are a data race.
+
+	/// One encoded timestamp for the sync wire format: a 1-byte tag optionally followed by
+	/// the 8-byte timestamp value. The tag is stored as a uint8_t (not packed into a wider
+	/// integer) so that sending its address transmits the correct byte on any endianness.
+	struct sync_ts_entry {
+		uint8_t tag;	  ///< TAG_DEDUCED_TIMESTAMP or TAG_TRANSMITTED_TIMESTAMP
+		double timestamp; ///< only sent when tag == TAG_TRANSMITTED_TIMESTAMP
+	};
 
 	/// Flag indicating sync (zero-copy blocking) mode is enabled
 	bool sync_mode_{false};
-	/// Buffers accumulated for sync gather-write
+	/// Buffers accumulated for sync gather-write (alias the caller's data and sync_timestamps_)
 	std::vector<asio::const_buffer> sync_buffers_;
-	/// Storage for timestamps in sync mode (tag + timestamp pairs)
-	/// Using deque instead of vector to ensure pointers remain valid when adding elements
-	std::deque<std::pair<uint64_t, double>> sync_timestamps_;
+	/// Backing storage for the timestamp tags/values referenced by sync_buffers_.
+	/// A deque (not a vector) keeps element addresses stable as entries are appended.
+	std::deque<sync_ts_entry> sync_timestamps_;
 };
 
 } // namespace lsl

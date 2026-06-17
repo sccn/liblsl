@@ -221,18 +221,20 @@ template void stream_outlet_impl::enqueue<std::string>(const std::string *data, 
 // === Sync mode implementation ===
 
 void stream_outlet_impl::push_timestamp_sync(double timestamp) {
-	// Allocate storage for timestamp tag + value in sync_timestamps_
+	// Encode one sample's timestamp into the wire format and append gather buffers that
+	// reference the stable deque storage. The tag is a single byte (sync_ts_entry::tag),
+	// so its address transmits the correct byte regardless of host endianness.
 	if (timestamp == DEDUCED_TIMESTAMP) {
-		// Deduced timestamp: just send the 1-byte tag, no timestamp value
-		sync_timestamps_.emplace_back(TAG_DEDUCED_TIMESTAMP, 0.0);
-		auto &ts_entry = sync_timestamps_.back();
-		sync_buffers_.push_back(asio::const_buffer(&ts_entry.first, 1));  // tag byte only
+		// Deduced timestamp: just the 1-byte tag, no timestamp value
+		sync_timestamps_.push_back({TAG_DEDUCED_TIMESTAMP, 0.0});
+		auto &e = sync_timestamps_.back();
+		sync_buffers_.push_back(asio::const_buffer(&e.tag, 1));
 	} else {
-		// Explicit timestamp: send tag + 8-byte timestamp value
-		sync_timestamps_.emplace_back(TAG_TRANSMITTED_TIMESTAMP, timestamp);
-		auto &ts_entry = sync_timestamps_.back();
-		sync_buffers_.push_back(asio::const_buffer(&ts_entry.first, 1));  // tag byte
-		sync_buffers_.push_back(asio::const_buffer(&ts_entry.second, sizeof(double)));
+		// Transmitted timestamp: 1-byte tag + 8-byte timestamp value
+		sync_timestamps_.push_back({TAG_TRANSMITTED_TIMESTAMP, timestamp});
+		auto &e = sync_timestamps_.back();
+		sync_buffers_.push_back(asio::const_buffer(&e.tag, 1));
+		sync_buffers_.push_back(asio::const_buffer(&e.timestamp, sizeof(double)));
 	}
 }
 
@@ -245,20 +247,20 @@ void stream_outlet_impl::flush_sync() {
 	sync_timestamps_.clear();
 }
 
-void stream_outlet_impl::enqueue_sync(asio::const_buffer buf, double timestamp, bool pushthrough) {
+void stream_outlet_impl::enqueue_sync(asio::const_buffer buf, double timestamp, bool /*pushthrough*/) {
 	// Add timestamp
 	push_timestamp_sync(timestamp);
 	// Add sample data buffer (points to user's buffer - zero copy!)
 	sync_buffers_.push_back(buf);
-	// Flush if pushthrough is requested
-	if (pushthrough) {
-		flush_sync();
-	}
+	// Sync mode always sends before returning, ignoring pushthrough: the gather buffers alias
+	// the caller's buffer, so deferring the write would leave dangling pointers once the caller
+	// reuses or frees that memory.
+	flush_sync();
 }
 
 template <class T>
 void stream_outlet_impl::enqueue_chunk_sync(
-	const T *data, std::size_t num_samples, double timestamp, bool pushthrough) {
+	const T *data, std::size_t num_samples, double timestamp, bool /*pushthrough*/) {
 	if (lsl::api_config::get_instance()->force_default_timestamps()) timestamp = 0.0;
 	if (timestamp == 0.0) timestamp = lsl_clock();
 
@@ -281,7 +283,9 @@ void stream_outlet_impl::enqueue_chunk_sync(
 			asio::const_buffer(data + k * num_chans, sample_bytes));
 	}
 
-	if (pushthrough) flush_sync();
+	// Always send the whole chunk before returning (see enqueue_sync): the gather buffers
+	// alias the caller's contiguous data, so the write must complete while it is still valid.
+	flush_sync();
 }
 
 // Explicit template instantiations for enqueue_chunk_sync
