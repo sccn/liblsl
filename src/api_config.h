@@ -135,6 +135,18 @@ public:
 	const std::vector<ip::address> &multicast_addresses() const { return multicast_addresses_; }
 
 	/**
+	 * @brief The machine-local (loopback/unicast) addresses from multicast.MachineAddresses.
+	 *
+	 * These are a subset of multicast_addresses() but, being unicast, a datagram sent to them
+	 * at the shared multicast_port is delivered to only one of the responder sockets bound there
+	 * (the "unicast lottery" — only one local stream answers, depending on bind order). The
+	 * resolver therefore additionally probes these addresses across the per-stream service-port
+	 * range [base_port, base_port+port_range), where each stream owns a unique socket, so every
+	 * local stream is discoverable regardless of bind order.
+	 */
+	const std::vector<ip::address> &machine_addresses() const { return machine_addresses_; }
+
+	/**
 	 * @brief The address of the local interface on which to listen to multicast traffic.
 	 *
 	 * The default is an empty string, i.e. bind to the default interface(s).
@@ -277,6 +289,7 @@ private:
 	uint16_t multicast_port_;
 	std::string resolve_scope_;
 	std::vector<ip::address> multicast_addresses_;
+	std::vector<ip::address> machine_addresses_;
 	int multicast_ttl_;
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
