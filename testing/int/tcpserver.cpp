@@ -3,6 +3,7 @@
 #include "send_buffer.h"
 #include "stream_info_impl.h"
 #include "tcp_server.h"
+#include "util/endian.hpp"
 #include <asio/read.hpp>
 #include <asio/read_until.hpp>
 #include <asio/write.hpp>
@@ -138,10 +139,15 @@ TEST_CASE("tcpserver", "[network]") {
 			cmp_binstr(expected, received_pattern);
 		}));
 
+	// String channels report a per-channel value size of 0 (channel_bytes() == 0), so the server
+	// performs no endian conversion and advertises its own (host) byte order regardless of the
+	// client's request. Any needed swapping of the string length-prefixes happens on the receiving
+	// side instead (see tcpserver_float for the actual binary endian-conversion test).
 	send_request(ctx, ep, asio::buffer("LSL:streamfeed/199 \nNative-byte-order:4321\r\n\r\n"),
 		with_read_callback("endian", [](const std::string &res) {
 			REQUIRE(res.substr(0, 14) == "LSL/110 200 OK");
-			REQUIRE(res.find("Byte-Order: 4321") != std::string::npos);
+			REQUIRE(res.find("Byte-Order: " + std::to_string(static_cast<int>(lsl::LSL_BYTE_ORDER))) !=
+					std::string::npos);
 		}));
 
 	send_request(ctx, ep, asio::buffer("LSL:streamfeed\n0 0\r\n"),
