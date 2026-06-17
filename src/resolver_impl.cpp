@@ -6,6 +6,7 @@
 #include <asio/io_context.hpp>
 #include <asio/ip/basic_resolver.hpp>
 #include <asio/ip/udp.hpp>
+#include <algorithm>
 #include <exception>
 #include <loguru.hpp>
 #include <memory>
@@ -55,6 +56,17 @@ resolver_impl::resolver_impl()
 		for (int p = cfg_->base_port(); p < cfg_->base_port() + cfg_->port_range(); p++)
 			ucast_endpoints_.emplace_back(addr, p);
 	}
+
+	// The same endpoint can be enqueued more than once (e.g. a machine address that also appears in
+	// KnownPeers, or a repeated config entry). Drop duplicates so we don't send identical queries to
+	// the same socket. This is distinct from the UID-based dedup of *results*: two different
+	// endpoints can still return the same stream (e.g. its multicast_port and its service port).
+	auto dedupe = [](std::vector<udp::endpoint> &eps) {
+		std::sort(eps.begin(), eps.end());
+		eps.erase(std::unique(eps.begin(), eps.end()), eps.end());
+	};
+	dedupe(mcast_endpoints_);
+	dedupe(ucast_endpoints_);
 
 	// generate the list of protocols to use
 	if (cfg_->allow_ipv6()) {
