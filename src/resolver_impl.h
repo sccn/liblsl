@@ -22,6 +22,7 @@ using err_t = const asio::error_code &;
 
 namespace lsl {
 class api_config;
+class resolve_attempt_tcp;
 
 using steady_timer = asio::basic_waitable_timer<asio::chrono::steady_clock, asio::wait_traits<asio::chrono::steady_clock>, asio::io_context::executor_type>;
 
@@ -132,6 +133,7 @@ public:
 
 private:
 	friend class resolve_attempt_udp;
+	friend class resolve_attempt_tcp;
 
 	/// This function starts a new wave of resolves.
 	void next_resolve_wave();
@@ -158,6 +160,8 @@ private:
 	std::vector<udp::endpoint> mcast_endpoints_;
 	/// the list of per-host UDP endpoints under consideration
 	std::vector<udp::endpoint> ucast_endpoints_;
+	/// the list of per-host TCP endpoints to probe when lab.ResolveOverTCP is enabled
+	std::vector<tcp::endpoint> tcp_endpoints_;
 
 	// things related to cancellation
 	/// if set, no more resolves can be started (destructively cancelled).
@@ -188,6 +192,8 @@ private:
 	io_context_p io_;
 	/// a thread that runs background IO if we are performing a resolve_continuous
 	std::shared_ptr<std::thread> background_io_;
+	/// the currently in-flight TCP probe attempt (if any); used to avoid overlapping bursts
+	std::weak_ptr<resolve_attempt_tcp> tcp_attempt_;
 	/// the overall timeout for a query
 	steady_timer resolve_timeout_expired_;
 	/// a timer that fires when a new wave should be scheduled
