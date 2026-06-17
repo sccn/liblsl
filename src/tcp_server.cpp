@@ -77,10 +77,13 @@ public:
 	 * @param sample_bytes Total bytes per sample (channel_count * value_size)
 	 * @param value_size Bytes per channel value (for byte-swapping)
 	 * @param num_channels Number of channels in the stream
+	 * @param send_timeout Per-consumer blocking-send timeout in seconds; 0 means block forever.
+	 *        A consumer that can't accept a sample within this time is disconnected.
 	 */
-	sync_write_handler(std::size_t sample_bytes, std::size_t value_size, uint32_t num_channels)
+	sync_write_handler(std::size_t sample_bytes, std::size_t value_size, uint32_t num_channels,
+		double send_timeout)
 		: io_ctx_(1), sample_bytes_(sample_bytes), value_size_(value_size),
-		  num_channels_(num_channels) {}
+		  num_channels_(num_channels), send_timeout_(send_timeout) {}
 
 	~sync_write_handler() {
 		// Close all sockets
@@ -101,6 +104,7 @@ public:
 		bool reverse_byte_order) {
 		std::lock_guard<std::mutex> lock(mutex_);
 		auto sock = std::make_unique<tcp_socket>(io_ctx_, protocol, handle);
+		apply_send_timeout(*sock);
 		if (reverse_byte_order) {
 			sockets_swapped_.push_back(std::move(sock));
 			LOG_F(INFO, "Added sync socket (swapped endian), now have %zu native + %zu swapped",
@@ -151,6 +155,26 @@ public:
 	}
 
 private:
+	/// Apply the configured blocking-send timeout to a socket (no-op if disabled). SO_SNDTIMEO
+	/// only takes effect on a blocking socket, so we force blocking mode first. On expiry a
+	/// synchronous write returns try_again/would_block/timed_out, which write_to_group treats
+	/// as a disconnect.
+	void apply_send_timeout(tcp_socket &sock) const {
+		if (send_timeout_ <= 0) return;
+		asio::error_code ec;
+		sock.native_non_blocking(false, ec);
+#if defined(_WIN32)
+		DWORD ms = static_cast<DWORD>(send_timeout_ * 1000.0);
+		::setsockopt(sock.native_handle(), SOL_SOCKET, SO_SNDTIMEO,
+			reinterpret_cast<const char *>(&ms), sizeof(ms));
+#else
+		struct timeval tv;
+		tv.tv_sec = static_cast<time_t>(send_timeout_);
+		tv.tv_usec = static_cast<suseconds_t>((send_timeout_ - static_cast<double>(tv.tv_sec)) * 1e6);
+		::setsockopt(sock.native_handle(), SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+#endif
+	}
+
 	/// Write buffers to a group of sockets, returns true if any socket was broken
 	bool write_to_group(std::vector<tcp_socket_p> &sockets,
 		const std::vector<asio::const_buffer> &bufs) {
@@ -167,6 +191,13 @@ private:
 				case asio::error::connection_reset:
 				case asio::error::not_connected:
 					LOG_F(WARNING, "Sync socket disconnected: %s", ec.message().c_str());
+					break;
+				// SO_SNDTIMEO expiry surfaces as would_block (== try_again on POSIX) or, on
+				// Windows, timed_out.
+				case asio::error::would_block:
+				case asio::error::timed_out:
+					LOG_F(WARNING, "Sync consumer too slow (send timed out after %.1fs), dropping it",
+						send_timeout_);
 					break;
 				default: LOG_F(ERROR, "Sync write error: %s", ec.message().c_str());
 				}
@@ -192,6 +223,7 @@ private:
 	std::size_t value_size_;	// bytes per channel value
 	uint32_t num_channels_;		// number of channels
 	std::vector<char> swapped_data_; // backing storage for byte-swapped buffers
+	double send_timeout_;		// per-consumer blocking-send timeout in seconds (0 = forever)
 };
 
 class client_session : public std::enable_shared_from_this<client_session> {
@@ -285,8 +317,11 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 		std::size_t sample_bytes = factory_->datasize();
 		std::size_t value_size = format_sizes[info_->channel_format()];
 		uint32_t num_channels = info_->channel_count();
-		sync_handler_ = std::make_unique<sync_write_handler>(sample_bytes, value_size, num_channels);
-		LOG_F(INFO, "TCP server initialized in synchronous (zero-copy) mode");
+		double send_timeout = api_config::get_instance()->sync_send_timeout();
+		sync_handler_ = std::make_unique<sync_write_handler>(
+			sample_bytes, value_size, num_channels, send_timeout);
+		LOG_F(INFO, "TCP server initialized in synchronous (zero-copy) mode (send timeout %.1fs)",
+			send_timeout);
 	}
 	// assign connection-dependent fields
 	info_->session_id(api_config::get_instance()->session_id());

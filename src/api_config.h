@@ -185,6 +185,10 @@ public:
 	/// The watchdog takes no action if not at least this much time has passed since the last
 	/// receipt of data. In seconds.
 	double watchdog_time_threshold() const { return watchdog_time_threshold_; }
+	/// Send timeout for synchronous (transp_sync_blocking) outlets, in seconds. A blocking push
+	/// to a consumer that cannot accept the sample within this time disconnects that consumer
+	/// (it would otherwise stall the producer indefinitely). 0 means block forever.
+	double sync_send_timeout() const { return sync_send_timeout_; }
 	/// The minimum assumed round-trip-time for a multicast query. Any subsequent packet wave would
 	/// be started no earlier than this.
 	double multicast_min_rtt() const { return multicast_min_rtt_; }
@@ -285,6 +289,7 @@ private:
 	int use_protocol_version_;
 	double watchdog_time_threshold_;
 	double watchdog_check_interval_;
+	double sync_send_timeout_;
 	double multicast_min_rtt_;
 	double multicast_max_rtt_;
 	double unicast_min_rtt_;
