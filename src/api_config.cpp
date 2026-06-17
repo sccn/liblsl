@@ -307,6 +307,7 @@ void api_config::load(INI &pt) {
 	// read the [lab] settings
 	known_peers_ = parse_set(pt.get("lab.KnownPeers", "{}"));
 	session_id_ = pt.get("lab.SessionID", "default");
+	resolve_over_tcp_ = pt.get("lab.ResolveOverTCP", false);
 
 	// read the [tuning] settings
 	use_protocol_version_ = std::min(

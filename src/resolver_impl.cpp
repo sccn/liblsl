@@ -1,10 +1,12 @@
 #include "resolver_impl.h"
 #include "api_config.h"
+#include "resolve_attempt_tcp.h"
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
 #include <asio/io_context.hpp>
 #include <asio/ip/basic_resolver.hpp>
+#include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 #include <algorithm>
 #include <exception>
@@ -74,6 +76,29 @@ resolver_impl::resolver_impl()
 	}
 	if (cfg_->allow_ipv4()) {
 		udp_protocols_.push_back(udp::v4());
+	}
+
+	// build the TCP probe targets (loopback + known peers, each x port range) if enabled
+	if (cfg_->resolve_over_tcp()) {
+		uint16_t base = cfg_->base_port();
+		uint16_t range = cfg_->port_range();
+		LOG_F(WARNING,
+			"lab.ResolveOverTCP is enabled: discovery will also TCP-probe ports %u-%u on loopback "
+			"and on every KnownPeer. This is robust behind firewalls but VERY slow, especially "
+			"across the internet.",
+			base, static_cast<unsigned>(base + range - 1));
+		std::vector<std::string> hosts{"127.0.0.1"};
+		if (cfg_->allow_ipv6()) hosts.emplace_back("::1");
+		for (const auto &peer : cfg_->known_peers()) hosts.push_back(peer);
+		tcp::resolver tcp_resolver(*io_);
+		for (const auto &host : hosts) {
+			try {
+				for (const auto &res : tcp_resolver.resolve(host, std::to_string(base))) {
+					for (uint16_t p = base; p < base + range; p++)
+						tcp_endpoints_.emplace_back(res.endpoint().address(), p);
+				}
+			} catch (std::exception &) {}
+		}
 	}
 }
 
@@ -219,6 +244,17 @@ void resolver_impl::next_resolve_wave() {
 			unicast_timer_.async_wait([this](err_t ec) { this->udp_unicast_burst(ec); });
 			// delay the next multicast wave
 			wave_timer_timeout += cfg_->unicast_min_rtt();
+		}
+		// fire a TCP probe burst if enabled and a previous one isn't still in flight
+		if (cfg_->resolve_over_tcp() && !tcp_endpoints_.empty() && tcp_attempt_.expired()) {
+			try {
+				auto attempt = std::make_shared<resolve_attempt_tcp>(
+					*io_, tcp_endpoints_, query_, *this, cfg_->unicast_max_rtt());
+				tcp_attempt_ = attempt;
+				attempt->begin();
+			} catch (std::exception &e) {
+				LOG_F(WARNING, "Could not start a TCP resolve attempt: %s", e.what());
+			}
 		}
 		wave_timer_.expires_after(timeout_sec(wave_timer_timeout));
 		wave_timer_.async_wait([this](err_t err) {
