@@ -301,6 +301,9 @@ void api_config::load(INI &pt) {
 		LSL_PROTOCOL_VERSION, pt.get("tuning.UseProtocolVersion", LSL_PROTOCOL_VERSION));
 	watchdog_check_interval_ = pt.get("tuning.WatchdogCheckInterval", 15.0);
 	watchdog_time_threshold_ = pt.get("tuning.WatchdogTimeThreshold", 15.0);
+	// Default the synchronous-outlet send timeout to the reconnect watchdog threshold: a sync
+	// consumer that can't keep up for that long is treated like a stalled connection.
+	sync_send_timeout_ = pt.get("tuning.SyncSendTimeout", watchdog_time_threshold_);
 	multicast_min_rtt_ = pt.get("tuning.MulticastMinRTT", 0.5);
 	multicast_max_rtt_ = pt.get("tuning.MulticastMaxRTT", 3.0);
 	unicast_min_rtt_ = pt.get("tuning.UnicastMinRTT", 0.75);

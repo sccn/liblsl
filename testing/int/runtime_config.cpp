@@ -13,11 +13,15 @@ TEST_CASE("runtime config content overrides defaults", "[api_config][runtime_con
 		"[ports]\n"
 		"BasePort = 30000\n"
 		"[tuning]\n"
-		"UseProtocolVersion = 100\n");
+		"UseProtocolVersion = 100\n"
+		"WatchdogTimeThreshold = 7.5\n");
 
 	const auto *cfg = lsl::api_config::get_instance();
 	REQUIRE(cfg != nullptr);
 	CHECK(cfg->session_id() == "runtime_config_test");
 	CHECK(cfg->base_port() == 30000);
 	CHECK(cfg->use_protocol_version() == 100);
+	CHECK(cfg->watchdog_time_threshold() == 7.5);
+	// SyncSendTimeout was not set, so it defaults to the reconnect watchdog threshold.
+	CHECK(cfg->sync_send_timeout() == 7.5);
 }
