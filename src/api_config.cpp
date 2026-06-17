@@ -262,6 +262,18 @@ void api_config::load(INI &pt) {
 			multicast_addresses_.push_back(addr);
 	}
 
+	// Parse and store the machine-local (loopback/unicast) addresses separately. They are also
+	// part of multicast_addresses_, but because a unicast datagram to the shared multicast_port is
+	// delivered to only one of the sockets bound there, the resolver must additionally probe these
+	// across the per-stream service-port range to reach every local stream (see resolver_impl).
+	for (auto &it : machine_group) {
+		try {
+			ip::address addr = ip::make_address(it);
+			if ((addr.is_v4() && allow_ipv4_) || (addr.is_v6() && allow_ipv6_))
+				machine_addresses_.push_back(addr);
+		} catch (std::exception &) {}
+	}
+
 	// The network stack requires the source interfaces for multicast packets to be
 	// specified as IPv4 address or an IPv6 interface index
 	// Try getting the interfaces from the configuration files
