@@ -1,6 +1,9 @@
 #include "sample.h"
+#include "sync_serialization.h"
 #include "util/endian.hpp"
+#include <asio/buffer.hpp>
 #include <catch2/catch_all.hpp>
+#include <cstdint>
 #include <cstring>
 #include <vector>
 
@@ -195,4 +198,87 @@ TEST_CASE("can_convert_endian", "[sync][endian]") {
 	CHECK_FALSE(lsl::can_convert_endian(lsl::LSL_LITTLE_ENDIAN_BUT_BIG_FLOAT, 4));
 	CHECK_FALSE(lsl::can_convert_endian(lsl::LSL_BIG_ENDIAN_BUT_LITTLE_FLOAT, 4));
 	CHECK_FALSE(lsl::can_convert_endian(lsl::LSL_PDP11, 2));
+}
+
+// Exercise the real lsl::sync_swap_buffers on the wire layout the sync outlet produces:
+//   [tag:1] ([ts:8] iff transmitted) [sample:sample_bytes]  repeated, first sample transmitted.
+// This is the cross-endian path that no integration test reaches on a little-endian CI host.
+template <class T> static void check_sync_swap_roundtrip(uint32_t nchan, int nsamples) {
+	const std::size_t value_size = sizeof(T);
+	const std::size_t sample_bytes = nchan * value_size;
+	const double ts0 = 1234.5678;
+
+	// Build the host-endian wire bytes into one stable backing buffer, remembering the
+	// (offset, size) of each gather buffer so we can build const_buffers once it is final.
+	std::vector<char> backing;
+	struct Seg {
+		std::size_t off, size;
+	};
+	std::vector<Seg> segs;
+	auto append = [&](const void *p, std::size_t n) {
+		const std::size_t off = backing.size();
+		const char *cp = static_cast<const char *>(p);
+		backing.insert(backing.end(), cp, cp + n);
+		segs.push_back({off, n});
+	};
+
+	std::vector<std::vector<T>> values(nsamples, std::vector<T>(nchan));
+	for (int s = 0; s < nsamples; ++s) {
+		const uint8_t tag = (s == 0) ? lsl::TAG_TRANSMITTED_TIMESTAMP : lsl::TAG_DEDUCED_TIMESTAMP;
+		append(&tag, 1);
+		if (s == 0) append(&ts0, sizeof(double));
+		for (uint32_t c = 0; c < nchan; ++c)
+			values[s][c] = static_cast<T>((s + 1) * 1000 + c * 7 + 1);
+		append(values[s].data(), sample_bytes);
+	}
+
+	std::vector<asio::const_buffer> bufs;
+	for (const auto &sg : segs) bufs.push_back(asio::const_buffer(backing.data() + sg.off, sg.size));
+
+	std::vector<char> storage;
+	auto out = lsl::sync_swap_buffers(bufs, storage, sample_bytes, value_size, nchan);
+	REQUIRE(out.size() == bufs.size());
+
+	std::size_t bi = 0;
+	for (int s = 0; s < nsamples; ++s) {
+		// tag byte passes through unchanged
+		REQUIRE(out[bi].size() == 1);
+		CHECK(*static_cast<const uint8_t *>(out[bi].data()) ==
+			  (s == 0 ? lsl::TAG_TRANSMITTED_TIMESTAMP : lsl::TAG_DEDUCED_TIMESTAMP));
+		++bi;
+		// transmitted timestamp is reversed as a single 8-byte value
+		if (s == 0) {
+			REQUIRE(out[bi].size() == sizeof(double));
+			double exp = ts0;
+			lsl::endian_reverse_inplace(exp);
+			CHECK(std::memcmp(out[bi].data(), &exp, sizeof(double)) == 0);
+			++bi;
+		}
+		// sample payload is reversed PER CHANNEL VALUE, not as one block — this is what the
+		// old size-based classifier got wrong when sample_bytes happened to equal 8.
+		REQUIRE(out[bi].size() == sample_bytes);
+		for (uint32_t c = 0; c < nchan; ++c) {
+			T exp = values[s][c];
+			lsl::endian_reverse_inplace(exp);
+			const char *got = static_cast<const char *>(out[bi].data()) + c * value_size;
+			INFO("sample " << s << " channel " << c);
+			CHECK(std::memcmp(got, &exp, value_size) == 0);
+		}
+		++bi;
+	}
+}
+
+TEST_CASE("sync_swap_buffers per-value swap and pointer stability", "[sync][endian]") {
+	// 2x int32 and 4x int16 both make sample_bytes == 8 (== sizeof(double)); the swap must
+	// still reverse each channel value independently rather than as one 8-byte timestamp.
+	SECTION("2x int32 (8-byte sample collides with timestamp size)") {
+		check_sync_swap_roundtrip<int32_t>(2, 16);
+	}
+	SECTION("4x int16 (8-byte sample)") { check_sync_swap_roundtrip<int16_t>(4, 16); }
+	// Genuine 8-byte values must keep working (reversed as one unit).
+	SECTION("1x double (8-byte value)") { check_sync_swap_roundtrip<double>(1, 16); }
+	SECTION("1x int64 (8-byte value)") { check_sync_swap_roundtrip<int64_t>(1, 16); }
+	// Non-colliding sizes.
+	SECTION("3x float") { check_sync_swap_roundtrip<float>(3, 16); }
+	SECTION("8x int16") { check_sync_swap_roundtrip<int16_t>(8, 16); }
 }

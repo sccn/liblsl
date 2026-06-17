@@ -162,9 +162,13 @@ typedef enum {
 	transp_bufsize_thousandths = 2,
 
 	/// Use synchronous (blocking) socket writes for zero-copy data transfer.
-	/// When enabled, push_sample/push_chunk will block until data is written to all consumers.
+	/// When enabled, push_sample/push_chunk write the caller's buffer directly to every
+	/// connected consumer and block until the data has been handed to the OS for all of them.
 	/// Reduces CPU usage for high-bandwidth streams at the cost of increased call latency.
-	/// Not compatible with string-format streams.
+	/// Notes:
+	///  - Not compatible with string-format streams (variable-size samples).
+	///  - Single-producer: push from only one thread at a time (the sync path is unsynchronized).
+	///  - The pushthrough flag is ignored; every push sends immediately (no internal buffering).
 	transp_sync_blocking = 4,
 
 	// prevent compilers from assuming an instance fits in a single byte

@@ -86,7 +86,9 @@ public:
 	/// Check if this server is in sync mode
 	bool is_sync_mode() const { return sync_handler_ != nullptr; }
 
-	/// Check if there are any sync consumers connected (only valid if is_sync_mode())
+	/// Check if there are any sync consumers connected (only valid if is_sync_mode()).
+	/// Note: disconnected consumers are detected lazily, on the next write_all_blocking that
+	/// fails to reach them, so this may briefly keep reporting a consumer that has gone away.
 	bool have_sync_consumers() const;
 
 private:
