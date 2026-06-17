@@ -143,8 +143,20 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	expired_ = false;
 	// start a wave of resolve packets
 	next_resolve_wave();
-	// spawn a thread that runs the IO operations
-	background_io_ = std::make_shared<std::thread>([shared_io = io_]() { shared_io->run(); });
+	// spawn a thread that runs the IO operations. Mirror the outlet's IO threads: an exception
+	// escaping an asio completion handler (e.g. a bad multicast interface) must not propagate out
+	// of this background thread and call std::terminate() — log it and keep serving.
+	background_io_ = std::make_shared<std::thread>([shared_io = io_]() {
+		loguru::set_thread_name("resolver_io");
+		while (!shared_io->stopped()) {
+			try {
+				shared_io->run();
+				return;
+			} catch (std::exception &e) {
+				LOG_F(ERROR, "Error during resolver IO processing: %s", e.what());
+			}
+		}
+	});
 	status = resolver_status::running_continuous;
 }
 

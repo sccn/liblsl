@@ -165,9 +165,25 @@ void resolve_attempt_udp::send_next_query(
 		// Mismatching protocols? Skip this round
 		if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
 			next = targets_.end();
-		else
-			multicast_socket_.set_option(mcit->addr.is_v4() ? outbound_interface(mcit->addr.to_v4())
-															: outbound_interface(mcit->ifindex));
+		else {
+			// Select the outbound interface for multicast sends. Use the error_code overload: a
+			// bad/stale interface (VPN utun, AWDL, Hyper-V/VirtualBox adapter, or an address that
+			// changed since enumeration) must NOT throw here. This runs inside an asio completion
+			// handler, so a throw would propagate out of io_->run() — aborting the whole resolve
+			// wave (oneshot) or terminating the process from the background thread (continuous).
+			// On failure just log and carry on: the multicast sends on this pass fall back to the
+			// socket's default interface (and individually no-op on error), while the unicast and
+			// broadcast targets — which don't depend on the outbound interface — still go out.
+			asio::error_code ec;
+			multicast_socket_.set_option(mcit->addr.is_v4()
+					? outbound_interface(mcit->addr.to_v4())
+					: outbound_interface(mcit->ifindex),
+				ec);
+			if (ec) {
+				LOG_F(1, "Could not select multicast interface %s for outbound queries: %s",
+					mcit->addr.to_string().c_str(), ec.message().c_str());
+			}
+		}
 	}
 	if (next != targets_.end()) {
 		udp::endpoint ep(*next++);
