@@ -1,6 +1,7 @@
 #include "sample.h"
 #include "sync_serialization.h"
 #include "util/endian.hpp"
+#include <algorithm>
 #include <asio/buffer.hpp>
 #include <catch2/catch_all.hpp>
 #include <cstdint>
@@ -135,16 +136,30 @@ TEST_CASE("sync buffer swap simulation", "[sync][endian]") {
 
 	// Simulate swap_buffers logic
 	std::vector<char> swapped_data;
+
+	// Reverse each width-sized value in a byte range in place. Matches the production
+	// sync_swap_buffers() approach: pure byte operations, so it stays valid even though the
+	// std::vector<char> backing store may be unaligned for the value type (typed dereferences
+	// would be undefined behavior on strict-alignment targets).
+	const auto swap_bytes = [](char *p, std::size_t n, std::size_t width) {
+		for (char *end = p + n; p < end; p += width) std::reverse(p, p + width);
+	};
+	// Read a value out of the byte store via an aligned local (no typed dereference of store).
+	const auto read_float = [&](std::size_t offset) {
+		float v;
+		std::memcpy(&v, swapped_data.data() + offset, sizeof(float));
+		return v;
+	};
 	for (const auto &buf : bufs) {
 		if (buf.size == 1) {
 			// Tag byte - no swap, would just pass through
 			CHECK(buf.data[0] == tag);
 		} else if (buf.size == sizeof(double)) {
-			// Timestamp - swap as double
+			// Timestamp - swap as a single 8-byte value
 			size_t offset = swapped_data.size();
 			swapped_data.resize(offset + sizeof(double));
 			std::memcpy(swapped_data.data() + offset, buf.data, sizeof(double));
-			lsl::endian_reverse_inplace(*reinterpret_cast<double *>(swapped_data.data() + offset));
+			swap_bytes(swapped_data.data() + offset, sizeof(double), sizeof(double));
 
 			// Verify it's different from original
 			double swapped_ts;
@@ -155,28 +170,26 @@ TEST_CASE("sync buffer swap simulation", "[sync][endian]") {
 			size_t offset = swapped_data.size();
 			swapped_data.resize(offset + sample_bytes);
 			std::memcpy(swapped_data.data() + offset, buf.data, sample_bytes);
-			lsl::sample::convert_endian(swapped_data.data() + offset, num_channels, value_size);
+			swap_bytes(swapped_data.data() + offset, sample_bytes, value_size);
 
 			// Verify values are different from original
-			float *swapped_samples = reinterpret_cast<float *>(swapped_data.data() + offset);
 			for (uint32_t i = 0; i < num_channels; ++i) {
-				CHECK(swapped_samples[i] != sample_data[i]);
+				CHECK(read_float(offset + i * value_size) != sample_data[i]);
 			}
 		}
 	}
 
 	// Now verify that swapping back recovers original values
 	// Swap timestamp back
-	lsl::endian_reverse_inplace(*reinterpret_cast<double *>(swapped_data.data()));
+	swap_bytes(swapped_data.data(), sizeof(double), sizeof(double));
 	double recovered_ts;
 	std::memcpy(&recovered_ts, swapped_data.data(), sizeof(double));
 	CHECK(recovered_ts == timestamp);
 
 	// Swap samples back
-	lsl::sample::convert_endian(swapped_data.data() + sizeof(double), num_channels, value_size);
-	float *recovered_samples = reinterpret_cast<float *>(swapped_data.data() + sizeof(double));
+	swap_bytes(swapped_data.data() + sizeof(double), sample_bytes, value_size);
 	for (uint32_t i = 0; i < num_channels; ++i) {
-		CHECK(recovered_samples[i] == sample_data[i]);
+		CHECK(read_float(sizeof(double) + i * value_size) == sample_data[i]);
 	}
 }
 

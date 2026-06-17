@@ -2,6 +2,7 @@
 #define SYNC_SERIALIZATION_H
 
 #include "sample.h"
+#include <algorithm>
 #include <asio/buffer.hpp>
 #include <cstddef>
 #include <cstdint>
@@ -56,8 +57,13 @@ inline std::vector<asio::const_buffer> sync_swap_buffers(
 		const std::size_t n = buf.size();
 		storage.resize(offset + n); // within reserved capacity -> no reallocation
 		std::memcpy(storage.data() + offset, buf.data(), n);
-		sample::convert_endian(storage.data() + offset, static_cast<uint32_t>(n / width),
-			static_cast<uint32_t>(width));
+		// Reverse each width-sized value in place using byte operations only. storage is a
+		// vector<char> and values are packed at arbitrary offsets, so it may be unaligned for
+		// the typed dereferences in sample::convert_endian() -- undefined behavior on
+		// strict-alignment targets. Swapping bytes directly avoids that entirely.
+		if (width > 1)
+			for (char *p = storage.data() + offset, *end = p + n; p < end; p += width)
+				std::reverse(p, p + width);
 		result.push_back(asio::const_buffer(storage.data() + offset, n));
 	};
 
