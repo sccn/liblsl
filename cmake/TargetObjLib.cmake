@@ -1,9 +1,22 @@
+# Generate the version header from the (tag-derived) project version so that
+# lsl_library_version() tracks the release instead of a hand-maintained constant.
+configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/src/lsl_version.h.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/lsl_version.h"
+        @ONLY
+)
+
 # Create object library so all files are only compiled once
 add_library(lslobj OBJECT
         ${lslsources}
         ${lslheaders}
 )
 set_target_properties(lslobj PROPERTIES FOLDER "liblsl")
+
+# Make the generated lsl_version.h visible to the sources (and to internal tests
+# that compile individual source files and link lslobj). Build-tree only; this is
+# an internal header and is not installed.
+target_include_directories(lslobj PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>)
 
 # Set the includes/headers for the lslobj target
 # Note: We cannot use PUBLIC_HEADER because it flattens the include tree upon install

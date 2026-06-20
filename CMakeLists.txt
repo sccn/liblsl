@@ -1,6 +1,12 @@
 cmake_minimum_required (VERSION 3.23)
+
+# Derive the version from the most recent git tag (e.g. v1.18.0 -> 1.18.0).
+# The literal below is the single source of truth for builds without git/tags.
+include(cmake/ProjectVersion.cmake)
+lsl_version_from_git(LSL_VERSION LSL_VERSION_FULL FALLBACK "1.17.7")
+
 project (liblsl
-	VERSION 1.17.7
+	VERSION ${LSL_VERSION}
 	LANGUAGES C CXX
 	DESCRIPTION "Labstreaminglayer C/C++ library"
 	HOMEPAGE_URL "https://github.com/sccn/liblsl"
@@ -32,7 +38,9 @@ LSL_get_target_arch()
 LSL_get_os_name()
 
 set(CPACK_PACKAGE_NAME "${PROJECT_NAME}")
-set(CPACK_PACKAGE_VERSION "${PROJECT_VERSION}")
+# Use the full tag (incl. any pre-release suffix like b1) for package metadata,
+# while PROJECT_VERSION stays strictly numeric as CMake requires.
+set(CPACK_PACKAGE_VERSION "${LSL_VERSION_FULL}")
 set(CPACK_PACKAGE_VENDOR "Labstreaminglayer")
 set(CPACK_STRIP_FILES ON)
 

@@ -63,6 +63,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v5
+      with:
+        # Need full history + tags so the version can be derived from the git tag
+        fetch-depth: 0
 
     # Set up cross-compilation toolchain for ARM on Linux
     - name: Install cross-compilation toolchain
