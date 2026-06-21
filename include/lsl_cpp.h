@@ -1374,12 +1374,8 @@ public:
 		chunk.reserve(chunk.size() + target * this->channel_count);
 		if (timestamps) timestamps->reserve(timestamps->size() + target);
 		while ((ts = pull_sample(sample, 0.0)) != 0.0) {
-#if LSL_CPP11
 			chunk.insert(chunk.end(), std::make_move_iterator(sample.begin()),
 				std::make_move_iterator(sample.end()));
-#else
-			chunk.insert(chunk.end(), sample.begin(), sample.end());
-#endif
 			if (timestamps) timestamps->push_back(ts);
 		}
 		return true;
