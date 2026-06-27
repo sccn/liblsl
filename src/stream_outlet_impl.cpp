@@ -14,8 +14,9 @@
 namespace lsl {
 
 stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chunk_size,
-	int32_t requested_bufsize, lsl_transport_options_t flags)
-	: sample_factory_(std::make_shared<factory>(info.channel_format(), info.channel_count(),
+	int32_t requested_bufsize, lsl_transport_options_t flags, std::string listen_address)
+	: listen_address_(std::move(listen_address)),
+	  sample_factory_(std::make_shared<factory>(info.channel_format(), info.channel_count(),
 		  static_cast<uint32_t>(
 			  info.nominal_srate()
 				  ? info.nominal_srate() * api_config::get_instance()->outlet_buffer_reserve_ms() /
@@ -41,21 +42,25 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 
 	const api_config *cfg = api_config::get_instance();
 
+	// resolve effective listen address: explicit override takes priority over api_config
+	const std::string &effective_listen =
+		listen_address_.empty() ? cfg->listen_address() : listen_address_;
+
 	// instantiate IPv4 and/or IPv6 stacks (depending on settings)
 	if (cfg->allow_ipv4()) try {
-			instantiate_stack(udp::v4());
+			instantiate_stack(udp::v4(), effective_listen);
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Could not instantiate IPv4 stack: %s", e.what());
 		}
 	if (cfg->allow_ipv6()) try {
-			instantiate_stack(udp::v6());
+			instantiate_stack(udp::v6(), effective_listen);
 		} catch (std::exception &e) {
 			LOG_F(WARNING, "Could not instantiate IPv6 stack: %s", e.what());
 		}
 
 	// create TCP data server
 	tcp_server_ = std::make_shared<tcp_server>(info_, io_ctx_data_, send_buffer_, sample_factory_,
-		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6(), sync_mode_);
+		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6(), sync_mode_, effective_listen);
 
 	// fail if both stacks failed to instantiate
 	if (udp_servers_.empty())
@@ -82,10 +87,8 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 		}));
 }
 
-void stream_outlet_impl::instantiate_stack(udp udp_protocol) {
-	// get api_config
+void stream_outlet_impl::instantiate_stack(udp udp_protocol, const std::string &listen_address) {
 	const api_config *cfg = api_config::get_instance();
-	std::string listen_address = cfg->listen_address();
 	int multicast_ttl = cfg->multicast_ttl();
 	uint16_t multicast_port = cfg->multicast_port();
 	LOG_F(2, "%s: Trying to listen at address '%s'", info().name().c_str(), listen_address.c_str());

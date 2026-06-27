@@ -1,6 +1,7 @@
 #ifndef SOCKET_UTILS_H
 #define SOCKET_UTILS_H
 
+#include <asio/ip/address.hpp>
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 
@@ -19,6 +20,10 @@ uint16_t bind_port_in_range(udp_socket &sock, asio::ip::udp protocol);
 /// Bind and listen to an acceptor on a free port in the configured port range or throw an error.
 uint16_t bind_and_listen_to_port_in_range(
 	tcp_acceptor &acc, asio::ip::tcp protocol, int backlog);
+
+/// Bind and listen to an acceptor on a specific local address, free port in the configured range.
+uint16_t bind_and_listen_to_port_in_range(
+	tcp_acceptor &acc, asio::ip::address addr, int backlog);
 } // namespace lsl
 
 #endif

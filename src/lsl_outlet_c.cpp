@@ -25,6 +25,13 @@ LIBLSL_C_API lsl_outlet lsl_create_outlet(
 	return lsl_create_outlet_ex(info, chunk_size, max_buffered, transp_default);
 }
 
+LIBLSL_C_API lsl_outlet lsl_create_outlet_bound(
+	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, const char *listen_address) {
+	return create_object_noexcept<stream_outlet_impl>(
+		*info, chunk_size, max_buffered, transp_default,
+		listen_address ? std::string(listen_address) : std::string{});
+}
+
 LIBLSL_C_API void lsl_destroy_outlet(lsl_outlet out) {
 	try {
 		delete out;

@@ -41,9 +41,11 @@ public:
 	 * to hold a bit more than 15 minutes of data at 512Hz, while consuming not more than ca. 512MB
 	 * of RAM. Depends on `flags` as calculated in `stream_info_impl::calc_transport_buf_samples()`
 	 * @param flags Bitwise-OR'd flags from lsl_transport_options_t
+	 * @param listen_address Local IP address to bind to; empty string means all interfaces.
 	 */
 	stream_outlet_impl(const stream_info_impl &info, int32_t chunk_size = 0,
-		int32_t requested_bufsize = 900, lsl_transport_options_t flags = transp_default);
+		int32_t requested_bufsize = 900, lsl_transport_options_t flags = transp_default,
+		std::string listen_address = {});
 
 	/**
 	 * Destructor.
@@ -313,7 +315,7 @@ public:
 
 private:
 	/// Instantiate a new server stack.
-	void instantiate_stack(udp udp_protocol);
+	void instantiate_stack(udp udp_protocol, const std::string &listen_address);
 
 	/// Allocate and enqueue a new sample into the send buffer.
 	template <class T> void enqueue(const T *data, double timestamp, bool pushthrough);
@@ -346,6 +348,8 @@ private:
 								   "stream's number of channels.");
 	}
 
+	/// local IP address to bind to; empty means all interfaces
+	std::string listen_address_;
 	/// a factory for samples of appropriate type
 	factory_p sample_factory_;
 	/// the preferred chunk size

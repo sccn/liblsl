@@ -55,7 +55,8 @@ public:
 	 * @param do_sync If true, use synchronous (blocking) socket writes for zero-copy transfer.
 	 */
 	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
-		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
+		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false,
+		std::string listen_address = {});
 
 	/// Destructor (must be defined in .cpp due to unique_ptr to incomplete type)
 	~tcp_server();
@@ -105,6 +106,9 @@ private:
 
 	/// Post a close of all in-flight sockets.
 	void close_inflight_sessions();
+
+	// local IP address to bind to; empty means all interfaces
+	std::string listen_address_;
 
 	// data used by the transfer threads
 	int chunk_size_; // the chunk size to use (or 0)

@@ -40,6 +40,12 @@ extern LIBLSL_C_API lsl_outlet lsl_create_outlet(lsl_streaminfo info, int32_t ch
  */
 extern LIBLSL_C_API lsl_outlet lsl_create_outlet_ex(
 	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, lsl_transport_options_t flags);
+/** @copydoc lsl_create_outlet()
+ * @param listen_address The local IP address to bind to (e.g. "192.168.1.5").
+ * Pass NULL or "" to use the default from the API config (usually all interfaces).
+ */
+extern LIBLSL_C_API lsl_outlet lsl_create_outlet_bound(
+	lsl_streaminfo info, int32_t chunk_size, int32_t max_buffered, const char *listen_address);
 
 /**
  * Destroy an outlet.

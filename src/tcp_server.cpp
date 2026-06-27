@@ -310,8 +310,10 @@ private:
 };
 
 tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
-	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
-	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
+	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync,
+	std::string listen_address)
+	: listen_address_(std::move(listen_address)), chunk_size_(chunk_size),
+	  info_(std::move(info)), io_(std::move(io)),
 	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
 	// Create sync handler if sync mode is requested
 	if (do_sync) {
@@ -333,7 +335,13 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	if (allow_v4) {
 		try {
 			acceptor_v4_ = std::make_unique<tcp_acceptor>(*io_, asio::ip::tcp::v4());
-			auto port = bind_and_listen_to_port_in_range(*acceptor_v4_, asio::ip::tcp::v4(), 10);
+			uint16_t port;
+			if (!listen_address_.empty()) {
+				auto addr = asio::ip::make_address(listen_address_);
+				port = bind_and_listen_to_port_in_range(*acceptor_v4_, addr, 10);
+			} else {
+				port = bind_and_listen_to_port_in_range(*acceptor_v4_, asio::ip::tcp::v4(), 10);
+			}
 			info_->v4data_port(port);
 			LOG_F(1, "Created IPv%d TCP acceptor for %s @ port %d", 4, info_->name().c_str(), port);
 		} catch (std::exception &e) {
@@ -344,7 +352,13 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	if (allow_v6) {
 		try {
 			acceptor_v6_ = std::make_unique<tcp_acceptor>(*io_, asio::ip::tcp::v6());
-			auto port = bind_and_listen_to_port_in_range(*acceptor_v6_, asio::ip::tcp::v6(), 10);
+			uint16_t port;
+			if (!listen_address_.empty()) {
+				auto addr = asio::ip::make_address(listen_address_);
+				port = bind_and_listen_to_port_in_range(*acceptor_v6_, addr, 10);
+			} else {
+				port = bind_and_listen_to_port_in_range(*acceptor_v6_, asio::ip::tcp::v6(), 10);
+			}
 			info_->v6data_port(port);
 			LOG_F(1, "Created IPv%d TCP acceptor for %s @ port %d", 6, info_->name().c_str(), port);
 		} catch (std::exception &e) {

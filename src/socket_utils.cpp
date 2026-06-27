@@ -34,3 +34,29 @@ uint16_t lsl::bind_and_listen_to_port_in_range(
 	acc.listen(backlog);
 	return port;
 }
+
+uint16_t lsl::bind_and_listen_to_port_in_range(
+	tcp_acceptor &acc, asio::ip::address addr, int backlog) {
+	const auto *cfg = lsl::api_config::get_instance();
+	asio::error_code ec;
+	for (uint16_t port = cfg->base_port(), e = port + cfg->port_range(); port < e; port++) {
+		acc.bind(asio::ip::tcp::endpoint(addr, port), ec);
+		if (ec == asio::error::address_in_use) continue;
+		if (!ec) {
+			acc.listen(backlog);
+			return port;
+		}
+	}
+	if (cfg->allow_random_ports()) {
+		acc.bind(asio::ip::tcp::endpoint(addr, 0), ec);
+		if (!ec) {
+			acc.listen(backlog);
+			return acc.local_endpoint().port();
+		}
+	}
+	throw std::runtime_error(
+		"All local ports were found occupied. You may have more open outlets on this machine "
+		"than your PortRange setting allows (see "
+		"https://labstreaminglayer.readthedocs.io/info/network-connectivity.html"
+		") or you have a problem with your network configuration.");
+}
