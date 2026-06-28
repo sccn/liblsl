@@ -8,6 +8,7 @@
 #include <asio/read_until.hpp>
 #include <asio/write.hpp>
 #include <catch2/catch_all.hpp>
+#include <algorithm>
 #include <functional>
 #include <sstream>
 #include <thread>
@@ -94,7 +95,11 @@ auto with_read_callback(const char *name, std::function<void(const std::string &
 void check_streamfeed_100_response(const std::string &res) {
 	REQUIRE(res.substr(0, 4) == "\x7f\x01\x09\2");
 	INFO(bytes_to_hexstr(res.substr(0, 10)));
-	auto info_len = *reinterpret_cast<const uint16_t*>(res.data() + 4);
+	// The portable binary archive serializes integers little-endian on the wire, so decode
+	// the 2-byte info-length prefix explicitly instead of via a host-order load (which would
+	// read it byte-swapped on big-endian hosts).
+	const auto *lenp = reinterpret_cast<const unsigned char *>(res.data() + 4);
+	uint16_t info_len = static_cast<uint16_t>(lenp[0] | (lenp[1] << 8));
 
 	REQUIRE(static_cast<int>(res.size()) > 6 + info_len);
 
@@ -134,8 +139,13 @@ TEST_CASE("tcpserver", "[network]") {
 			auto endofheader = res.find("\r\n\r\n");
 			REQUIRE(endofheader != std::string::npos);
 			std::string received_pattern = res.substr(endofheader + 4);
-			std::string expected = "\2" TESTPAT_TIMESTAMP TESTPAT_STR;
-			expected += expected;
+			// String streams carry zero-size values, so the server applies no endian
+			// conversion and emits the timestamp double in host byte order. TESTPAT_TIMESTAMP
+			// is the little-endian encoding; byte-reverse it on big-endian hosts.
+			std::string ts = TESTPAT_TIMESTAMP;
+			if (lsl::LSL_BYTE_ORDER == lsl::LSL_BIG_ENDIAN) std::reverse(ts.begin(), ts.end());
+			std::string sample = "\2" + ts + std::string(TESTPAT_STR, sizeof(TESTPAT_STR) - 1);
+			std::string expected = sample + sample;
 			cmp_binstr(expected, received_pattern);
 		}));
 
