@@ -846,7 +846,7 @@ private:
  */
 inline std::vector<stream_info> resolve_streams(double wait_time = 1.0) {
 	lsl_streaminfo buffer[1024];
-	int nres = check_error(lsl_resolve_all(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), wait_time));
+	int32_t nres = check_error(lsl_resolve_all(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), wait_time));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
 
@@ -866,7 +866,7 @@ inline std::vector<stream_info> resolve_streams(double wait_time = 1.0) {
 inline std::vector<stream_info> resolve_stream(const std::string &prop, const std::string &value,
 	int32_t minimum = 1, double timeout = FOREVER) {
 	lsl_streaminfo buffer[1024];
-	int nres = check_error(
+	int32_t nres = check_error(
 		lsl_resolve_byprop(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), prop.c_str(), value.c_str(), minimum, timeout));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
@@ -888,7 +888,7 @@ inline std::vector<stream_info> resolve_stream(const std::string &prop, const st
 inline std::vector<stream_info> resolve_stream(
 	const std::string &pred, int32_t minimum = 1, double timeout = FOREVER) {
 	lsl_streaminfo buffer[1024];
-	int nres =
+	int32_t nres =
 		check_error(lsl_resolve_bypred(buffer, sizeof(buffer) / sizeof(lsl_streaminfo), pred.c_str(), minimum, timeout));
 	return std::vector<stream_info>(&buffer[0], &buffer[nres]);
 }
@@ -1048,7 +1048,7 @@ public:
 	 * .time_correction() to it.
 	 * @throws lost_error (if the stream source has been lost).
 	 */
-	template <class T, int N> double pull_sample(T sample[N], double timeout = FOREVER) {
+	template <class T, int32_t N> double pull_sample(T sample[N], double timeout = FOREVER) {
 		return pull_sample(&sample[0], N, timeout);
 	}
 
@@ -1506,7 +1506,7 @@ public:
 	 */
 	void smoothing_halftime(float value) { check_error(lsl_smoothing_halftime(obj.get(), value)); }
 
-	int get_channel_count() const { return channel_count; }
+	int32_t get_channel_count() const { return channel_count; }
 
 private:
 	// The inlet is a non-copyable object.
