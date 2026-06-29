@@ -2,6 +2,8 @@
 #include "common.h"
 #include "types.h"
 
+#include <stddef.h>
+
 
 /// @file inlet.h Stream inlet functions
 
@@ -168,7 +170,7 @@ extern LIBLSL_C_API double lsl_pull_sample_d(lsl_inlet in, double *buffer, int32
 extern LIBLSL_C_API double lsl_pull_sample_l(lsl_inlet in, int64_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_i(lsl_inlet in, int32_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_s(lsl_inlet in, int16_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API double lsl_pull_sample_c(lsl_inlet in, char *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API double lsl_pull_sample_c(lsl_inlet in, int8_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 ///@}
 
@@ -228,13 +230,13 @@ extern LIBLSL_C_API double lsl_pull_sample_v(lsl_inlet in, void *buffer, int32_t
  * @return data_elements_written Number of channel data elements written to the data buffer.
  * @{
  */
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_f(lsl_inlet in, float *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_d(lsl_inlet in, double *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_l(lsl_inlet in, int64_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_i(lsl_inlet in, int32_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_s(lsl_inlet in, int16_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_c(lsl_inlet in, char *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_f(lsl_inlet in, float *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_d(lsl_inlet in, double *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_l(lsl_inlet in, int64_t *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_i(lsl_inlet in, int32_t *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_s(lsl_inlet in, int16_t *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_c(lsl_inlet in, int8_t *data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
 
 ///@}
 
@@ -267,7 +269,7 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_b
  * @return data_elements_written Number of channel data elements written to the data buffer.
  */
 
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer, uint32_t *lengths_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API size_t lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer, uint32_t *lengths_buffer, double *timestamp_buffer, size_t data_buffer_elements, size_t timestamp_buffer_elements, double timeout, int32_t *ec);
 
 /**
 * Query whether samples are currently available for immediate pickup.

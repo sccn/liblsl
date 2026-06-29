@@ -210,7 +210,7 @@ void stream_outlet_impl::enqueue(const T *data, double timestamp, bool pushthrou
 	}
 }
 
-template void stream_outlet_impl::enqueue<char>(const char *data, double, bool);
+template void stream_outlet_impl::enqueue<int8_t>(const int8_t *data, double, bool);
 template void stream_outlet_impl::enqueue<int16_t>(const int16_t *data, double, bool);
 template void stream_outlet_impl::enqueue<int32_t>(const int32_t *data, double, bool);
 template void stream_outlet_impl::enqueue<int64_t>(const int64_t *data, double, bool);
@@ -289,8 +289,8 @@ void stream_outlet_impl::enqueue_chunk_sync(
 }
 
 // Explicit template instantiations for enqueue_chunk_sync
-template void stream_outlet_impl::enqueue_chunk_sync<char>(
-	const char *, std::size_t, double, bool);
+template void stream_outlet_impl::enqueue_chunk_sync<int8_t>(
+	const int8_t *, std::size_t, double, bool);
 template void stream_outlet_impl::enqueue_chunk_sync<int16_t>(
 	const int16_t *, std::size_t, double, bool);
 template void stream_outlet_impl::enqueue_chunk_sync<int32_t>(
