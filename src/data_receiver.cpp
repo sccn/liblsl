@@ -112,7 +112,7 @@ double data_receiver::pull_sample_typed(T *buffer, uint32_t buffer_elements, dou
 	return 0.0;
 }
 
-template double data_receiver::pull_sample_typed<char>(char *, uint32_t, double);
+template double data_receiver::pull_sample_typed<int8_t>(int8_t *, uint32_t, double);
 template double data_receiver::pull_sample_typed<int16_t>(int16_t *, uint32_t, double);
 template double data_receiver::pull_sample_typed<int32_t>(int32_t *, uint32_t, double);
 template double data_receiver::pull_sample_typed<int64_t>(int64_t *, uint32_t, double);

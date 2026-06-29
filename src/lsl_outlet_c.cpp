@@ -98,16 +98,16 @@ LIBLSL_C_API int32_t lsl_push_sample_stp(
 	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const char *data) {
+LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const int8_t *data) {
 	return out->push_sample_noexcept(data);
 }
 
-LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const char *data, double timestamp) {
+LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const int8_t *data, double timestamp) {
 	return out->push_sample_noexcept(data, timestamp);
 }
 
 LIBLSL_C_API int32_t lsl_push_sample_ctp(
-	lsl_outlet out, const char *data, double timestamp, int32_t pushthrough) {
+	lsl_outlet out, const int8_t *data, double timestamp, int32_t pushthrough) {
 	return out->push_sample_noexcept(data, timestamp, pushthrough);
 }
 
@@ -198,7 +198,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_s(
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_c(
-	lsl_outlet out, const char *data, unsigned long data_elements) {
+	lsl_outlet out, const int8_t *data, unsigned long data_elements) {
 	return out->push_chunk_multiplexed_noexcept(data, data_elements);
 }
 
@@ -228,7 +228,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_st(
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ct(
-	lsl_outlet out, const char *data, unsigned long data_elements, double timestamp) {
+	lsl_outlet out, const int8_t *data, unsigned long data_elements, double timestamp) {
 	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp);
 }
 
@@ -257,7 +257,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_stp(lsl_outlet out, const int16_t *data,
 	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_chunk_ctp(lsl_outlet out, const char *data,
+LIBLSL_C_API int32_t lsl_push_chunk_ctp(lsl_outlet out, const int8_t *data,
 	unsigned long data_elements, double timestamp, int32_t pushthrough) {
 	return out->push_chunk_multiplexed_noexcept(data, data_elements, timestamp, pushthrough);
 }
@@ -288,7 +288,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_stn(
 }
 
 LIBLSL_C_API int32_t lsl_push_chunk_ctn(
-	lsl_outlet out, const char *data, unsigned long data_elements, const double *timestamps) {
+	lsl_outlet out, const int8_t *data, unsigned long data_elements, const double *timestamps) {
 	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements);
 }
 
@@ -317,7 +317,7 @@ LIBLSL_C_API int32_t lsl_push_chunk_stnp(lsl_outlet out, const int16_t *data,
 	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }
 
-LIBLSL_C_API int32_t lsl_push_chunk_ctnp(lsl_outlet out, const char *data,
+LIBLSL_C_API int32_t lsl_push_chunk_ctnp(lsl_outlet out, const int8_t *data,
 	unsigned long data_elements, const double *timestamps, int32_t pushthrough) {
 	return out->push_chunk_multiplexed_noexcept(data, timestamps, data_elements, pushthrough);
 }

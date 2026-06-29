@@ -10,7 +10,7 @@
 // clazy:excludeall=non-pod-global-static
 
 TEMPLATE_TEST_CASE(
-	"datatransfer", "[datatransfer][basic]", char, int16_t, int32_t, int64_t, float, double) {
+	"datatransfer", "[datatransfer][basic]", int8_t, int16_t, int32_t, int64_t, float, double) {
 	const int numBounces = sizeof(TestType) * 8;
 	double timestamps[numBounces][2];
 	const char *name = SampleType<TestType>::fmt_string();

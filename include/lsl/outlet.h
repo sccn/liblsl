@@ -63,7 +63,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_d(lsl_outlet out, const double *data
 extern LIBLSL_C_API int32_t lsl_push_sample_l(lsl_outlet out, const int64_t *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_i(lsl_outlet out, const int32_t *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_s(lsl_outlet out, const int16_t *data);
-extern LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const char *data);
+extern LIBLSL_C_API int32_t lsl_push_sample_c(lsl_outlet out, const int8_t *data);
 extern LIBLSL_C_API int32_t lsl_push_sample_str(lsl_outlet out, const char **data);
 extern LIBLSL_C_API int32_t lsl_push_sample_v(lsl_outlet out, const void *data);
 /// @}
@@ -77,7 +77,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_dt(lsl_outlet out, const double *dat
 extern LIBLSL_C_API int32_t lsl_push_sample_lt(lsl_outlet out, const int64_t *data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_it(lsl_outlet out, const int32_t *data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_st(lsl_outlet out, const int16_t *data, double timestamp);
-extern LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const char *data, double timestamp);
+extern LIBLSL_C_API int32_t lsl_push_sample_ct(lsl_outlet out, const int8_t *data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_strt(lsl_outlet out, const char **data, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_sample_vt(lsl_outlet out, const void *data, double timestamp);
 /// @}
@@ -92,7 +92,7 @@ extern LIBLSL_C_API int32_t lsl_push_sample_dtp(lsl_outlet out, const double *da
 extern LIBLSL_C_API int32_t lsl_push_sample_ltp(lsl_outlet out, const int64_t *data, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_sample_itp(lsl_outlet out, const int32_t *data, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_sample_stp(lsl_outlet out, const int16_t *data, double timestamp, int32_t pushthrough);
-extern LIBLSL_C_API int32_t lsl_push_sample_ctp(lsl_outlet out, const char *data, double timestamp, int32_t pushthrough);
+extern LIBLSL_C_API int32_t lsl_push_sample_ctp(lsl_outlet out, const int8_t *data, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_sample_strtp(lsl_outlet out, const char **data, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_sample_vtp(lsl_outlet out, const void *data, double timestamp, int32_t pushthrough);
 ///@}
@@ -131,7 +131,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_d(lsl_outlet out, const double *data,
 extern LIBLSL_C_API int32_t lsl_push_chunk_l(lsl_outlet out, const int64_t *data, unsigned long data_elements);
 extern LIBLSL_C_API int32_t lsl_push_chunk_i(lsl_outlet out, const int32_t *data, unsigned long data_elements);
 extern LIBLSL_C_API int32_t lsl_push_chunk_s(lsl_outlet out, const int16_t *data, unsigned long data_elements);
-extern LIBLSL_C_API int32_t lsl_push_chunk_c(lsl_outlet out, const char *data, unsigned long data_elements);
+extern LIBLSL_C_API int32_t lsl_push_chunk_c(lsl_outlet out, const int8_t *data, unsigned long data_elements);
 extern LIBLSL_C_API int32_t lsl_push_chunk_str(lsl_outlet out, const char **data, unsigned long data_elements);
 /// @}
 
@@ -147,7 +147,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_dt(lsl_outlet out, const double *data
 extern LIBLSL_C_API int32_t lsl_push_chunk_lt(lsl_outlet out, const int64_t *data, unsigned long data_elements, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_chunk_it(lsl_outlet out, const int32_t *data, unsigned long data_elements, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_chunk_st(lsl_outlet out, const int16_t *data, unsigned long data_elements, double timestamp);
-extern LIBLSL_C_API int32_t lsl_push_chunk_ct(lsl_outlet out, const char *data, unsigned long data_elements, double timestamp);
+extern LIBLSL_C_API int32_t lsl_push_chunk_ct(lsl_outlet out, const int8_t *data, unsigned long data_elements, double timestamp);
 extern LIBLSL_C_API int32_t lsl_push_chunk_strt(lsl_outlet out, const char **data, unsigned long data_elements, double timestamp);
 /// @}
 
@@ -162,7 +162,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_dtp(lsl_outlet out, const double *dat
 extern LIBLSL_C_API int32_t lsl_push_chunk_ltp(lsl_outlet out, const int64_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_itp(lsl_outlet out, const int32_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_stp(lsl_outlet out, const int16_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough);
-extern LIBLSL_C_API int32_t lsl_push_chunk_ctp(lsl_outlet out, const char *data, unsigned long data_elements, double timestamp, int32_t pushthrough);
+extern LIBLSL_C_API int32_t lsl_push_chunk_ctp(lsl_outlet out, const int8_t *data, unsigned long data_elements, double timestamp, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_strtp(lsl_outlet out, const char **data, unsigned long data_elements, double timestamp, int32_t pushthrough);
 /// @}
 /** @copydoc lsl_push_chunk_f
@@ -174,7 +174,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_dtn(lsl_outlet out, const double *dat
 extern LIBLSL_C_API int32_t lsl_push_chunk_ltn(lsl_outlet out, const int64_t *data, unsigned long data_elements, const double *timestamps);
 extern LIBLSL_C_API int32_t lsl_push_chunk_itn(lsl_outlet out, const int32_t *data, unsigned long data_elements, const double *timestamps);
 extern LIBLSL_C_API int32_t lsl_push_chunk_stn(lsl_outlet out, const int16_t *data, unsigned long data_elements, const double *timestamps);
-extern LIBLSL_C_API int32_t lsl_push_chunk_ctn(lsl_outlet out, const char *data, unsigned long data_elements, const double *timestamps);
+extern LIBLSL_C_API int32_t lsl_push_chunk_ctn(lsl_outlet out, const int8_t *data, unsigned long data_elements, const double *timestamps);
 extern LIBLSL_C_API int32_t lsl_push_chunk_strtn(lsl_outlet out, const char **data, unsigned long data_elements, const double *timestamps);
 /// @}
 
@@ -189,7 +189,7 @@ extern LIBLSL_C_API int32_t lsl_push_chunk_dtnp(lsl_outlet out, const double *da
 extern LIBLSL_C_API int32_t lsl_push_chunk_ltnp(lsl_outlet out, const int64_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_itnp(lsl_outlet out, const int32_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_stnp(lsl_outlet out, const int16_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
-extern LIBLSL_C_API int32_t lsl_push_chunk_ctnp(lsl_outlet out, const char *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
+extern LIBLSL_C_API int32_t lsl_push_chunk_ctnp(lsl_outlet out, const int8_t *data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
 extern LIBLSL_C_API int32_t lsl_push_chunk_strtnp(lsl_outlet out, const char **data, unsigned long data_elements, const double *timestamps, int32_t pushthrough);
 ///@}
 

@@ -9,7 +9,7 @@ template <typename T> struct SampleType {
 	static const char *fmt_string();
 };
 
-template <> struct SampleType<char> {
+template <> struct SampleType<int8_t> {
 	static const lsl_channel_format_t chan_fmt = cft_int8;
 	static const char *fmt_string() { return "cf_int8"; }
 };

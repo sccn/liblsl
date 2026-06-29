@@ -477,8 +477,11 @@ public:
 	void push_sample(const int16_t *data, double timestamp = 0.0, bool pushthrough = true) {
 		lsl_push_sample_stp(obj.get(), (data), timestamp, pushthrough);
 	}
-	void push_sample(const char *data, double timestamp = 0.0, bool pushthrough = true) {
+	void push_sample(const int8_t *data, double timestamp = 0.0, bool pushthrough = true) {
 		lsl_push_sample_ctp(obj.get(), (data), timestamp, pushthrough);
+	}
+	void push_sample(const char *data, double timestamp = 0.0, bool pushthrough = true) {
+		lsl_push_sample_ctp(obj.get(), reinterpret_cast<const int8_t *>(data), timestamp, pushthrough);
 	}
 	void push_sample(const std::string *data, double timestamp = 0.0, bool pushthrough = true) {
 		std::vector<uint32_t> lengths(channel_count);
@@ -680,9 +683,14 @@ public:
 		double timestamp = 0.0, bool pushthrough = true) {
 		lsl_push_chunk_stp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
-	void push_chunk_multiplexed(const char *buffer, std::size_t buffer_elements,
+	void push_chunk_multiplexed(const int8_t *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
 		lsl_push_chunk_ctp(obj.get(), buffer, static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
+	}
+	void push_chunk_multiplexed(const char *buffer, std::size_t buffer_elements,
+		double timestamp = 0.0, bool pushthrough = true) {
+		lsl_push_chunk_ctp(obj.get(), reinterpret_cast<const int8_t *>(buffer),
+			static_cast<unsigned long>(buffer_elements), timestamp, pushthrough);
 	}
 	void push_chunk_multiplexed(const std::string *buffer, std::size_t buffer_elements,
 		double timestamp = 0.0, bool pushthrough = true) {
@@ -736,10 +744,15 @@ public:
 		lsl_push_chunk_stnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
 	}
-	void push_chunk_multiplexed(const char *data_buffer, const double *timestamp_buffer,
+	void push_chunk_multiplexed(const int8_t *data_buffer, const double *timestamp_buffer,
 		std::size_t data_buffer_elements, bool pushthrough = true) {
 		lsl_push_chunk_ctnp(obj.get(), data_buffer, static_cast<unsigned long>(data_buffer_elements),
 			(timestamp_buffer), pushthrough);
+	}
+	void push_chunk_multiplexed(const char *data_buffer, const double *timestamp_buffer,
+		std::size_t data_buffer_elements, bool pushthrough = true) {
+		lsl_push_chunk_ctnp(obj.get(), reinterpret_cast<const int8_t *>(data_buffer),
+			static_cast<unsigned long>(data_buffer_elements), (timestamp_buffer), pushthrough);
 	}
 
 	void push_chunk_multiplexed(const std::string *data_buffer, const double *timestamp_buffer,
@@ -1070,6 +1083,10 @@ public:
 		sample.resize(channel_count);
 		return pull_sample(&sample[0], (int32_t)sample.size(), timeout);
 	}
+	double pull_sample(std::vector<int8_t> &sample, double timeout = FOREVER) {
+		sample.resize(channel_count);
+		return pull_sample(&sample[0], (int32_t)sample.size(), timeout);
+	}
 	double pull_sample(std::vector<char> &sample, double timeout = FOREVER) {
 		sample.resize(channel_count);
 		return pull_sample(&sample[0], (int32_t)sample.size(), timeout);
@@ -1121,9 +1138,15 @@ public:
 		check_error(ec);
 		return res;
 	}
-	double pull_sample(char *buffer, int32_t buffer_elements, double timeout = FOREVER) {
+	double pull_sample(int8_t *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		int32_t ec = 0;
 		double res = lsl_pull_sample_c(obj.get(), buffer, buffer_elements, timeout, &ec);
+		check_error(ec);
+		return res;
+	}
+	double pull_sample(char *buffer, int32_t buffer_elements, double timeout = FOREVER) {
+		int32_t ec = 0;
+		double res = lsl_pull_sample_c(obj.get(), reinterpret_cast<int8_t *>(buffer), buffer_elements, timeout, &ec);
 		check_error(ec);
 		return res;
 	}
@@ -1316,11 +1339,21 @@ public:
 		check_error(ec);
 		return res;
 	}
-	std::size_t pull_chunk_multiplexed(char *data_buffer, double *timestamp_buffer,
+	std::size_t pull_chunk_multiplexed(int8_t *data_buffer, double *timestamp_buffer,
 		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
 		double timeout = 0.0) {
 		int32_t ec = 0;
 		std::size_t res = lsl_pull_chunk_c(obj.get(), data_buffer, timestamp_buffer,
+			static_cast<unsigned long>(data_buffer_elements), static_cast<unsigned long>(timestamp_buffer_elements), timeout,
+			&ec);
+		check_error(ec);
+		return res;
+	}
+	std::size_t pull_chunk_multiplexed(char *data_buffer, double *timestamp_buffer,
+		std::size_t data_buffer_elements, std::size_t timestamp_buffer_elements,
+		double timeout = 0.0) {
+		int32_t ec = 0;
+		std::size_t res = lsl_pull_chunk_c(obj.get(), reinterpret_cast<int8_t *>(data_buffer), timestamp_buffer,
 			static_cast<unsigned long>(data_buffer_elements), static_cast<unsigned long>(timestamp_buffer_elements), timeout,
 			&ec);
 		check_error(ec);
