@@ -96,7 +96,7 @@ public:
 		enqueue(data.data(), timestamp, pushthrough);
 	}
 	void push_sample(
-		const std::vector<char> &data, double timestamp = 0.0, bool pushthrough = true) {
+		const std::vector<int8_t> &data, double timestamp = 0.0, bool pushthrough = true) {
 		check_numchan((int32_t)data.size());
 		enqueue(data.data(), timestamp, pushthrough);
 	}
@@ -134,7 +134,7 @@ public:
 	void push_sample(const int16_t *data, double timestamp = 0.0, bool pushthrough = true) {
 		enqueue(data, timestamp, pushthrough);
 	}
-	void push_sample(const char *data, double timestamp = 0.0, bool pushthrough = true) {
+	void push_sample(const int8_t *data, double timestamp = 0.0, bool pushthrough = true) {
 		enqueue(data, timestamp, pushthrough);
 	}
 	void push_sample(const std::string *data, double timestamp = 0.0, bool pushthrough = true) {

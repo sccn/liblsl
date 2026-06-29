@@ -482,14 +482,14 @@ void factory::reclaim_sample(sample *s) {
 // template instantiations
 template void lsl::sample::assign_typed(float const *);
 template void lsl::sample::assign_typed(double const *);
-template void lsl::sample::assign_typed(char const *);
+template void lsl::sample::assign_typed(int8_t const *);
 template void lsl::sample::assign_typed(int16_t const *);
 template void lsl::sample::assign_typed(int32_t const *);
 template void lsl::sample::assign_typed(int64_t const *);
 template void lsl::sample::assign_typed(std::string const *);
 template void lsl::sample::retrieve_typed(float *);
 template void lsl::sample::retrieve_typed(double *);
-template void lsl::sample::retrieve_typed(char *);
+template void lsl::sample::retrieve_typed(int8_t *);
 template void lsl::sample::retrieve_typed(int16_t *);
 template void lsl::sample::retrieve_typed(int32_t *);
 template void lsl::sample::retrieve_typed(int64_t *);

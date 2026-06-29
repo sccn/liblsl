@@ -29,14 +29,14 @@ TEST_CASE("timeouts", "[pull][basic]") {
 
 	// Push a sample after some time so the test can continue even if the timeout isn't honored
 	std::thread saver([&]() {
-		char val;
+		int8_t val;
 		auto end = lsl::local_clock() + 2;
 		while (!done && lsl::local_clock() < end)
 			std::this_thread::sleep_for(std::chrono::milliseconds(50));
 		sp.out_.push_sample(&val);
 	});
 
-	char val;
+	int8_t val;
 	REQUIRE(sp.in_.pull_sample(&val, 1, 0.5) == Catch::Approx(0.0));
 	done = true;
 	saver.join();
