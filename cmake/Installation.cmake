@@ -83,6 +83,20 @@ install(
     DESTINATION ${LSL_CONFIG_INSTALL_DIR}
 )
 
+# Generate pkg-config file
+if(LSL_UNIXFOLDERS AND NOT LSL_FRAMEWORK)
+    configure_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/lsl.pc.in
+        ${CMAKE_CURRENT_BINARY_DIR}/lsl.pc
+        @ONLY
+    )
+    install(
+        FILES ${CMAKE_CURRENT_BINARY_DIR}/lsl.pc
+        COMPONENT liblsl
+        DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
+    )
+endif()
+
 if(APPLE AND LSL_FRAMEWORK AND NOT IOS)
     # Create symlinks for the framework. The variables we want to use to identify the symlink locations
     #  are not available at install time. Instead, we create a script during configuration time that will
