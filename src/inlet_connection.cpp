@@ -76,6 +76,20 @@ inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	}
 }
 
+inlet_connection::~inlet_connection() {
+	try {
+		{
+			std::lock_guard<std::mutex> lock(shutdown_mut_);
+			shutdown_ = true;
+		}
+		shutdown_cond_.notify_all();
+		resolver_.cancel();
+	} catch (std::exception &e) {
+		LOG_F(ERROR, "Error during inlet_connection teardown: %s", e.what());
+	}
+	if (watchdog_thread_.joinable()) watchdog_thread_.join();
+}
+
 void inlet_connection::engage() {
 	if (recovery_enabled_) watchdog_thread_ = std::thread(&inlet_connection::watchdog_thread, this);
 }

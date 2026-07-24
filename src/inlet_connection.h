@@ -58,6 +58,10 @@ public:
 	 */
 	inlet_connection(const stream_info_impl &info, bool recover = true);
 
+	/// Destructor: signals shutdown and joins the watchdog thread if it is still running
+	/// (e.g., when disengage() did not complete).
+	~inlet_connection() override;
+
 	/**
 	 * Prepare the connection and its auto-recovery thread.
 	 *
