@@ -70,6 +70,7 @@ add_executable(lsl_test_exported
 	ext/DataType.cpp
 	ext/discovery.cpp
 	ext/move.cpp
+	ext/outlet.cpp
 	ext/streaminfo.cpp
 	ext/sync_outlet.cpp
 	ext/time.cpp
