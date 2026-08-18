@@ -16,6 +16,7 @@
 #include <asio/streambuf.hpp>
 #include <asio/write.hpp>
 #include <algorithm>
+#include <atomic>
 #include <condition_variable>
 #include <cstdint>
 #include <cstring>
@@ -261,8 +262,11 @@ private:
 	/// Handler that gets called sending the feedheader has completed.
 	void handle_send_feedheader_outcome(err_t err, std::size_t n);
 
+	/// Detect peer close on the feed socket so idle consumers get unregistered (see #267).
+	void abort_on_peer_close(const std::shared_ptr<consumer_queue> &queue);
+
 	/// Transfers samples from the server's send buffer into the async send queues of IO threads
-	void transfer_samples_thread(std::shared_ptr<client_session> /*keepalive*/,
+	void transfer_samples_thread(std::shared_ptr<client_session> keepalive,
 		std::shared_ptr<consumer_queue> &&queue, int max_samples_per_chunk);
 
 	/// Handler that gets called when a sample transfer has been completed.
@@ -295,6 +299,10 @@ private:
 	int chunk_granularity_{0};
 	/// maximum number of samples buffered
 	int max_buffered_{0};
+	/// set when the consumer closes the feed connection (or sends unexpected data)
+	std::atomic<bool> abort_transfer_{false};
+	/// dummy byte for the peer-close detector's pending read
+	char peer_close_byte_{0};
 
 	// data exchanged between the transfer completion handler and the transfer thread
 	/// whether the current transfer has finished (possibly with an error)
@@ -744,6 +752,7 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 
 		// determine transfer parameters
 		auto queue = serv->send_buffer_->new_consumer(max_buffered_);
+		abort_on_peer_close(queue);
 
 		// determine the maximum chunk size
 		int max_samples_per_chunk = std::numeric_limits<int>::max();
@@ -761,13 +770,27 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 	}
 }
 
-void client_session::transfer_samples_thread(std::shared_ptr<client_session> /* keepalive */,
+void client_session::abort_on_peer_close(const std::shared_ptr<consumer_queue> &queue) {
+	// The feed is one-way after the handshake; a completed read means EOF or unexpected data.
+	// Either way the consumer is gone. A weak_ptr keeps the queue from staying registered if the
+	// transfer thread has already exited (e.g. after a failed write).
+	std::weak_ptr<consumer_queue> weak_queue = queue;
+	sock_.async_read_some(asio::buffer(&peer_close_byte_, 1),
+		[shared_this = shared_from_this(), weak_queue](err_t err, std::size_t /*n*/) {
+			if (err == asio::error::operation_aborted) return;
+			shared_this->abort_transfer_.store(true, std::memory_order_release);
+			if (auto q = weak_queue.lock()) q->push_sample(sample_p());
+		});
+}
+
+void client_session::transfer_samples_thread(std::shared_ptr<client_session> keepalive,
 	std::shared_ptr<consumer_queue> &&queue, int max_samples_per_chunk) {
 	int samples_in_current_chunk = 0;
-	while (!serv_.expired()) {
+	while (!serv_.expired() && !abort_transfer_.load(std::memory_order_relaxed)) {
 		try {
 			// get next sample from the sample queue (blocking)
 			sample_p samp(queue->pop_sample());
+			if (abort_transfer_.load(std::memory_order_acquire)) break;
 
 			// ignore blank samples (they are basically wakeup notifiers from someone's
 			// end_serving())
@@ -800,6 +823,12 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> /* 
 			LOG_F(WARNING, "Unexpected glitch in transfer_samples_thread: %s", e.what());
 		}
 	}
+	// Unregister immediately; cancel the peer-close read so the session can be destroyed.
+	queue.reset();
+	post(*io_, [keepalive]() {
+		asio::error_code ec;
+		keepalive->sock_.cancel(ec);
+	});
 }
 
 void client_session::handle_chunk_transfer_outcome(err_t err, std::size_t len) {
