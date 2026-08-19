@@ -159,39 +159,49 @@ void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 
 void resolve_attempt_udp::send_next_query(
 	endpoint_list::const_iterator next, mcast_interface_list::const_iterator mcit) {
-	if (cancelled_ || mcit == multicast_interfaces.end()) return;
-	auto proto = recv_socket_.local_endpoint().protocol();
-	if (next == targets_.begin()) {
-		// Mismatching protocols? Skip this round
-		if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
-			next = targets_.end();
-		else
-			multicast_socket_.set_option(mcit->addr.is_v4() ? outbound_interface(mcit->addr.to_v4())
-															: outbound_interface(mcit->ifindex));
-	}
-	if (next != targets_.end()) {
+	const auto proto = recv_socket_.local_endpoint().protocol();
+
+	while (true) {
+		if (cancelled_ || mcit == multicast_interfaces.end()) return;
+
+		if (next == targets_.begin()) {
+			// Mismatching protocols? Skip this round
+			if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
+				next = targets_.end();
+			else
+				multicast_socket_.set_option(mcit->addr.is_v4()
+						? outbound_interface(mcit->addr.to_v4())
+						: outbound_interface(mcit->ifindex));
+		}
+
+		if (next == targets_.end()) {
+			// Restart from the next interface
+			next = targets_.begin();
+			++mcit;
+			continue;
+		}
+
 		udp::endpoint ep(*next++);
 		// endpoint matches our active protocol?
-		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
-			// select socket to use
-			udp_socket &sock =
-				(ep.address() == asio::ip::address_v4::broadcast())
-					? broadcast_socket_
-					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
-			// and send the query over it
-			auto keepalive(shared_from_this());
-			sock.async_send_to(asio::buffer(query_msg_), ep,
-				[shared_this = shared_from_this(), next, mcit](err_t err, size_t /*unused*/) {
-					if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
-						err != asio::error::not_connected && err != asio::error::not_socket)
-						shared_this->send_next_query(next, mcit);
-				});
-		} else
+		if (ep.protocol() != proto)
 			// otherwise just go directly to the next query
-			send_next_query(next, mcit);
-	} else
-		// Restart from the next interface
-		send_next_query(targets_.begin(), ++mcit);
+			continue;
+
+		// select socket to use
+		udp_socket &sock =
+			(ep.address() == asio::ip::address_v4::broadcast())
+				? broadcast_socket_
+				: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
+		// and send the query over it
+		auto keepalive(shared_from_this());
+		sock.async_send_to(asio::buffer(query_msg_), ep,
+			[shared_this = shared_from_this(), next, mcit](err_t err, size_t /*unused*/) {
+				if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
+					err != asio::error::not_connected && err != asio::error::not_socket)
+					shared_this->send_next_query(next, mcit);
+			});
+		return;
+	}
 }
 
 void resolve_attempt_udp::do_cancel() {
