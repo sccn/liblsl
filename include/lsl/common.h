@@ -182,7 +182,7 @@ extern LIBLSL_C_API const char *lsl_last_error(void);
  * LSL version the binary was compiled against
  *
  * Used either to check if the same version is used
- * (`if(lsl_protocol_version()!=LIBLSL_COMPILE_HEADER_VERSION`) …
+ * (`if(lsl_protocol_version()!=LIBLSL_COMPILE_HEADER_VERSION`)
  * or to require a certain set of features:
  * ```
  * #if LIBLSL_COMPILE_HEADER_VERSION > 113
