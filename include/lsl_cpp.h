@@ -780,7 +780,7 @@ public:
 
 	/// Return a shared pointer to pass to C-API functions that aren't wrapped yet
 	///
-	/// Example: @code lsl_push_chunk_buft(outlet.handle().get(), data, …); @endcode
+	/// Example: @code lsl_push_chunk_buft(outlet.handle().get(), data, ...); @endcode
 	std::shared_ptr<lsl_outlet_struct_> handle() { return obj; }
 
 	/** Destructor.
@@ -919,7 +919,7 @@ public:
 
 	/// Return a shared pointer to pass to C-API functions that aren't wrapped yet
 	///
-	/// Example: @code lsl_pull_sample_buf(inlet.handle().get(), buf, …); @endcode
+	/// Example: @code lsl_pull_sample_buf(inlet.handle().get(), buf, ...); @endcode
 	std::shared_ptr<lsl_inlet_struct_> handle() { return obj; }
 
 	/// Move constructor for stream_inlet

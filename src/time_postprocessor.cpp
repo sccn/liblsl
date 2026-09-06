@@ -119,13 +119,13 @@ double postproc_dejitterer::dejitter(double t) noexcept {
 	const double u1 = samples_since_t0_++,	 // u = np.matrix([[1.0], [samples_seen]])
 		pi0 = P00_ + u1 * P01_,				 // pi = u.T * P
 		pi1 = P01_ + u1 * P11_,				 // ..
-		al = t - (w0_ + u1 * w1_),			 // α = t - w.T * u	# prediction error
+		al = t - (w0_ + u1 * w1_),			 // a = t - w.T * u	# prediction error
 		g_inv = 1 / (lam_ + pi0 + pi1 * u1), // g_inv = 1/(lam_ + pi * u)
 		il_ = 1 / lam_;						 // ...
 	P00_ = il_ * (P00_ - pi0 * pi0 * g_inv); // P = (P - k*pi) / lam_
 	P01_ = il_ * (P01_ - pi0 * pi1 * g_inv); // ...
 	P11_ = il_ * (P11_ - pi1 * pi1 * g_inv); // ...
-	w0_ += al * (P00_ + P01_ * u1);			 // w += k*α
+	w0_ += al * (P00_ + P01_ * u1);			 // w += k*a
 	w1_ += al * (P01_ + P11_ * u1);			 // ...
 	return w0_ + u1 * w1_ + t0_;			 // t = float(w.T * u) + t0
 }
