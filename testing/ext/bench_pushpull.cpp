@@ -10,13 +10,13 @@
 // clazy:excludeall=non-pod-global-static
 
 template <typename T> struct sample_value { static const T val; };
-template <> const char sample_value<char>::val = 122;
+template <> const int8_t sample_value<int8_t>::val = 122;
 template <> const int64_t sample_value<int64_t>::val = 1LL << 62;
 template <> const double sample_value<double>::val = 17324412.552;
 template <> const std::string sample_value<std::string>::val(200, 'a');
 
 
-TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", char, double, std::string) {
+TEMPLATE_TEST_CASE("pushpull", "[basic][throughput]", int8_t, double, std::string) {
 	const std::size_t max_nchan = 128, chunk_size = 128;
 	const std::size_t param_nchan[] = {1, max_nchan};
 	const std::size_t param_inlets[] = {0, 1, 10};
