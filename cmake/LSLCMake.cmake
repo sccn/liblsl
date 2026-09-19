@@ -160,6 +160,7 @@ endfunction()
 # Arguments:
 #   DESTINATION          - Install destination for DLL/so (required for Windows/Linux)
 #   FRAMEWORK_DESTINATION - Install destination for framework (required for macOS GUI apps)
+#   COMPONENT            - Optional installation component
 #
 # Example (GUI app):
 #   LSL_install_liblsl(
@@ -171,7 +172,12 @@ endfunction()
 #   LSL_install_liblsl(DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 # =============================================================================
 function(LSL_install_liblsl)
-    cmake_parse_arguments(ARG "" "DESTINATION;FRAMEWORK_DESTINATION" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "DESTINATION;FRAMEWORK_DESTINATION;COMPONENT" "" ${ARGN})
+
+    set(_component_args "")
+    if(ARG_COMPONENT)
+        set(_component_args COMPONENT "${ARG_COMPONENT}")
+    endif()
 
     # Detect if liblsl is from FetchContent (regular target) or find_package (imported)
     set(_lsl_is_fetched FALSE)
@@ -202,15 +208,15 @@ function(LSL_install_liblsl)
                 DESTINATION \"\${CMAKE_INSTALL_PREFIX}/${_fw_dest}\"
                 USE_SOURCE_PERMISSIONS
             )
-        ")
+        " ${_component_args})
     elseif(WIN32)
         if(NOT ARG_DESTINATION)
             message(FATAL_ERROR "LSL_install_liblsl: DESTINATION required on Windows")
         endif()
         if(_lsl_is_fetched)
-            install(TARGETS lsl RUNTIME DESTINATION "${ARG_DESTINATION}")
+            install(TARGETS lsl RUNTIME DESTINATION "${ARG_DESTINATION}" ${_component_args})
         else()
-            install(IMPORTED_RUNTIME_ARTIFACTS LSL::lsl RUNTIME DESTINATION "${ARG_DESTINATION}")
+            install(IMPORTED_RUNTIME_ARTIFACTS LSL::lsl RUNTIME DESTINATION "${ARG_DESTINATION}" ${_component_args})
         endif()
     else()
         # Linux
@@ -218,9 +224,9 @@ function(LSL_install_liblsl)
             message(FATAL_ERROR "LSL_install_liblsl: DESTINATION required on Linux")
         endif()
         if(_lsl_is_fetched)
-            install(TARGETS lsl LIBRARY DESTINATION "${ARG_DESTINATION}")
+            install(TARGETS lsl LIBRARY DESTINATION "${ARG_DESTINATION}" ${_component_args})
         else()
-            install(IMPORTED_RUNTIME_ARTIFACTS LSL::lsl LIBRARY DESTINATION "${ARG_DESTINATION}")
+            install(IMPORTED_RUNTIME_ARTIFACTS LSL::lsl LIBRARY DESTINATION "${ARG_DESTINATION}" ${_component_args})
         endif()
     endif()
 endfunction()
@@ -233,6 +239,7 @@ endfunction()
 #
 # Arguments:
 #   DESTINATION - Install destination for DLLs (required)
+#   COMPONENT   - Optional installation component
 #
 # Example:
 #   LSL_install_mingw_runtime(DESTINATION ".")
@@ -242,7 +249,12 @@ function(LSL_install_mingw_runtime)
         return()
     endif()
 
-    cmake_parse_arguments(ARG "" "DESTINATION" "" ${ARGN})
+    cmake_parse_arguments(ARG "" "DESTINATION;COMPONENT" "" ${ARGN})
+
+    set(_component_args "")
+    if(ARG_COMPONENT)
+        set(_component_args COMPONENT "${ARG_COMPONENT}")
+    endif()
 
     if(NOT ARG_DESTINATION)
         message(FATAL_ERROR "LSL_install_mingw_runtime: DESTINATION required")
@@ -256,7 +268,7 @@ function(LSL_install_mingw_runtime)
     )
     foreach(_dll ${MINGW_RUNTIME_DLLS})
         if(EXISTS "${_dll}")
-            install(FILES "${_dll}" DESTINATION "${ARG_DESTINATION}")
+            install(FILES "${_dll}" DESTINATION "${ARG_DESTINATION}" ${_component_args})
         endif()
     endforeach()
 endfunction()
