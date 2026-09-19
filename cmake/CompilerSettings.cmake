@@ -40,3 +40,8 @@ endif()
 if(WIN32)
     add_definitions(-D_CRT_SECURE_NO_WARNINGS)
 endif()
+if(MSVC)
+    # Treat source files as UTF-8 regardless of the system code page (otherwise non-ASCII
+    # characters in comments emit C4819 and in string literals break compilation, see #293)
+    add_compile_options(/utf-8)
+endif()

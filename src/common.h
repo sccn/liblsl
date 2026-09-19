@@ -1,6 +1,8 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include "lsl_version.h"
+
 extern "C" {
 #include "api_types.hpp"
 // api_types.h defines LSL_TYPES so it needs to be included before the next header
@@ -45,8 +47,9 @@ extern "C" {
 // * 110 is an alternative protocol that improves throughput, supported by library versions 1.10+
 const int LSL_PROTOCOL_VERSION = 110;
 
-// the library version
-const int LSL_LIBRARY_VERSION = 117;
+// the library version, derived from the project version at configure time
+// (LSL_LIBRARY_VERSION_* come from the generated lsl_version.h)
+const int LSL_LIBRARY_VERSION = (LSL_LIBRARY_VERSION_MAJOR * 100) + LSL_LIBRARY_VERSION_MINOR;
 
 /// size of the lsl_last_error() buffer size
 const int LAST_ERROR_SIZE = 512;

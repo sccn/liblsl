@@ -76,7 +76,7 @@ template <typename T> void cancel_streambuf(T &&task, lsl::cancellable_streambuf
 
 	if (future.wait_for(std::chrono::milliseconds(200)) == std::future_status::ready)
 		FAIL("Thread 1 finished too soon, couldn't test cancellation");
-	MINFO("Thread 0: Closing socket…")
+	MINFO("Thread 0: Closing socket...")
 	sb.cancel();
 	// Double cancel, shouldn't do anything dramatic
 	sb.cancel();
@@ -91,7 +91,7 @@ template <typename T> void cancel_streambuf(T &&task, lsl::cancellable_streambuf
 TEST_CASE("streambuf cancel connect()", "[streambuf][basic][network]") {
 	asio::io_context io_ctx;
 	lsl::cancellable_streambuf sb_connect;
-	INFO("Thread 0: Binding remote socket and keeping it busy…");
+	INFO("Thread 0: Binding remote socket and keeping it busy...");
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ip::tcp::v4());
 	remote.bind(ep);
@@ -138,7 +138,7 @@ TEST_CASE("cancel streambuf reads", "[streambuf][network][!mayfail]") {
 	ip::tcp::endpoint ep(ip::address_v4::loopback(), port++);
 	ip::tcp::acceptor remote(io_ctx, ep, true);
 	remote.listen(1);
-	INFO("Thread 0: Connecting…");
+	INFO("Thread 0: Connecting...");
 	sb_read.connect(ep);
 	INFO("Thread 0: Connected (" << sb_read.error().message() << ')');
 	ip::tcp::socket sock(remote.accept());

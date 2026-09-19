@@ -39,7 +39,7 @@ public:
 				break;
 
 			case asio::error::interrupted:
-				std::cout << "Connect was interrupted…" << std::endl;
+				std::cout << "Connect was interrupted..." << std::endl;
 				break;
 			case asio::error::connection_refused:
 			default: throw std::runtime_error("Connection refused");

@@ -48,7 +48,7 @@ TEST_CASE("sync_outlet_basic", "[sync][basic]") {
 }
 
 TEMPLATE_TEST_CASE(
-	"sync_outlet_datatypes", "[sync][datatransfer]", char, int16_t, int32_t, int64_t, float, double) {
+	"sync_outlet_datatypes", "[sync][datatransfer]", int8_t, int16_t, int32_t, int64_t, float, double) {
 	const int nchannels = 2;
 	const int nsamples = 32;
 	const char *name = SampleType<TestType>::fmt_string();

@@ -29,6 +29,8 @@ set(lslsources
         src/portable_archive/portable_oarchive.hpp
         src/resolver_impl.cpp
         src/resolver_impl.h
+        src/resolve_attempt_tcp.cpp
+        src/resolve_attempt_tcp.h
         src/resolve_attempt_udp.cpp
         src/resolve_attempt_udp.h
         src/sample.cpp

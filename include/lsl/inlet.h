@@ -168,14 +168,24 @@ extern LIBLSL_C_API double lsl_pull_sample_d(lsl_inlet in, double *buffer, int32
 extern LIBLSL_C_API double lsl_pull_sample_l(lsl_inlet in, int64_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_i(lsl_inlet in, int32_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API double lsl_pull_sample_s(lsl_inlet in, int16_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API double lsl_pull_sample_c(lsl_inlet in, char *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API double lsl_pull_sample_c(lsl_inlet in, int8_t *buffer, int32_t buffer_elements, double timeout, int32_t *ec);
+/**
+ * @note If this function returns a nonzero time stamp, call lsl_destroy_string()
+ * for each string in @p buffer.
+ * If no sample is available, this function does not modify @p buffer.
+ */
 extern LIBLSL_C_API double lsl_pull_sample_str(lsl_inlet in, char **buffer, int32_t buffer_elements, double timeout, int32_t *ec);
 ///@}
 
 /** @copydoc lsl_pull_sample_f
  * These strings may contains 0's, therefore the lengths are read into the buffer_lengths array.
  * @param buffer_lengths
- * A pointer to an array that holds the resulting lengths for each returned binary string.*/
+ * A pointer to an array that holds the resulting lengths for each returned binary string.
+ * @note If this function returns a nonzero time stamp, call lsl_destroy_string()
+ * for each string in @p buffer.
+ * If no sample is available, this function does not modify @p buffer or
+ * @p buffer_lengths.
+ */
 extern LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *buffer_lengths, int32_t buffer_elements, double timeout, int32_t *ec);
 
 /**
@@ -233,7 +243,7 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_d(lsl_inlet in, double *data_bu
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_l(lsl_inlet in, int64_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_i(lsl_inlet in, int32_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_s(lsl_inlet in, int16_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_c(lsl_inlet in, char *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
+extern LIBLSL_C_API unsigned long lsl_pull_chunk_c(lsl_inlet in, int8_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 
 ///@}
