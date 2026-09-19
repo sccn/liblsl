@@ -19,10 +19,11 @@ resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protoc
 	const std::vector<udp::endpoint> &targets, const std::string &query, resolver_impl &resolver,
 	double cancel_after)
 	: io_(io), resolver_(resolver), cancel_after_(cancel_after), cancelled_(false),
-	  targets_(targets), query_(query), unicast_socket_(io), broadcast_socket_(io),
-	  multicast_socket_(io), multicast_interfaces(api_config::get_instance()->multicast_interfaces),
-	  recv_socket_(io), cancel_timer_(io) {
-	// open the sockets that we might need
+	  targets_(targets), query_(query),
+	  multicast_interfaces(api_config::get_instance()->multicast_interfaces), recv_socket_(io),
+	  cancel_timer_(io) {
+	// Open the single socket used for BOTH sending queries and receiving replies, so that the
+	// query's source port matches the return port we advertise in it (see header / 1a).
 	recv_socket_.open(protocol);
 	try {
 		bind_port_in_range(recv_socket_, protocol);
@@ -32,20 +33,14 @@ resolve_attempt_udp::resolve_attempt_udp(asio::io_context &io, const udp &protoc
 			"%s",
 			e.what());
 	}
-	unicast_socket_.open(protocol);
-	try {
-		broadcast_socket_.open(protocol);
-		broadcast_socket_.set_option(asio::socket_base::broadcast(true));
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Cannot open UDP broadcast socket for resolves: %s", e.what());
-	}
-	try {
-		multicast_socket_.open(protocol);
-		multicast_socket_.set_option(
-			asio::ip::multicast::hops(api_config::get_instance()->multicast_ttl()));
-	} catch (std::exception &e) {
-		LOG_F(WARNING, "Cannot open UDP multicast socket for resolves: %s", e.what());
-	}
+	// The receive socket must also be able to send to broadcast addresses and to carry the
+	// multicast TTL, since it now sends every flavor of query (unicast / broadcast / multicast).
+	asio::error_code ec;
+	recv_socket_.set_option(asio::socket_base::broadcast(true), ec);
+	if (ec) LOG_F(WARNING, "Cannot enable broadcast on the resolve socket: %s", ec.message().c_str());
+	recv_socket_.set_option(
+		asio::ip::multicast::hops(api_config::get_instance()->multicast_ttl()), ec);
+	if (ec) LOG_F(WARNING, "Cannot set the multicast TTL on the resolve socket: %s", ec.message().c_str());
 
 	// precalc the query id (hash of the query string, as string)
 	query_id_ = std::to_string(std::hash<std::string>()(query));
@@ -87,7 +82,11 @@ void resolve_attempt_udp::begin() {
 }
 
 void resolve_attempt_udp::cancel() {
-	post(io_, [shared_this = shared_from_this()]() { shared_this->do_cancel(); });
+	// the attempt is owned by its pending handler chains; between construction and begin() or
+	// after the last handler has completed it has no shared owner and there is nothing to cancel
+	try {
+		post(io_, [shared_this = shared_from_this()]() { shared_this->do_cancel(); });
+	} catch (const std::bad_weak_ptr &) {}
 }
 
 
@@ -165,22 +164,34 @@ void resolve_attempt_udp::send_next_query(
 		// Mismatching protocols? Skip this round
 		if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
 			next = targets_.end();
-		else
-			multicast_socket_.set_option(mcit->addr.is_v4() ? outbound_interface(mcit->addr.to_v4())
-															: outbound_interface(mcit->ifindex));
+		else {
+			// Select the outbound interface for multicast sends. Use the error_code overload: a
+			// bad/stale interface (VPN utun, AWDL, Hyper-V/VirtualBox adapter, or an address that
+			// changed since enumeration) must NOT throw here. This runs inside an asio completion
+			// handler, so a throw would propagate out of io_->run() - aborting the whole resolve
+			// wave (oneshot) or terminating the process from the background thread (continuous).
+			// On failure just log and carry on: the multicast sends on this pass fall back to the
+			// socket's default interface (and individually no-op on error), while the unicast and
+			// broadcast targets - which don't depend on the outbound interface - still go out.
+			asio::error_code ec;
+			recv_socket_.set_option(mcit->addr.is_v4()
+					? outbound_interface(mcit->addr.to_v4())
+					: outbound_interface(mcit->ifindex),
+				ec);
+			if (ec) {
+				LOG_F(1, "Could not select multicast interface %s for outbound queries: %s",
+					mcit->addr.to_string().c_str(), ec.message().c_str());
+			}
+		}
 	}
 	if (next != targets_.end()) {
 		udp::endpoint ep(*next++);
 		// endpoint matches our active protocol?
 		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
-			// select socket to use
-			udp_socket &sock =
-				(ep.address() == asio::ip::address_v4::broadcast())
-					? broadcast_socket_
-					: (ep.address().is_multicast() ? multicast_socket_ : unicast_socket_);
-			// and send the query over it
+			// Send every query (unicast / broadcast / multicast) from the receive socket so the
+			// datagram source port equals the advertised return port (firewall-friendly; 1a).
 			auto keepalive(shared_from_this());
-			sock.async_send_to(asio::buffer(query_msg_), ep,
+			recv_socket_.async_send_to(asio::buffer(query_msg_), ep,
 				[shared_this = shared_from_this(), next, mcit](err_t err, size_t /*unused*/) {
 					if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
 						err != asio::error::not_connected && err != asio::error::not_socket)
@@ -197,9 +208,6 @@ void resolve_attempt_udp::send_next_query(
 void resolve_attempt_udp::do_cancel() {
 	try {
 		cancelled_ = true;
-		if (unicast_socket_.is_open()) unicast_socket_.close();
-		if (multicast_socket_.is_open()) multicast_socket_.close();
-		if (broadcast_socket_.is_open()) broadcast_socket_.close();
 		if (recv_socket_.is_open()) recv_socket_.close();
 		cancel_timer_.cancel();
 	} catch (std::exception &e) {

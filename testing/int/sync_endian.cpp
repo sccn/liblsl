@@ -267,7 +267,7 @@ template <class T> static void check_sync_swap_roundtrip(uint32_t nchan, int nsa
 			CHECK(std::memcmp(out[bi].data(), &exp, sizeof(double)) == 0);
 			++bi;
 		}
-		// sample payload is reversed PER CHANNEL VALUE, not as one block — this is what the
+		// sample payload is reversed PER CHANNEL VALUE, not as one block - this is what the
 		// old size-based classifier got wrong when sample_bytes happened to equal 8.
 		REQUIRE(out[bi].size() == sample_bytes);
 		for (uint32_t c = 0; c < nchan; ++c) {

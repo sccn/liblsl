@@ -135,6 +135,18 @@ public:
 	const std::vector<ip::address> &multicast_addresses() const { return multicast_addresses_; }
 
 	/**
+	 * @brief The machine-local (loopback/unicast) addresses from multicast.MachineAddresses.
+	 *
+	 * These are a subset of multicast_addresses() but, being unicast, a datagram sent to them
+	 * at the shared multicast_port is delivered to only one of the responder sockets bound there
+	 * (the "unicast lottery" - only one local stream answers, depending on bind order). The
+	 * resolver therefore additionally probes these addresses across the per-stream service-port
+	 * range [base_port, base_port+port_range), where each stream owns a unique socket, so every
+	 * local stream is discoverable regardless of bind order.
+	 */
+	const std::vector<ip::address> &machine_addresses() const { return machine_addresses_; }
+
+	/**
 	 * @brief The address of the local interface on which to listen to multicast traffic.
 	 *
 	 * The default is an empty string, i.e. bind to the default interface(s).
@@ -175,6 +187,17 @@ public:
 	 * Can serve as a fallback if multicast/broadcast communication fails on a given network.
 	 */
 	const std::vector<std::string> &known_peers() const { return known_peers_; }
+
+	/**
+	 * @brief Whether to additionally resolve streams by probing TCP data ports directly.
+	 *
+	 * When enabled, a resolve also connects to every port in the BasePort..BasePort+PortRange
+	 * range on loopback and on each KnownPeer and requests stream info over TCP. Because TCP is a
+	 * symmetric, connection-oriented protocol, this is robust against the stateful-firewall issues
+	 * that can block UDP discovery, but it is VERY slow (one connection attempt per port per host,
+	 * and closed/filtered remote ports cost a full connect timeout each). Disabled by default.
+	 */
+	bool resolve_over_tcp() const { return resolve_over_tcp_; }
 
 	// === tuning parameters ===
 
@@ -281,10 +304,12 @@ private:
 	uint16_t multicast_port_;
 	std::string resolve_scope_;
 	std::vector<ip::address> multicast_addresses_;
+	std::vector<ip::address> machine_addresses_;
 	int multicast_ttl_;
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
 	std::string session_id_;
+	bool resolve_over_tcp_;
 	// tuning parameters
 	int use_protocol_version_;
 	double watchdog_time_threshold_;

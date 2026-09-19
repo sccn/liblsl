@@ -43,6 +43,9 @@ jobs:
 
     steps:
     - uses: actions/checkout@v4
+      with:
+        # Need full history + tags so the version can be derived from the git tag
+        fetch-depth: 0
 
     - name: Install certificates and provisioning profiles
       uses: ./.github/actions/install-apple-certs

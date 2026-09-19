@@ -1,11 +1,14 @@
 #include "resolver_impl.h"
 #include "api_config.h"
+#include "resolve_attempt_tcp.h"
 #include "resolve_attempt_udp.h"
 #include "socket_utils.h"
 #include "stream_info_impl.h"
 #include <asio/io_context.hpp>
 #include <asio/ip/basic_resolver.hpp>
+#include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
+#include <algorithm>
 #include <exception>
 #include <loguru.hpp>
 #include <memory>
@@ -46,12 +49,56 @@ resolver_impl::resolver_impl()
 		} catch (std::exception &) {}
 	}
 
+	// Machine-local addresses (e.g. 127.0.0.1) are multicast targets too, but a unicast datagram
+	// to the shared multicast_port is delivered to only one of the responder sockets bound there
+	// (the "unicast lottery"): only one local stream answers, and which one depends on bind order.
+	// Probe them across the per-stream service-port range as well, where every stream owns a unique
+	// socket, so all local streams are discoverable regardless of bind order.
+	for (const auto &addr : cfg_->machine_addresses()) {
+		for (int p = cfg_->base_port(); p < cfg_->base_port() + cfg_->port_range(); p++)
+			ucast_endpoints_.emplace_back(addr, p);
+	}
+
+	// The same endpoint can be enqueued more than once (e.g. a machine address that also appears in
+	// KnownPeers, or a repeated config entry). Drop duplicates so we don't send identical queries to
+	// the same socket. This is distinct from the UID-based dedup of *results*: two different
+	// endpoints can still return the same stream (e.g. its multicast_port and its service port).
+	auto dedupe = [](std::vector<udp::endpoint> &eps) {
+		std::sort(eps.begin(), eps.end());
+		eps.erase(std::unique(eps.begin(), eps.end()), eps.end());
+	};
+	dedupe(mcast_endpoints_);
+	dedupe(ucast_endpoints_);
+
 	// generate the list of protocols to use
 	if (cfg_->allow_ipv6()) {
 		udp_protocols_.push_back(udp::v6());
 	}
 	if (cfg_->allow_ipv4()) {
 		udp_protocols_.push_back(udp::v4());
+	}
+
+	// build the TCP probe targets (loopback + known peers, each x port range) if enabled
+	if (cfg_->resolve_over_tcp()) {
+		uint16_t base = cfg_->base_port();
+		uint16_t range = cfg_->port_range();
+		LOG_F(WARNING,
+			"lab.ResolveOverTCP is enabled: discovery will also TCP-probe ports %u-%u on loopback "
+			"and on every KnownPeer. This is robust behind firewalls but VERY slow, especially "
+			"across the internet.",
+			base, static_cast<unsigned>(base + range - 1));
+		std::vector<std::string> hosts{"127.0.0.1"};
+		if (cfg_->allow_ipv6()) hosts.emplace_back("::1");
+		for (const auto &peer : cfg_->known_peers()) hosts.push_back(peer);
+		tcp::resolver tcp_resolver(*io_);
+		for (const auto &host : hosts) {
+			try {
+				for (const auto &res : tcp_resolver.resolve(host, std::to_string(base))) {
+					for (uint16_t p = base; p < base + range; p++)
+						tcp_endpoints_.emplace_back(res.endpoint().address(), p);
+				}
+			} catch (std::exception &) {}
+		}
 	}
 }
 
@@ -143,8 +190,20 @@ void resolver_impl::resolve_continuous(const std::string &query, double forget_a
 	expired_ = false;
 	// start a wave of resolve packets
 	next_resolve_wave();
-	// spawn a thread that runs the IO operations
-	background_io_ = std::make_shared<std::thread>([shared_io = io_]() { shared_io->run(); });
+	// spawn a thread that runs the IO operations. Mirror the outlet's IO threads: an exception
+	// escaping an asio completion handler (e.g. a bad multicast interface) must not propagate out
+	// of this background thread and call std::terminate() - log it and keep serving.
+	background_io_ = std::make_shared<std::thread>([shared_io = io_]() {
+		loguru::set_thread_name("resolver_io");
+		while (!shared_io->stopped()) {
+			try {
+				shared_io->run();
+				return;
+			} catch (std::exception &e) {
+				LOG_F(ERROR, "Error during resolver IO processing: %s", e.what());
+			}
+		}
+	});
 	status = resolver_status::running_continuous;
 }
 
@@ -185,6 +244,17 @@ void resolver_impl::next_resolve_wave() {
 			unicast_timer_.async_wait([this](err_t ec) { this->udp_unicast_burst(ec); });
 			// delay the next multicast wave
 			wave_timer_timeout += cfg_->unicast_min_rtt();
+		}
+		// fire a TCP probe burst if enabled and a previous one isn't still in flight
+		if (cfg_->resolve_over_tcp() && !tcp_endpoints_.empty() && tcp_attempt_.expired()) {
+			try {
+				auto attempt = std::make_shared<resolve_attempt_tcp>(
+					*io_, tcp_endpoints_, query_, *this, cfg_->unicast_max_rtt());
+				tcp_attempt_ = attempt;
+				attempt->begin();
+			} catch (std::exception &e) {
+				LOG_F(WARNING, "Could not start a TCP resolve attempt: %s", e.what());
+			}
 		}
 		wave_timer_.expires_after(timeout_sec(wave_timer_timeout));
 		wave_timer_.async_wait([this](err_t err) {
