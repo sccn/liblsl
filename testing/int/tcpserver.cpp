@@ -84,7 +84,7 @@ auto with_read_callback(const char *name, std::function<void(const std::string &
 						 = std::move(fun)
 #endif
 						 ](err_t read_err, std::size_t len) {
-				INFO("Test " << name << "\t– read " << len
+				INFO("Test " << name << "\t- read " << len
 							 << " bytes, outcome: " << read_err.message());
 				if (read_err) REQUIRE(read_err == asio::error::eof);
 				fun(*buf);

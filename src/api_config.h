@@ -139,7 +139,7 @@ public:
 	 *
 	 * These are a subset of multicast_addresses() but, being unicast, a datagram sent to them
 	 * at the shared multicast_port is delivered to only one of the responder sockets bound there
-	 * (the "unicast lottery" — only one local stream answers, depending on bind order). The
+	 * (the "unicast lottery" - only one local stream answers, depending on bind order). The
 	 * resolver therefore additionally probes these addresses across the per-stream service-port
 	 * range [base_port, base_port+port_range), where each stream owns a unique socket, so every
 	 * local stream is discoverable regardless of bind order.

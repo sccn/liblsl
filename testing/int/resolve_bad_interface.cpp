@@ -9,7 +9,7 @@
 // outbound_interface(...)). An interface address that cannot be used for IP_MULTICAST_IF (a stale
 // or removed adapter, a VPN utun, AWDL, a Hyper-V/VirtualBox adapter, or simply an address that is
 // not local) makes that call fail. Pre-fix it used the throwing overload, and because the call runs
-// inside an asio completion handler the exception propagated out of io_->run() — aborting the whole
+// inside an asio completion handler the exception propagated out of io_->run() - aborting the whole
 // resolve wave (oneshot) or calling std::terminate() from the continuous resolver's background
 // thread. Here 203.0.113.1 is a TEST-NET-3 address (RFC 5737) that is never assignable locally.
 //

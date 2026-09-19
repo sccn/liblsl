@@ -8,7 +8,7 @@
 //
 // With ResolveScope=machine the only discovery target is the machine address (127.0.0.1) at the
 // shared multicast_port. That port is unicast, not multicast, so a query datagram is delivered to
-// exactly one of the responder sockets bound there — only one outlet answers, and which one
+// exactly one of the responder sockets bound there - only one outlet answers, and which one
 // depends on bind order. Several outlets are therefore created, but pre-fix only one is found.
 //
 // The fix additionally probes the machine addresses across the per-stream service-port range,

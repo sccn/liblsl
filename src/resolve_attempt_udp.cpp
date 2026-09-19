@@ -164,11 +164,11 @@ void resolve_attempt_udp::send_next_query(
 			// Select the outbound interface for multicast sends. Use the error_code overload: a
 			// bad/stale interface (VPN utun, AWDL, Hyper-V/VirtualBox adapter, or an address that
 			// changed since enumeration) must NOT throw here. This runs inside an asio completion
-			// handler, so a throw would propagate out of io_->run() — aborting the whole resolve
+			// handler, so a throw would propagate out of io_->run() - aborting the whole resolve
 			// wave (oneshot) or terminating the process from the background thread (continuous).
 			// On failure just log and carry on: the multicast sends on this pass fall back to the
 			// socket's default interface (and individually no-op on error), while the unicast and
-			// broadcast targets — which don't depend on the outbound interface — still go out.
+			// broadcast targets - which don't depend on the outbound interface - still go out.
 			asio::error_code ec;
 			recv_socket_.set_option(mcit->addr.is_v4()
 					? outbound_interface(mcit->addr.to_v4())
