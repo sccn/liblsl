@@ -104,9 +104,10 @@ public:
 	 *
 	 * This either blocks until it succeeds or declares the connection as lost (if recovery is
 	 * disabled), and throws a lost error.
+	 * An optional cancellation flag stops waiting without declaring the connection lost.
 	 * Only call this when the connection is found to have broken down (e.g., socket error).
 	 */
-	void try_recover_from_error();
+	void try_recover_from_error(const std::atomic<bool> *cancel = nullptr);
 
 
 	// === client status info ===
@@ -158,7 +159,7 @@ private:
 	void watchdog_thread();
 
 	/// A (potentially speculative) resolve-and-recover operation.
-	void try_recover();
+	void try_recover(const std::atomic<bool> *cancel = nullptr);
 
 	/// Sets the endpoints from a stream info considering a previous connection
 	bool set_protocols(const stream_info_impl &info, bool prefer_v6);

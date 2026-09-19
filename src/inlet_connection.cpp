@@ -160,10 +160,20 @@ double inlet_connection::current_srate() {
 
 
 // === connection recovery logic ===
-void inlet_connection::try_recover() {
+void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 	if (recovery_enabled_) {
 		try {
-			std::lock_guard<std::mutex> lock(recovery_mut_);
+			std::unique_lock<std::mutex> lock(recovery_mut_, std::defer_lock);
+			if (cancel) {
+				// Another inlet component may be resolving indefinitely. Closing the data
+				// stream must not wait for that component to recover.
+				while (!lock.try_lock()) {
+					if (cancel->load() || shutdown_) return;
+					std::this_thread::sleep_for(std::chrono::milliseconds(10));
+				}
+				if (cancel->load()) return;
+			} else
+				lock.lock();
 			// first create the query string based on the known stream information
 			std::ostringstream query;
 			{
@@ -191,7 +201,8 @@ void inlet_connection::try_recover() {
 				// issue the resolve (blocks until it is either cancelled or got at least one
 				// matching streaminfo and has waited for a certain timeout)
 				std::vector<stream_info_impl> infos =
-					resolver_.resolve_oneshot(query.str(), 1, FOREVER, attempt == 0 ? 1.0 : 5.0);
+					resolver_.resolve_oneshot(query.str(), 1, FOREVER, attempt == 0 ? 1.0 : 5.0, cancel);
+				if (cancel && cancel->load()) return;
 				if (!infos.empty()) {
 					// got a result
 					unique_lock_t lock_recover_host_info(host_info_mut_);
@@ -290,8 +301,8 @@ void inlet_connection::watchdog_thread() {
 	}
 }
 
-void inlet_connection::try_recover_from_error() {
-	if (!shutdown_) {
+void inlet_connection::try_recover_from_error(const std::atomic<bool> *cancel) {
+	if (!shutdown_ && !(cancel && cancel->load())) {
 		if (!recovery_enabled_) {
 			// if the stream is irrecoverable it is now lost,
 			// so we need to notify the other inlet components
@@ -307,7 +318,7 @@ void inlet_connection::try_recover_from_error() {
 			throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
 							 "re-resolve the source and re-create the inlet.");
 		}
-		try_recover();
+		try_recover(cancel);
 	}
 }
 

@@ -53,6 +53,7 @@ data_receiver::~data_receiver() {
 // === external access ===
 
 void data_receiver::open_stream(double timeout) {
+	std::unique_lock<std::mutex> lifecycle_lock(lifecycle_mut_);
 	closing_stream_ = false;
 	std::unique_lock<std::mutex> lock(connected_mut_);
 	auto connection_completed = [this]() { return connected_ || conn_.lost(); };
@@ -62,6 +63,7 @@ void data_receiver::open_stream(double timeout) {
 			data_thread_ = std::thread(&data_receiver::data_thread, this);
 			check_thread_start_ = false;
 		}
+		lifecycle_lock.unlock();
 		// wait until the connection attempt completes (or we time out)
 		if (timeout >= FOREVER)
 			connected_upd_.wait(lock, connection_completed);
@@ -75,9 +77,17 @@ void data_receiver::open_stream(double timeout) {
 }
 
 void data_receiver::close_stream() {
-	check_thread_start_ = true;
+	std::lock_guard<std::mutex> lifecycle_lock(lifecycle_mut_);
 	closing_stream_ = true;
 	cancel_all_registered();
+	if (data_thread_.joinable()) data_thread_.join();
+	{
+		std::lock_guard<std::mutex> lock(connected_mut_);
+		connected_ = false;
+	}
+	// The producer has stopped, so no in-flight sample can repopulate the queue.
+	sample_queue_.flush();
+	check_thread_start_ = true;
 }
 
 sample_p lsl::data_receiver::try_get_next_sample(double timeout) {
@@ -85,9 +95,13 @@ sample_p lsl::data_receiver::try_get_next_sample(double timeout) {
 		throw lost_error("The stream read by this outlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
 	// start data thread implicitly if necessary
-	if (check_thread_start_ && !data_thread_.joinable()) {
-		data_thread_ = std::thread(&data_receiver::data_thread, this);
-		check_thread_start_ = false;
+	if (check_thread_start_) {
+		std::lock_guard<std::mutex> lifecycle_lock(lifecycle_mut_);
+		if (check_thread_start_ && !data_thread_.joinable()) {
+			closing_stream_ = false;
+			data_thread_ = std::thread(&data_receiver::data_thread, this);
+			check_thread_start_ = false;
+		}
 	}
 	// get the sample with timeout
 	if (sample_p s = sample_queue_.pop_sample(timeout))
@@ -148,6 +162,8 @@ void data_receiver::data_thread() {
 				cancellable_streambuf buffer;
 				buffer.register_at(&conn_);
 				buffer.register_at(this);
+				// Close may have cancelled before this buffer was registered.
+				if (closing_stream_) break;
 				std::iostream server_stream(&buffer);
 				std::unique_ptr<eos::portable_iarchive> inarch;
 				// connect to endpoint
@@ -330,20 +346,24 @@ void data_receiver::data_thread() {
 				}
 			} catch (err_t) {
 				// connection-level error: closed, reset, refused, etc.
-				conn_.try_recover_from_error();
+				if (closing_stream_) break;
+				conn_.try_recover_from_error(&closing_stream_);
 			} catch (lost_error &) {
 				// another type of connection error
-				conn_.try_recover_from_error();
+				if (closing_stream_) break;
+				conn_.try_recover_from_error(&closing_stream_);
 			} catch (shutdown_error &) {
 				// termination due to connection shutdown
 				throw lost_error("The inlet has been disengaged.");
 			} catch (std::exception &e) {
 				// some perhaps more serious transmission or parsing error (could be indicative of a
 				// protocol issue)
+				if (closing_stream_) break;
 				if (!conn_.shutdown())
 					LOG_F(ERROR, "Stream transmission broke off (%s); re-connecting...", e.what());
-				conn_.try_recover_from_error();
+				conn_.try_recover_from_error(&closing_stream_);
 			}
+			if (closing_stream_) break;
 			// wait for a few msec so as to not spam the provider with reconnects
 			std::this_thread::sleep_for(std::chrono::milliseconds(500));
 		}
