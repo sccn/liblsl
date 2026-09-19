@@ -5,7 +5,7 @@
 # Creates an XCFramework from macOS, iOS, and iOS Simulator frameworks.
 #
 # Usage:
-#   ./scripts/apple_create_xcframework.sh --macos <path> --ios <path> --ios-simulator <path> [--output <dir>]
+#   ./scripts/apple_create_xcframework.sh --macos <path> --ios <path> --ios-simulator <path> [--output <dir>] [--skip-signing]
 #
 # Environment Variables:
 #   APPLE_CODE_SIGN_IDENTITY_APP - Code signing identity (default: "Developer ID Application")
@@ -28,15 +28,13 @@
 
 set -e
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-
 # Default configuration
 SIGN_IDENTITY="${APPLE_CODE_SIGN_IDENTITY_APP:-Developer ID Application}"
 OUTPUT_DIR="."
 MACOS_FRAMEWORK=""
 IOS_FRAMEWORK=""
 IOS_SIM_FRAMEWORK=""
+SKIP_SIGNING=false
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -57,12 +55,16 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_DIR="$2"
             shift 2
             ;;
+        --skip-signing)
+            SKIP_SIGNING=true
+            shift
+            ;;
         --identity)
             SIGN_IDENTITY="$2"
             shift 2
             ;;
         -h|--help)
-            echo "Usage: $0 --macos <path> --ios <path> --ios-simulator <path> [--output <dir>]"
+            echo "Usage: $0 --macos <path> --ios <path> --ios-simulator <path> [--output <dir>] [--skip-signing]"
             echo ""
             echo "Options:"
             echo "  --macos <path>         Path to macOS framework"
@@ -70,6 +72,7 @@ while [[ $# -gt 0 ]]; do
             echo "  --ios-simulator <path> Path to iOS simulator framework"
             echo "  --output <dir>         Output directory (default: current directory)"
             echo "  --identity <name>      Override code signing identity"
+            echo "  --skip-signing         Create an unsigned archive for CI validation"
             echo ""
             echo "Environment Variables:"
             echo "  APPLE_CODE_SIGN_IDENTITY_APP - Code signing identity"
@@ -97,7 +100,7 @@ if [[ -n "$MACOS_FRAMEWORK" ]]; then
         exit 1
     fi
     FRAMEWORK_ARGS+=("-framework" "$MACOS_FRAMEWORK")
-    ((FRAMEWORK_COUNT++))
+    ((++FRAMEWORK_COUNT))
 fi
 
 if [[ -n "$IOS_FRAMEWORK" ]]; then
@@ -106,7 +109,7 @@ if [[ -n "$IOS_FRAMEWORK" ]]; then
         exit 1
     fi
     FRAMEWORK_ARGS+=("-framework" "$IOS_FRAMEWORK")
-    ((FRAMEWORK_COUNT++))
+    ((++FRAMEWORK_COUNT))
 fi
 
 if [[ -n "$IOS_SIM_FRAMEWORK" ]]; then
@@ -115,7 +118,7 @@ if [[ -n "$IOS_SIM_FRAMEWORK" ]]; then
         exit 1
     fi
     FRAMEWORK_ARGS+=("-framework" "$IOS_SIM_FRAMEWORK")
-    ((FRAMEWORK_COUNT++))
+    ((++FRAMEWORK_COUNT))
 fi
 
 if [[ $FRAMEWORK_COUNT -lt 2 ]]; then
@@ -171,15 +174,18 @@ xcodebuild -create-xcframework \
     "${FRAMEWORK_ARGS[@]}" \
     -output "$XCFRAMEWORK_PATH"
 
-# Sign the XCFramework
-echo ""
-echo "Signing XCFramework..."
-codesign --force --deep --sign "$SIGN_IDENTITY" "$XCFRAMEWORK_PATH"
+# CI validates framework assembly without needing certificates or a development team.
+if [[ "$SKIP_SIGNING" == false ]]; then
+    echo ""
+    echo "Signing XCFramework..."
+    codesign --force --deep --sign "$SIGN_IDENTITY" "$XCFRAMEWORK_PATH"
 
-# Verify signature
-echo ""
-echo "Verifying XCFramework signature..."
-codesign --verify --verbose --deep --strict "$XCFRAMEWORK_PATH"
+    echo ""
+    echo "Verifying XCFramework signature..."
+    codesign --verify --verbose --deep --strict "$XCFRAMEWORK_PATH"
+else
+    echo "Skipping XCFramework signing (CI validation artifact)."
+fi
 
 # Create zip archive
 echo ""
