@@ -1,4 +1,5 @@
 #include "legacy_abi.h"
+#include "../api_config.h"
 #include "../common.h"
 #include "../resolver_impl.h"
 #include "../stream_info_impl.h"
