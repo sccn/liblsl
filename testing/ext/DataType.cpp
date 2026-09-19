@@ -60,6 +60,26 @@ TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
 		FAIL("Sent large string data doesn't match received data");
 }
 
+TEST_CASE("string pull timeout preserves output", "[datatransfer][string]") {
+	constexpr std::size_t num_channels = 2;
+	auto sp = create_streampair(lsl::stream_info(
+		"string_timeout", "DataType", num_channels, lsl::IRREGULAR_RATE, lsl::cf_string, "string_timeout"));
+	char sentinel;
+	char *values[num_channels] = {&sentinel, &sentinel};
+	uint32_t lengths[num_channels] = {1, 1};
+	int32_t ec = lsl_no_error;
+
+	CHECK(lsl_pull_sample_str(sp.in_.handle().get(), values, num_channels, 0.0, &ec) == 0.0);
+	CHECK(values[0] == &sentinel);
+	CHECK(values[1] == &sentinel);
+	CHECK(lsl_pull_sample_buf(
+			  sp.in_.handle().get(), values, lengths, num_channels, 0.0, &ec) == 0.0);
+	CHECK(values[0] == &sentinel);
+	CHECK(values[1] == &sentinel);
+	CHECK(lengths[0] == 1);
+	CHECK(lengths[1] == 1);
+}
+
 TEST_CASE("TypeConversion", "[datatransfer][types][basic]") {
 	Streampair sp{create_streampair(
 		lsl::stream_info("TypeConversion", "int2str2int", 1, 1, lsl::cf_string, "TypeConversion"))};

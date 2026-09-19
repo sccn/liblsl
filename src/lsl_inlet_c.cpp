@@ -124,6 +124,7 @@ LIBLSL_C_API double lsl_pull_sample_str(
 		// capture output in a temporary string buffer
 		std::vector<std::string> tmp;
 		double result = in->pull_sample(tmp, timeout);
+		if (result == 0.0) return result;
 		if (buffer_elements < (int)tmp.size())
 			throw std::range_error(
 				"The provided buffer has fewer elements than the stream's number of channels.");
@@ -150,6 +151,7 @@ LIBLSL_C_API double lsl_pull_sample_buf(lsl_inlet in, char **buffer, uint32_t *b
 		// capture output in a temporary string buffer
 		std::vector<std::string> tmp;
 		double result = in->pull_sample(tmp, timeout);
+		if (result == 0.0) return result;
 		if (buffer_elements < (int)tmp.size())
 			throw std::range_error(
 				"The provided buffer has fewer elements than the stream's number of channels.");
