@@ -93,6 +93,11 @@ public:
 		data.resize(conn_.type_info().channel_count());
 		return pull_sample(data.data(), (int32_t)data.size(), timeout);
 	}
+	// Preserve the legacy C++ char overloads; int8 channels always use signed values.
+	double pull_sample(std::vector<char> &data, double timeout = FOREVER) {
+		data.resize(conn_.type_info().channel_count());
+		return pull_sample(reinterpret_cast<int8_t *>(data.data()), (int32_t)data.size(), timeout);
+	}
 	double pull_sample(std::vector<std::string> &data, double timeout = FOREVER) {
 		data.resize(conn_.type_info().channel_count());
 		return pull_sample(data.data(), (int32_t)data.size(), timeout);
@@ -129,6 +134,9 @@ public:
 	}
 	double pull_sample(int8_t *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		return postprocess(data_receiver_.pull_sample_typed(buffer, buffer_elements, timeout));
+	}
+	double pull_sample(char *buffer, int32_t buffer_elements, double timeout = FOREVER) {
+		return pull_sample(reinterpret_cast<int8_t *>(buffer), buffer_elements, timeout);
 	}
 	double pull_sample(std::string *buffer, int32_t buffer_elements, double timeout = FOREVER) {
 		return postprocess(data_receiver_.pull_sample_typed(buffer, buffer_elements, timeout));

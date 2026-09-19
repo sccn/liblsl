@@ -4,6 +4,7 @@
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <cstdint>
+#include <cstring>
 #include <lsl_cpp.h>
 #include <thread>
 
@@ -38,6 +39,38 @@ TEMPLATE_TEST_CASE(
 		CHECK(received_data[1] == Catch::Approx(sent_data[1]));
 		sent_data[0] = static_cast<TestType>(static_cast<int64_t>(sent_data[0]) << 1);
 	}
+}
+
+// Conversion to a wider stream type exposes accidental unsigned-char interpretation.
+TEST_CASE("int8 conversions preserve negative values", "[datatransfer][int8][basic]") {
+	auto sp = create_streampair(lsl::stream_info(
+		"signed_int8", "DataType", 4, lsl::IRREGULAR_RATE, lsl::cf_int32, "signed_int8"));
+	const int8_t sent[] = {-128, -1, 0, 127};
+	const auto outlet = sp.out_.handle().get();
+	const auto inlet = sp.in_.handle().get();
+
+	REQUIRE(lsl_push_sample_c(outlet, sent) == lsl_no_error);
+	int32_t received[4]{};
+	REQUIRE(sp.in_.pull_sample(received, 4, 2.0) != 0.0);
+	for (int i = 0; i < 4; ++i) CHECK(received[i] == sent[i]);
+
+	// Also cover C pull conversion from a wider stream type into signed bytes.
+	sp.out_.push_sample(received);
+	int8_t bytes[4]{};
+	int32_t ec = lsl_no_error;
+	REQUIRE(lsl_pull_sample_c(inlet, bytes, 4, 2.0, &ec) != 0.0);
+	CHECK(ec == lsl_no_error);
+	for (int i = 0; i < 4; ++i) CHECK(bytes[i] == sent[i]);
+
+	// Existing C++ char callers keep their overloads and signed-byte semantics.
+	std::vector<char> chars(4);
+	std::memcpy(chars.data(), sent, sizeof(sent));
+	sp.out_.push_sample(chars);
+	REQUIRE(sp.in_.pull_sample(received, 4, 2.0) != 0.0);
+	for (int i = 0; i < 4; ++i) CHECK(received[i] == sent[i]);
+	sp.out_.push_sample(received);
+	REQUIRE(sp.in_.pull_sample(chars, 2.0) != 0.0);
+	CHECK(std::memcmp(chars.data(), sent, sizeof(sent)) == 0);
 }
 
 TEST_CASE("data datatransfer", "[datatransfer][multi][string]") {
