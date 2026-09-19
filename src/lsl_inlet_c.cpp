@@ -36,6 +36,7 @@ LIBLSL_C_API void lsl_destroy_inlet(lsl_inlet in) {
 }
 
 LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout, int32_t *ec) {
+	if (ec) *ec = lsl_no_error;
 	try {
 		return new stream_info_impl(in->info(timeout));
 	}

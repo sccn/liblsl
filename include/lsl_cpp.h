@@ -289,6 +289,15 @@ public:
 	std::string uid() const { return lsl_get_uid(obj.get()); }
 
 	/**
+	 * Reset the unique ID of the stream to a new random value.
+	 *
+	 * This can be used to assign a UID to a stream_info that does not yet have one (e.g., one
+	 * constructed locally and not obtained from an inlet).
+	 * @return The new UID.
+	 */
+	std::string reset_uid() { return lsl_reset_uid(obj.get()); }
+
+	/**
 	 * Session ID for the given stream.
 	 *
 	 * The session id is an optional human-assigned identifier of the recording session.
@@ -400,7 +409,9 @@ public:
 		lsl_transport_options_t flags = transp_default)
 		: channel_count(info.channel_count()), sample_rate(info.nominal_srate()),
 		  obj(lsl_create_outlet_ex(info.handle().get(), chunk_size, max_buffered, flags),
-			  &lsl_destroy_outlet) {}
+			  &lsl_destroy_outlet) {
+		if (obj == nullptr) throw std::invalid_argument(lsl_last_error());
+	}
 
 	// ========================================
 	// === Pushing a sample into the outlet ===
