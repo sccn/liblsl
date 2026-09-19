@@ -544,10 +544,11 @@ void client_session::handle_read_query_outcome(err_t err) {
 		auto serv = serv_.lock();
 		if (!serv) return;
 		if (serv->info_->matches_query(query)) {
-			// matches: reply (otherwise just close the stream)
+			// matches: reply (otherwise just close the stream). Keep the session (and thus the
+			// socket) alive until the shortinfo has been sent; the session is then destroyed,
+			// closing the socket so the client sees EOF and knows the reply is complete.
 			async_write(sock_, asio::buffer(serv->shortinfo_msg_),
-				[serv](err_t /*unused*/, std::size_t /*unused*/) {
-					/* keep the tcp_server alive until the shortinfo is sent completely*/
+				[shared_this = shared_from_this(), serv](err_t /*unused*/, std::size_t /*unused*/) {
 				});
 		} else {
 			DLOG_F(INFO, "%p got a shortinfo query response for the wrong query", this);

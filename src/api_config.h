@@ -176,6 +176,17 @@ public:
 	 */
 	const std::vector<std::string> &known_peers() const { return known_peers_; }
 
+	/**
+	 * @brief Whether to additionally resolve streams by probing TCP data ports directly.
+	 *
+	 * When enabled, a resolve also connects to every port in the BasePort..BasePort+PortRange
+	 * range on loopback and on each KnownPeer and requests stream info over TCP. Because TCP is a
+	 * symmetric, connection-oriented protocol, this is robust against the stateful-firewall issues
+	 * that can block UDP discovery, but it is VERY slow (one connection attempt per port per host,
+	 * and closed/filtered remote ports cost a full connect timeout each). Disabled by default.
+	 */
+	bool resolve_over_tcp() const { return resolve_over_tcp_; }
+
 	// === tuning parameters ===
 
 	/// The network protocol version to use.
@@ -285,6 +296,7 @@ private:
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
 	std::string session_id_;
+	bool resolve_over_tcp_;
 	// tuning parameters
 	int use_protocol_version_;
 	double watchdog_time_threshold_;
