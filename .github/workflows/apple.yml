@@ -11,9 +11,8 @@ on:
       - '!docs/**'
       - '!.github/**'
       - '.github/workflows/apple.yml'
+      - '.github/workflows/apple-release.yml'
   pull_request:
-  release:
-    types: ['created']
   workflow_dispatch:
     inputs:
       cmakeextra:
@@ -24,6 +23,9 @@ on:
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 defaults:
   run:
@@ -47,27 +49,23 @@ jobs:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
 
-    - name: Install certificates and provisioning profiles
-      uses: ./.github/actions/install-apple-certs
-      with:
-        MACOS_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
-        MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-
+    # These are validation artifacts, not signed distribution builds. With signing
+    # disabled, Xcode needs neither certificates nor an APPLE_DEVELOPMENT_TEAM.
     - name: Configure CMake
-      env:
-          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
       run: |
            cmake --version
            cmake -S . -B build \
                 -DCMAKE_BUILD_TYPE=Release \
-                -DCMAKE_INSTALL_PREFIX=${PWD}/install \
-                -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
+                -DCMAKE_INSTALL_PREFIX="${PWD}/install" \
+                -DCPACK_PACKAGE_DIRECTORY="${PWD}/package" \
                 -DLSL_FRAMEWORK=ON \
+                -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO \
+                -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_REQUIRED=NO \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
                 ${{ matrix.config.cmake_extra }} \
                 ${{ github.event.inputs.cmakeextra }}
-           echo ${PWD}
+           pwd
 
     - name: make
       run: cmake --build build --config Release -j
@@ -80,18 +78,13 @@ jobs:
       run: |
           # Test that the in-tree install was successful by building the examples
           cmake -S examples -B examples/build \
-            -DLSL_INSTALL_ROOT=${PWD}/install \
+            -DLSL_INSTALL_ROOT="${PWD}/install" \
             -DCMAKE_INSTALL_PREFIX=examples/build/install \
             -DLSL_COMFY_DEFAULTS=ON \
             ${{ matrix.config.cmake_extra }} \
             ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j
           ./examples/build/install/bin/HandleMetaData
-
-    - name: Codesign Framework
-      run: |
-          ./scripts/apple_codesign.sh install/Frameworks/lsl.framework \
-            --platform ${{ matrix.config.platform }}
 
     # run internal tests
     - name: unit tests
@@ -101,17 +94,6 @@ jobs:
         install/bin/lsl_test_internal --order rand --wait-for-keypress never --durations yes
         install/bin/lsl_test_exported --order rand --wait-for-keypress never --durations yes
       timeout-minutes: 10
-
-    - name: Package and Notarize macOS Installer
-      if: matrix.config.name == 'macOS-latest'
-      env:
-          APPLE_DEVELOPMENT_TEAM: ${{ secrets.PROD_MACOS_NOTARIZATION_TEAM_ID }}
-          APPLE_NOTARIZE_USERNAME: ${{ secrets.PROD_MACOS_NOTARIZATION_APPLE_ID }}
-          APPLE_NOTARIZE_PASSWORD: ${{ secrets.PROD_MACOS_NOTARIZATION_PWD }}
-      run: |
-          ./scripts/apple_package_notarize.sh install/Frameworks/lsl.framework \
-            --notarize \
-            --output package
 
     - name: upload dump
       if: failure()
@@ -126,80 +108,41 @@ jobs:
         zip -ry lsl.framework.zip lsl.framework
         cd ../..
 
-    - name: Upload macOS Package and Framework
-      if: matrix.config.name == 'macOS-latest'
+    - name: Upload unsigned framework
       uses: actions/upload-artifact@v4
       with:
-        name: build-macOS-latest
-        path: |
-          package/*.pkg
-          install/Frameworks/lsl.framework.zip
-
-    - name: Upload iOS Framework
-      if: matrix.config.name == 'iOS'
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-iOS
+        name: unsigned-${{ matrix.config.platform }}
         path: install/Frameworks/lsl.framework.zip
+        if-no-files-found: error
 
-    - name: Upload iOS Simulator Framework
-      if: matrix.config.name == 'iOS Simulator'
-      uses: actions/upload-artifact@v4
-      with:
-        name: build-iOS-Simulator
-        path: install/Frameworks/lsl.framework.zip
-
-  xcframework_and_deploy:
-    name: XCFramework and Deploy
+  xcframework:
+    name: Unsigned XCFramework
     needs: build
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
-          name: build-macOS-latest
-          path: build-macOS-latest
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-iOS
-          path: build-iOS
-      - uses: actions/download-artifact@v4
-        with:
-          name: build-iOS-Simulator
-          path: build-iOS-Simulator
+          pattern: unsigned-*
+          path: frameworks
 
-      - name: Unzip Frameworks
+      - name: Unzip frameworks
         run: |
-          unzip build-macOS-latest/install/Frameworks/lsl.framework.zip -d build-macOS-latest/Frameworks
-          unzip build-iOS/lsl.framework.zip -d build-iOS/Frameworks
-          unzip build-iOS-Simulator/lsl.framework.zip -d build-iOS-Simulator/Frameworks
+          for platform in macos ios ios-simulator; do
+            unzip "frameworks/unsigned-$platform/lsl.framework.zip" -d "frameworks/$platform"
+          done
 
-      - name: Install certificates and provisioning profiles
-        uses: ./.github/actions/install-apple-certs
-        with:
-            MACOS_CERTIFICATE: ${{ secrets.PROD_MACOS_CERTIFICATE }}
-            MACOS_CERTIFICATE_PWD: ${{ secrets.PROD_MACOS_CERTIFICATE_PWD }}
-
-      - name: Create and Sign XCFramework
+      - name: Create unsigned XCFramework
         run: |
           ./scripts/apple_create_xcframework.sh \
-            --macos build-macOS-latest/Frameworks/lsl.framework \
-            --ios build-iOS/Frameworks/lsl.framework \
-            --ios-simulator build-iOS-Simulator/Frameworks/lsl.framework \
-            --output .
+            --macos frameworks/macos/lsl.framework \
+            --ios frameworks/ios/lsl.framework \
+            --ios-simulator frameworks/ios-simulator/lsl.framework \
+            --skip-signing \
+            --output package
 
-      - name: upload artifacts
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
-          name: mac-packages
-          path: |
-            lsl.xcframework.*.zip
-            build-macOS-latest/package/
-
-      - name: Upload to release
-        if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
-        with:
-          files: |
-            lsl.xcframework.*.zip
-            build-macOS-latest/package/*.*
+          name: unsigned-xcframework
+          path: package/lsl.xcframework.*.zip
+          if-no-files-found: error
