@@ -109,6 +109,17 @@ add_executable(lsl_test_runtime_config int/runtime_config.cpp)
 target_link_libraries(lsl_test_runtime_config PRIVATE lslobj lslboost common catch_main)
 target_compile_definitions(lsl_test_runtime_config PRIVATE LIBLSL_EXPORTS)
 
+# resolve_bad_interface test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_resolve_bad_interface int/resolve_bad_interface.cpp)
+target_link_libraries(lsl_test_resolve_bad_interface PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_resolve_bad_interface PRIVATE LIBLSL_EXPORTS)
+# Needs pugixml headers (resolver_impl.h -> stream_info_impl.h includes pugixml)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_resolve_bad_interface PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_resolve_bad_interface PRIVATE pugixml::pugixml)
+endif()
+
 # resolve_machine test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_machine int/resolve_machine.cpp)
 target_link_libraries(lsl_test_resolve_machine PRIVATE lslobj lslboost common catch_main)
@@ -157,7 +168,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	if(LSL_INSTALL)
