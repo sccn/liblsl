@@ -159,50 +159,60 @@ void resolve_attempt_udp::handle_receive_outcome(err_t err, std::size_t len) {
 void resolve_attempt_udp::send_next_query(
 	endpoint_list::const_iterator next, mcast_interface_list::const_iterator mcit) {
 	if (cancelled_ || mcit == multicast_interfaces.end()) return;
-	auto proto = recv_socket_.local_endpoint().protocol();
-	if (next == targets_.begin()) {
-		// Mismatching protocols? Skip this round
-		if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
-			next = targets_.end();
-		else {
-			// Select the outbound interface for multicast sends. Use the error_code overload: a
-			// bad/stale interface (VPN utun, AWDL, Hyper-V/VirtualBox adapter, or an address that
-			// changed since enumeration) must NOT throw here. This runs inside an asio completion
-			// handler, so a throw would propagate out of io_->run() - aborting the whole resolve
-			// wave (oneshot) or terminating the process from the background thread (continuous).
-			// On failure just log and carry on: the multicast sends on this pass fall back to the
-			// socket's default interface (and individually no-op on error), while the unicast and
-			// broadcast targets - which don't depend on the outbound interface - still go out.
-			asio::error_code ec;
-			recv_socket_.set_option(mcit->addr.is_v4()
-					? outbound_interface(mcit->addr.to_v4())
-					: outbound_interface(mcit->ifindex),
-				ec);
-			if (ec) {
-				LOG_F(1, "Could not select multicast interface %s for outbound queries: %s",
-					mcit->addr.to_string().c_str(), ec.message().c_str());
+	const auto proto = recv_socket_.local_endpoint().protocol();
+
+	while (true) {
+		if (cancelled_ || mcit == multicast_interfaces.end()) return;
+
+		if (next == targets_.begin()) {
+			// Mismatching protocols? Skip this round
+			if (mcit->addr.is_v4() != (proto == asio::ip::udp::v4()))
+				next = targets_.end();
+			else {
+				// Select the outbound interface for multicast sends. Use the error_code overload: a
+				// bad/stale interface (VPN utun, AWDL, Hyper-V/VirtualBox adapter, or an address that
+				// changed since enumeration) must NOT throw here. This runs inside an asio completion
+				// handler, so a throw would propagate out of io_->run() - aborting the whole resolve
+				// wave (oneshot) or terminating the process from the background thread (continuous).
+				// On failure just log and carry on: the multicast sends on this pass fall back to the
+				// socket's default interface (and individually no-op on error), while the unicast and
+				// broadcast targets - which don't depend on the outbound interface - still go out.
+				asio::error_code ec;
+				recv_socket_.set_option(mcit->addr.is_v4()
+						? outbound_interface(mcit->addr.to_v4())
+						: outbound_interface(mcit->ifindex),
+					ec);
+				if (ec) {
+					LOG_F(1, "Could not select multicast interface %s for outbound queries: %s",
+						mcit->addr.to_string().c_str(), ec.message().c_str());
+				}
 			}
 		}
-	}
-	if (next != targets_.end()) {
+
+		if (next == targets_.end()) {
+			// Restart from the next interface
+			next = targets_.begin();
+			++mcit;
+			continue;
+		}
+
 		udp::endpoint ep(*next++);
 		// endpoint matches our active protocol?
-		if (ep.protocol() == recv_socket_.local_endpoint().protocol()) {
-			// Send every query (unicast / broadcast / multicast) from the receive socket so the
-			// datagram source port equals the advertised return port (firewall-friendly; 1a).
-			auto keepalive(shared_from_this());
-			recv_socket_.async_send_to(asio::buffer(query_msg_), ep,
-				[shared_this = shared_from_this(), next, mcit](err_t err, size_t /*unused*/) {
-					if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
-						err != asio::error::not_connected && err != asio::error::not_socket)
-						shared_this->send_next_query(next, mcit);
-				});
-		} else
+		if (ep.protocol() != proto)
 			// otherwise just go directly to the next query
-			send_next_query(next, mcit);
-	} else
-		// Restart from the next interface
-		send_next_query(targets_.begin(), ++mcit);
+			continue;
+
+		// Send every query (unicast / broadcast / multicast) from the receive socket so the
+		// datagram source port equals the advertised return port (firewall-friendly; 1a).
+		auto keepalive(shared_from_this());
+		recv_socket_.async_send_to(asio::buffer(query_msg_), ep,
+			[shared_this = shared_from_this(), next, mcit](err_t err, size_t /*unused*/) {
+				if (!shared_this->cancelled_ && err != asio::error::operation_aborted &&
+					err != asio::error::not_connected && err != asio::error::not_socket)
+					shared_this->send_next_query(next, mcit);
+			});
+		return;
+	}
 }
 
 void resolve_attempt_udp::do_cancel() {
