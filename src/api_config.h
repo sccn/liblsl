@@ -188,6 +188,17 @@ public:
 	 */
 	const std::vector<std::string> &known_peers() const { return known_peers_; }
 
+	/**
+	 * @brief Whether to additionally resolve streams by probing TCP data ports directly.
+	 *
+	 * When enabled, a resolve also connects to every port in the BasePort..BasePort+PortRange
+	 * range on loopback and on each KnownPeer and requests stream info over TCP. Because TCP is a
+	 * symmetric, connection-oriented protocol, this is robust against the stateful-firewall issues
+	 * that can block UDP discovery, but it is VERY slow (one connection attempt per port per host,
+	 * and closed/filtered remote ports cost a full connect timeout each). Disabled by default.
+	 */
+	bool resolve_over_tcp() const { return resolve_over_tcp_; }
+
 	// === tuning parameters ===
 
 	/// The network protocol version to use.
@@ -197,6 +208,10 @@ public:
 	/// The watchdog takes no action if not at least this much time has passed since the last
 	/// receipt of data. In seconds.
 	double watchdog_time_threshold() const { return watchdog_time_threshold_; }
+	/// Send timeout for synchronous (transp_sync_blocking) outlets, in seconds. A blocking push
+	/// to a consumer that cannot accept the sample within this time disconnects that consumer
+	/// (it would otherwise stall the producer indefinitely). 0 means block forever.
+	double sync_send_timeout() const { return sync_send_timeout_; }
 	/// The minimum assumed round-trip-time for a multicast query. Any subsequent packet wave would
 	/// be started no earlier than this.
 	double multicast_min_rtt() const { return multicast_min_rtt_; }
@@ -294,10 +309,12 @@ private:
 	std::string listen_address_;
 	std::vector<std::string> known_peers_;
 	std::string session_id_;
+	bool resolve_over_tcp_;
 	// tuning parameters
 	int use_protocol_version_;
 	double watchdog_time_threshold_;
 	double watchdog_check_interval_;
+	double sync_send_timeout_;
 	double multicast_min_rtt_;
 	double multicast_max_rtt_;
 	double unicast_min_rtt_;
