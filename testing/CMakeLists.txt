@@ -71,6 +71,7 @@ add_executable(lsl_test_exported
 	ext/discovery.cpp
 	ext/move.cpp
 	ext/streaminfo.cpp
+	ext/sync_outlet.cpp
 	ext/time.cpp
 )
 target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
@@ -84,6 +85,7 @@ set(LSL_TEST_INTERNAL_SRCS
 		int/samples.cpp
 		int/postproc.cpp
 		int/serialization_v100.cpp
+		int/sync_endian.cpp
 		int/tcpserver.cpp
 		int/sendbuffer.cpp
 )
@@ -118,6 +120,39 @@ else()
     target_link_libraries(lsl_test_resolve_bad_interface PRIVATE pugixml::pugixml)
 endif()
 
+# resolve_machine test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_resolve_machine int/resolve_machine.cpp)
+target_link_libraries(lsl_test_resolve_machine PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_resolve_machine PRIVATE LIBLSL_EXPORTS)
+# Needs pugixml headers (resolver_impl.h -> stream_info_impl.h includes pugixml)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_resolve_machine PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_resolve_machine PRIVATE pugixml::pugixml)
+endif()
+
+# resolve_over_tcp test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_resolve_over_tcp int/resolve_over_tcp.cpp)
+target_link_libraries(lsl_test_resolve_over_tcp PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_resolve_over_tcp PRIVATE LIBLSL_EXPORTS)
+# Needs pugixml headers (resolver_impl.h -> stream_info_impl.h includes pugixml)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_resolve_over_tcp PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_resolve_over_tcp PRIVATE pugixml::pugixml)
+endif()
+
+# resolve_query_port test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_resolve_query_port int/resolve_query_port.cpp)
+target_link_libraries(lsl_test_resolve_query_port PRIVATE lslobj lslboost common catch_main)
+target_compile_definitions(lsl_test_resolve_query_port PRIVATE LIBLSL_EXPORTS)
+# Needs pugixml headers (resolver_impl.h -> stream_info_impl.h includes pugixml)
+if(LSL_PUGIXML_IS_FETCHED)
+    target_include_directories(lsl_test_resolve_query_port PRIVATE ${pugixml_SOURCE_DIR}/src)
+else()
+    target_link_libraries(lsl_test_resolve_query_port PRIVATE pugixml::pugixml)
+endif()
+
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
 	# /usr/bin/time -v testing/lsl_test_exported --benchmark-samples 100  bounce
@@ -133,7 +168,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port)
 foreach(lsltest ${LSL_TESTS})
 	add_test(NAME ${lsltest} COMMAND ${lsltest} --wait-for-keypress never)
 	if(LSL_INSTALL)

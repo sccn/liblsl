@@ -120,15 +120,11 @@ private:
 	char resultbuf_[65536];
 
 	// IO objects
-	/// socket to send data over (for unicasts)
-	udp_socket unicast_socket_;
-	/// socket to send data over (for broadcasts)
-	udp_socket broadcast_socket_;
-	/// socket to send data over (for multicasts)
-	udp_socket multicast_socket_;
 	/// Interface addresses to send multicast packets from
 	const mcast_interface_list &multicast_interfaces;
-	/// socket to receive replies (always unicast)
+	/// Socket used to BOTH send queries and receive replies. Sending from the receive socket
+	/// ensures the datagram's source port equals the return port advertised in the query, so a
+	/// stateful firewall sees a matching request/reply flow (see NETWORK_FAILURE_MODES.md 1a).
 	udp_socket recv_socket_;
 	/// timer to schedule the cancel action
 	steady_timer cancel_timer_;
