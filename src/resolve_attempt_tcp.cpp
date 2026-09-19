@@ -49,7 +49,12 @@ void resolve_attempt_tcp::begin() {
 }
 
 void resolve_attempt_tcp::cancel() {
-	post(io_, [shared_this = shared_from_this()]() { shared_this->do_cancel(); });
+	// the attempt is owned by its pending handler chains; between construction and begin() or
+	// after the last handler has completed it has no shared owner and there is nothing to cancel
+	// (same race as in resolve_attempt_udp::cancel, see #289)
+	try {
+		post(io_, [shared_this = shared_from_this()]() { shared_this->do_cancel(); });
+	} catch (const std::bad_weak_ptr &) {}
 }
 
 void resolve_attempt_tcp::probe_next(std::size_t worker) {
