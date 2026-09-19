@@ -84,7 +84,7 @@ install(
 )
 
 # Generate pkg-config file
-if(LSL_UNIXFOLDERS AND NOT LSL_FRAMEWORK)
+if(LSL_UNIXFOLDERS AND NOT (APPLE AND LSL_FRAMEWORK))
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lsl.pc.in
         ${CMAKE_CURRENT_BINARY_DIR}/lsl.pc
