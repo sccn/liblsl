@@ -1,4 +1,4 @@
-name: Apple CI
+name: Apple Framework CI
 
 on:
   push:
