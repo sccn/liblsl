@@ -961,7 +961,7 @@ public:
 	 * @param timeout Optional timeout of the operation (default: no timeout).
 	 * @throws timeout_error if the timeout expires.
 	 * @throws lost_error if the stream source has been lost.
-	 * @throws std::runtime_error if the operation is interrupted by close_stream().
+	 * @throws cancelled_error if the operation is interrupted by close_stream().
 	 */
 	void open_stream(double timeout = FOREVER) {
 		int32_t ec = 0;
@@ -1740,6 +1740,12 @@ public:
 	explicit timeout_error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
+/// Exception class that indicates that an operation was interrupted explicitly.
+class cancelled_error : public std::runtime_error {
+public:
+	explicit cancelled_error(const std::string &msg) : std::runtime_error(msg) {}
+};
+
 /// Check error codes returned from the C interface and translate into appropriate exceptions.
 inline int32_t check_error(int32_t ec) {
 	if (ec < 0) {
@@ -1750,6 +1756,8 @@ inline int32_t check_error(int32_t ec) {
 				"The stream has been lost; to continue reading, you need to re-resolve it.");
 		case lsl_argument_error:
 			throw std::invalid_argument("An argument was incorrectly specified.");
+		case lsl_cancelled_error:
+			throw cancelled_error("The operation was interrupted by close_stream().");
 		case lsl_internal_error: throw std::runtime_error("An internal error has occurred.");
 		default: throw std::runtime_error("An unknown error has occurred.");
 		}

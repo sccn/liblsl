@@ -62,6 +62,7 @@
 #define LSL_STORE_EXCEPTION_IN(ecvar)                                                              \
 	LSLCATCHANDSTORE(ecvar, lsl::timeout_error, lsl_timeout_error)                                 \
 	LSLCATCHANDSTORE(ecvar, lsl::lost_error, lsl_lost_error)                                       \
+	LSLCATCHANDSTORE(ecvar, lsl::cancelled_error, lsl_cancelled_error)                             \
 	LSLCATCHANDSTORE(ecvar, std::range_error, lsl_argument_error)                                  \
 	LSLCATCHANDSTORE(ecvar, std::invalid_argument, lsl_argument_error)                             \
 	LSLCATCHANDSTORE(ecvar, std::exception, lsl_internal_error)
@@ -72,6 +73,7 @@
 #define LSL_RETURN_CAUGHT_EC                                                                       \
 	LSLCATCHANDRETURN(lsl::timeout_error, lsl_timeout_error)                                       \
 	LSLCATCHANDRETURN(lsl::lost_error, lsl_lost_error)                                             \
+	LSLCATCHANDRETURN(lsl::cancelled_error, lsl_cancelled_error)                                   \
 	LSLCATCHANDRETURN(std::range_error, lsl_argument_error)                                        \
 	LSLCATCHANDRETURN(std::invalid_argument, lsl_argument_error)                                   \
 	LSLCATCHANDRETURN(std::exception, lsl_internal_error)                                          \

@@ -146,6 +146,9 @@ typedef enum {
 	/// Some other internal error has happened.
 	lsl_internal_error = -4,
 
+	/// The operation was interrupted explicitly (for example by lsl_close_stream()).
+	lsl_cancelled_error = -5,
+
 	// prevent compilers from assuming an instance fits in a single byte
 	_lsl_error_code_maxval = 0x7f000000
 } lsl_error_code_t;

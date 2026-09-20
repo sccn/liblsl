@@ -74,7 +74,7 @@ extern LIBLSL_C_API lsl_streaminfo lsl_get_fullinfo(lsl_inlet in, double timeout
  * @param in The lsl_inlet object to act on.
  * @param timeout Optional timeout of the operation. Use LSL_FOREVER to effectively disable it.
  * @param[out] ec Error code: if nonzero, can be either #lsl_timeout_error (if the timeout has
- * expired), lsl_lost_error (if the stream source has been lost), or #lsl_internal_error if the
+ * expired), lsl_lost_error (if the stream source has been lost), or #lsl_cancelled_error if the
  * operation is interrupted by lsl_close_stream().
  */
 extern LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *ec);
