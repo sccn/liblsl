@@ -45,6 +45,15 @@ public:
 	/// Push a sample onto the send buffer that will subsequently be received by all consumers.
 	void push_sample(const sample_p &s);
 
+	/**
+	 * Wake a single consumer's queue with the empty-sample convention.
+	 *
+	 * Takes the same lock as push_sample() so that callers on other threads (e.g. an IO handler
+	 * reacting to a peer close) do not become a second producer on a single-producer queue.
+	 * @param q The consumer to wake; held by the caller for the duration of the call.
+	 */
+	void wake_consumer(const std::shared_ptr<consumer_queue> &q);
+
 	/// Wait until some consumers are present.
 	bool wait_for_consumers(double timeout = FOREVER);
 

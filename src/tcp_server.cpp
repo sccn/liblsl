@@ -796,7 +796,11 @@ void client_session::abort_on_peer_close(const std::shared_ptr<consumer_queue> &
 		[shared_this = shared_from_this(), weak_queue](err_t err, std::size_t /*n*/) {
 			if (err == asio::error::operation_aborted) return;
 			shared_this->abort_transfer_.store(true, std::memory_order_release);
-			if (auto q = weak_queue.lock()) q->push_sample(sample_p());
+			// Wake through the send buffer rather than pushing here: this runs on an IO thread
+			// and would otherwise be a second producer on the outlet thread's queue.
+			auto q = weak_queue.lock();
+			auto serv = shared_this->serv_.lock();
+			if (q && serv) serv->send_buffer_->wake_consumer(q);
 		});
 }
 
