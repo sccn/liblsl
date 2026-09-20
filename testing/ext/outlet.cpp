@@ -49,6 +49,15 @@ TEST_CASE("have_consumers becomes false after disconnect during push", "[outlet]
 			++value;
 		}
 	});
+	// Stop and join even if open_stream() throws or a REQUIRE aborts the test.
+	struct stop_and_join {
+		std::atomic<bool> &keep_pushing;
+		std::thread &pusher;
+		~stop_and_join() {
+			keep_pushing.store(false, std::memory_order_relaxed);
+			pusher.join();
+		}
+	} pusher_cleanup{keep_pushing, pusher};
 
 	{
 		lsl::stream_inlet inlet(found[0]);
@@ -62,8 +71,6 @@ TEST_CASE("have_consumers becomes false after disconnect during push", "[outlet]
 	}
 
 	CHECK(wait_until_no_consumers(outlet, 2.0));
-	keep_pushing.store(false, std::memory_order_relaxed);
-	pusher.join();
 }
 
 TEST_CASE("have_consumers tracks explicit close and reopen", "[outlet][basic]") {
