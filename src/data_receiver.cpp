@@ -56,7 +56,10 @@ void data_receiver::open_stream(double timeout) {
 	std::unique_lock<std::mutex> lifecycle_lock(lifecycle_mut_);
 	closing_stream_ = false;
 	std::unique_lock<std::mutex> lock(connected_mut_);
-	auto connection_completed = [this]() { return connected_ || conn_.lost(); };
+	const auto generation = close_generation_;
+	auto connection_completed = [this, generation]() {
+		return connected_ || conn_.lost() || close_generation_ != generation;
+	};
 	if (!connection_completed()) {
 		// start thread if not yet running
 		if (check_thread_start_ && !data_thread_.joinable()) {
@@ -71,6 +74,8 @@ void data_receiver::open_stream(double timeout) {
 					 lock, std::chrono::duration<double>(timeout), connection_completed))
 			throw timeout_error("The open_stream() operation timed out.");
 	}
+	if (close_generation_ != generation)
+		throw timeout_error("The open_stream() operation was interrupted by close_stream().");
 	if (conn_.lost())
 		throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
@@ -78,7 +83,13 @@ void data_receiver::open_stream(double timeout) {
 
 void data_receiver::close_stream() {
 	std::lock_guard<std::mutex> lifecycle_lock(lifecycle_mut_);
-	closing_stream_ = true;
+	{
+		std::lock_guard<std::mutex> lock(connected_mut_);
+		closing_stream_ = true;
+		++close_generation_;
+	}
+	// Wake both open_stream waiters and the reconnect back-off before joining.
+	connected_upd_.notify_all();
 	cancel_all_registered();
 	if (data_thread_.joinable()) data_thread_.join();
 	{
@@ -317,6 +328,7 @@ void data_receiver::data_thread() {
 				// recover silently)
 				{
 					std::lock_guard<std::mutex> lock(connected_mut_);
+					if (closing_stream_) break;
 					connected_ = true;
 				}
 				connected_upd_.notify_all();
@@ -364,8 +376,10 @@ void data_receiver::data_thread() {
 				conn_.try_recover_from_error(&closing_stream_);
 			}
 			if (closing_stream_) break;
-			// wait for a few msec so as to not spam the provider with reconnects
-			std::this_thread::sleep_for(std::chrono::milliseconds(500));
+			// Back off between reconnects, but let close_stream interrupt the wait.
+			std::unique_lock<std::mutex> lock(connected_mut_);
+			connected_upd_.wait_for(lock, std::chrono::milliseconds(500),
+				[this]() { return closing_stream_.load() || conn_.shutdown(); });
 		}
 	} catch (lost_error &) {
 		// the connection was irrecoverably lost: since the pull_sample() function may

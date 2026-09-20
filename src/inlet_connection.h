@@ -196,7 +196,7 @@ private:
 	/// our resolver, in case we need it
 	resolver_impl resolver_;
 	/// we allow only one recovery operation at a time
-	std::mutex recovery_mut_;
+	std::timed_mutex recovery_mut_;
 
 	// client status info for recovery & notification purposes
 	/// a group of condition variables that should be notified when the connection is lost

@@ -93,12 +93,14 @@ private:
 	std::thread data_thread_;
 	/// serializes thread creation and close/join
 	std::mutex lifecycle_mut_;
-	/// whether we need to check whether the thread has been started
+	/// fast-path hint for pull calls; thread creation is rechecked under lifecycle_mut_
 	std::atomic<bool> check_thread_start_;
 	/// indicates to the data thread that it a close has been requested
 	std::atomic<bool> closing_stream_;
 	/// whether the stream has been connected / opened
 	bool connected_;
+	/// identifies opens interrupted by close, even if another open follows immediately
+	uint64_t close_generation_{0}; // protected by connected_mut_
 	/// queue of samples ready to be picked up (populated by the data thread)
 	consumer_queue sample_queue_;
 	/// mutex to protect the connected state

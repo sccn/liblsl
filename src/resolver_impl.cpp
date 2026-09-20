@@ -332,6 +332,8 @@ void resolver_impl::poll_cancellation(const std::atomic<bool> *cancel) {
 		cancel_ongoing_resolve();
 		return;
 	}
+	// Only interruptible recovery queries install this timer; steady-state
+	// reception and ordinary discovery queries incur no polling cost.
 	cancel_poll_timer_.expires_after(std::chrono::milliseconds(10));
 	cancel_poll_timer_.async_wait([this, cancel](err_t err) {
 		if (!err) poll_cancellation(cancel);

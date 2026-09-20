@@ -2,6 +2,7 @@
 #include <lsl_cpp.h>
 #include <atomic>
 #include <chrono>
+#include <future>
 #include <thread>
 
 namespace {
@@ -104,4 +105,27 @@ TEST_CASE("Closing during connection setup permits reopening", "[inlet][reopen]"
 	float received = 0;
 	REQUIRE(inlet.pull_sample(&received, 1, 2) != 0);
 	CHECK(received == 42);
+}
+
+TEST_CASE("Closing interrupts a concurrent indefinite open", "[inlet][reopen]") {
+	const bool reopen_immediately = GENERATE(false, true);
+	lsl::stream_info info("close-waiter", "test", 1, 0, lsl::cf_float32,
+		"close-waiter-" + std::to_string(lsl::local_clock()));
+	lsl::stream_inlet inlet(info);
+	auto opening = std::async(std::launch::async, [&]() {
+		try {
+			inlet.open_stream(lsl::FOREVER);
+			return false;
+		} catch (const lsl::timeout_error &) { return true; }
+	});
+	CHECK(opening.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout);
+	inlet.close_stream();
+	if (!reopen_immediately)
+		CHECK(opening.wait_for(std::chrono::seconds(1)) == std::future_status::ready);
+	// Also reopen immediately: an old waiter must still observe its own close.
+	// This makes a missing notification a bounded failure rather than a hung test.
+	lsl::stream_outlet outlet(info);
+	inlet.open_stream(5);
+	CHECK(opening.get());
+	inlet.close_stream();
 }

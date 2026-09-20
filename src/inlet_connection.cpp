@@ -163,13 +163,13 @@ double inlet_connection::current_srate() {
 void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 	if (recovery_enabled_) {
 		try {
-			std::unique_lock<std::mutex> lock(recovery_mut_, std::defer_lock);
+			std::unique_lock<std::timed_mutex> lock(recovery_mut_, std::defer_lock);
 			if (cancel) {
 				// Another inlet component may be resolving indefinitely. Closing the data
 				// stream must not wait for that component to recover.
-				while (!lock.try_lock()) {
+				// Only recovery uses this timed wait; normal sample reception does not.
+				while (!lock.try_lock_for(std::chrono::milliseconds(10))) {
 					if (cancel->load() || shutdown_) return;
-					std::this_thread::sleep_for(std::chrono::milliseconds(10));
 				}
 				if (cancel->load()) return;
 			} else
