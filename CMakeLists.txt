@@ -3,7 +3,7 @@ cmake_minimum_required (VERSION 3.23)
 # Derive the version from the most recent git tag (e.g. v1.18.0 -> 1.18.0).
 # The literal below is the single source of truth for builds without git/tags.
 include(cmake/ProjectVersion.cmake)
-lsl_version_from_git(LSL_VERSION LSL_VERSION_FULL FALLBACK "1.17.7")
+lsl_version_from_git(LSL_VERSION LSL_VERSION_FULL FALLBACK "1.18.0")
 
 project (liblsl
 	VERSION ${LSL_VERSION}
