@@ -98,9 +98,12 @@ public:
 	 * produce the desired number of results).
 	 * @param minimum_time Search for matching streams for at least this much time (e.g., if
 	 * multiple streams may be present).
+	 * @param cancel Optional flag to stop this query without disabling future queries.
+	 * Must remain valid until the call returns.
 	 */
 	std::vector<stream_info_impl> resolve_oneshot(const std::string &query, int minimum = 0,
-		double timeout = FOREVER, double minimum_time = 0.0);
+		double timeout = FOREVER, double minimum_time = 0.0,
+		const std::atomic<bool> *cancel = nullptr);
 
 	/**
 	 * Starts a background thread that resolves a query string and periodically updates the list of
@@ -149,6 +152,7 @@ private:
 
 	/// Cancel the currently ongoing resolve, if any.
 	void cancel_ongoing_resolve();
+	void poll_cancellation(const std::atomic<bool> *cancel);
 
 
 	// constants (mostly config-deduced)
@@ -196,6 +200,8 @@ private:
 	std::weak_ptr<resolve_attempt_tcp> tcp_attempt_;
 	/// the overall timeout for a query
 	steady_timer resolve_timeout_expired_;
+	/// polls an optional per-query cancellation flag
+	steady_timer cancel_poll_timer_;
 	/// a timer that fires when a new wave should be scheduled
 	steady_timer wave_timer_;
 	/// a timer that fires when the unicast wave should be scheduled

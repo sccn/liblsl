@@ -35,6 +35,31 @@ liblsl is also available via the following package managers:
 
 If you cannot find a liblsl for you via any of the above methods, then fear not because for most users it is simple to build.
 
+### Linking against Homebrew liblsl on macOS
+
+The Homebrew package installs a regular shared library (`lib/liblsl.dylib`),
+headers, a CMake package and a pkg-config file, so it links like on Linux:
+
+```sh
+brew install labstreaminglayer/tap/lsl
+clang++ -std=c++14 main.cpp $(pkg-config --cflags --libs lsl) -o myapp
+```
+
+For CMake applications, use the exported target, which supplies the include
+directories and linking requirements:
+
+```cmake
+find_package(LSL CONFIG REQUIRED)
+target_link_libraries(myapp PRIVATE LSL::lsl)
+```
+
+If CMake does not find the package automatically, configure with
+`-DCMAKE_PREFIX_PATH="$(brew --prefix lsl)"`.
+
+If you need `lsl.framework` (e.g. to bundle it inside an app), download it from
+the [GitHub releases](https://github.com/sccn/liblsl/releases) or build with
+`-DLSL_FRAMEWORK=ON`.
+
 ## Building liblsl
 
 To compile the library yourself from source,

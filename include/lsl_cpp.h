@@ -975,6 +975,7 @@ public:
 	 * interested in data from a source (temporarily or not) but keeps the outlet alive,
 	 * it should call close_stream() to not waste unnecessary system and network
 	 * resources.
+	 * The stream can subsequently be reopened with open_stream() or a pull call.
 	 */
 	void close_stream() { lsl_close_stream(obj.get()); }
 
