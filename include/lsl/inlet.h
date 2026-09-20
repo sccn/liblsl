@@ -234,7 +234,14 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_l(lsl_inlet in, int64_t *data_b
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_i(lsl_inlet in, int32_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_s(lsl_inlet in, int16_t *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 extern LIBLSL_C_API unsigned long lsl_pull_chunk_c(lsl_inlet in, char *data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
-extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer, double *timestamp_buffer, unsigned long data_buffer_elements, unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
+/**
+ * Pull a chunk of data into an array of strings.
+ * Only the first `return value` entries of data_buffer are allocated and must be freed with
+ * lsl_destroy_string(); remaining entries are set to NULL.
+ */
+extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
+	double *timestamp_buffer, unsigned long data_buffer_elements,
+	unsigned long timestamp_buffer_elements, double timeout, int32_t *ec);
 
 ///@}
 
@@ -242,6 +249,9 @@ extern LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_b
  * Pull a chunk of data from the inlet and read it into an array of binary strings.
  *
  * These strings may contains 0's, therefore the lengths are read into the lengths_buffer array.
+ * Only the first `return value` entries of data_buffer are allocated and must be freed with
+ * lsl_destroy_string(); remaining entries are set to NULL.
+ * The remaining entries of lengths_buffer are set to 0.
  * Handles type checking & conversion.
  * IMPORTANT: Note that the provided data buffer size is measured in channel values (e.g., floats)
  * rather than in samples.
