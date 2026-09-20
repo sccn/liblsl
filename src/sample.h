@@ -186,8 +186,10 @@ private:
 
 	/// Decrement ref count and reclaim if unreferenced.
 	friend void intrusive_ptr_release(sample *s) {
-		if (s->refcount_.fetch_sub(1, std::memory_order_release) == 1) {
-			std::atomic_thread_fence(std::memory_order_acquire);
+		// Acquire earlier owners' releases before publishing the sample for reuse.
+		// A release decrement followed by an acquire fence is also valid C++, but
+		// TSan does not model that fence and reports false races on recycled data.
+		if (s->refcount_.fetch_sub(1, std::memory_order_acq_rel) == 1) {
 			s->factory_->reclaim_sample(s);
 		}
 	}
