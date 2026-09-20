@@ -22,7 +22,7 @@ class inlet_connection; // Forward declaration
  * The public functions have an optional timeout after which they give up, while the background
  * thread continues to do its job (so the next public-function call may succeed within the timeout).
  * The background thread terminates only if the data_receiver is destroyed or the underlying
- * connection is lost or shut down.
+ * connection is lost or shut down, or close_stream() is called.
  */
 class data_receiver final : public cancellable_registry {
 public:
@@ -91,12 +91,16 @@ private:
 	factory_p sample_factory_;
 	/// background read thread
 	std::thread data_thread_;
-	/// whether we need to check whether the thread has been started
-	bool check_thread_start_;
+	/// serializes thread creation and close/join
+	std::mutex lifecycle_mut_;
+	/// fast-path hint for pull calls; thread creation is rechecked under lifecycle_mut_
+	std::atomic<bool> check_thread_start_;
 	/// indicates to the data thread that it a close has been requested
 	std::atomic<bool> closing_stream_;
 	/// whether the stream has been connected / opened
 	bool connected_;
+	/// identifies opens interrupted by close, even if another open follows immediately
+	uint64_t close_generation_{0}; // protected by connected_mut_
 	/// queue of samples ready to be picked up (populated by the data thread)
 	consumer_queue sample_queue_;
 	/// mutex to protect the connected state

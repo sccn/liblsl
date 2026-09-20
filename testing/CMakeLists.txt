@@ -70,6 +70,7 @@ add_executable(lsl_test_exported
 	ext/DataType.cpp
 	ext/discovery.cpp
 	ext/inlet_open.cpp
+	ext/inlet_reopen.cpp
 	ext/move.cpp
 	ext/streaminfo.cpp
 	ext/sync_outlet.cpp
