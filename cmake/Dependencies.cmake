@@ -26,9 +26,6 @@ if(LSL_FETCH_PUGIXML)
     FetchContent_MakeAvailable(pugixml)
     set(BUILD_SHARED_LIBS ${_lsl_saved_build_shared_libs})
     unset(_lsl_saved_build_shared_libs)
-    if(TARGET pugixml AND NOT TARGET pugixml::pugixml)
-        add_library(pugixml::pugixml ALIAS pugixml)
-    endif()
     # Hide pugixml symbols - apply hidden visibility to the pugixml target
     set_target_properties(pugixml PROPERTIES
         CXX_VISIBILITY_PRESET hidden
@@ -50,9 +47,6 @@ else()
         unset(_lsl_arch_count)
     endif()
     find_package(pugixml REQUIRED)
-    if(NOT TARGET pugixml::pugixml)
-        add_library(pugixml::pugixml ALIAS pugixml)
-    endif()
     set(LSL_PUGIXML_IS_FETCHED FALSE)
 endif()
 
@@ -73,3 +67,44 @@ else()
     target_link_libraries(lslboost INTERFACE Boost::boost Boost::disable_autolinking)
 endif()
 target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
+
+# Single source of truth for every external (system/third-party) library lsl needs to link
+# against. lslobj (which internal tests also link directly) and the real lsl target both
+# link this same list, so it only has to be kept up to date in one place. Having lsl itself
+# link these directly (not only indirectly via lslobj) matters for static builds: CMake
+# records a STATIC library's PRIVATE link dependencies as $<LINK_ONLY:...> entries in its
+# exported INTERFACE_LINK_LIBRARIES, so consumers linking the installed LSL::lsl get them
+# transitively instead of having to add them by hand. For shared builds these stay private/
+# hidden, which is correct since the dependencies are already resolved inside the shared lib.
+set(lsllinklibs Threads::Threads)
+
+if(NOT LSL_PUGIXML_IS_FETCHED)
+    if(TARGET pugixml::pugixml)
+        list(APPEND lsllinklibs pugixml::pugixml)
+    elseif(TARGET pugixml)
+        # For pugixml versions before 1.11
+        list(APPEND lsllinklibs pugixml)
+        # Add an alias for testing/CMakeLists.txt
+        add_library(pugixml::pugixml ALIAS pugixml)
+    else()
+        message(FATAL_ERROR "pugixml library target not found!")
+    endif()
+endif()
+
+if(MINGW)
+    list(APPEND lsllinklibs bcrypt)
+endif()
+
+if(UNIX AND NOT APPLE)
+    # check that clock_gettime is present in the stdlib, link against librt otherwise
+    include(CheckSymbolExists)
+    check_symbol_exists(clock_gettime time.h HAS_GETTIME)
+    if(NOT HAS_GETTIME)
+        list(APPEND lsllinklibs rt)
+    endif()
+    if(LSL_DEBUGLOG)
+        list(APPEND lsllinklibs dl)
+    endif()
+elseif(WIN32)
+    list(APPEND lsllinklibs iphlpapi winmm mswsock ws2_32)
+endif()

@@ -61,23 +61,29 @@ install(TARGETS ${LSLTargets}
 install(DIRECTORY include/lsl DESTINATION ${LSL_INSTALL_INCLUDEDIR})
 install(FILES include/lsl_c.h include/lsl_cpp.h DESTINATION ${LSL_INSTALL_INCLUDEDIR})
 
-# Generate the LSLConfig.cmake file and mark it for installation
+# Export the targets to a separate LSLTargets.cmake file, included by the
+# LSLConfig.cmake below.
 install(EXPORT LSLTargets
-        FILE LSLConfig.cmake
+        FILE LSLTargets.cmake
         COMPONENT liblsl
         NAMESPACE "LSL::"
         DESTINATION ${LSL_CONFIG_INSTALL_DIR}
 )
-# A common alternative to installing the exported package config file is to generate it from a template.
-#configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/lslConfig.cmake.in
-#        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
-#        INSTALL_DESTINATION ${LSL_CONFIG_INSTALL_DIR})
-# If we use this method, then we need a corresponding install(FILES ...) command to install the generated file.
 
-# Install the version file and the helper CMake script.
+# Generate LSLConfig.cmake from a template so it can call find_dependency() for
+# the transitive dependencies that a static LSL::lsl requires its consumers to
+# link against.
+configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/LSLConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
+        INSTALL_DESTINATION ${LSL_CONFIG_INSTALL_DIR}
+)
+
+# Install the version file, generated config file, and the helper CMake script.
 install(
     FILES
         cmake/LSLCMake.cmake
+        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
         ${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake
     COMPONENT liblsl
     DESTINATION ${LSL_CONFIG_INSTALL_DIR}
