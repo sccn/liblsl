@@ -27,6 +27,9 @@
 #include <thread>
 #include <utility>
 #include <vector>
+#ifndef _WIN32
+#include <poll.h>
+#endif
 
 #ifdef _MSC_VER
 // (inefficiently converting int to bool in portable_oarchive instantiation...)
@@ -157,12 +160,37 @@ public:
 	}
 
 	/// Check if there are any connected consumers
-	bool have_consumers() const {
+	bool have_consumers() {
 		std::lock_guard<std::mutex> lock(mutex_);
+		// Sync sockets have no running IO context. Check on demand, without changing
+		// their native blocking mode (which SO_SNDTIMEO relies on).
+		prune_disconnected(sockets_native_);
+		prune_disconnected(sockets_swapped_);
 		return !sockets_native_.empty() || !sockets_swapped_.empty();
 	}
 
 private:
+	/// Called under mutex_, which also serializes socket writes and registration.
+	static void prune_disconnected(std::vector<tcp_socket_p> &sockets) {
+		sockets.erase(std::remove_if(sockets.begin(), sockets.end(), [](const tcp_socket_p &sock) {
+			if (!sock || !sock->is_open()) return true;
+			// After the handshake the feed is one-way: readability means EOF,
+			// a reset, or unexpected client data. All end the feed, as in the
+			// asynchronous peer-close watcher. Never issue a blocking receive.
+#ifdef _WIN32
+			fd_set readable;
+			FD_ZERO(&readable);
+			FD_SET(sock->native_handle(), &readable);
+			timeval timeout{};
+			return ::select(0, &readable, nullptr, nullptr, &timeout) > 0;
+#else
+			// poll also handles descriptors beyond select's FD_SETSIZE limit.
+			pollfd fd{sock->native_handle(), POLLIN, 0};
+			return ::poll(&fd, 1, 0) > 0 && (fd.revents & (POLLIN | POLLHUP | POLLERR));
+#endif
+		}), sockets.end());
+	}
+
 	/// Apply the configured blocking-send timeout to a socket (no-op if disabled). SO_SNDTIMEO
 	/// only takes effect on a blocking socket, so we force blocking mode first. On expiry a
 	/// synchronous write returns try_again/would_block/timed_out, which write_to_group treats

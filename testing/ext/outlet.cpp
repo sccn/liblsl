@@ -19,7 +19,9 @@ bool wait_until_no_consumers(lsl::stream_outlet &outlet, double timeout_sec) {
 TEST_CASE("have_consumers becomes false after idle inlet disconnects", "[outlet][basic]") {
 	lsl::stream_info info("have_consumers_idle", "Markers", 1, lsl::IRREGULAR_RATE, lsl::cf_int32,
 		"have_consumers_idle");
-	lsl::stream_outlet outlet(info);
+	const auto transport = GENERATE(transp_default, transp_sync_blocking);
+	CAPTURE(transport);
+	lsl::stream_outlet outlet(info, 0, 360, transport);
 	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
 	REQUIRE(found.size() == 1);
 
@@ -31,13 +33,23 @@ TEST_CASE("have_consumers becomes false after idle inlet disconnects", "[outlet]
 		// Intentionally do not push samples; disconnect must still be detected (#267).
 	}
 
-	CHECK(wait_until_no_consumers(outlet, 2.0));
+	SECTION("have_consumers detects the disconnect") {
+		CHECK(wait_until_no_consumers(outlet, 2.0));
+	}
+	SECTION("wait_for_consumers does not accept the stale connection") {
+		auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(2);
+		while (outlet.wait_for_consumers(0.0) && std::chrono::steady_clock::now() < deadline)
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
+		CHECK_FALSE(outlet.wait_for_consumers(0.05));
+	}
 }
 
 TEST_CASE("have_consumers becomes false after disconnect during push", "[outlet][basic]") {
 	lsl::stream_info info("have_consumers_busy", "Markers", 1, lsl::IRREGULAR_RATE, lsl::cf_int32,
 		"have_consumers_busy");
-	lsl::stream_outlet outlet(info);
+	const auto transport = GENERATE(transp_default, transp_sync_blocking);
+	CAPTURE(transport);
+	lsl::stream_outlet outlet(info, 0, 360, transport);
 	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
 	REQUIRE(found.size() == 1);
 
@@ -76,7 +88,9 @@ TEST_CASE("have_consumers becomes false after disconnect during push", "[outlet]
 TEST_CASE("have_consumers tracks explicit close and reopen", "[outlet][basic]") {
 	lsl::stream_info info("have_consumers_reopen", "Markers", 1, lsl::IRREGULAR_RATE,
 		lsl::cf_int32, "have_consumers_reopen");
-	lsl::stream_outlet outlet(info);
+	const auto transport = GENERATE(transp_default, transp_sync_blocking);
+	CAPTURE(transport);
+	lsl::stream_outlet outlet(info, 0, 360, transport);
 	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
 	REQUIRE(found.size() == 1);
 
@@ -94,7 +108,9 @@ TEST_CASE("have_consumers tracks explicit close and reopen", "[outlet][basic]") 
 TEST_CASE("have_consumers stays true when one of two inlets disconnects", "[outlet][basic]") {
 	lsl::stream_info info("have_consumers_two", "Markers", 1, lsl::IRREGULAR_RATE, lsl::cf_int32,
 		"have_consumers_two");
-	lsl::stream_outlet outlet(info);
+	const auto transport = GENERATE(transp_default, transp_sync_blocking);
+	CAPTURE(transport);
+	lsl::stream_outlet outlet(info, 0, 360, transport);
 	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
 	REQUIRE(found.size() == 1);
 
