@@ -108,6 +108,9 @@ public:
 		apply_send_timeout(*sock);
 		// An inlet may return from open_stream() as soon as these bytes arrive.
 		// Keep sample writes locked out until the socket is registered below.
+		// This synchronous-mode handshake runs on the server IO thread while
+		// holding the sample-write lock. It uses the configured sync send timeout;
+		// a timeout of zero permits unbounded blocking of both IO and sample writes.
 		asio::write(*sock, header);
 		if (reverse_byte_order) {
 			sockets_swapped_.push_back(std::move(sock));
@@ -714,8 +717,14 @@ void client_session::handle_read_feedparams(
 			// The synchronous writer sends the header under its sample-write lock,
 			// then registers the socket before an immediate push can acquire it.
 			auto protocol = sock_.local_endpoint().protocol();
-			serv->sync_handler_->add_socket(
-				sock_.release(), protocol, reverse_byte_order_, feedbuf_.data());
+			try {
+				serv->sync_handler_->add_socket(
+					sock_.release(), protocol, reverse_byte_order_, feedbuf_.data());
+			} catch (const asio::system_error &e) {
+				// add_socket owns and closes the released handle on failure. Peer
+				// resets here are connection failures, not serialization errors.
+				LOG_F(INFO, "Synchronous stream handshake failed: %s", e.what());
+			}
 			serv->unregister_inflight_session(this);
 			return;
 		}
@@ -723,6 +732,8 @@ void client_session::handle_read_feedparams(
 		// Subscribe before sending the handshake: receiving its test patterns is
 		// what lets the inlet return from open_stream(). Queue samples until the
 		// header write completes so data cannot overtake the handshake.
+		// have_consumers()/wait_for_consumers() can now observe this subscription
+		// before the handshake completes; open_stream() remains the inlet's gate.
 		std::shared_ptr<consumer_queue> queue;
 		if (max_buffered_ > 0) queue = serv->send_buffer_->new_consumer(max_buffered_);
 		async_write(sock_, feedbuf_.data(),
