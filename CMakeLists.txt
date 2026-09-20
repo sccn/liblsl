@@ -50,6 +50,11 @@ elseif(WIN32)
     set(CPACK_GENERATOR ZIP)
 else()
     set(CPACK_GENERATOR DEB TGZ)
+    # Debian prereleases must sort before the corresponding stable version.
+    # Keep the Git tag and other package metadata unchanged (e.g. 1.18.0.b3).
+    string(REGEX REPLACE
+        "^([0-9]+\\.[0-9]+\\.[0-9]+)[.-]?((alpha|beta|rc|a|b)[0-9]+)$"
+        "\\1~\\2" CPACK_DEBIAN_PACKAGE_VERSION "${LSL_VERSION_FULL}")
     set(CPACK_DEBIAN_PACKAGE_MAINTAINER "LabStreamingLayer Developers")
     set(CPACK_DEBIAN_PACKAGE_SECTION "science")
     if(LSL_ARCH STREQUAL "amd64" OR LSL_ARCH STREQUAL "arm64" OR LSL_ARCH STREQUAL "i386")

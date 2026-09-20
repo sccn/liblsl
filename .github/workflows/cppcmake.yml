@@ -13,7 +13,7 @@ on:
       - '.github/workflows/cppcmake.yml'
   pull_request:
   release:
-    types: ['created']
+    types: ['published']
   workflow_dispatch:
     inputs:
       cmakeextra:
