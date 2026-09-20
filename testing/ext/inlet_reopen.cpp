@@ -116,7 +116,7 @@ TEST_CASE("Closing interrupts a concurrent indefinite open", "[inlet][reopen]") 
 		try {
 			inlet.open_stream(lsl::FOREVER);
 			return false;
-		} catch (const lsl::timeout_error &) { return true; }
+		} catch (const std::runtime_error &) { return true; }
 	});
 	CHECK(opening.wait_for(std::chrono::milliseconds(100)) == std::future_status::timeout);
 	inlet.close_stream();

@@ -959,8 +959,9 @@ public:
 	 * Pulling a sample without some preceding open_stream() is permitted (the stream will then be
 	 * opened implicitly).
 	 * @param timeout Optional timeout of the operation (default: no timeout).
-	 * @throws timeout_error (if the timeout expires), or lost_error (if the stream source has been
-	 * lost).
+	 * @throws timeout_error if the timeout expires.
+	 * @throws lost_error if the stream source has been lost.
+	 * @throws std::runtime_error if the operation is interrupted by close_stream().
 	 */
 	void open_stream(double timeout = FOREVER) {
 		int32_t ec = 0;
