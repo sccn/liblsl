@@ -24,7 +24,12 @@
 
 cmake_minimum_required(VERSION 3.28)
 
-message(STATUS "Included LSLCMake helpers, rev. 18")
+message(STATUS "Included LSLCMake helpers, rev. 19")
+
+# Package managers (Homebrew, conda, Linux distributions) install liblsl and Qt as
+# separate packages and handle code signing themselves; they should turn this OFF so
+# LSL_install_liblsl(), LSL_deploy_qt() and LSL_codesign() become no-ops.
+option(LSL_BUNDLE_DEPENDENCIES "Copy liblsl and Qt into the install tree and codesign the result" ON)
 
 # =============================================================================
 # LSL_get_target_arch()
@@ -130,20 +135,50 @@ endfunction()
 #   add_executable(MyApp main.cpp)
 # =============================================================================
 function(LSL_configure_rpath)
-    if(APPLE)
-        # Support both:
-        # - App bundles: @executable_path/../Frameworks
-        # - CLI tools: @executable_path/Frameworks or @executable_path
-        set(CMAKE_INSTALL_RPATH
-            "@executable_path/../Frameworks"
-            "@executable_path/Frameworks"
-            "@executable_path"
-            PARENT_SCOPE
-        )
-    elseif(UNIX AND NOT ANDROID)
-        set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib" PARENT_SCOPE)
+    # Package managers pass their own CMAKE_INSTALL_RPATH; leave it alone.
+    if(NOT CMAKE_INSTALL_RPATH)
+        if(APPLE)
+            # Support both:
+            # - App bundles: @executable_path/../Frameworks
+            # - CLI tools: @executable_path/Frameworks or @executable_path
+            # - Non-framework liblsl next to the tool or in a sibling lib/
+            set(CMAKE_INSTALL_RPATH
+                "@executable_path/../Frameworks"
+                "@executable_path/Frameworks"
+                "@executable_path"
+                "@executable_path/../lib"
+                PARENT_SCOPE
+            )
+        elseif(UNIX AND NOT ANDROID)
+            set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib" PARENT_SCOPE)
+        endif()
     endif()
     set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE PARENT_SCOPE)
+endfunction()
+
+# Sets ${out_var} to TRUE when the LSL::lsl target is an Apple framework.
+function(_LSL_target_is_framework out_var)
+    set(_result FALSE)
+    if(APPLE AND TARGET LSL::lsl)
+        get_target_property(_imported LSL::lsl IMPORTED)
+        if(_imported)
+            get_target_property(_configs LSL::lsl IMPORTED_CONFIGURATIONS)
+            set(_props IMPORTED_LOCATION)
+            foreach(_cfg IN LISTS _configs)
+                list(APPEND _props "IMPORTED_LOCATION_${_cfg}")
+            endforeach()
+            foreach(_prop IN LISTS _props)
+                get_target_property(_loc LSL::lsl "${_prop}")
+                if(_loc AND _loc MATCHES "\\.framework/")
+                    set(_result TRUE)
+                    break()
+                endif()
+            endforeach()
+        else()
+            get_target_property(_result lsl FRAMEWORK)
+        endif()
+    endif()
+    set(${out_var} ${_result} PARENT_SCOPE)
 endfunction()
 
 # =============================================================================
@@ -172,6 +207,10 @@ endfunction()
 #   LSL_install_liblsl(DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 # =============================================================================
 function(LSL_install_liblsl)
+    if(NOT LSL_BUNDLE_DEPENDENCIES)
+        return()
+    endif()
+
     cmake_parse_arguments(ARG "" "DESTINATION;FRAMEWORK_DESTINATION;COMPONENT" "" ${ARGN})
 
     set(_component_args "")
@@ -188,7 +227,9 @@ function(LSL_install_liblsl)
         endif()
     endif()
 
-    if(APPLE)
+    _LSL_target_is_framework(_lsl_is_framework)
+
+    if(APPLE AND _lsl_is_framework)
         if(NOT ARG_FRAMEWORK_DESTINATION AND NOT ARG_DESTINATION)
             message(FATAL_ERROR "LSL_install_liblsl: FRAMEWORK_DESTINATION or DESTINATION required on macOS")
         endif()
@@ -219,9 +260,12 @@ function(LSL_install_liblsl)
             install(IMPORTED_RUNTIME_ARTIFACTS LSL::lsl RUNTIME DESTINATION "${ARG_DESTINATION}" ${_component_args})
         endif()
     else()
-        # Linux
+        # Linux, or macOS with a plain dylib (which goes where the framework would have)
+        if(NOT ARG_DESTINATION AND APPLE)
+            set(ARG_DESTINATION "${ARG_FRAMEWORK_DESTINATION}")
+        endif()
         if(NOT ARG_DESTINATION)
-            message(FATAL_ERROR "LSL_install_liblsl: DESTINATION required on Linux")
+            message(FATAL_ERROR "LSL_install_liblsl: DESTINATION required")
         endif()
         if(_lsl_is_fetched)
             install(TARGETS lsl LIBRARY DESTINATION "${ARG_DESTINATION}" ${_component_args})
@@ -291,6 +335,10 @@ endfunction()
 #   LSL_deploy_qt(TARGET "${PROJECT_NAME}" DESTINATION ".")
 # =============================================================================
 function(LSL_deploy_qt)
+    if(NOT LSL_BUNDLE_DEPENDENCIES)
+        return()
+    endif()
+
     cmake_parse_arguments(ARG "" "TARGET;DESTINATION" "" ${ARGN})
 
     if(NOT ARG_TARGET)
@@ -383,7 +431,7 @@ endfunction()
 #   )
 # =============================================================================
 function(LSL_codesign)
-    if(NOT APPLE)
+    if(NOT APPLE OR NOT LSL_BUNDLE_DEPENDENCIES)
         return()
     endif()
 
@@ -425,8 +473,8 @@ function(LSL_codesign)
             set(_ent \"${ARG_ENTITLEMENTS}\")
 
             # Sign framework first if specified
-            if(NOT \"${ARG_FRAMEWORK}\" STREQUAL \"\")
-                set(_fw \"\${CMAKE_INSTALL_PREFIX}/${ARG_FRAMEWORK}\")
+            set(_fw \"\${CMAKE_INSTALL_PREFIX}/${ARG_FRAMEWORK}\")
+            if(NOT \"${ARG_FRAMEWORK}\" STREQUAL \"\" AND EXISTS \"\${_fw}\")
                 message(STATUS \"Signing framework: \${_fw}\")
                 execute_process(COMMAND codesign --force --sign - \"\${_fw}\")
             endif()

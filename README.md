@@ -37,20 +37,13 @@ If you cannot find a liblsl for you via any of the above methods, then fear not 
 
 ### Linking against Homebrew liblsl on macOS
 
-The Homebrew package installs an Apple framework, `lsl.framework`. Link it with
-`-framework lsl` and a framework search path (`-F`), rather than `-llsl`.
-Use `brew --prefix lsl` to find the installation without hard-coding a Homebrew
-location or a versioned `Cellar` directory:
+The Homebrew package installs a regular shared library (`lib/liblsl.dylib`),
+headers, a CMake package and a pkg-config file, so it links like on Linux:
 
 ```sh
 brew install labstreaminglayer/tap/lsl
-lsl_prefix="$(brew --prefix lsl)"
-clang++ -std=c++14 main.cpp -F"$lsl_prefix/Frameworks" -framework lsl -o myapp
+clang++ -std=c++14 main.cpp $(pkg-config --cflags --libs lsl) -o myapp
 ```
-
-With this command, use `#include <lsl/lsl_cpp.h>` (or `<lsl/lsl_c.h>` for C).
-To retain the cross-platform spelling `#include <lsl_cpp.h>`, also pass
-`-I"$lsl_prefix/Frameworks/lsl.framework/Headers"` when compiling.
 
 For CMake applications, use the exported target, which supplies the include
 directories and linking requirements:
@@ -61,8 +54,11 @@ target_link_libraries(myapp PRIVATE LSL::lsl)
 ```
 
 If CMake does not find the package automatically, configure with
-`-DCMAKE_PREFIX_PATH="$(brew --prefix lsl)/Frameworks"`. CMake consumers can
-continue using `#include <lsl_cpp.h>`.
+`-DCMAKE_PREFIX_PATH="$(brew --prefix lsl)"`.
+
+If you need `lsl.framework` (e.g. to bundle it inside an app), download it from
+the [GitHub releases](https://github.com/sccn/liblsl/releases) or build with
+`-DLSL_FRAMEWORK=ON`.
 
 ## Building liblsl
 
