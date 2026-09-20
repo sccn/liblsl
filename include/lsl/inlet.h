@@ -86,6 +86,7 @@ extern LIBLSL_C_API void lsl_open_stream(lsl_inlet in, double timeout, int32_t *
 * interested in data from a source (temporarily or not) but keeps the outlet alive,
 * it should call lsl_close_stream() to not waste unnecessary system and network
 * resources.
+* The stream can subsequently be reopened with lsl_open_stream() or a pull call.
 */
 extern LIBLSL_C_API void lsl_close_stream(lsl_inlet in);
 

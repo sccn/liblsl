@@ -69,6 +69,7 @@ target_link_libraries(common PUBLIC Catch2::Catch2)
 add_executable(lsl_test_exported
 	ext/DataType.cpp
 	ext/discovery.cpp
+	ext/inlet_reopen.cpp
 	ext/move.cpp
 	ext/streaminfo.cpp
 	ext/sync_outlet.cpp

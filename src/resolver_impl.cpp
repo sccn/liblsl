@@ -9,6 +9,7 @@
 #include <asio/ip/tcp.hpp>
 #include <asio/ip/udp.hpp>
 #include <algorithm>
+#include <chrono>
 #include <exception>
 #include <loguru.hpp>
 #include <memory>
@@ -24,7 +25,7 @@ using namespace lsl;
 resolver_impl::resolver_impl()
 	: cfg_(api_config::get_instance()), cancelled_(false), expired_(false), forget_after_(FOREVER),
 	  fast_mode_(true), io_(std::make_shared<asio::io_context>()), resolve_timeout_expired_(*io_),
-	  wave_timer_(*io_), unicast_timer_(*io_) {
+	  cancel_poll_timer_(*io_), wave_timer_(*io_), unicast_timer_(*io_) {
 	// parse the multicast addresses into endpoints and store them
 	uint16_t mcast_port = cfg_->multicast_port();
 	for (const auto &mcast_addr : cfg_->multicast_addresses()) {
@@ -134,7 +135,8 @@ resolver_impl *resolver_impl::create_resolver(
 // === resolve functions ===
 
 std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
-	const std::string &query, int minimum, double timeout, double minimum_time) {
+	const std::string &query, int minimum, double timeout, double minimum_time,
+	const std::atomic<bool> *cancel) {
 	if(status == resolver_status::running_continuous)
 		throw std::logic_error("resolve_oneshot called during continuous operation");
 
@@ -157,6 +159,8 @@ std::vector<stream_info_impl> resolver_impl::resolve_oneshot(
 			if (err != asio::error::operation_aborted) cancel_ongoing_resolve();
 		});
 	}
+
+	if (cancel) poll_cancellation(cancel);
 
 	// start the first wave of resolve packets
 	next_resolve_wave();
@@ -321,6 +325,21 @@ bool resolver_impl::check_cancellation_criteria()
 	return false;
 }
 
+void resolver_impl::poll_cancellation(const std::atomic<bool> *cancel) {
+	// An already-ready timer handler can run after its cancellation was posted.
+	if (expired_ || cancelled_) return;
+	if (cancel->load()) {
+		cancel_ongoing_resolve();
+		return;
+	}
+	// Only interruptible recovery queries install this timer; steady-state
+	// reception and ordinary discovery queries incur no polling cost.
+	cancel_poll_timer_.expires_after(std::chrono::milliseconds(10));
+	cancel_poll_timer_.async_wait([this, cancel](err_t err) {
+		if (!err) poll_cancellation(cancel);
+	});
+}
+
 void resolver_impl::cancel_ongoing_resolve() {
 	// make sure that ongoing handler loops terminate
 	expired_ = true;
@@ -329,6 +348,7 @@ void resolver_impl::cancel_ongoing_resolve() {
 	post(*io_, [this]() { unicast_timer_.cancel(); });
 	// and cancel the timeout, too
 	post(*io_, [this]() { resolve_timeout_expired_.cancel(); });
+	post(*io_, [this]() { cancel_poll_timer_.cancel(); });
 	// cancel all currently active resolve attempts
 	cancel_all_registered();
 }
