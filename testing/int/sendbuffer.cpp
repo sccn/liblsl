@@ -29,6 +29,7 @@
 #include "send_buffer.h"
 #include <atomic>
 #include <catch2/catch_all.hpp>
+#include <mutex>
 #include <thread>
 #include <vector>
 
@@ -136,6 +137,7 @@ TEST_CASE("multi-threaded send_buffer stress", "[queue][regression][send_buffer]
 	const int iterations_per_thread = 200;
 
 	lsl::factory fac(lsl_channel_format_t::cft_float32, 4, buffer_size * 2);
+	std::mutex factory_mut;
 	auto sendbuf = std::make_shared<lsl::send_buffer>(buffer_size);
 
 	std::vector<std::shared_ptr<lsl::consumer_queue>> queues;
@@ -148,7 +150,13 @@ TEST_CASE("multi-threaded send_buffer stress", "[queue][regression][send_buffer]
 	// Producer threads push samples concurrently
 	auto producer = [&]() {
 		for (int i = 0; i < iterations_per_thread; ++i) {
-			auto sample = fac.new_sample(static_cast<double>(i), true);
+			lsl::sample_p sample;
+			{
+				// The factory permits only one allocator at a time. Keep the
+				// send_buffer pushes concurrent without racing its sample pool.
+				std::lock_guard<std::mutex> lock(factory_mut);
+				sample = fac.new_sample(static_cast<double>(i), true);
+			}
 			sendbuf->push_sample(sample);
 			push_count.fetch_add(1, std::memory_order_relaxed);
 		}
