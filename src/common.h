@@ -86,12 +86,6 @@ public:
 	explicit timeout_error(const std::string &msg) : std::runtime_error(msg) {}
 };
 
-/// Exception class that indicates that an operation was interrupted explicitly.
-class LIBLSL_CPP_API cancelled_error : public std::runtime_error {
-public:
-	explicit cancelled_error(const std::string &msg) : std::runtime_error(msg) {}
-};
-
 } // namespace lsl
 
 #endif

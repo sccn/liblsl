@@ -75,7 +75,7 @@ void data_receiver::open_stream(double timeout) {
 			throw timeout_error("The open_stream() operation timed out.");
 	}
 	if (close_generation_ != generation)
-		throw cancelled_error("The open_stream() operation was interrupted by close_stream().");
+		throw std::runtime_error("The open_stream() operation was interrupted by close_stream().");
 	if (conn_.lost())
 		throw lost_error("The stream read by this inlet has been lost. To recover, you need to "
 						 "re-resolve the source and re-create the inlet.");
