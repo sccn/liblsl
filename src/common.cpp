@@ -54,6 +54,10 @@ LIBLSL_C_API void lsl_destroy_string(char *s) {
 	if (s) free(s);
 }
 
+LIBLSL_C_API void lsl_destroy_string_array(char **strings, unsigned long count) {
+	for (unsigned long k = 0; k < count; k++) lsl_destroy_string(strings[k]);
+}
+
 LIBLSL_C_API const char *lsl_last_error(void) {
 	thread_local char last_error[LAST_ERROR_SIZE] = {0};
 	return last_error;

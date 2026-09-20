@@ -68,6 +68,7 @@ target_link_libraries(common PUBLIC Catch2::Catch2)
 
 add_executable(lsl_test_exported
 	ext/DataType.cpp
+	ext/string_chunk.cpp
 	ext/discovery.cpp
 	ext/inlet_open.cpp
 	ext/inlet_reopen.cpp
