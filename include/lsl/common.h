@@ -228,6 +228,12 @@ extern LIBLSL_C_API double lsl_local_clock();
  */
 extern LIBLSL_C_API void lsl_destroy_string(char *s);
 
+/** Free an array of strings previously returned by lsl_pull_sample_str,
+ *  lsl_pull_sample_buf, lsl_pull_chunk_str or lsl_pull_chunk_buf.
+ *  NULL entries are skipped. Equivalent to calling lsl_destroy_string
+ *  on each element, in one call. */
+extern LIBLSL_C_API void lsl_destroy_string_array(char **strings, unsigned long count);
+
 /**
  * Set the path of the configuration file to be used by liblsl.
  *

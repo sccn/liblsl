@@ -230,7 +230,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 			uint32_t result = in->pull_chunk_multiplexed(tmp.data(), timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
-			for (std::size_t k = 0; k < tmp.size(); k++) {
+			for (std::size_t k = 0; k < result; k++) {
 				data_buffer[k] = (char *)malloc(tmp[k].size() + 1);
 				if (data_buffer[k] == nullptr) {
 					for (std::size_t k2 = 0; k2 < k; k2++) free(data_buffer[k2]);
@@ -240,6 +240,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_str(lsl_inlet in, char **data_buffer,
 				memcpy(data_buffer[k], tmp[k].data(), tmp[k].size());
 				data_buffer[k][tmp[k].size()] = '\0';
 			}
+			for (std::size_t k = result; k < data_buffer_elements; k++) data_buffer[k] = nullptr;
 			return result;
 		}
 		return 0;
@@ -259,7 +260,7 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 			uint32_t result = in->pull_chunk_multiplexed(tmp.data(), timestamp_buffer,
 				data_buffer_elements, timestamp_buffer_elements, timeout);
 			// allocate memory and copy over into buffer
-			for (uint32_t k = 0; k < tmp.size(); k++) {
+			for (uint32_t k = 0; k < result; k++) {
 				data_buffer[k] = (char *)malloc(tmp[k].size() + 1);
 				if (data_buffer[k] == nullptr) {
 					for (uint32_t k2 = 0; k2 < k; k2++) free(data_buffer[k2]);
@@ -269,6 +270,10 @@ LIBLSL_C_API unsigned long lsl_pull_chunk_buf(lsl_inlet in, char **data_buffer,
 				lengths_buffer[k] = (uint32_t)tmp[k].size();
 				memcpy(data_buffer[k], tmp[k].data(), tmp[k].size());
 				data_buffer[k][tmp[k].size()] = '\0';
+			}
+			for (std::size_t k = result; k < data_buffer_elements; k++) {
+				data_buffer[k] = nullptr;
+				lengths_buffer[k] = 0;
 			}
 			return result;
 		}
