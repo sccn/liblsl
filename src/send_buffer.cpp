@@ -23,6 +23,16 @@ void send_buffer::push_sample(const sample_p &s) {
 }
 
 
+/**
+ * Wake a single consumer without enqueueing real data.
+ * Shares consumers_mut_ with push_sample() so the queue keeps its single producer.
+ */
+void send_buffer::wake_consumer(const std::shared_ptr<consumer_queue> &q) {
+	std::lock_guard<std::mutex> lock(consumers_mut_);
+	q->push_sample(sample_p());
+}
+
+
 /// Registered a new consumer.
 void send_buffer::register_consumer(consumer_queue *q) {
 	{
