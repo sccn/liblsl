@@ -100,12 +100,15 @@ public:
 		close_sockets(sockets_swapped_);
 	}
 
-	/// Add a socket for sync writes (called from client_session after handshake)
+	/// Send the handshake and register a socket atomically with respect to sample writes.
 	void add_socket(tcp_socket::native_handle_type handle, tcp_socket::protocol_type protocol,
-		bool reverse_byte_order) {
+		bool reverse_byte_order, const asio::streambuf::const_buffers_type &header) {
 		std::lock_guard<std::mutex> lock(mutex_);
 		auto sock = std::make_unique<tcp_socket>(io_ctx_, protocol, handle);
 		apply_send_timeout(*sock);
+		// An inlet may return from open_stream() as soon as these bytes arrive.
+		// Keep sample writes locked out until the socket is registered below.
+		asio::write(*sock, header);
 		if (reverse_byte_order) {
 			sockets_swapped_.push_back(std::move(sock));
 			LOG_F(INFO, "Added sync socket (swapped endian), now have %zu native + %zu swapped",
@@ -259,7 +262,8 @@ private:
 		int request_protocol_version, const std::string &request_uid, err_t err);
 
 	/// Handler that gets called sending the feedheader has completed.
-	void handle_send_feedheader_outcome(err_t err, std::size_t n);
+	void handle_send_feedheader_outcome(
+		err_t err, std::size_t n, std::shared_ptr<consumer_queue> queue);
 
 	/// Transfers samples from the server's send buffer into the async send queues of IO threads
 	void transfer_samples_thread(std::shared_ptr<client_session> /*keepalive*/,
@@ -706,10 +710,25 @@ void client_session::handle_read_feedparams(
 				*outarch_ << *temp;
 		}
 
-		// send off the newly created feedheader
-		async_write(
-			sock_, feedbuf_.data(), [shared_this = shared_from_this()](err_t err, std::size_t len) {
-				shared_this->handle_send_feedheader_outcome(err, len);
+		if (max_buffered_ > 0 && serv->is_sync_mode()) {
+			// The synchronous writer sends the header under its sample-write lock,
+			// then registers the socket before an immediate push can acquire it.
+			auto protocol = sock_.local_endpoint().protocol();
+			serv->sync_handler_->add_socket(
+				sock_.release(), protocol, reverse_byte_order_, feedbuf_.data());
+			serv->unregister_inflight_session(this);
+			return;
+		}
+
+		// Subscribe before sending the handshake: receiving its test patterns is
+		// what lets the inlet return from open_stream(). Queue samples until the
+		// header write completes so data cannot overtake the handshake.
+		std::shared_ptr<consumer_queue> queue;
+		if (max_buffered_ > 0) queue = serv->send_buffer_->new_consumer(max_buffered_);
+		async_write(sock_, feedbuf_.data(),
+			[shared_this = shared_from_this(), queue = std::move(queue)](
+				err_t err, std::size_t len) mutable {
+				shared_this->handle_send_feedheader_outcome(err, len, std::move(queue));
 			});
 		DLOG_F(2, "%p sent test pattern samples", this);
 	} catch (std::exception &e) {
@@ -717,7 +736,8 @@ void client_session::handle_read_feedparams(
 	}
 }
 
-void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
+void client_session::handle_send_feedheader_outcome(
+	err_t err, std::size_t n, std::shared_ptr<consumer_queue> queue) {
 	try {
 		if (err) return;
 
@@ -729,22 +749,6 @@ void client_session::handle_send_feedheader_outcome(err_t err, std::size_t n) {
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
-
-		// If server is in sync mode, hand off the socket to the sync handler
-		if (serv->is_sync_mode()) {
-			LOG_F(INFO, "Handing off socket to sync handler for zero-copy transfer (reverse_byte_order=%d)",
-				reverse_byte_order_);
-			auto protocol = sock_.local_endpoint().protocol();
-			// Release the socket from this io_context and add to sync handler
-			// See https://stackoverflow.com/q/52671836/73299
-			serv->sync_handler_->add_socket(sock_.release(), protocol, reverse_byte_order_);
-			// Unregister this session since we're handing off the socket
-			serv->unregister_inflight_session(this);
-			return;
-		}
-
-		// determine transfer parameters
-		auto queue = serv->send_buffer_->new_consumer(max_buffered_);
 
 		// determine the maximum chunk size
 		int max_samples_per_chunk = std::numeric_limits<int>::max();
