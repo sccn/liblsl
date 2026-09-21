@@ -72,3 +72,32 @@ TEST_CASE("sample conversion", "[basic]") {
 		values[1] = (double)(-buf[0]);
 	}
 }
+
+TEST_CASE("sample recycling acquires earlier readers", "[sample][threads]") {
+	lsl::factory fac(cft_int32, 1, 1);
+	for (int i = 0; i < 32; ++i) {
+		auto sample = fac.new_sample(42.0, false);
+		auto *address = sample.get();
+		std::atomic<bool> released{false};
+		double observed = 0.0;
+		std::thread reader([copy = sample, &released, &observed]() mutable {
+			observed = copy->timestamp();
+			copy.reset();
+			released.store(true, std::memory_order_relaxed);
+		});
+		struct join_thread {
+			std::thread &thread;
+			~join_thread() { if (thread.joinable()) thread.join(); }
+		} joiner{reader};
+
+		// Only control the release order here. An acquire/release handshake or
+		// joining before reuse would hide synchronization missing from refcount_.
+		while (!released.load(std::memory_order_relaxed)) std::this_thread::yield();
+		sample.reset(); // Last owner must acquire the earlier reader's release.
+		auto recycled = fac.new_sample(84.0, true);
+		reader.join();
+		CHECK(recycled.get() == address);
+		CHECK(observed == 42.0);
+		CHECK(recycled->timestamp() == 84.0);
+	}
+}
