@@ -32,6 +32,10 @@ if(LSL_UNITTESTS AND NOT IOS)
 	add_subdirectory(testing)
 endif()
 
+if(LSL_BUILD_EXAMPLES)
+    add_subdirectory(examples)
+endif()
+
 # Config for packaging
 include(cmake/LSLCMake.cmake)
 LSL_get_target_arch()

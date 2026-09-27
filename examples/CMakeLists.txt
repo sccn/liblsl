@@ -3,38 +3,40 @@ project(lslexamples
 	LANGUAGES C CXX
 	VERSION 0.2.0)
 
-include(GNUInstallDirs)
+if(PROJECT_IS_TOP_LEVEL)
+    include(GNUInstallDirs)
 
-set(LSL_SEARCH_PATHS
-    ${LSL_INSTALL_ROOT}
-    "${CMAKE_CURRENT_LIST_DIR}/../install"  # GHA scripts default install directory
-    "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release/install"  # CLion default if using -DCMAKE_INSTALL_PREFIX=install
-)
-if(APPLE)
-    # Also search in a Frameworks subdirectory for each path
-    foreach(p IN LISTS LSL_SEARCH_PATHS)
-        if(p)
-            list(APPEND LSL_SEARCH_PATHS "${p}/Frameworks")
-        endif()
-    endforeach()
-else()
-    # Add MSVC-specific paths if not on Apple
-    list(APPEND LSL_SEARCH_PATHS
-        "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release-visual-studio/install"  # CLion default if using VS compiler
-        "${CMAKE_CURRENT_LIST_DIR}/../out/build/x64-Release/install"  # MSVC default if using -DCMAKE_INSTALL_PREFIX=install
+    set(LSL_SEARCH_PATHS
+        ${LSL_INSTALL_ROOT}
+        "${CMAKE_CURRENT_LIST_DIR}/../install"  # GHA scripts default install directory
+        "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release/install"  # CLion default if using -DCMAKE_INSTALL_PREFIX=install
     )
+    if(APPLE)
+        # Also search in a Frameworks subdirectory for each path
+        foreach(p IN LISTS LSL_SEARCH_PATHS)
+            if(p)
+                list(APPEND LSL_SEARCH_PATHS "${p}/Frameworks")
+            endif()
+        endforeach()
+    else()
+        # Add MSVC-specific paths if not on Apple
+        list(APPEND LSL_SEARCH_PATHS
+            "${CMAKE_CURRENT_LIST_DIR}/../cmake-build-release-visual-studio/install"  # CLion default if using VS compiler
+            "${CMAKE_CURRENT_LIST_DIR}/../out/build/x64-Release/install"  # MSVC default if using -DCMAKE_INSTALL_PREFIX=install
+        )
+    endif()
+
+    find_package(LSL REQUIRED
+	    HINTS ${LSL_SEARCH_PATHS}
+	    PATH_SUFFIXES share/LSL
+    )
+    get_filename_component(LSL_PATH ${LSL_CONFIG} DIRECTORY)
+    message(STATUS "Found LSL lib in ${LSL_PATH}")
+
+    # Include the LSLCMake.cmake file, just for testing.
+    # This doesn't do much for us now that we don't use installLSLApp() anymore.
+    include("${LSL_PATH}/LSLCMake.cmake")
 endif()
-
-find_package(LSL REQUIRED
-	HINTS ${LSL_SEARCH_PATHS}
-	PATH_SUFFIXES share/LSL
-)
-get_filename_component(LSL_PATH ${LSL_CONFIG} DIRECTORY)
-message(STATUS "Found LSL lib in ${LSL_PATH}")
-
-# Include the LSLCMake.cmake file, just for testing.
-# This doesn't do much for us now that we don't use installLSLApp() anymore.
-include("${LSL_PATH}/LSLCMake.cmake")
 
 # convenience function to add an example file
 # this creates a target, links the necessary libraries and
@@ -65,10 +67,12 @@ function(addlslexample name extension)
 #        )
 #    endif()
 
-    install(TARGETS ${name}
-        COMPONENT ${PROJECT_NAME}
-        RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+    if(PROJECT_IS_TOP_LEVEL)
+        install(TARGETS ${name}
+            COMPONENT ${PROJECT_NAME}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif()
 endfunction()
 
 find_package(Threads)
@@ -107,9 +111,12 @@ if(WIN32)
         $<TARGET_FILE_DIR:HandleMetaData>
         COMMENT "Copying lsl.dll to examples build directory"
     )
-	# Install the lsl.dll to the same directory as the executable.
-	install(
-        CODE "file(INSTALL DESTINATION \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\" TYPE SHARED_LIBRARY FILES \"$<TARGET_FILE:LSL::lsl>\")"
-        COMPONENT ${PROJECT_NAME}
-    )
+
+    if(PROJECT_IS_TOP_LEVEL)
+	    # Install the lsl.dll to the same directory as the executable.
+	    install(
+            CODE "file(INSTALL DESTINATION \"${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}\" TYPE SHARED_LIBRARY FILES \"$<TARGET_FILE:LSL::lsl>\")"
+            COMPONENT ${PROJECT_NAME}
+        )
+    endif()
 endif()
