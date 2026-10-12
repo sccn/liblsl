@@ -1,3 +1,4 @@
+#include "../common/comma_locale.hpp"
 #include "../common/create_streampair.hpp"
 #include "../common/lsltypes.hpp"
 #include <catch2/catch_approx.hpp>
@@ -44,6 +45,26 @@ TEST_CASE("sync_outlet_basic", "[sync][basic]") {
 		for (int c = 0; c < nchannels; ++c) {
 			CHECK(recv_buf[c] == Catch::Approx(send_buf[c]));
 		}
+	}
+}
+
+TEST_CASE("sync_outlet_comma_locale", "[sync][locale]") {
+	// A resolved stream info parsed as protocol 1.00 makes the inlet request the legacy feed,
+	// which is not supported for sync mode.
+	CommaLocale locale;
+	if (!locale.active()) {
+		WARN("No comma-decimal locale installed, not testing locale independence");
+		return;
+	}
+	auto sp = create_sync_streampair(
+		lsl::stream_info("SyncLocale", "Test", 2, 100, lsl::cf_double64, "sync_locale"));
+	CHECK(sp.in_.info().version() == lsl::protocol_version());
+
+	std::vector<double> send_buf{1.5, -2.5}, recv_buf(2);
+	for (int i = 0; i < 10; ++i) {
+		sp.out_.push_sample(send_buf, lsl::local_clock(), true);
+		REQUIRE(sp.in_.pull_sample(recv_buf, 2.0) != 0.0);
+		CHECK(recv_buf == send_buf);
 	}
 }
 
