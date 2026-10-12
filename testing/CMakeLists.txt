@@ -57,6 +57,7 @@ add_library(common OBJECT
 	common/bytecmp.cpp
 	common/bytecmp.hpp
 	common/create_streampair.hpp
+	common/comma_locale.hpp
 	common/lsltypes.hpp
 )
 target_compile_features(common PUBLIC cxx_std_14)

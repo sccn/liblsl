@@ -1,3 +1,4 @@
+#include "../common/comma_locale.hpp"
 #include "../src/api_config.h"
 #include "../src/stream_info_impl.h"
 #include <cctype>
@@ -28,6 +29,24 @@ TEST_CASE("uid", "[basic][streaminfo]") {
 	const char variant = uid[19];
 	REQUIRE(contains("89abAB", variant));
 	REQUIRE(uid != info.reset_uid());
+}
+
+TEST_CASE("shortinfo parsing ignores the numeric locale", "[basic][streaminfo][xml]") {
+	lsl::stream_info_impl info("LocaleInfo", "type", 2, 0.5, lsl_channel_format_t::cft_float32, "src");
+	info.reset_uid();
+	info.created_at(1234.5);
+
+	CommaLocale locale;
+	if (!locale.active()) {
+		WARN("No comma-decimal locale installed, not testing locale independence");
+		return;
+	}
+	lsl::stream_info_impl parsed;
+	parsed.from_shortinfo_message(info.to_shortinfo_message());
+	CHECK(parsed.name() == "LocaleInfo");
+	CHECK(parsed.version() == info.version());
+	CHECK(parsed.nominal_srate() == 0.5);
+	CHECK(parsed.created_at() == 1234.5);
 }
 
 TEST_CASE("streaminfo matching via XPath", "[basic][streaminfo][xml]") {

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <cstdlib>
 #include <exception>
+#include <locale>
 #include <loguru.hpp>
 #include <sstream>
 #include <stdexcept>
@@ -96,6 +97,16 @@ void get_bounded_child_val(xml_node &node, const char *child_name, T &target, in
 	target = static_cast<T>(intval);
 }
 
+/// Parse a floating point child value independently of the C locale. std::stod honors
+/// LC_NUMERIC, so a locale that uses comma decimal parses "1.1" as "11"
+double get_double_child_val(xml_node &node, const char *child_name) {
+	std::istringstream is(node.child_value(child_name));
+	is.imbue(std::locale::classic());
+	double val;
+	if (!(is >> val)) throw std::runtime_error(std::string("Invalid value for ") + child_name);
+	return val;
+}
+
 void stream_info_impl::read_xml(xml_document &doc) {
 	try {
 		xml_node info = doc.child("info");
@@ -108,7 +119,7 @@ void stream_info_impl::read_xml(xml_document &doc) {
 
 		get_bounded_child_val(info, "channel_count", channel_count_, 0);
 		get_bounded_child_val(info, "nominal_srate", nominal_srate_, 0);
-		nominal_srate_ = std::stod(info.child_value("nominal_srate"));
+		nominal_srate_ = get_double_child_val(info, "nominal_srate");
 
 		std::string fmt(info.child_value("channel_format"));
 		if (fmt == "float32")
@@ -130,11 +141,11 @@ void stream_info_impl::read_xml(xml_document &doc) {
 
 		// source_id
 		source_id_ = info.child_value("source_id");
-		version_ = (int)(std::stod(info.child_value("version")) * 100);
+		version_ = (int)(get_double_child_val(info, "version") * 100);
 		if (version_ <= 0)
 			throw std::runtime_error("The version of the given stream info is invalid.");
 		// created_at
-		created_at_ = std::stod(info.child_value("created_at"));
+		created_at_ = get_double_child_val(info, "created_at");
 		// uid
 		uid_ = info.child_value("uid");
 		if (uid_.empty()) throw std::runtime_error("The UID of the given stream info is empty.");
