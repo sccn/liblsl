@@ -98,7 +98,7 @@ void get_bounded_child_val(xml_node &node, const char *child_name, T &target, in
 }
 
 /// Parse a floating point child value independently of the C locale. std::stod honors
-/// LC_NUMERIC, so a locale that uses comma decimal parses "1.1" as "11"
+/// LC_NUMERIC, so a locale that uses comma decimal parses "1.1" as "1.".
 double get_double_child_val(xml_node &node, const char *child_name) {
 	std::istringstream is(node.child_value(child_name));
 	is.imbue(std::locale::classic());
