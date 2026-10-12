@@ -26,12 +26,13 @@ class tcp_server_wrapper {
 	std::shared_ptr<asio::io_context> srv_ctx;
 	std::unique_ptr<std::thread> thread;
 public:
-	tcp_server_wrapper(std::shared_ptr<lsl::stream_info_impl> info) {
+	tcp_server_wrapper(std::shared_ptr<lsl::stream_info_impl> info, bool do_sync = false) {
 		auto sendbuf = std::make_shared<lsl::send_buffer>(10);
 		srv_ctx = std::make_shared<asio::io_context>(1);
 		auto factory =
 			std::make_shared<lsl::factory>(info->channel_format(), info->channel_count(), 10);
-		srv = std::make_shared<lsl::tcp_server>(info, srv_ctx, sendbuf, factory, 5, true, true);
+		srv = std::make_shared<lsl::tcp_server>(
+			info, srv_ctx, sendbuf, factory, 5, true, true, do_sync);
 		srv->begin_serving();
 	}
 	~tcp_server_wrapper() noexcept {
@@ -217,6 +218,31 @@ TEST_CASE("tcpserver_float", "[network]") {
 			cmp_binstr(std::string(expected, sizeof(expected) - 1), received_pattern);
 		}));
 
+	send_request(ctx, ep, asio::buffer("LSL:streamfeed\n0 0\r\n"),
+		with_read_callback("streamfeed 100", check_streamfeed_100_response));
+
+	tcp_server.run();
+	ctx.run();
+}
+
+TEST_CASE("tcpserver_sync_requires_protocol_110", "[network][sync]") {
+	asio::io_context ctx(1);
+
+	auto info =
+		std::make_shared<lsl::stream_info_impl>("TCP_sync", "", 3, 4., cft_float32, "abc123");
+	tcp_server_wrapper tcp_server(info, true);
+	tcp::endpoint ep(address_v4(0x7f000001), info->v4data_port());
+
+	// Make sure it is rejected so the client does not receive data it cannot parse.
+	send_request(ctx, ep, asio::buffer("LSL:streamfeed\n10 0\r\n"),
+		with_read_callback("legacy feed", [](const std::string &res) { REQUIRE(res.empty()); }));
+
+	send_request(ctx, ep,
+		asio::buffer("LSL:streamfeed/110 \nMax-Buffer-Length: 10\r\nHas-IEEE754-Floats: 0\r\n\r\n"),
+		with_read_callback("downgraded feed",
+			[](const std::string &res) { REQUIRE(res.substr(0, 11) == "LSL/110 505"); }));
+
+	// Make sure the 1.00 handshake is still served when the buffer is 0.
 	send_request(ctx, ep, asio::buffer("LSL:streamfeed\n0 0\r\n"),
 		with_read_callback("streamfeed 100", check_streamfeed_100_response));
 

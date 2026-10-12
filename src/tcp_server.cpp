@@ -725,6 +725,17 @@ void client_session::handle_read_feedparams(
 			requeststream_ >> max_buffered_ >> chunk_granularity_;
 		}
 
+		// The synchronous writer only emits data protocol 1.10 samples.
+		// Reject the request as unsupported.
+		if (max_buffered_ > 0 && serv->is_sync_mode() && data_protocol_version_ < 110) {
+			LOG_F(WARNING,
+				"Rejected a streamfeed request: synchronous outlets require data protocol 1.10");
+			if (request_protocol_version >= 110)
+				send_status_message("LSL/" + to_string(cfg_proto_version) +
+									" 505 Synchronous outlet requires data protocol 1.10");
+			return;
+		}
+
 		// --- validation ---
 		if (data_protocol_version_ == 100) {
 			// create a portable output archive to write to
