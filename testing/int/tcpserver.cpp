@@ -2,6 +2,7 @@
 #include "sample.h"
 #include "send_buffer.h"
 #include "stream_info_impl.h"
+#include "stream_outlet_impl.h"
 #include "tcp_server.h"
 #include "util/endian.hpp"
 #include <asio/read.hpp>
@@ -222,4 +223,25 @@ TEST_CASE("tcpserver_float", "[network]") {
 
 	tcp_server.run();
 	ctx.run();
+}
+
+TEST_CASE("outlet teardown with a stalled consumer", "[network]") {
+	// A consumer that stops reading leaves the transfer thread waiting on a write with samples
+	// still queued; they must not be released into a destroyed factory (#312)
+	lsl::stream_info_impl info("TCP_stalled", "", 32, 1000., cft_float32, "stalled");
+	auto outlet = std::make_unique<lsl::stream_outlet_impl>(info, 0, 360);
+
+	asio::io_context ctx;
+	sock_t sock(ctx);
+	sock.open(tcp::v4());
+	sock.set_option(asio::socket_base::receive_buffer_size(4096));
+	sock.connect(tcp::endpoint(address_v4(0x7f000001), outlet->info().v4data_port()));
+	asio::write(sock, asio::buffer(std::string("LSL:streamfeed\r\n100000 0\r\n")));
+	REQUIRE(outlet->wait_for_consumers(2.));
+
+	std::vector<float> data(32);
+	for (int i = 0; i < 100000; ++i) outlet->push_sample(data);
+	outlet.reset();
+	// give the detached transfer thread time to drop its queue
+	std::this_thread::sleep_for(std::chrono::milliseconds(200));
 }
