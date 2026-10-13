@@ -150,6 +150,12 @@ stream_outlet_impl::~stream_outlet_impl() {
 					[](const thread_p &thread) { return thread->joinable(); })) {
 				for (auto &thread : io_threads_) thread->join();
 				DLOG_F(INFO, "All of %s's IO threads were joined succesfully", name);
+				// stop() strands handlers (e.g. aborted async_accept) holding servers that own
+				// their io_context; run them or the outlet's resources leak (#312)
+				for (const auto &io : {io_ctx_data_, io_ctx_service_}) {
+					io->restart();
+					io->poll();
+				}
 				break;
 			}
 		}
