@@ -76,8 +76,7 @@ public:
 			this->as_context().restart();
 		}
 		ec_ = asio::error::would_block;
-		do as_context().run_one();
-		while (!cancel_issued_ && ec_ == asio::error::would_block);
+		run_until_complete();
 		return !ec_ ? this : nullptr;
 	}
 
@@ -125,6 +124,19 @@ protected:
 		// will be processed by the run_one
 	}
 
+	/// Run until the pending operation's handler has completed. On cancel the socket is closed so
+	/// the handler completes with an error; returning earlier would leave it queued with
+	/// references to our caller's stack frame (#314)
+	void run_until_complete() {
+		do {
+			if (cancel_issued_) {
+				std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
+				close_if_open();
+			}
+			if (!as_context().run_one()) break; // no work left
+		} while (ec_ == asio::error::would_block);
+	}
+
 	int_type underflow() override {
 		if (gptr() == egptr()) {
 			std::size_t bytes_transferred_;
@@ -137,8 +149,7 @@ protected:
 
 			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
-			do as_context().run_one();
-			while (!cancel_issued_ && ec_ == asio::error::would_block);
+			run_until_complete();
 			if (ec_) return traits_type::eof();
 
 			setg(&get_buffer_[0], &get_buffer_[0] + putback_max,
@@ -161,8 +172,7 @@ protected:
 				});
 			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
-			do as_context().run_one();
-			while (!cancel_issued_ && ec_ == asio::error::would_block);
+			run_until_complete();
 			if (ec_) return traits_type::eof();
 			buffer = buffer + bytes_transferred_;
 		}
