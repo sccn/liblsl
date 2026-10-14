@@ -363,7 +363,8 @@ private:
 	stream_info_impl_p info_;
 	/// the single-producer, multiple-receiver send buffer
 	send_buffer_p send_buffer_;
-	/// the IO service objects
+	/// the IO service objects. Destroyed after the servers and before the factory: destroying a
+	/// context destroys handlers stop() stranded, freeing the servers and sessions they hold (#312)
 	io_context_p io_ctx_data_, io_ctx_service_;
 
 	/// the threaded TCP data server

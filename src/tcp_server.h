@@ -55,8 +55,8 @@ public:
 	 * the effective chunking.
 	 * @param do_sync If true, use synchronous (blocking) socket writes for zero-copy transfer.
 	 */
-	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
-		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
+	tcp_server(stream_info_impl_p info, asio::io_context &io, send_buffer_p sendbuf,
+		factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
 
 	/// Destructor (must be defined in .cpp due to unique_ptr to incomplete type)
 	~tcp_server();
@@ -115,8 +115,8 @@ private:
 
 	// data shared with the outlet
 	stream_info_impl_p info_; // shared stream_info object
-	io_context_p io_;	// shared ptr to IO service; ensures that the IO is still around by the time
-						// the acceptor needs to be destroyed
+	asio::io_context
+		&io_; // not owned: handlers queued in it hold this server, so owning it is a cycle
 	factory_p factory_; // reference to the sample factory (which owns the samples)
 	send_buffer_p send_buffer_; // the send buffer, shared with other TCP's and the outlet
 

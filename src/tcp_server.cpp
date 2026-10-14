@@ -267,8 +267,7 @@ class client_session : public std::enable_shared_from_this<client_session> {
 public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv, tcp_socket &&sock)
-		: io_(serv->io_), factory_(serv->factory_), serv_(serv), sock_(std::move(sock)),
-		  requeststream_(&requestbuf_) {}
+		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {}
 
 	/// Destructor.
 	~client_session();
@@ -311,12 +310,8 @@ private:
 	/// Handler that gets called when a sample transfer has been completed.
 	void handle_chunk_transfer_outcome(err_t err, std::size_t len);
 
-	/// shared pointer to IO service; ensures that the IO is still around by the time the serv_ and
-	/// sock_ need to be destroyed
-	io_context_p io_;
-	/// keeps the sample factory alive while the transfer thread or a handler still holds queued
-	/// samples, which can outlive the server and the outlet (#312)
-	factory_p factory_;
+	/// the IO context (not owned, see tcp_server::io_)
+	asio::io_context &io_;
 	/// the server that is associated with this connection
 	std::weak_ptr<tcp_server> serv_;
 	/// connection socket
@@ -359,10 +354,10 @@ private:
 	std::condition_variable completion_cond_;
 };
 
-tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf,
+tcp_server::tcp_server(stream_info_impl_p info, asio::io_context &io, send_buffer_p sendbuf,
 	factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync)
-	: chunk_size_(chunk_size), info_(std::move(info)), io_(std::move(io)),
-	  factory_(std::move(factory)), send_buffer_(std::move(sendbuf)) {
+	: chunk_size_(chunk_size), info_(std::move(info)), io_(io), factory_(std::move(factory)),
+	  send_buffer_(std::move(sendbuf)) {
 	// Create sync handler if sync mode is requested
 	if (do_sync) {
 		std::size_t sample_bytes = factory_->datasize();
@@ -382,7 +377,7 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 
 	if (allow_v4) {
 		try {
-			acceptor_v4_ = std::make_unique<tcp_acceptor>(*io_, asio::ip::tcp::v4());
+			acceptor_v4_ = std::make_unique<tcp_acceptor>(io_, asio::ip::tcp::v4());
 			auto port = bind_and_listen_to_port_in_range(*acceptor_v4_, asio::ip::tcp::v4(), 10);
 			info_->v4data_port(port);
 			LOG_F(1, "Created IPv%d TCP acceptor for %s @ port %d", 4, info_->name().c_str(), port);
@@ -393,7 +388,7 @@ tcp_server::tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p s
 	}
 	if (allow_v6) {
 		try {
-			acceptor_v6_ = std::make_unique<tcp_acceptor>(*io_, asio::ip::tcp::v6());
+			acceptor_v6_ = std::make_unique<tcp_acceptor>(io_, asio::ip::tcp::v6());
 			auto port = bind_and_listen_to_port_in_range(*acceptor_v6_, asio::ip::tcp::v6(), 10);
 			info_->v6data_port(port);
 			LOG_F(1, "Created IPv%d TCP acceptor for %s @ port %d", 6, info_->name().c_str(), port);
@@ -440,7 +435,7 @@ void tcp_server::begin_serving() {
 void tcp_server::end_serving() {
 	// issue closure of the server socket; this will result in a cancellation of the associated IO
 	// operations
-	post(*io_, [this, shared_this = shared_from_this()]() {
+	post(io_, [this, shared_this = shared_from_this()]() {
 		if (acceptor_v4_) acceptor_v4_->close();
 		if (acceptor_v6_) acceptor_v6_->close();
 	});
@@ -459,7 +454,7 @@ void tcp_server::accept_next_connection(tcp_acceptor_p &acceptor) {
 		if (!acceptor || !acceptor->is_open()) return;
 
 		// Select the IO context for handling the socket
-		auto &sock_io_ctx = *io_;
+		auto &sock_io_ctx = io_;
 
 		// accept a connection on the session's socket
 		acceptor->async_accept(sock_io_ctx, [shared_this = shared_from_this(), &acceptor](
@@ -894,7 +889,7 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> kee
 	}
 	// Unregister immediately; cancel the peer-close read so the session can be destroyed.
 	queue.reset();
-	post(*io_, [keepalive]() {
+	post(io_, [keepalive]() {
 		asio::error_code ec;
 		keepalive->sock_.cancel(ec);
 	});
