@@ -1,0 +1,5 @@
+# ThreadSanitizer suppressions (used by .github/workflows/sanitize.yml)
+
+# host_info_mut_ and onrecover_mut_ are taken in both orders, but only inside try_recover(),
+# which recovery_mut_ serializes, so the inversion can't deadlock
+deadlock:lsl::inlet_connection::try_recover
