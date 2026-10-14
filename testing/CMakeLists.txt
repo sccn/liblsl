@@ -3,7 +3,6 @@ project(lsltests
 	LANGUAGES CXX
 	DESCRIPTION "Unit tests for liblsl"
 	)
-cmake_minimum_required (VERSION 3.12)
 enable_testing()
 include(GNUInstallDirs)
 
