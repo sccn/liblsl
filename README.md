@@ -60,6 +60,37 @@ If you need `lsl.framework` (e.g. to bundle it inside an app), download it from
 the [GitHub releases](https://github.com/sccn/liblsl/releases) or build with
 `-DLSL_FRAMEWORK=ON`.
 
+### iOS and iPadOS
+
+Each [release](https://github.com/sccn/liblsl/releases) has a signed
+`lsl.xcframework.<version>.zip` with frameworks for macOS, iOS devices and the
+iOS simulator. Add `lsl.xcframework` to your Xcode target with
+"Embed & Sign" and `#include <lsl/lsl_cpp.h>` (or `lsl_c.h`).
+
+Stream discovery uses UDP multicast, so the app needs:
+
+- the `com.apple.developer.networking.multicast` entitlement, which you
+  [request from Apple](https://developer.apple.com/contact/request/networking-multicast)
+  for your app ID, and
+- an `NSLocalNetworkUsageDescription` entry in its `Info.plist` (iOS 14+ asks
+  the user for local network access).
+
+To build the frameworks yourself (iOS 15 or newer), use CMake's built-in iOS support:
+
+```sh
+# Device
+cmake -S . -B build-ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_ARCHITECTURES=arm64
+# Simulator
+cmake -S . -B build-ios-sim -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
+  -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_SYSROOT=iphonesimulator \
+  "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
+```
+
+then build the `install` target of each and combine them with
+`scripts/apple_create_xcframework.sh`. A CMake-based iOS app can also add liblsl
+with `FetchContent` and link `LSL::lsl`.
+
 ## Building liblsl
 
 To compile the library yourself from source,
