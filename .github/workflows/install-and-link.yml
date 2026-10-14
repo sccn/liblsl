@@ -1,0 +1,163 @@
+name: Install and link
+
+# Installs liblsl the ways users get it and links a small program against it with
+# find_package, FetchContent, pkg-config and (macOS) the framework.
+# See testing/consumer/test_consumers.sh.
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
+      - '.github/workflows/install-and-link.yml'
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  check_skip:
+    name: Skip if already tested
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      should_skip: ${{ steps.skip.outputs.should_skip }}
+    steps:
+      - id: skip
+        uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
+        with:
+          # Only skip pushes whose exact file tree already passed (e.g. a merged PR)
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+          skip_after_successful_duplicate: 'true'
+          concurrent_skipping: 'never'
+
+  native:
+    name: ${{ matrix.name }}
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: "Ubuntu 22.04 shared", os: ubuntu-22.04, linkage: shared}
+          - {name: "Ubuntu 22.04 static", os: ubuntu-22.04, linkage: static}
+          - {name: "Ubuntu 24.04 shared", os: ubuntu-24.04, linkage: shared}
+          - {name: "Ubuntu 24.04 static", os: ubuntu-24.04, linkage: static}
+          - {name: "Ubuntu 24.04 static, system pugixml", os: ubuntu-24.04, linkage: static, args: "-DLSL_FETCH_PUGIXML=OFF"}
+          - {name: "Ubuntu 24.04 shared, /usr/local", os: ubuntu-24.04, linkage: shared, system: true}
+          - {name: "Ubuntu 24.04 arm64 shared", os: ubuntu-24.04-arm, linkage: shared}
+          - {name: "macOS framework shared", os: macos-latest, linkage: shared}
+          - {name: "macOS framework static", os: macos-latest, linkage: static}
+          - {name: "macOS framework shared, /usr/local", os: macos-latest, linkage: shared, system: true}
+          - {name: "macOS dylib shared", os: macos-latest, linkage: shared, args: "-DLSL_FRAMEWORK=OFF"}
+          - {name: "macOS dylib static", os: macos-latest, linkage: static, args: "-DLSL_FRAMEWORK=OFF"}
+          - {name: "macOS x86_64 framework shared", os: macos-15-intel, linkage: shared}
+          - {name: "Windows MSVC x64 shared", os: windows-latest, linkage: shared}
+          - {name: "Windows MSVC x64 static", os: windows-latest, linkage: static}
+          - {name: "Windows MSVC ARM64 shared", os: windows-11-arm, linkage: shared}
+          - {name: "Windows MSVC ARM64 static", os: windows-11-arm, linkage: static}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Install pkg-config (and pugixml, only where it is used)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends pkg-config \
+            ${{ contains(matrix.args, 'LSL_FETCH_PUGIXML=OFF') && 'libpugixml-dev' || '' }}
+      - name: Test
+        env:
+          PREFIX: ${{ matrix.system && 'system' || '' }}
+          SUDO: ${{ matrix.system && 'sudo' || '' }}
+        run: testing/consumer/test_consumers.sh ${{ matrix.linkage }} ${{ matrix.args }}
+
+  container:
+    # Distribution toolchains and CMake versions; Fedora installs to lib64.
+    name: ${{ matrix.image }} ${{ matrix.linkage }}${{ matrix.system && ', /usr/local' || '' }}
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
+    runs-on: ubuntu-latest
+    container: ${{ matrix.image }}
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {image: "ubuntu:26.04", linkage: shared}
+          - {image: "ubuntu:26.04", linkage: static}
+          # CMake 3.25, close to the minimum liblsl declares
+          - {image: "debian:12", linkage: shared}
+          - {image: "debian:12", linkage: static}
+          - {image: "fedora:latest", linkage: shared, system: true}
+          - {image: "fedora:latest", linkage: static, system: true}
+    steps:
+      - name: Install build tools
+        run: |
+          if command -v apt-get >/dev/null; then
+            apt-get update
+            DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+              build-essential cmake git pkg-config ca-certificates
+          else
+            dnf install -y gcc gcc-c++ make cmake git pkgconf-pkg-config
+          fi
+          cmake --version
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Test
+        env:
+          PREFIX: ${{ matrix.system && 'system' || '' }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          testing/consumer/test_consumers.sh ${{ matrix.linkage }}
+
+  mingw:
+    name: MinGW ${{ matrix.msys }} ${{ matrix.linkage }}
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
+    runs-on: windows-latest
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        msys: [ucrt64]
+        linkage: [shared, static]
+    defaults:
+      run:
+        shell: 'msys2 {0}'
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: ${{ matrix.msys }}
+          update: true
+          install: git
+          pacboy: >-
+            toolchain:p
+            cmake:p
+            ninja:p
+            pkgconf:p
+      - name: Test
+        env:
+          CMAKE_GENERATOR: Ninja
+        run: testing/consumer/test_consumers.sh ${{ matrix.linkage }}
