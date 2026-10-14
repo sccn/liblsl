@@ -2,12 +2,15 @@ name: Android
 
 on:
   push:
-    branches: ['androidci']
+    branches:
+      - main
+      - dev
     paths:
       - '**'
       - '!docs/**'
       - '!.github/**'
       - '.github/workflows/android.yml'
+  pull_request:
   workflow_dispatch:
     inputs:
       cmakeextra:
@@ -15,29 +18,76 @@ on:
         required: false
         default: ''
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
 defaults:
   run:
     shell: bash
 
-
 jobs:
+  check_skip:
+    name: Skip if already tested
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      should_skip: ${{ steps.skip.outputs.should_skip }}
+    steps:
+      - id: skip
+        uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
+        with:
+          # Only skip pushes whose exact file tree already passed (e.g. a merged PR)
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+          skip_after_successful_duplicate: 'true'
+          concurrent_skipping: 'never'
+
   build:
-    name: ${{ matrix.config.arch }}
+    name: ${{ matrix.config.name }}
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         config:
-        - {arch: "x86"}
-        - {arch: "armeabi-v7a" }
-        - {arch: "arm64-v8a"}
+        # The NDK toolchain file with an old API level is what an Android Studio (Gradle)
+        # app with minSdk 21 uses; APIs added later (e.g. pthread_getname_np, API 26) break it.
+        - {name: "arm64-v8a, NDK, API 21", toolchain: ndk, abi: arm64-v8a, api: 21}
+        - {name: "armeabi-v7a, NDK, API 21", toolchain: ndk, abi: armeabi-v7a, api: 21}
+        - {name: "x86_64, NDK, API 21", toolchain: ndk, abi: x86_64, api: 21}
+        - {name: "x86, NDK, API 21", toolchain: ndk, abi: x86, api: 21}
+        - {name: "arm64-v8a static, NDK, API 21", toolchain: ndk, abi: arm64-v8a, api: 21, static: true}
+        # CMake's built-in Android support, as used without Gradle
+        - {name: "arm64-v8a, CMake, API 30", toolchain: cmake, abi: arm64-v8a, api: 30}
 
     steps:
     - uses: actions/checkout@v7
+      with:
+        fetch-depth: 0
+
+    - name: Select toolchain
+      run: |
+        if [[ "${{ matrix.config.toolchain }}" == ndk ]]; then
+          args="-DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK_LATEST_HOME/build/cmake/android.toolchain.cmake"
+          args+=" -DANDROID_ABI=${{ matrix.config.abi }} -DANDROID_PLATFORM=android-${{ matrix.config.api }}"
+        else
+          args="-DCMAKE_SYSTEM_NAME=Android -DCMAKE_ANDROID_NDK=$ANDROID_NDK_LATEST_HOME"
+          args+=" -DCMAKE_SYSTEM_VERSION=${{ matrix.config.api }} -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.config.abi }}"
+        fi
+        args+=" -DLSL_BUILD_STATIC=${{ matrix.config.static && 'ON' || 'OFF' }}"
+        echo "ANDROID_ARGS=$args" >> "$GITHUB_ENV"
+        echo "$args"
 
     - name: Configure CMake
       run: |
            cmake --version
+           # shellcheck disable=SC2086
            cmake -S . -B build \
                 -DCMAKE_BUILD_TYPE=Release \
                 -DCMAKE_INSTALL_PREFIX=${PWD}/install \
@@ -45,15 +95,22 @@ jobs:
                 -DCPACK_PACKAGE_DIRECTORY=${PWD}/package \
                 -Dlslgitrevision=${{ github.sha }} \
                 -Dlslgitbranch=${{ github.ref }} \
-                -DCMAKE_SYSTEM_NAME=Android \
-                -DCMAKE_SYSTEM_VERSION=30 \
-                -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.config.arch }} \
+                $ANDROID_ARGS \
                 ${{ github.event.inputs.cmakeextra }}
-            echo ${PWD}
+
     - name: make
       run: cmake --build build --target install --config Release -j
+
+    # An app's CMakeLists.txt pulling liblsl in with FetchContent, as in an Android Studio project
+    - name: Build a FetchContent consumer
+      run: |
+           # shellcheck disable=SC2086
+           cmake -S testing/consumer -B consumer -DCMAKE_BUILD_TYPE=Release \
+                "-DLSL_SOURCE_DIR=${PWD}" $ANDROID_ARGS
+           cmake --build consumer -j
+
     - name: upload install dir
       uses: actions/upload-artifact@v7
       with:
-        name: build-android-${{ matrix.config.arch }}
+        name: build-android-${{ matrix.config.abi }}-${{ matrix.config.toolchain }}-${{ matrix.config.api }}${{ matrix.config.static && '-static' || '' }}
         path: install
