@@ -1,103 +1,36 @@
 [![GitHub Actions Status](https://github.com/sccn/liblsl/workflows/C%2FC++%20CI/badge.svg)](https://github.com/sccn/liblsl/actions)
-[![Azure Build Status](https://dev.azure.com/labstreaminglayer/liblsl/_apis/build/status/sccn.liblsl?branchName=master)](https://dev.azure.com/labstreaminglayer/liblsl/_build/latest?definitionId=1&branchName=master)
 [![DOI](https://zenodo.org/badge/123265865.svg)](https://zenodo.org/badge/latestdoi/123265865)
 
 # Lab Streaming Layer library
 
-The lab streaming layer is a simple all-in-one approach to streaming experiment
+The lab streaming layer (LSL) is a simple all-in-one approach to streaming experiment
 data between applications in a lab, e.g. instrument time series, event markers,
-audio, and so on. For more information, please read the
-[online documentation](https://labstreaminglayer.readthedocs.io)
+audio, and so on. This repository is the core library, `liblsl`, which every LSL
+application and language binding uses.
 
-These repository is for the core library: `liblsl`
+- **LSL in general** (what it is, supported devices, apps, language bindings, getting started):
+  the [LSL documentation](https://labstreaminglayer.readthedocs.io).
+- **liblsl itself**: the [liblsl documentation](https://labstreaminglayer.readthedocs.io/projects/liblsl/):
+  - [Getting liblsl](https://labstreaminglayer.readthedocs.io/projects/liblsl/guide/getting.html): releases, package managers, building it with your project
+  - [Using liblsl in your project](https://labstreaminglayer.readthedocs.io/projects/liblsl/guide/linking.html): CMake `find_package` / FetchContent, pkg-config, frameworks, iOS
+  - [Building liblsl](https://labstreaminglayer.readthedocs.io/projects/liblsl/guide/building.html): options and platform notes (Linux, ARM, macOS, Windows, MinGW, iOS, Android)
+  - [Configuration](https://labstreaminglayer.readthedocs.io/projects/liblsl/guide/configuration.html): `lsl_api.cfg`
+  - [How liblsl works](https://labstreaminglayer.readthedocs.io/projects/liblsl/internals/overview.html): discovery, the data protocol, time synchronization, connection recovery
+  - [API reference](https://labstreaminglayer.readthedocs.io/projects/liblsl/)
 
-## Getting and using liblsl
+## Quick start
 
-The most up-to-date instructions to use liblsl are in the
-[quick start online documentation](https://labstreaminglayer.readthedocs.io/info/getting_started.html).
-
-You might also be interested in
-[apps to connect to recording equipment](https://labstreaminglayer.readthedocs.io/info/supported_devices.html)
-and the [LabRecorder](https://github.com/labstreaminglayer/App-LabRecorder) to record streams to disk.
-
-To retrieve the latest liblsl release, you have a few options.
-
-Precompiled packages are uploaded
-
-- to the [Release page](https://github.com/sccn/liblsl/releases)
-- the [Anaconda cloud](https://anaconda.org/conda-forge/liblsl), install with `conda install -c conda-forge liblsl`
-
-liblsl is also available via the following package managers:
-
-- [vcpkg](https://vcpkg.io)
-- [Conan](https://conan.io/center/liblsl)
-- [homebrew](https://brew.sh/) via `brew install labstreaminglayer/tap/lsl`
-
-If you cannot find a liblsl for you via any of the above methods, then fear not because for most users it is simple to build.
-
-### Linking against Homebrew liblsl on macOS
-
-The Homebrew package installs a regular shared library (`lib/liblsl.dylib`),
-headers, a CMake package and a pkg-config file, so it links like on Linux:
-
-```sh
-brew install labstreaminglayer/tap/lsl
-clang++ -std=c++14 main.cpp $(pkg-config --cflags --libs lsl) -o myapp
-```
-
-For CMake applications, use the exported target, which supplies the include
-directories and linking requirements:
+With CMake, add liblsl to your project and link the `LSL::lsl` target:
 
 ```cmake
-find_package(LSL CONFIG REQUIRED)
+include(FetchContent)
+FetchContent_Declare(liblsl GIT_REPOSITORY https://github.com/sccn/liblsl.git GIT_TAG v1.18.0)
+FetchContent_MakeAvailable(liblsl)
 target_link_libraries(myapp PRIVATE LSL::lsl)
 ```
 
-If CMake does not find the package automatically, configure with
-`-DCMAKE_PREFIX_PATH="$(brew --prefix lsl)"`.
-
-If you need `lsl.framework` (e.g. to bundle it inside an app), download it from
-the [GitHub releases](https://github.com/sccn/liblsl/releases) or build with
-`-DLSL_FRAMEWORK=ON`.
-
-### iOS and iPadOS
-
-Each [release](https://github.com/sccn/liblsl/releases) has a signed
-`lsl.xcframework.<version>.zip` with frameworks for macOS, iOS devices and the
-iOS simulator. Add `lsl.xcframework` to your Xcode target with
-"Embed & Sign" and `#include <lsl/lsl_cpp.h>` (or `lsl_c.h`).
-
-Stream discovery uses UDP multicast, so the app needs:
-
-- the `com.apple.developer.networking.multicast` entitlement, which you
-  [request from Apple](https://developer.apple.com/contact/request/networking-multicast)
-  for your app ID, and
-- an `NSLocalNetworkUsageDescription` entry in its `Info.plist` (iOS 14+ asks
-  the user for local network access).
-
-To build the frameworks yourself (iOS 15 or newer), use CMake's built-in iOS support:
-
-```sh
-# Device
-cmake -S . -B build-ios -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_ARCHITECTURES=arm64
-# Simulator
-cmake -S . -B build-ios-sim -G Xcode -DCMAKE_SYSTEM_NAME=iOS \
-  -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_SYSROOT=iphonesimulator \
-  "-DCMAKE_OSX_ARCHITECTURES=arm64;x86_64"
-```
-
-then build the `install` target of each and combine them with
-`scripts/apple_create_xcframework.sh`. A CMake-based iOS app can also add liblsl
-with `FetchContent` and link `LSL::lsl`.
-
-## Building liblsl
-
-To compile the library yourself from source,
-please follow the [online documentation](https://labstreaminglayer.readthedocs.io/dev/lib_dev.html).
-
-For single board computers running linux, you can also try
-`standalone_compilation_linux.sh`.
+or use an installed liblsl with `find_package(LSL REQUIRED)`. Then include `lsl_cpp.h` (C++)
+or `lsl_c.h` (C), and see the programs in [`examples/`](examples/).
 
 ## Design goals
 
@@ -121,12 +54,12 @@ e) Network and processor overhead should be reasonably low to not get in the way
 Package overview:
 * The API headers are in the [`include/`](include/) directory.
 * The library source code is in the [`src/`](src/) directory.
-* Unit tests are in the [`testing/`](testing/) directory
+* Unit tests are in the [`testing/`](testing/) directory.
+* The documentation sources are in [`docs/`](docs/).
 
 To connect an application to the lab streaming layer:
-* Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h for C++`)
-  (automatically done when using CMake) or get
-  [bindings for your preferred language](https://github.com/sccn/labstreaminglayer/tree/master/LSL)
+* Include the header for your language (`lsl_c.h` for C, `lsl_cpp.h` for C++)
+  or get a [binding for your preferred language](https://labstreaminglayer.readthedocs.io/info/language_wrappers.html)
 * Make sure that the library file (`liblsl.so`/`liblsl.dylib`/`lsl.dll`) is found by your application. 
   On Windows, it should be enough to put it in the same folder as your executable.
   When building a Windows app, also make sure that the `lsl.lib` file is visible
