@@ -261,12 +261,12 @@ contains the fix.
 
 | Problem | Fix | Release |
 |---|---|---|
-| Stateful firewalls dropped discovery replies, because queries left from a different socket than the one that received the replies ("works only with the firewall off") | #278: queries are sent from the reply socket (`src/resolve_attempt_udp.cpp`) | v1.18.0.b3 |
-| With `ResolveScope=machine` or `127.0.0.1`, only one local stream was found, and which one changed between restarts | #282: machine addresses are also probed across the port range (`src/resolver_impl.cpp`) | v1.18.0.b3 |
-| A multicast interface that cannot be used (VPN, Docker, VirtualBox, Hyper-V) aborted discovery, and could terminate the program through a continuous resolver | #283: a bad interface is logged and skipped; the continuous resolver catches errors and keeps running | v1.18.0.b3 |
-| `close_stream()` could block while the inlet was recovering, and reopening a closed inlet was unsafe | #299: close interrupts the recovery wait, the back-off and pending `open_stream()` calls | v1.18.0.b3 |
-| Destroying an outlet leaked its IO context, buffers and sample factory (#312) | #313 | Not yet released (on `dev` after v1.18.0.b5) |
-| Destroying an outlet with connected inlets could leave transfer threads running past its IO threads | #316 | Not yet released (on `dev` after v1.18.0.b5) |
+| Stateful firewalls dropped discovery replies, because queries left from a different socket than the one that received the replies ("works only with the firewall off") | #278: queries are sent from the reply socket (`src/resolve_attempt_udp.cpp`) | 1.18 (beta 1) |
+| With `ResolveScope=machine` or `127.0.0.1`, only one local stream was found, and which one changed between restarts | #282: machine addresses are also probed across the port range (`src/resolver_impl.cpp`) | 1.18 (beta 1) |
+| A multicast interface that cannot be used (VPN, Docker, VirtualBox, Hyper-V) aborted discovery, and could terminate the program through a continuous resolver | #283: a bad interface is logged and skipped; the continuous resolver catches errors and keeps running | 1.18 (beta 1) |
+| `close_stream()` could block while the inlet was recovering, and reopening a closed inlet was unsafe | #299: close interrupts the recovery wait, the back-off and pending `open_stream()` calls | 1.18 (beta 3) |
+| Destroying an outlet leaked its IO context, buffers and sample factory (#312) | #313 | 1.18 (beta 6) |
+| Destroying an outlet with connected inlets could leave transfer threads running past its IO threads | #316 | 1.18 (beta 6) |
 
 Failure mode 6 above is what remains of the #282 problem: it no longer happens while every outlet
 has a port inside the range.
