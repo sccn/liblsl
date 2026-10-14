@@ -670,7 +670,7 @@ void client_session::handle_read_feedparams(
 					// get the header information
 					if (type == "native-byte-order") client_byte_order = std::stoi(rest);
 					if (type == "endian-performance")
-						client_endian_performance = std::stod(rest);
+						client_endian_performance = from_string<double>(rest);
 					if (type == "has-ieee754-floats")
 						client_has_ieee754_floats = from_string<bool>(rest);
 					if (type == "supports-subnormals")
@@ -737,7 +737,9 @@ void client_session::handle_read_feedparams(
 		// The synchronous writer only emits data protocol 1.10 samples.
 		// Reject the request as unsupported.
 		if (max_buffered_ > 0 && serv->is_sync_mode() && data_protocol_version_ < 110) {
-			LOG_F(WARNING,
+			// Debug builds only: a rejected inlet retries every 500 ms. Protocol 1.10 inlets
+			// get the reason in the 505 response below.
+			DLOG_F(WARNING,
 				"Rejected a streamfeed request: synchronous outlets require data protocol 1.10");
 			if (request_protocol_version >= 110)
 				send_status_message("LSL/" + to_string(cfg_proto_version) +
