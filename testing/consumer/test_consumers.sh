@@ -48,11 +48,13 @@ exported_symbols() {
 	lib=$(find "$1/bin" -name '*consumer_shared*' \( -name '*.so' -o -name '*.dylib' -o -name '*.dll' \) | head -n1)
 	case $lib in
 		*.dll)
-			if command -v objdump >/dev/null; then
-				objdump -p "$lib"
+			# dumpbin reads DLLs of every architecture; objdump on PATH may be an x86-64-only
+			# MinGW build (e.g. on Windows ARM64 runners), so it is only the fallback.
+			local vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+			if [[ -x $vswhere ]]; then
+				"$("$vswhere" -latest -find 'VC/Tools/MSVC/**/dumpbin.exe' | head -n1 | tr -d '\r')" -exports "$lib"
 			else
-				local vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
-				"$("$vswhere" -latest -find 'VC/Tools/MSVC/**/dumpbin.exe' | head -n1 | tr -d '\r')" /exports "$lib"
+				objdump -p "$lib"
 			fi ;;
 		*.dylib) nm -gU "$lib" ;;
 		*) nm -D --defined-only "$lib" ;;
@@ -61,7 +63,7 @@ exported_symbols() {
 # A library linking a static liblsl must export only its own symbols, none of liblsl's.
 check_no_reexports() {
 	local symbols
-	symbols=$(exported_symbols "$1")
+	symbols=$(exported_symbols "$1") || true
 	if ! grep -q consumer_shared_lsl_version <<<"$symbols"; then
 		echo "error: could not read the exports of consumer_shared:" >&2
 		echo "$symbols" >&2
