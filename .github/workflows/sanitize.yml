@@ -55,8 +55,6 @@ jobs:
           sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure CMake
         run: |
-          # linking a C++ library to a C program fails with ubsan enabled; disable lslver for this run
-          sed -i -e'/lslver/d' CMakeLists.txt
           cmake --version
           cmake -S . -B build \
                -DCMAKE_BUILD_TYPE=RelWithDebInfo \
@@ -76,7 +74,8 @@ jobs:
            echo ${PWD}
 
       - name: make
-        run: cmake --build build --config RelWithDebInfo -j
+        # only the tests: C programs like lslver can't link against a ubsan-instrumented C++ library
+        run: cmake --build build --config RelWithDebInfo -j --target lsl_test_internal lsl_test_exported
 
       - name: run unit tests
         # not under gdb: LeakSanitizer refuses to run under ptrace, and the sanitizers print their own stacks
