@@ -1,0 +1,15 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+# A static LSL::lsl passes its own dependencies on to consumers; a shared one does not.
+if(@LSL_BUILD_STATIC@)
+    find_dependency(Threads)
+    if(NOT @LSL_PUGIXML_IS_FETCHED@)
+        find_dependency(pugixml)
+    endif()
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/LSLTargets.cmake")
+
+check_required_components(LSL)

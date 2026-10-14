@@ -25,24 +25,23 @@ if(LSL_FORCE_FANCY_LIBNAME)
     )
 endif()
 
-# Link dependencies. The only dependency is lslobj, which contains the bulk of the library code and linkages.
+# Link lslobj, which contains the bulk of the library code and linkages, and external dependencies.
 # Note: We link PRIVATE because lslobj exposes extra symbols that are not part of the public API
 #  but are used by the internal tests.
 # Note: We use BUILD_INTERFACE to avoid requiring lslobj in the export set - the object library's
 #  objects are linked directly into lsl, so consumers don't need lslobj.
-target_link_libraries(lsl PRIVATE $<BUILD_INTERFACE:lslobj>)
+#
+# Also link external dependencies directly to lsl so they are included in the link
+# interface for static consumers.
+target_link_libraries(lsl PRIVATE $<BUILD_INTERFACE:lslobj> ${lsllinklibs})
 
 # Set the include directories for the lsl target.
 # Note: We had to link lslobj as a PRIVATE dependency, therefore we must manually expose the include directories
 if(APPLE AND LSL_FRAMEWORK)
     # For frameworks, the install interface needs to point into the framework bundle
-    if(LSL_UNIXFOLDERS)
-        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${FRAMEWORK_DIR_DEFAULT}/lsl.framework/Versions/A/Headers")
-    else()
-        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "LSL/Frameworks/lsl.framework/Versions/A/Headers")
-    endif()
+    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Headers")
 else()
-    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "include")
+    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 endif()
 target_include_directories(lsl
     PUBLIC
@@ -53,8 +52,9 @@ target_include_directories(lsl
 # Set compile definitions for lsl
 target_compile_definitions(lsl
     PUBLIC
-        # defines for LSL_CPP_API export header (shared: dllimport/dllexport)
-        $<IF:$<BOOL:${LSL_BUILD_STATIC}>,LIBLSL_STATIC,LIBLSL_EXPORTS>
+        # LIBLSL_C_API (lsl/common.h): no decoration for static builds, dllimport for consumers
+        # of a shared build. liblsl itself gets LIBLSL_EXPORTS from lslobj.
+        $<$<BOOL:${LSL_BUILD_STATIC}>:LIBLSL_STATIC>
         # don't use #pragma(lib) in MSVC builds. TODO: Maybe this can be inherited from lslobj or removed on lslobj?
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>
 )
@@ -79,6 +79,14 @@ if(APPLE)
     endif()
     # Configure Apple Framework
     if(LSL_FRAMEWORK)
+        # Copy the headers into the bundle (Headers/, keeping the lsl/ subfolder) at build
+        # time, so build-tree and installed frameworks are complete and correctly signed.
+        target_sources(lsl PRIVATE ${lslheaders})
+        foreach(_hdr IN LISTS lslheaders)
+            get_filename_component(_hdr_dir "${_hdr}" DIRECTORY)
+            string(REGEX REPLACE "^include" "Headers" _hdr_dir "${_hdr_dir}")
+            set_source_files_properties(${_hdr} PROPERTIES MACOSX_PACKAGE_LOCATION "${_hdr_dir}")
+        endforeach()
         set_target_properties(lsl PROPERTIES
                 FRAMEWORK TRUE
                 FRAMEWORK_VERSION A  # Ignored on iOS

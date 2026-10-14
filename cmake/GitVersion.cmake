@@ -2,7 +2,7 @@
 find_package(Git)
 if(lslgitrevision AND lslgitbranch)
     message(STATUS "Got git information ${lslgitrevision}/${lslgitbranch} from the command line")
-elseif(GIT_FOUND)
+elseif(GIT_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")  # see ProjectVersion.cmake
     execute_process(
             COMMAND ${GIT_EXECUTABLE} describe --tags HEAD
             WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"

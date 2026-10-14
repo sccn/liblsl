@@ -28,7 +28,9 @@ function(lsl_version_from_git out_numeric out_full)
         message(STATUS "lsl: using LSL_VERSION_OVERRIDE=${_ver}")
     else()
         find_package(Git QUIET)
-        if(Git_FOUND)
+        # Without our own .git, `git describe` would report the tag of an enclosing repository
+        # (e.g. an application that vendors liblsl or fetches a source tarball into its tree).
+        if(Git_FOUND AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/.git")
             execute_process(
                 COMMAND ${GIT_EXECUTABLE} describe --tags --abbrev=0 --match "v[0-9]*"
                 WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}

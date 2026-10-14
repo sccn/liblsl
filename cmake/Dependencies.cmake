@@ -9,31 +9,19 @@ include(cmake/GitVersion.cmake)
 if(LSL_FETCH_PUGIXML)
     message(STATUS "Fetching pugixml via FetchContent")
     include(FetchContent)
-    set(PUGIXML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(PUGIXML_NO_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-    set(PUGIXML_INSTALL OFF CACHE BOOL "" FORCE)
-    # Force static library even if parent project sets BUILD_SHARED_LIBS
-    set(PUGIXML_BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "" FORCE)
-    set(_lsl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
-    set(BUILD_SHARED_LIBS OFF)
+    # Only download pugixml: its single source file is compiled straight into lslobj (see
+    # TargetObjLib.cmake), so a static liblsl contains it and no pugixml target is exported.
+    # The unique name and the non-existent SOURCE_SUBDIR keep this from clashing with a parent
+    # project that fetches and builds its own pugixml.
     FetchContent_Declare(
-        pugixml
+        lsl_pugixml
         GIT_REPOSITORY https://github.com/zeux/pugixml.git
         GIT_TAG v1.15
         GIT_SHALLOW TRUE
-        EXCLUDE_FROM_ALL
+        SOURCE_SUBDIR "no-cmake-project-just-download"
     )
-    FetchContent_MakeAvailable(pugixml)
-    set(BUILD_SHARED_LIBS ${_lsl_saved_build_shared_libs})
-    unset(_lsl_saved_build_shared_libs)
-    if(TARGET pugixml AND NOT TARGET pugixml::pugixml)
-        add_library(pugixml::pugixml ALIAS pugixml)
-    endif()
-    # Hide pugixml symbols - apply hidden visibility to the pugixml target
-    set_target_properties(pugixml PROPERTIES
-        CXX_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN ON
-    )
+    FetchContent_MakeAvailable(lsl_pugixml)
+    set(LSL_PUGIXML_SOURCE_DIR "${lsl_pugixml_SOURCE_DIR}/src")
     set(LSL_PUGIXML_IS_FETCHED TRUE)
 else()
     message(STATUS "Using system pugixml")
@@ -50,9 +38,6 @@ else()
         unset(_lsl_arch_count)
     endif()
     find_package(pugixml REQUIRED)
-    if(NOT TARGET pugixml::pugixml)
-        add_library(pugixml::pugixml ALIAS pugixml)
-    endif()
     set(LSL_PUGIXML_IS_FETCHED FALSE)
 endif()
 
@@ -73,3 +58,45 @@ else()
     target_link_libraries(lslboost INTERFACE Boost::boost Boost::disable_autolinking)
 endif()
 target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
+
+# Single source of truth for every external (system/third-party) library lsl needs to link
+# against. lslobj (which internal tests also link directly) and the real lsl target both
+# link this same list, so it only has to be kept up to date in one place. Having lsl itself
+# link these directly (not only indirectly via lslobj) matters for static builds: CMake
+# records a STATIC library's PRIVATE link dependencies as $<LINK_ONLY:...> entries in its
+# exported INTERFACE_LINK_LIBRARIES, so consumers linking the installed LSL::lsl get them
+# transitively instead of having to add them by hand. For shared builds these stay private/
+# hidden, which is correct since the dependencies are already resolved inside the shared lib.
+set(lsllinklibs Threads::Threads)
+
+# Fetched pugixml is compiled into lslobj, so there is nothing to link for it.
+if(NOT LSL_PUGIXML_IS_FETCHED)
+    if(TARGET pugixml::pugixml)
+        list(APPEND lsllinklibs pugixml::pugixml)
+    elseif(TARGET pugixml)
+        # For pugixml versions before 1.11
+        list(APPEND lsllinklibs pugixml)
+        # Add an alias for testing/CMakeLists.txt
+        add_library(pugixml::pugixml ALIAS pugixml)
+    else()
+        message(FATAL_ERROR "pugixml library target not found!")
+    endif()
+endif()
+
+if(MINGW)
+    list(APPEND lsllinklibs bcrypt)
+endif()
+
+if(UNIX AND NOT APPLE)
+    # check that clock_gettime is present in the stdlib, link against librt otherwise
+    include(CheckSymbolExists)
+    check_symbol_exists(clock_gettime time.h HAS_GETTIME)
+    if(NOT HAS_GETTIME)
+        list(APPEND lsllinklibs rt)
+    endif()
+    if(LSL_DEBUGLOG)
+        list(APPEND lsllinklibs dl)
+    endif()
+elseif(WIN32)
+    list(APPEND lsllinklibs iphlpapi winmm mswsock ws2_32)
+endif()
