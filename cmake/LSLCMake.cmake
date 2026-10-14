@@ -312,9 +312,14 @@ function(LSL_install_mingw_runtime)
     endif()
 
     get_filename_component(MINGW_BIN_DIR "${CMAKE_CXX_COMPILER}" DIRECTORY)
+    # GCC toolchains (x86_64: seh, i686: dw2) and LLVM ones (clang64, clangarm64: libc++);
+    # only the ones present in the compiler's directory are installed.
     set(MINGW_RUNTIME_DLLS
         "${MINGW_BIN_DIR}/libgcc_s_seh-1.dll"
+        "${MINGW_BIN_DIR}/libgcc_s_dw2-1.dll"
         "${MINGW_BIN_DIR}/libstdc++-6.dll"
+        "${MINGW_BIN_DIR}/libc++.dll"
+        "${MINGW_BIN_DIR}/libunwind.dll"
         "${MINGW_BIN_DIR}/libwinpthread-1.dll"
     )
     foreach(_dll ${MINGW_RUNTIME_DLLS})

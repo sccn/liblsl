@@ -86,12 +86,12 @@ jobs:
            cp testing/lslcfgs/default.cfg .
 
       - name: upload install dir
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: build-${{ matrix.config.name }}
           path: install
       - name: upload package
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: pkg-${{ matrix.config.name }}
           path: package
@@ -110,7 +110,7 @@ jobs:
 
       - name: upload dump
         if: failure()
-        uses: actions/upload-artifact@master
+        uses: actions/upload-artifact@v4
         with:
           name: dumps-${{ matrix.config.name }}
           path: dumps

@@ -62,7 +62,7 @@ jobs:
       run: cmake --build build --target install --config Release -j --verbose
   
     - name: upload install dir
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v4
       with:
         name: mingw_artifacts
         path: install
