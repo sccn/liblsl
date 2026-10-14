@@ -4,6 +4,10 @@
 #include <lsl_cpp.h>
 #include <thread>
 
+#ifndef _WIN32
+#include <fcntl.h>
+#endif
+
 // clazy:excludeall=non-pod-global-static
 
 namespace {
@@ -135,5 +139,22 @@ TEST_CASE("have_consumers stays true when one of two inlets disconnects", "[outl
 	keeper.close_stream();
 	CHECK(wait_until_no_consumers(outlet, 2.0));
 }
+
+#ifndef _WIN32
+TEST_CASE("destroying an outlet releases its io_context (#312)", "[outlet][basic]") {
+	const auto open_fds = []() {
+		int n = 0;
+		for (int fd = 0; fd < 4096; ++fd) n += fcntl(fd, F_GETFD) != -1;
+		return n;
+	};
+	lsl::stream_info info("teardown_leak", "EEG", 1, 100., lsl::cf_float32, "teardown_leak");
+	const auto cycle = [&info]() { lsl::stream_outlet outlet(info); };
+	cycle(); // warm up lazily created singletons
+	const int before = open_fds();
+	for (int i = 0; i < 10; ++i) cycle();
+	// each leaked data io_context keeps ~3 fds (reactor + interrupter) open
+	CHECK(open_fds() < before + 10);
+}
+#endif
 
 } // namespace

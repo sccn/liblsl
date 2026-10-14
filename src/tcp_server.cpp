@@ -267,7 +267,8 @@ class client_session : public std::enable_shared_from_this<client_session> {
 public:
 	/// Instantiate a new session & its socket.
 	client_session(const tcp_server_p &serv, tcp_socket &&sock)
-		: io_(serv->io_), serv_(serv), sock_(std::move(sock)), requeststream_(&requestbuf_) {}
+		: io_(serv->io_), factory_(serv->factory_), serv_(serv), sock_(std::move(sock)),
+		  requeststream_(&requestbuf_) {}
 
 	/// Destructor.
 	~client_session();
@@ -310,6 +311,9 @@ private:
 	/// shared pointer to IO service; ensures that the IO is still around by the time the serv_ and
 	/// sock_ need to be destroyed
 	io_context_p io_;
+	/// keeps the sample factory alive while the transfer thread or a handler still holds queued
+	/// samples, which can outlive the server and the outlet (#312)
+	factory_p factory_;
 	/// the server that is associated with this connection
 	std::weak_ptr<tcp_server> serv_;
 	/// connection socket
