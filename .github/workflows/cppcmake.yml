@@ -237,6 +237,11 @@ jobs:
               ip -6 route
            fi
 
+    # Ubuntu runners have no comma-decimal locale, so the locale tests (#310) would be skipped
+    - name: Install a comma-decimal locale
+      if: runner.os == 'Linux' && matrix.config.cross_compile != true && matrix.config.build_only != true
+      run: sudo locale-gen de_DE.UTF-8
+
     # Run tests (native builds only, skip build_only configs)
     - name: Unit tests
       if: matrix.config.cross_compile != true && matrix.config.build_only != true
