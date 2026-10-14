@@ -2,13 +2,13 @@ name: MinGW Windows static test
 
 on:
   push:
-    branches: ['*']
+    branches:
+      - main
+      - dev
     paths:
-      - 'src'
-      - 'include'
-      - 'cmake'
-#      - '!docs/**'
-#      - '!.github/**'
+      - '**'
+      - '!docs/**'
+      - '!.github/**'
       - '.github/workflows/mingw_static.yml'
   pull_request:
   workflow_dispatch:
@@ -18,7 +18,26 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  check_skip:
+    name: Skip if already tested
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      should_skip: ${{ steps.skip.outputs.should_skip }}
+    steps:
+      - id: skip
+        uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
+        with:
+          # Only skip pushes whose exact file tree already passed (e.g. a merged PR)
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+          skip_after_successful_duplicate: 'true'
+          concurrent_skipping: 'never'
+
   build:
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
     name: MinGW batteries-included
     strategy:
       matrix:
