@@ -54,12 +54,14 @@ jobs:
           # newer runner kernels use more mmap randomization than the sanitizers' fixed shadow layouts allow
           sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure CMake
+        env:
+          SANITIZER: ${{ matrix.sanitizer }}
         run: |
           # -fsanitize=function (part of "undefined" since clang 17) flags every C API call through a
           # function pointer: headers declare opaque handle types, the library defines the same
           # functions with internal ones (src/api_types.hpp). Same ABI, intentional, so skip it.
-          flags="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
-          if [[ "${{ matrix.sanitizer }}" == *undefined* ]]; then flags="$flags -fno-sanitize=function"; fi
+          flags="-fsanitize=$SANITIZER -fno-omit-frame-pointer"
+          if [[ "$SANITIZER" == *undefined* ]]; then flags="$flags -fno-sanitize=function"; fi
           cmake --version
           cmake -S . -B build \
                -DCMAKE_BUILD_TYPE=RelWithDebInfo \
