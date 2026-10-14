@@ -29,23 +29,7 @@ target_include_directories(lslobj
 
 # Link system libs
 # (boost might be bundled or system)
-target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
-if(MINGW)
-    target_link_libraries(lslobj PRIVATE bcrypt)
-endif()
-if(UNIX AND NOT APPLE)
-    # check that clock_gettime is present in the stdlib, link against librt otherwise
-    include(CheckSymbolExists)
-    check_symbol_exists(clock_gettime time.h HAS_GETTIME)
-    if(NOT HAS_GETTIME)
-        target_link_libraries(lslobj PRIVATE rt)
-    endif()
-    if(LSL_DEBUGLOG)
-        target_link_libraries(lslobj PRIVATE dl)
-    endif()
-elseif(WIN32)
-    target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
-endif()
+target_link_libraries(lslobj PRIVATE lslboost ${lsllinklibs})
 
 # Compiler settings
 target_compile_definitions(lslobj
@@ -102,7 +86,4 @@ if(LSL_PUGIXML_IS_FETCHED)
     if(UNIX AND NOT APPLE)
         target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
     endif()
-else()
-    # System pugixml may be shared or static
-    target_link_libraries(lslobj PRIVATE pugixml::pugixml)
 endif()

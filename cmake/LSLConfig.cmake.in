@@ -1,0 +1,13 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+
+find_dependency(Threads)
+
+if(NOT @LSL_FETCH_PUGIXML@)
+    find_dependency(pugixml)
+endif()
+
+include("${CMAKE_CURRENT_LIST_DIR}/LSLTargets.cmake")
+
+check_required_components(LSL)
