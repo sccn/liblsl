@@ -6,31 +6,15 @@ endif()
 # Configure installation
 include(CMakePackageConfigHelpers)
 
-# Paths
-if(LSL_UNIXFOLDERS)
-    include(GNUInstallDirs)
-    set(CMAKE_INSTALL_FRAMEWORK_DIR ${FRAMEWORK_DIR_DEFAULT} CACHE PATH "Install directory for frameworks on macOS")
-else()
-    set(CMAKE_INSTALL_BINDIR LSL)
-    set(CMAKE_INSTALL_LIBDIR LSL)
-    set(CMAKE_INSTALL_INCLUDEDIR LSL/include)
-    set(CMAKE_INSTALL_FRAMEWORK_DIR LSL/Frameworks CACHE PATH "Install directory for frameworks on macOS")
-endif()
-
-# For Apple frameworks, we need to next the install directories within the framework.
+# Paths (the install directories themselves are set in ProjectOptions.cmake)
+set(LSL_CONFIG_INSTALL_DIRS ${CMAKE_INSTALL_LIBDIR}/cmake/lsl)
 if(APPLE AND LSL_FRAMEWORK)
-    # For the includes, this is insufficient. Later we will create more accessible symlinks.
+    # Also keep a copy of the CMake package inside the framework, where it always was.
     if(IOS)
-        set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Headers)
-        set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/CMake)
+        list(APPEND LSL_CONFIG_INSTALL_DIRS ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/CMake)
     else()
-        set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Versions/A/include)
-        set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Resources/CMake)
+        list(APPEND LSL_CONFIG_INSTALL_DIRS ${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Resources/CMake)
     endif()
-
-else()
-    set(LSL_INSTALL_INCLUDEDIR ${CMAKE_INSTALL_INCLUDEDIR})
-    set(LSL_CONFIG_INSTALL_DIR ${CMAKE_INSTALL_LIBDIR}/cmake/lsl)
 endif()
 
 # Generate a version file for the package.
@@ -54,37 +38,97 @@ install(TARGETS ${LSLTargets}
     ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
     FRAMEWORK DESTINATION ${CMAKE_INSTALL_FRAMEWORK_DIR}
 )
-# Unfortunately, `INCLUDES DESTINATION` does not work.
-# PUBLIC_HEADER does not work because it flattens the tree.
-# FILE_SET is preferable but does not work with frameworks.
-# So we are stuck manually specifying the headers to be installed.
-install(DIRECTORY include/lsl DESTINATION ${LSL_INSTALL_INCLUDEDIR})
-install(FILES include/lsl_c.h include/lsl_cpp.h DESTINATION ${LSL_INSTALL_INCLUDEDIR})
+# Frameworks carry their headers in the bundle (see TargetLib.cmake).
+# PUBLIC_HEADER would flatten the include tree and FILE_SET does not work with frameworks,
+# so the headers are listed here.
+if(NOT (APPLE AND LSL_FRAMEWORK))
+    install(DIRECTORY include/lsl DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT liblsl)
+    install(FILES include/lsl_c.h include/lsl_cpp.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR} COMPONENT liblsl)
+endif()
 
-# Generate the LSLConfig.cmake file and mark it for installation
-install(EXPORT LSLTargets
-        FILE LSLConfig.cmake
+# Generate LSLConfig.cmake from a template so it can call find_dependency() for
+# the transitive dependencies that a static LSL::lsl requires its consumers to
+# link against. LSLConfig.cmake includes the exported LSLTargets.cmake.
+configure_package_config_file(
+        ${CMAKE_CURRENT_SOURCE_DIR}/cmake/LSLConfig.cmake.in
+        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
+        INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/lsl
+)
+foreach(_dir IN LISTS LSL_CONFIG_INSTALL_DIRS)
+    install(EXPORT LSLTargets
+            FILE LSLTargets.cmake
+            COMPONENT liblsl
+            NAMESPACE "LSL::"
+            DESTINATION ${_dir}
+    )
+    install(
+        FILES
+            cmake/LSLCMake.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake
         COMPONENT liblsl
-        NAMESPACE "LSL::"
-        DESTINATION ${LSL_CONFIG_INSTALL_DIR}
-)
-# A common alternative to installing the exported package config file is to generate it from a template.
-#configure_package_config_file(${CMAKE_CURRENT_SOURCE_DIR}/lslConfig.cmake.in
-#        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfig.cmake
-#        INSTALL_DESTINATION ${LSL_CONFIG_INSTALL_DIR})
-# If we use this method, then we need a corresponding install(FILES ...) command to install the generated file.
+        DESTINATION ${_dir}
+    )
+endforeach()
 
-# Install the version file and the helper CMake script.
-install(
-    FILES
-        cmake/LSLCMake.cmake
-        ${CMAKE_CURRENT_BINARY_DIR}/LSLConfigVersion.cmake
-    COMPONENT liblsl
-    DESTINATION ${LSL_CONFIG_INSTALL_DIR}
-)
+# A macOS framework also gets the layout of a plain library: lib/liblsl.dylib (or .a) and
+# the headers in include/ link into the framework, so `-llsl`, pkg-config and build systems
+# that know nothing about frameworks work too.
+# `dir` and `target` are relative to the install prefix (DESTDIR-aware) or absolute.
+function(lsl_install_symlink dir name target)
+    if(IS_ABSOLUTE "${target}")
+        set(_target "${target}")
+    elseif(IS_ABSOLUTE "${dir}")
+        set(_target "\${CMAKE_INSTALL_PREFIX}/${target}")
+    else()
+        file(RELATIVE_PATH _target "/${dir}" "/${target}")
+    endif()
+    if(NOT IS_ABSOLUTE "${dir}")
+        set(dir "\${CMAKE_INSTALL_PREFIX}/${dir}")
+    endif()
+    install(CODE "
+        set(_link \"\$ENV{DESTDIR}${dir}/${name}\")
+        message(STATUS \"Symlinking: \${_link} -> ${_target}\")
+        file(MAKE_DIRECTORY \"\$ENV{DESTDIR}${dir}\")
+        file(CREATE_LINK \"${_target}\" \"\${_link}\" SYMBOLIC)
+    " COMPONENT liblsl)
+endfunction()
+if(APPLE AND LSL_FRAMEWORK AND NOT IOS)
+    set(_fw "${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework")
+    lsl_install_symlink("${CMAKE_INSTALL_LIBDIR}" "liblsl${CMAKE_${LSL_LIB_TYPE}_LIBRARY_SUFFIX}" "${_fw}/lsl")
+    foreach(_hdr lsl lsl_c.h lsl_cpp.h)
+        lsl_install_symlink("${CMAKE_INSTALL_INCLUDEDIR}" "${_hdr}" "${_fw}/Headers/${_hdr}")
+    endforeach()
+endif()
 
-# Generate pkg-config file
-if(LSL_UNIXFOLDERS AND NOT (APPLE AND LSL_FRAMEWORK))
+# Generate the pkg-config file
+if(LSL_UNIXFOLDERS AND NOT IOS)
+    set(LSL_PC_CFLAGS "")
+    set(LSL_PC_LIBS "")
+    set(LSL_PC_REQUIRES_PRIVATE "")
+    set(LSL_PC_LIBS_PRIVATE "")
+    if(LSL_BUILD_STATIC)
+        # What `pkg-config --static` adds for a static liblsl (see lsllinklibs, Dependencies.cmake)
+        set(LSL_PC_CFLAGS " -DLIBLSL_STATIC")
+        foreach(_lib IN LISTS lsllinklibs)
+            if(_lib STREQUAL "Threads::Threads")
+                string(APPEND LSL_PC_LIBS_PRIVATE " ${CMAKE_THREAD_LIBS_INIT}")
+            elseif(_lib MATCHES "^pugixml")
+                set(LSL_PC_REQUIRES_PRIVATE "pugixml")
+            else()
+                string(APPEND LSL_PC_LIBS_PRIVATE " -l${_lib}")
+            endif()
+        endforeach()
+    elseif(APPLE)
+        # liblsl's install name starts with @rpath, so programs need an RPATH to load it.
+        if(LSL_FRAMEWORK)
+            cmake_path(ABSOLUTE_PATH CMAKE_INSTALL_FRAMEWORK_DIR BASE_DIRECTORY "${CMAKE_INSTALL_PREFIX}"
+                OUTPUT_VARIABLE _rpath)
+        else()
+            set(_rpath "${CMAKE_INSTALL_FULL_LIBDIR}")
+        endif()
+        set(LSL_PC_LIBS " -Wl,-rpath,${_rpath}")
+    endif()
     configure_file(
         ${CMAKE_CURRENT_SOURCE_DIR}/lsl.pc.in
         ${CMAKE_CURRENT_BINARY_DIR}/lsl.pc
@@ -95,16 +139,4 @@ if(LSL_UNIXFOLDERS AND NOT (APPLE AND LSL_FRAMEWORK))
         COMPONENT liblsl
         DESTINATION ${CMAKE_INSTALL_LIBDIR}/pkgconfig
     )
-endif()
-
-if(APPLE AND LSL_FRAMEWORK AND NOT IOS)
-    # Create symlinks for the framework. The variables we want to use to identify the symlink locations
-    #  are not available at install time. Instead, we create a script during configuration time that will
-    #  be run at install time to create the symlinks.
-    configure_file(
-            ${CMAKE_CURRENT_SOURCE_DIR}/cmake/CreateFrameworkSymlinks.cmake.in
-            ${CMAKE_CURRENT_BINARY_DIR}/CreateFrameworkSymlinks.cmake
-            @ONLY
-    )
-    install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/CreateFrameworkSymlinks.cmake COMPONENT liblsl)
 endif()

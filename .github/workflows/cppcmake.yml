@@ -30,7 +30,26 @@ defaults:
     shell: bash
 
 jobs:
+  check_skip:
+    name: Skip if already tested
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      should_skip: ${{ steps.skip.outputs.should_skip }}
+    steps:
+      - id: skip
+        uses: fkirc/skip-duplicate-actions@b974a9395958c231af965b70070979a577efa578 # v5.3.2
+        with:
+          # Only skip pushes whose exact file tree already passed (e.g. a merged PR)
+          do_not_skip: '["pull_request", "workflow_dispatch", "schedule", "release"]'
+          skip_after_successful_duplicate: 'true'
+          concurrent_skipping: 'never'
+
   build:
+    needs: check_skip
+    if: needs.check_skip.outputs.should_skip != 'true'
     name: ${{ matrix.config.name }}
     runs-on: ${{ matrix.config.os }}
     timeout-minutes: 30
@@ -45,8 +64,8 @@ jobs:
         # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
         # SHLIBDEPS must be disabled for cross-compiled packages as the host system
         # does not have the target architecture libraries installed
-        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
-        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true }
+        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true }
 
         # Native ARM build
         # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64" }
@@ -62,7 +81,7 @@ jobs:
         - {name: "macos-dylib-arm64", os: "macos-latest", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
@@ -87,7 +106,7 @@ jobs:
     # Cache dependencies for Linux
     - name: Cache APT packages
       if: runner.os == 'Linux'
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-${{ matrix.config.name }}-${{ hashFiles('.github/workflows/cppcmake.yml') }}
@@ -98,7 +117,7 @@ jobs:
     # Cache build artifacts with ccache
     - name: Cache ccache
       if: runner.os == 'Linux' || runner.os == 'macOS'
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ matrix.config.name }}-${{ github.sha }}
@@ -158,7 +177,6 @@ jobs:
         cmake -S examples -B examples/build \
           -DLSL_INSTALL_ROOT=${PWD}/install \
           -DCMAKE_INSTALL_PREFIX=examples/build/install \
-          -DLSL_COMFY_DEFAULTS=ON \
           ${CMAKE_TOOLCHAIN} \
           ${{ matrix.config.cmake_extra }} \
           ${{ github.event.inputs.cmakeextra }}
@@ -197,14 +215,14 @@ jobs:
 
     - name: upload install dir
       if: matrix.config.build_only != true
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v7
       with:
         name: build-${{ matrix.config.name }}
         path: install
 
     - name: upload package
       if: matrix.config.build_only != true
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v7
       with:
         name: pkg-${{ matrix.config.name }}
         path: package
@@ -237,13 +255,13 @@ jobs:
 
     - name: upload dump
       if: failure()
-      uses: actions/upload-artifact@master
+      uses: actions/upload-artifact@v7
       with:
         name: dumps-${{ matrix.config.name }}
         path: dumps
 
     - name: Upload to release
       if: github.event_name == 'release' && matrix.config.build_only != true
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: package/*.*

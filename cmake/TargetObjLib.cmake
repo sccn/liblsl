@@ -29,28 +29,13 @@ target_include_directories(lslobj
 
 # Link system libs
 # (boost might be bundled or system)
-target_link_libraries(lslobj PRIVATE lslboost Threads::Threads)
-if(MINGW)
-    target_link_libraries(lslobj PRIVATE bcrypt)
-endif()
-if(UNIX AND NOT APPLE)
-    # check that clock_gettime is present in the stdlib, link against librt otherwise
-    include(CheckSymbolExists)
-    check_symbol_exists(clock_gettime time.h HAS_GETTIME)
-    if(NOT HAS_GETTIME)
-        target_link_libraries(lslobj PRIVATE rt)
-    endif()
-    if(LSL_DEBUGLOG)
-        target_link_libraries(lslobj PRIVATE dl)
-    endif()
-elseif(WIN32)
-    target_link_libraries(lslobj PRIVATE iphlpapi winmm mswsock ws2_32)
-endif()
+# Note: lsllinklibs is PUBLIC so the internal tests, which link lslobj, also get the
+#  (system) pugixml headers. lslobj is never exported, so this does not leak to consumers.
+target_link_libraries(lslobj PRIVATE lslboost PUBLIC ${lsllinklibs})
 
 # Compiler settings
 target_compile_definitions(lslobj
     PRIVATE
-        LIBLSL_EXPORTS
         LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
         # Prevent asio from overriding CMAKE_CXX_VISIBILITY_PRESET with its own
         # #pragma GCC visibility push(default). This ensures asio symbols stay
@@ -58,6 +43,10 @@ target_compile_definitions(lslobj
         # applications also use standalone asio.
         ASIO_DISABLE_VISIBILITY
     PUBLIC
+        # Export the API from a shared liblsl only. A static liblsl keeps its symbols hidden /
+        # undecorated, so programs and libraries that link it don't re-export them.
+        # PUBLIC so lsl and the internal tests, which link lslobj, see the same declarations.
+        $<IF:$<BOOL:${LSL_BUILD_STATIC}>,LIBLSL_STATIC,LIBLSL_EXPORTS>
         ASIO_NO_DEPRECATED
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
 )
@@ -68,12 +57,6 @@ if(WIN32)
             PUBLIC
             _WIN32_WINNT=${LSL_WINVER}
     )
-    if(BUILD_SHARED_LIBS)
-        #        set_target_properties(lslobj
-        #            PROPERTIES
-        #                WINDOWS_EXPORT_ALL_SYMBOLS ON
-        #        )
-    endif(BUILD_SHARED_LIBS)
 endif()
 
 # Link in 3rd party dependencies
@@ -92,17 +75,9 @@ if(NOT LSL_OPTIMIZATIONS)
     target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
-# - pugixml (either fetched via FetchContent or system package)
+# - pugixml: a fetched copy is compiled into lslobj (hidden like the rest of lslobj thanks to
+#   the global visibility preset); a system pugixml is linked via lsllinklibs above.
 if(LSL_PUGIXML_IS_FETCHED)
-    # Fetched pugixml is always static - use BUILD_INTERFACE to avoid requiring
-    # pugixml in the export set since the static library objects are linked
-    # into lsl directly.
-    target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
-    # Hide pugixml symbols from the shared library on Linux
-    if(UNIX AND NOT APPLE)
-        target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
-    endif()
-else()
-    # System pugixml may be shared or static
-    target_link_libraries(lslobj PRIVATE pugixml::pugixml)
+    target_sources(lslobj PRIVATE ${LSL_PUGIXML_SOURCE_DIR}/pugixml.cpp)
+    target_include_directories(lslobj SYSTEM PUBLIC $<BUILD_INTERFACE:${LSL_PUGIXML_SOURCE_DIR}>)
 endif()

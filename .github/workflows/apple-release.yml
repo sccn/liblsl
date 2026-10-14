@@ -30,8 +30,8 @@ jobs:
       matrix:
         config:
         - {name: "macOS-latest", os: "macOS-latest", platform: "macos", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
-        - {name: "iOS", os: "macOS-latest", platform: "ios", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
-        - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
+        - {name: "iOS", os: "macOS-latest", platform: "ios", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_ARCHITECTURES=arm64" }
+        - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\" -G Xcode" }
 
     steps:
     - name: Check release credentials
@@ -48,7 +48,7 @@ jobs:
           fi
         done
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
@@ -88,7 +88,6 @@ jobs:
           cmake -S examples -B examples/build \
             -DLSL_INSTALL_ROOT="${PWD}/install" \
             -DCMAKE_INSTALL_PREFIX=examples/build/install \
-            -DLSL_COMFY_DEFAULTS=ON \
             ${{ matrix.config.cmake_extra }} \
             ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j
@@ -121,7 +120,7 @@ jobs:
 
     - name: upload dump
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: dumps-${{ matrix.config.name }}
         path: dumps
@@ -134,7 +133,7 @@ jobs:
 
     - name: Upload macOS Package and Framework
       if: matrix.config.name == 'macOS-latest'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-macOS-latest
         path: |
@@ -143,14 +142,14 @@ jobs:
 
     - name: Upload iOS Framework
       if: matrix.config.name == 'iOS'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-iOS
         path: install/Frameworks/lsl.framework.zip
 
     - name: Upload iOS Simulator Framework
       if: matrix.config.name == 'iOS Simulator'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-iOS-Simulator
         path: install/Frameworks/lsl.framework.zip
@@ -162,16 +161,16 @@ jobs:
       contents: write
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: build-macOS-latest
           path: build-macOS-latest
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-iOS
           path: build-iOS
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-iOS-Simulator
           path: build-iOS-Simulator
@@ -197,7 +196,7 @@ jobs:
             --output .
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mac-packages
           path: |
@@ -206,7 +205,7 @@ jobs:
 
       - name: Upload to release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             lsl.xcframework.*.zip

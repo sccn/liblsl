@@ -5,5 +5,7 @@ includedir=@CMAKE_INSTALL_FULL_INCLUDEDIR@
 Name: liblsl
 Description: @PROJECT_DESCRIPTION@
 Version: @PROJECT_VERSION@
-Libs: -L${libdir} -llsl
-Cflags: -I${includedir}
+Requires.private: @LSL_PC_REQUIRES_PRIVATE@
+Libs: -L${libdir} -llsl@LSL_PC_LIBS@
+Libs.private:@LSL_PC_LIBS_PRIVATE@
+Cflags: -I${includedir}@LSL_PC_CFLAGS@
