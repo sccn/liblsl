@@ -1,18 +1,22 @@
 #include "consumer_queue.h"
 #include "common.h"
 #include "send_buffer.h"
+#include <algorithm>
 #include <chrono>
 #include <loguru.hpp>
 #include <utility>
 
 using namespace lsl;
 
+// The lock-free algorithm needs at least 2 slots: with 1, "occupied" and "free for the next
+// round" have the same sequence number. A queue for 1 sample therefore uses 2 slots, and
+// push_sample() keeps at most 1 sample in it (#156, #158).
 consumer_queue::consumer_queue(std::size_t size, send_buffer_p registry)
-	: buffer_(new item_t[size]), size_(size),
+	: buffer_(new item_t[std::max<std::size_t>(size, 2)]), size_(std::max<std::size_t>(size, 2)),
 	  // largest integer at which we can wrap correctly
-	  wrap_at_(std::numeric_limits<std::size_t>::max() - size -
-			   std::numeric_limits<std::size_t>::max() % size),
-	  registry_(std::move(registry)) {
+	  wrap_at_(std::numeric_limits<std::size_t>::max() - size_ -
+			   std::numeric_limits<std::size_t>::max() % size_),
+	  keep_one_(size <= 1), registry_(std::move(registry)) {
 	assert(size_ > 1);
 	for (std::size_t i = 0; i < size_; ++i)
 		buffer_[i].seq_state.store(i, std::memory_order_release);

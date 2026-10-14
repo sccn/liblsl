@@ -56,8 +56,8 @@ public:
 	 * This deletes the oldest sample if the max capacity is exceeded.
 	 */
 	template <class T> void push_sample(T &&sample) {
-		while (!try_push(std::forward<T>(sample))) {
-			// buffer full, drop oldest sample
+		while ((keep_one_ && !empty()) || !try_push(std::forward<T>(sample))) {
+			// buffer full (or a 1-sample queue already holds one), drop oldest sample
 			if (!done_sync_.load(std::memory_order_acquire)) {
 				// synchronizes-with store to done_sync_ in ctor
 				std::atomic_thread_fence(std::memory_order_acquire);
@@ -187,6 +187,8 @@ private:
 	const std::size_t size_;
 	/// threshold at which to wrap read/write indices
 	const std::size_t wrap_at_;
+	/// a 1-sample queue: keep at most one sample in the 2 slots (see constructor)
+	const bool keep_one_;
 	/// for use with the condition variable
 	std::mutex mut_;
 

@@ -25,6 +25,21 @@ TEST_CASE("consumer_queue", "[queue][basic]") {
 	CHECK(queue.empty());
 }
 
+TEST_CASE("consumer_queue of one sample", "[queue][basic]") {
+	// An inlet or a streamfeed request can ask for a 1-sample buffer (#156, #158).
+	lsl::factory fac(lsl_channel_format_t::cft_int8, 4, 2);
+	lsl::consumer_queue queue(1);
+	for (int i = 0; i < 3; ++i) queue.push_sample(fac.new_sample(i, true));
+
+	// Only the newest sample is kept
+	CHECK(queue.read_available() == 1);
+	auto sample = queue.pop_sample(0.0);
+	REQUIRE(sample);
+	CHECK(static_cast<int>(sample->timestamp()) == 2);
+	CHECK(queue.empty());
+	CHECK_FALSE(queue.pop_sample(0.0));
+}
+
 TEST_CASE("consumer_queue_threaded", "[queue][threads]") {
 	const unsigned int size = 100000;
 	lsl::factory fac(lsl_channel_format_t::cft_int8, 4, 1);
