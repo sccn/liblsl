@@ -18,6 +18,7 @@ other languages and recording) see the :doc:`LSL documentation <lsl:index>`.
    guide/linking
    guide/building
    guide/configuration
+   guide/debugging
 
 .. toctree::
    :maxdepth: 2
