@@ -35,8 +35,10 @@ if(NOT LSL_BUILD_STATIC OR UNIX)
     set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 endif()
 
-# Enable optimizations if requested
-if(LSL_OPTIMIZATIONS)
+# Enable optimizations if requested.
+# Not for static libraries: their objects would hold compiler-specific LTO bytecode
+# (GCC -fno-fat-lto-objects, MSVC /GL) that other compilers or versions cannot link.
+if(LSL_OPTIMIZATIONS AND NOT LSL_BUILD_STATIC)
     # enable LTO (https://en.wikipedia.org/wiki/Interprocedural_optimization
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 endif()
