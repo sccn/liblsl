@@ -47,8 +47,8 @@ jobs:
                 -Dlslgitbranch=${{ github.ref }} \
                 -DCMAKE_SYSTEM_NAME=Android \
                 -DCMAKE_SYSTEM_VERSION=30 \
-                -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.config.arch }}
-                ${{ matrix.config.cmake_extra }} 
+                -DCMAKE_ANDROID_ARCH_ABI=${{ matrix.config.arch }} \
+                ${{ github.event.inputs.cmakeextra }}
             echo ${PWD}
     - name: make
       run: cmake --build build --target install --config Release -j
