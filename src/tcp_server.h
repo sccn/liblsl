@@ -5,6 +5,7 @@
 #include "socket_utils.h"
 #include <asio/buffer.hpp>
 #include <atomic>
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -54,8 +55,8 @@ public:
 	 * the effective chunking.
 	 * @param do_sync If true, use synchronous (blocking) socket writes for zero-copy transfer.
 	 */
-	tcp_server(stream_info_impl_p info, io_context_p io, send_buffer_p sendbuf, factory_p factory,
-		int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
+	tcp_server(stream_info_impl_p info, asio::io_context &io, send_buffer_p sendbuf,
+		factory_p factory, int chunk_size, bool allow_v4, bool allow_v6, bool do_sync = false);
 
 	/// Destructor (must be defined in .cpp due to unique_ptr to incomplete type)
 	~tcp_server();
@@ -91,6 +92,9 @@ public:
 	/// fails to reach them, so this may briefly keep reporting a consumer that has gone away.
 	bool have_sync_consumers() const;
 
+	/// Wait until all sample transfer threads have exited. Returns false on timeout.
+	bool wait_for_transfer_threads(double timeout);
+
 private:
 	friend class client_session;
 
@@ -111,8 +115,8 @@ private:
 
 	// data shared with the outlet
 	stream_info_impl_p info_; // shared stream_info object
-	io_context_p io_;	// shared ptr to IO service; ensures that the IO is still around by the time
-						// the acceptor needs to be destroyed
+	asio::io_context
+		&io_; // not owned: handlers queued in it hold this server, so owning it is a cycle
 	factory_p factory_; // reference to the sample factory (which owns the samples)
 	send_buffer_p send_buffer_; // the send buffer, shared with other TCP's and the outlet
 
@@ -122,6 +126,11 @@ private:
 	// registry of in-flight asessions (for cancellation)
 	std::map<void *, std::weak_ptr<client_session>> inflight_;
 	std::recursive_mutex inflight_mut_; // mutex protecting the registry from concurrent access
+
+	// number of running transfer threads, so teardown can wait for them
+	int transfer_threads_{0};
+	std::mutex transfer_mut_;
+	std::condition_variable transfer_cv_;
 
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response

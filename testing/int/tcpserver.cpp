@@ -23,8 +23,9 @@ using sock_p = std::shared_ptr<sock_t>;
 
 /// RAII wrapper that takes care of shutting down the IO thread when an exception happens
 class tcp_server_wrapper {
-	std::shared_ptr<lsl::tcp_server> srv;
+	// srv_ctx is declared first so it outlives srv, which only borrows it
 	std::shared_ptr<asio::io_context> srv_ctx;
+	std::shared_ptr<lsl::tcp_server> srv;
 	std::unique_ptr<std::thread> thread;
 public:
 	tcp_server_wrapper(std::shared_ptr<lsl::stream_info_impl> info) {
@@ -32,7 +33,7 @@ public:
 		srv_ctx = std::make_shared<asio::io_context>(1);
 		auto factory =
 			std::make_shared<lsl::factory>(info->channel_format(), info->channel_count(), 10);
-		srv = std::make_shared<lsl::tcp_server>(info, srv_ctx, sendbuf, factory, 5, true, true);
+		srv = std::make_shared<lsl::tcp_server>(info, *srv_ctx, sendbuf, factory, 5, true, true);
 		srv->begin_serving();
 	}
 	~tcp_server_wrapper() noexcept {
