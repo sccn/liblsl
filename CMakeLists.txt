@@ -32,7 +32,10 @@ if(LSL_UNITTESTS AND NOT IOS)
 	add_subdirectory(testing)
 endif()
 
-# Config for packaging
+# Config for packaging (not when liblsl is part of another project, e.g. via FetchContent)
+if(NOT PROJECT_IS_TOP_LEVEL)
+	return()
+endif()
 include(cmake/LSLCMake.cmake)
 LSL_get_target_arch()
 LSL_get_os_name()
