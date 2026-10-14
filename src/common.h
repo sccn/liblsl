@@ -13,7 +13,7 @@ extern "C" {
 #include <string>
 #include <vector>
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(LIBLSL_STATIC)
 #define LIBLSL_CPP_API __declspec(dllexport)
 #else
 #define LIBLSL_CPP_API

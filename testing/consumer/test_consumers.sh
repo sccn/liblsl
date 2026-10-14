@@ -42,6 +42,38 @@ run() {
 	return 1
 }
 
+# Prints the symbols exported by the consumer_shared library in build dir $1.
+exported_symbols() {
+	local lib
+	lib=$(find "$1/bin" -name '*consumer_shared*' \( -name '*.so' -o -name '*.dylib' -o -name '*.dll' \) | head -n1)
+	case $lib in
+		*.dll)
+			if command -v objdump >/dev/null; then
+				objdump -p "$lib"
+			else
+				local vswhere="/c/Program Files (x86)/Microsoft Visual Studio/Installer/vswhere.exe"
+				"$("$vswhere" -latest -find 'VC/Tools/MSVC/**/dumpbin.exe' | head -n1 | tr -d '\r')" /exports "$lib"
+			fi ;;
+		*.dylib) nm -gU "$lib" ;;
+		*) nm -D --defined-only "$lib" ;;
+	esac
+}
+# A library linking a static liblsl must export only its own symbols, none of liblsl's.
+check_no_reexports() {
+	local symbols
+	symbols=$(exported_symbols "$1")
+	if ! grep -q consumer_shared_lsl_version <<<"$symbols"; then
+		echo "error: could not read the exports of consumer_shared:" >&2
+		echo "$symbols" >&2
+		return 1
+	fi
+	if grep -v consumer_shared_lsl_version <<<"$symbols" | grep -Ei 'lsl|loguru|pugi|asio'; then
+		echo "error: consumer_shared re-exports the liblsl symbols above" >&2
+		return 1
+	fi
+	echo "consumer_shared exports none of liblsl's symbols"
+}
+
 step "Build and install liblsl ($LINKAGE)"
 if [[ ${PREFIX:-} == system ]]; then
 	prefix_args=()
@@ -75,6 +107,7 @@ cmake -S "$CONSUMER" -B "$WORK/find_package" -DCMAKE_BUILD_TYPE=Release "-DCMAKE
 cmake --build "$WORK/find_package" --config Release
 run "$WORK/find_package/bin" consumer_cpp
 run "$WORK/find_package/bin" consumer_c
+[[ $STATIC == ON ]] && check_no_reexports "$WORK/find_package"
 
 step "FetchContent (BUILD_SHARED_LIBS=$SHARED)"
 # Static is requested the way package managers do it, through BUILD_SHARED_LIBS.
@@ -83,6 +116,7 @@ cmake -S "$CONSUMER" -B "$WORK/fetchcontent" -DCMAKE_BUILD_TYPE=Release "-DLSL_S
 cmake --build "$WORK/fetchcontent" --config Release
 run "$WORK/fetchcontent/bin" consumer_cpp
 run "$WORK/fetchcontent/bin" consumer_c
+[[ $STATIC == ON ]] && check_no_reexports "$WORK/fetchcontent"
 if [[ -f "$WORK/fetchcontent/CPackConfig.cmake" ]]; then
 	echo "error: liblsl set up CPack for the parent project" >&2
 	exit 1

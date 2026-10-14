@@ -7,6 +7,7 @@ project(lsl_consumer LANGUAGES C CXX)
 
 # Put executables and (in-tree) DLLs side by side so Windows finds lsl.dll.
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 
 if(LSL_SOURCE_DIR)
     include(FetchContent)
@@ -21,3 +22,7 @@ add_executable(consumer_cpp main.cpp)
 target_link_libraries(consumer_cpp PRIVATE LSL::lsl)
 add_executable(consumer_c main.c)
 target_link_libraries(consumer_c PRIVATE LSL::lsl)
+
+# A downstream shared library: with a static liblsl it must not re-export liblsl's symbols.
+add_library(consumer_shared SHARED shared.c)
+target_link_libraries(consumer_shared PRIVATE LSL::lsl)

@@ -53,12 +53,10 @@ target_include_directories(lsl
 target_compile_definitions(lsl
     PUBLIC
         # LIBLSL_C_API (lsl/common.h): no decoration for static builds, dllimport for consumers
-        # of a shared build. Only liblsl itself is built with LIBLSL_EXPORTS (dllexport).
+        # of a shared build. liblsl itself gets LIBLSL_EXPORTS from lslobj.
         $<$<BOOL:${LSL_BUILD_STATIC}>:LIBLSL_STATIC>
         # don't use #pragma(lib) in MSVC builds. TODO: Maybe this can be inherited from lslobj or removed on lslobj?
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>
-    PRIVATE
-        LIBLSL_EXPORTS
 )
 
 # Extra configuration for Apple targets -- set xcode attributes

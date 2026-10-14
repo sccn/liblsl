@@ -36,7 +36,6 @@ target_link_libraries(lslobj PRIVATE lslboost PUBLIC ${lsllinklibs})
 # Compiler settings
 target_compile_definitions(lslobj
     PRIVATE
-        LIBLSL_EXPORTS
         LOGURU_DEBUG_LOGGING=$<BOOL:${LSL_DEBUGLOG}>
         # Prevent asio from overriding CMAKE_CXX_VISIBILITY_PRESET with its own
         # #pragma GCC visibility push(default). This ensures asio symbols stay
@@ -44,6 +43,10 @@ target_compile_definitions(lslobj
         # applications also use standalone asio.
         ASIO_DISABLE_VISIBILITY
     PUBLIC
+        # Export the API from a shared liblsl only. A static liblsl keeps its symbols hidden /
+        # undecorated, so programs and libraries that link it don't re-export them.
+        # PUBLIC so lsl and the internal tests, which link lslobj, see the same declarations.
+        $<IF:$<BOOL:${LSL_BUILD_STATIC}>,LIBLSL_STATIC,LIBLSL_EXPORTS>
         ASIO_NO_DEPRECATED
         $<$<CXX_COMPILER_ID:MSVC>:LSLNOAUTOLINK>  # don't use #pragma(lib) in CMake builds
 )

@@ -98,33 +98,26 @@ endif()
 message(STATUS ${LSL_TEST_INTERNAL_SRCS})
 add_executable(lsl_test_internal ${LSL_TEST_INTERNAL_SRCS})
 target_link_libraries(lsl_test_internal PRIVATE lslobj lslboost common catch_main)
-# Pretend that lsl_test_internal is part of a shared lib so that it can use the __export symbols lslobj. REQ by MinGW.
-target_compile_definitions(lsl_test_internal PRIVATE LIBLSL_EXPORTS)
 
 # runtime_config test needs a fresh api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_runtime_config int/runtime_config.cpp)
 target_link_libraries(lsl_test_runtime_config PRIVATE lslobj lslboost common catch_main)
-target_compile_definitions(lsl_test_runtime_config PRIVATE LIBLSL_EXPORTS)
 
 # resolve_bad_interface test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_bad_interface int/resolve_bad_interface.cpp)
 target_link_libraries(lsl_test_resolve_bad_interface PRIVATE lslobj lslboost common catch_main)
-target_compile_definitions(lsl_test_resolve_bad_interface PRIVATE LIBLSL_EXPORTS)
 
 # resolve_machine test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_machine int/resolve_machine.cpp)
 target_link_libraries(lsl_test_resolve_machine PRIVATE lslobj lslboost common catch_main)
-target_compile_definitions(lsl_test_resolve_machine PRIVATE LIBLSL_EXPORTS)
 
 # resolve_over_tcp test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_over_tcp int/resolve_over_tcp.cpp)
 target_link_libraries(lsl_test_resolve_over_tcp PRIVATE lslobj lslboost common catch_main)
-target_compile_definitions(lsl_test_resolve_over_tcp PRIVATE LIBLSL_EXPORTS)
 
 # resolve_query_port test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_query_port int/resolve_query_port.cpp)
 target_link_libraries(lsl_test_resolve_query_port PRIVATE lslobj lslboost common catch_main)
-target_compile_definitions(lsl_test_resolve_query_port PRIVATE LIBLSL_EXPORTS)
 
 if(LSL_BENCHMARKS)
 	# to get somewhat reproducible performance numbers:
