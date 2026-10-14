@@ -74,7 +74,7 @@ jobs:
           - {name: "Windows MSVC ARM64 shared", os: windows-11-arm, linkage: shared}
           - {name: "Windows MSVC ARM64 static", os: windows-11-arm, linkage: static}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Install pkg-config (and pugixml, only where it is used)
@@ -119,7 +119,7 @@ jobs:
             dnf install -y gcc gcc-c++ make cmake git pkgconf-pkg-config
           fi
           cmake --version
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: Test
@@ -144,7 +144,7 @@ jobs:
       run:
         shell: 'msys2 {0}'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - uses: msys2/setup-msys2@v2

@@ -65,7 +65,7 @@ jobs:
         sanitizer: ${{ github.event_name == 'workflow_dispatch' && fromJSON(format('["{0}"]', inputs.sanitizer)) || fromJSON('["address,undefined", "thread"]') }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install build toolchain
         run: |
           sudo apt update

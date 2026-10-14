@@ -81,7 +81,7 @@ jobs:
         - {name: "macos-dylib-arm64", os: "macos-latest", arch: "arm64", cmake_extra: "-DLSL_FRAMEWORK=OFF", build_only: true}
 
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
@@ -106,7 +106,7 @@ jobs:
     # Cache dependencies for Linux
     - name: Cache APT packages
       if: runner.os == 'Linux'
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: /var/cache/apt/archives
         key: ${{ runner.os }}-apt-${{ matrix.config.name }}-${{ hashFiles('.github/workflows/cppcmake.yml') }}
@@ -117,7 +117,7 @@ jobs:
     # Cache build artifacts with ccache
     - name: Cache ccache
       if: runner.os == 'Linux' || runner.os == 'macOS'
-      uses: actions/cache@v4
+      uses: actions/cache@v6
       with:
         path: ~/.ccache
         key: ${{ runner.os }}-ccache-${{ matrix.config.name }}-${{ github.sha }}
@@ -262,6 +262,6 @@ jobs:
 
     - name: Upload to release
       if: github.event_name == 'release' && matrix.config.build_only != true
-      uses: softprops/action-gh-release@v2
+      uses: softprops/action-gh-release@v3
       with:
         files: package/*.*

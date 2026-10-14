@@ -63,7 +63,7 @@ jobs:
         - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\" -G Xcode" }
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
@@ -138,7 +138,7 @@ jobs:
     needs: build
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           pattern: unsigned-*

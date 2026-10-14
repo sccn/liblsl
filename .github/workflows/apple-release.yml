@@ -48,7 +48,7 @@ jobs:
           fi
         done
 
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v7
       with:
         # Need full history + tags so the version can be derived from the git tag
         fetch-depth: 0
@@ -161,7 +161,7 @@ jobs:
       contents: write
     runs-on: macOS-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/download-artifact@v8
         with:
           name: build-macOS-latest
@@ -205,7 +205,7 @@ jobs:
 
       - name: Upload to release
         if: github.event_name == 'release'
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: |
             lsl.xcframework.*.zip

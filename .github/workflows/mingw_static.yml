@@ -57,7 +57,7 @@ jobs:
       run:
         shell: 'msys2 {0}'
     steps:
-    - uses: actions/checkout@v5
+    - uses: actions/checkout@v7
       with:
         fetch-depth: 0
     - uses: msys2/setup-msys2@v2
@@ -123,6 +123,6 @@ jobs:
           (cd "$dir" && zip -qr "../liblsl-${version}-MinGW-${dir#mingw-}.zip" .)
         done
         ls -l *.zip
-    - uses: softprops/action-gh-release@v2
+    - uses: softprops/action-gh-release@v3
       with:
         files: liblsl-*-MinGW-*.zip
