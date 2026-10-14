@@ -69,8 +69,11 @@ check_no_reexports() {
 		echo "$symbols" >&2
 		return 1
 	fi
-	# (lines with a path are tool headers naming the file, e.g. ".../liblsl/.../x.dll")
-	if grep -v -e consumer_shared_lsl_version -e / <<<"$symbols" | grep -Ei 'lsl|loguru|pugi|asio'; then
+	# Match symbol names, not tool headers that print the file's path (".../liblsl/..."):
+	# C API (lsl_*), C++ namespaces (MSVC @lsl@@, Itanium 3lsl) and bundled libraries.
+	# shellcheck disable=SC1003 # '\\' is tr's escape for one backslash
+	if tr '\\' / <<<"$symbols" | grep -v -e consumer_shared_lsl_version -e / |
+		grep -E '(^|[^A-Za-z0-9])_?lsl_|@lsl@|3lsl|loguru|pugi|asio'; then
 		echo "error: consumer_shared re-exports the liblsl symbols above" >&2
 		return 1
 	fi
