@@ -22,7 +22,7 @@
 #   LSL_install_mingw_runtime(DESTINATION ".")
 # =============================================================================
 
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 3.21)
 
 message(STATUS "Included LSLCMake helpers, rev. 19")
 
