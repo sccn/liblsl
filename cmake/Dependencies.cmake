@@ -9,28 +9,19 @@ include(cmake/GitVersion.cmake)
 if(LSL_FETCH_PUGIXML)
     message(STATUS "Fetching pugixml via FetchContent")
     include(FetchContent)
-    set(PUGIXML_BUILD_TESTS OFF CACHE BOOL "" FORCE)
-    set(PUGIXML_NO_EXCEPTIONS OFF CACHE BOOL "" FORCE)
-    set(PUGIXML_INSTALL OFF CACHE BOOL "" FORCE)
-    # Force static library even if parent project sets BUILD_SHARED_LIBS
-    set(PUGIXML_BUILD_SHARED_AND_STATIC_LIBS OFF CACHE BOOL "" FORCE)
-    set(_lsl_saved_build_shared_libs ${BUILD_SHARED_LIBS})
-    set(BUILD_SHARED_LIBS OFF)
+    # Only download pugixml: its single source file is compiled straight into lslobj (see
+    # TargetObjLib.cmake), so a static liblsl contains it and no pugixml target is exported.
+    # The unique name and the non-existent SOURCE_SUBDIR keep this from clashing with a parent
+    # project that fetches and builds its own pugixml.
     FetchContent_Declare(
-        pugixml
+        lsl_pugixml
         GIT_REPOSITORY https://github.com/zeux/pugixml.git
         GIT_TAG v1.15
         GIT_SHALLOW TRUE
-        EXCLUDE_FROM_ALL
+        SOURCE_SUBDIR "no-cmake-project-just-download"
     )
-    FetchContent_MakeAvailable(pugixml)
-    set(BUILD_SHARED_LIBS ${_lsl_saved_build_shared_libs})
-    unset(_lsl_saved_build_shared_libs)
-    # Hide pugixml symbols - apply hidden visibility to the pugixml target
-    set_target_properties(pugixml PROPERTIES
-        CXX_VISIBILITY_PRESET hidden
-        VISIBILITY_INLINES_HIDDEN ON
-    )
+    FetchContent_MakeAvailable(lsl_pugixml)
+    set(LSL_PUGIXML_SOURCE_DIR "${lsl_pugixml_SOURCE_DIR}/src")
     set(LSL_PUGIXML_IS_FETCHED TRUE)
 else()
     message(STATUS "Using system pugixml")
@@ -78,6 +69,7 @@ target_compile_definitions(lslboost INTERFACE BOOST_ALL_NO_LIB)
 # hidden, which is correct since the dependencies are already resolved inside the shared lib.
 set(lsllinklibs Threads::Threads)
 
+# Fetched pugixml is compiled into lslobj, so there is nothing to link for it.
 if(NOT LSL_PUGIXML_IS_FETCHED)
     if(TARGET pugixml::pugixml)
         list(APPEND lsllinklibs pugixml::pugixml)

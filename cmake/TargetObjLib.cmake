@@ -29,7 +29,9 @@ target_include_directories(lslobj
 
 # Link system libs
 # (boost might be bundled or system)
-target_link_libraries(lslobj PRIVATE lslboost ${lsllinklibs})
+# Note: lsllinklibs is PUBLIC so the internal tests, which link lslobj, also get the
+#  (system) pugixml headers. lslobj is never exported, so this does not leak to consumers.
+target_link_libraries(lslobj PRIVATE lslboost PUBLIC ${lsllinklibs})
 
 # Compiler settings
 target_compile_definitions(lslobj
@@ -76,14 +78,9 @@ if(NOT LSL_OPTIMIZATIONS)
     target_compile_definitions(lslobj PUBLIC ASIO_SEPARATE_COMPILATION)
 endif()
 
-# - pugixml (either fetched via FetchContent or system package)
+# - pugixml: a fetched copy is compiled into lslobj (hidden like the rest of lslobj thanks to
+#   the global visibility preset); a system pugixml is linked via lsllinklibs above.
 if(LSL_PUGIXML_IS_FETCHED)
-    # Fetched pugixml is always static - use BUILD_INTERFACE to avoid requiring
-    # pugixml in the export set since the static library objects are linked
-    # into lsl directly.
-    target_link_libraries(lslobj PRIVATE $<BUILD_INTERFACE:pugixml::pugixml>)
-    # Hide pugixml symbols from the shared library on Linux
-    if(UNIX AND NOT APPLE)
-        target_link_options(lslobj PRIVATE "LINKER:--exclude-libs,libpugixml.a")
-    endif()
+    target_sources(lslobj PRIVATE ${LSL_PUGIXML_SOURCE_DIR}/pugixml.cpp)
+    target_include_directories(lslobj SYSTEM PUBLIC $<BUILD_INTERFACE:${LSL_PUGIXML_SOURCE_DIR}>)
 endif()
