@@ -215,14 +215,14 @@ jobs:
 
     - name: upload install dir
       if: matrix.config.build_only != true
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-${{ matrix.config.name }}
         path: install
 
     - name: upload package
       if: matrix.config.build_only != true
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: pkg-${{ matrix.config.name }}
         path: package
@@ -255,7 +255,7 @@ jobs:
 
     - name: upload dump
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: dumps-${{ matrix.config.name }}
         path: dumps

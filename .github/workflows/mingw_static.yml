@@ -87,7 +87,7 @@ jobs:
       run: cmake --build build --target install --config Release -j --verbose
 
     - name: upload install dir
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: mingw-${{ matrix.msys }}-${{ matrix.lib_type }}
         path: install
@@ -113,7 +113,7 @@ jobs:
     permissions:
       contents: write
     steps:
-    - uses: actions/download-artifact@v4
+    - uses: actions/download-artifact@v8
       with:
         pattern: mingw-*
     - name: Zip install trees

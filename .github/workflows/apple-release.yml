@@ -120,7 +120,7 @@ jobs:
 
     - name: upload dump
       if: failure()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: dumps-${{ matrix.config.name }}
         path: dumps
@@ -133,7 +133,7 @@ jobs:
 
     - name: Upload macOS Package and Framework
       if: matrix.config.name == 'macOS-latest'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-macOS-latest
         path: |
@@ -142,14 +142,14 @@ jobs:
 
     - name: Upload iOS Framework
       if: matrix.config.name == 'iOS'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-iOS
         path: install/Frameworks/lsl.framework.zip
 
     - name: Upload iOS Simulator Framework
       if: matrix.config.name == 'iOS Simulator'
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: build-iOS-Simulator
         path: install/Frameworks/lsl.framework.zip
@@ -162,15 +162,15 @@ jobs:
     runs-on: macOS-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-macOS-latest
           path: build-macOS-latest
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-iOS
           path: build-iOS
-      - uses: actions/download-artifact@v4
+      - uses: actions/download-artifact@v8
         with:
           name: build-iOS-Simulator
           path: build-iOS-Simulator
@@ -196,7 +196,7 @@ jobs:
             --output .
 
       - name: upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: mac-packages
           path: |
