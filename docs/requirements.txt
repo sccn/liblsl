@@ -1,1 +1,5 @@
+sphinx>=7
 breathe
+myst-parser>=2
+sphinxcontrib-mermaid
+sphinx-rtd-theme

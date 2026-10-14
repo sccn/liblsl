@@ -18,16 +18,26 @@ except:
 
 extensions = [
     'breathe',
+    'myst_parser',
     'sphinx.ext.intersphinx',
+    'sphinxcontrib.mermaid',
 ]
+
+# Guide pages are Markdown (MyST); ```mermaid fences render as diagrams.
+source_suffix = {'.rst': 'restructuredtext', '.md': 'markdown'}
+myst_enable_extensions = ['colon_fence', 'deflist']
+myst_fence_as_directive = ['mermaid']
+myst_heading_anchors = 3
 
 templates_path = ['_templates']
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 master_doc = 'index' # for Sphinx < 2.0
 
+html_theme = 'sphinx_rtd_theme'
 # html_static_path = ['_static']
 
-breathe_projects = { 'liblsl': 'liblsl_api/xml/'}
+docs_dir = os.path.dirname(os.path.abspath(__file__))
+breathe_projects = { 'liblsl': os.path.join(docs_dir, 'liblsl_api', 'xml')}
 breathe_default_project = 'liblsl'
 
 # The reST default role (used for this markup: `text`) to use for all documents.
@@ -44,6 +54,7 @@ intersphinx_mapping = {
     }
 
 
+# The API reference is generated from the headers by Doxygen (XML), then rendered by breathe.
 read_the_docs_build = os.environ.get('READTHEDOCS', None) == 'True'
-if read_the_docs_build:
-    subprocess.call(['doxygen', 'Doxyfile_API'])
+if read_the_docs_build or not os.path.isdir(breathe_projects['liblsl']):
+    subprocess.call(['doxygen', 'Doxyfile_API'], cwd=docs_dir)
