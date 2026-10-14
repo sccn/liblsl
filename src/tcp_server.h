@@ -5,6 +5,7 @@
 #include "socket_utils.h"
 #include <asio/buffer.hpp>
 #include <atomic>
+#include <condition_variable>
 #include <map>
 #include <memory>
 #include <mutex>
@@ -91,6 +92,9 @@ public:
 	/// fails to reach them, so this may briefly keep reporting a consumer that has gone away.
 	bool have_sync_consumers() const;
 
+	/// Wait until all sample transfer threads have exited. Returns false on timeout.
+	bool wait_for_transfer_threads(double timeout);
+
 private:
 	friend class client_session;
 
@@ -122,6 +126,11 @@ private:
 	// registry of in-flight asessions (for cancellation)
 	std::map<void *, std::weak_ptr<client_session>> inflight_;
 	std::recursive_mutex inflight_mut_; // mutex protecting the registry from concurrent access
+
+	// number of running transfer threads, so teardown can wait for them
+	int transfer_threads_{0};
+	std::mutex transfer_mut_;
+	std::condition_variable transfer_cv_;
 
 	// some cached data
 	std::string shortinfo_msg_; // pre-computed short-info server response

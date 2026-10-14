@@ -276,6 +276,9 @@ public:
 	/// Get the socket of this session.
 	tcp_socket &socket() { return sock_; }
 
+	/// Ask the transfer thread to exit at its next wakeup.
+	void abort_transfer() { abort_transfer_.store(true, std::memory_order_release); }
+
 	/// Begin processing this session (i.e., data transmission over the socket).
 	void begin_processing();
 
@@ -413,6 +416,12 @@ void tcp_server::write_all_blocking(const std::vector<asio::const_buffer> &bufs)
 	}
 }
 
+bool tcp_server::wait_for_transfer_threads(double timeout) {
+	std::unique_lock<std::mutex> lock(transfer_mut_);
+	return transfer_cv_.wait_for(
+		lock, std::chrono::duration<double>(timeout), [this]() { return transfer_threads_ == 0; });
+}
+
 bool tcp_server::have_sync_consumers() const {
 	return sync_handler_ && sync_handler_->have_consumers();
 }
@@ -492,6 +501,7 @@ void tcp_server::close_inflight_sessions() {
 		auto session = pair.second.lock();
 		// session has already expired on its own
 		if (!session) continue;
+		session->abort_transfer();
 		post(session->socket().get_executor(), [session]() {
 			asio::error_code ec;
 			auto &sock = session->socket();
@@ -800,6 +810,8 @@ void client_session::handle_send_feedheader_outcome(
 		// quit if max_buffered_ is 0. This is a bit unexpected, but backwards compatible and quite
 		// convenient for unit tests
 		if (max_buffered_ <= 0) return;
+		// teardown already began (handler ran during the outlet's final drain)
+		if (abort_transfer_.load(std::memory_order_acquire)) return;
 
 		abort_on_peer_close(queue);
 
@@ -811,6 +823,10 @@ void client_session::handle_send_feedheader_outcome(
 			max_samples_per_chunk = serv->chunk_size_;
 
 		// spawn a sample transfer thread.
+		{
+			std::lock_guard<std::mutex> lock(serv->transfer_mut_);
+			serv->transfer_threads_++;
+		}
 		std::thread(&client_session::transfer_samples_thread, this, shared_from_this(),
 			std::move(queue), max_samples_per_chunk)
 			.detach();
@@ -882,6 +898,11 @@ void client_session::transfer_samples_thread(std::shared_ptr<client_session> kee
 		asio::error_code ec;
 		keepalive->sock_.cancel(ec);
 	});
+	// only after posting the cancel, so the outlet's final drain runs it
+	if (auto serv = serv_.lock()) {
+		std::lock_guard<std::mutex> lock(serv->transfer_mut_);
+		if (--serv->transfer_threads_ == 0) serv->transfer_cv_.notify_all();
+	}
 }
 
 void client_session::handle_chunk_transfer_outcome(err_t err, std::size_t len) {
