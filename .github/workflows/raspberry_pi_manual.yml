@@ -66,7 +66,6 @@ jobs:
           cmake -S examples -B examples/build \
                 -DLSL_INSTALL_ROOT=${PWD}/install \
                 -DCMAKE_INSTALL_PREFIX=examples/build/install \
-                -DLSL_COMFY_DEFAULTS=ON \
                 ${{ matrix.config.cmake_extra }} \
                 ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j

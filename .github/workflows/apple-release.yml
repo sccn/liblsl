@@ -30,8 +30,8 @@ jobs:
       matrix:
         config:
         - {name: "macOS-latest", os: "macOS-latest", platform: "macos", cmake_extra: "-DCMAKE_OSX_DEPLOYMENT_TARGET=10.15 -DLSL_UNITTESTS=ON -DLSL_BENCHMARKS=ON -DCMAKE_OSX_ARCHITECTURES=\"x86_64;arm64\"" }
-        - {name: "iOS", os: "macOS-latest", platform: "ios", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=OS64" }
-        - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake -DPLATFORM=SIMULATOR64COMBINED -G Xcode" }
+        - {name: "iOS", os: "macOS-latest", platform: "ios", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_ARCHITECTURES=arm64" }
+        - {name: "iOS Simulator", os: "macOS-latest", platform: "ios-simulator", cmake_extra: "-DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_DEPLOYMENT_TARGET=15.0 -DCMAKE_OSX_SYSROOT=iphonesimulator -DCMAKE_OSX_ARCHITECTURES=\"arm64;x86_64\" -G Xcode" }
 
     steps:
     - name: Check release credentials
@@ -88,7 +88,6 @@ jobs:
           cmake -S examples -B examples/build \
             -DLSL_INSTALL_ROOT="${PWD}/install" \
             -DCMAKE_INSTALL_PREFIX=examples/build/install \
-            -DLSL_COMFY_DEFAULTS=ON \
             ${{ matrix.config.cmake_extra }} \
             ${{ github.event.inputs.cmakeextra }}
           cmake --build examples/build --target install --config Release -j

@@ -45,8 +45,8 @@ jobs:
         # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
         # SHLIBDEPS must be disabled for cross-compiled packages as the host system
         # does not have the target architecture libraries installed
-        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
-        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true, cmake_extra: "-DLSL_DISABLE_PACKAGE_SHLIBDEPS=ON" }
+        - {name: "ubuntu-22.04-arm64", os: "ubuntu-22.04", arch: "aarch64", cross_compile: true }
+        - {name: "ubuntu-22.04-armhf", os: "ubuntu-22.04", arch: "armv7", cross_compile: true }
 
         # Native ARM build
         # - {name: "ubuntu-24.04-arm64-native", os: "ubuntu-24.04-arm", arch: "aarch64" }
@@ -158,7 +158,6 @@ jobs:
         cmake -S examples -B examples/build \
           -DLSL_INSTALL_ROOT=${PWD}/install \
           -DCMAKE_INSTALL_PREFIX=examples/build/install \
-          -DLSL_COMFY_DEFAULTS=ON \
           ${CMAKE_TOOLCHAIN} \
           ${{ matrix.config.cmake_extra }} \
           ${{ github.event.inputs.cmakeextra }}

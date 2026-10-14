@@ -54,12 +54,6 @@ if(WIN32)
             PUBLIC
             _WIN32_WINNT=${LSL_WINVER}
     )
-    if(BUILD_SHARED_LIBS)
-        #        set_target_properties(lslobj
-        #            PROPERTIES
-        #                WINDOWS_EXPORT_ALL_SYMBOLS ON
-        #        )
-    endif(BUILD_SHARED_LIBS)
 endif()
 
 # Link in 3rd party dependencies
