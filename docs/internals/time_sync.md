@@ -3,10 +3,14 @@
 Every LSL sample carries a timestamp from the clock of the machine that pushed it.
 To compare samples from different machines, an inlet must know how far the
 remote clock is from its own. This page describes how liblsl measures that
-offset and how the inlet can apply it for you.
+offset, how accurate the measurement is, how offsets turn into synchronized
+timestamps, and how the inlet can do that for you.
 
-For the background (why LSL works this way, how recorders and XDF importers use
-the offsets, and validation results), see {doc}`lsl:info/time_synchronization`.
+liblsl does not synchronize anything by default: it provides the timestamps and
+the offset measurements, and leaves it to the application (or a recorder and
+importer) to combine them. For how to get synchronized data in practice (online
+processing, recording with LabRecorder, importing XDF files, clocks outside
+LSL), see {doc}`lsl:info/time_synchronization`.
 
 ## The local clock
 
@@ -78,7 +82,8 @@ It also stores the midpoints `(t0 + t3) / 2` (local) and `(t1 + t2) / 2`
 (remote) of that probe.
 
 The offset formula assumes the trip there and the trip back take equally
-long. If they do not, the result is off by half the difference.
+long. If they do not, the result is off by half the difference (see
+[accuracy](#accuracy-of-the-offset) below).
 
 ```mermaid
 sequenceDiagram
@@ -121,6 +126,45 @@ At aggregation time:
 `TimeProbeMaxRTT` is not a filter. No reply is rejected for its RTT. It only
 sets how long the inlet waits for replies before aggregating. Replies that
 arrive after aggregation are not used.
+
+## Accuracy of the offset
+
+The measurement is correct if the network delay is the same in both directions.
+Any difference between the outbound and return travel times biases the offset by
+half that difference. On a local network the difference has two parts:
+
+- **Random delays** from thread scheduling, buffering and interrupts. Keeping only
+  the probe with the smallest round-trip time (the NTP "clock filter") makes it
+  likely that the chosen probe was barely affected by them.
+- **A constant difference** between the two machines' network stacks (for example
+  Linux and Windows). The clock filter cannot remove it, so it dominates the
+  remaining error. On modern hardware and operating systems it is usually well
+  below a millisecond.
+
+The round-trip time of the chosen probe is reported as the `uncertainty` of
+`time_correction()`: the true offset is within that bound. Measurements of LSL's
+end-to-end synchronization accuracy are collected in the
+[LSL validation results](https://sccn.ucsd.edu/download/mgrivich/LSL_Validation.html).
+
+## From offsets to synchronized timestamps
+
+An offset is measured every `TimeUpdateInterval`, and the clocks drift slowly
+between measurements. There are increasingly accurate ways to map a remote
+timestamp into the local clock:
+
+1. Add the most recent offset. This is what `proc_clocksync` does, and it is
+   usually enough for online processing: the error from the offset is small
+   compared to the jitter in the raw timestamps.
+2. Fit a straight line through the history of `(remote_time, offset)` pairs
+   (collected with `time_correction(&remote_time, &uncertainty, timeout)`) and
+   map each timestamp through it. This models a constant clock drift.
+3. Use a robust (outlier-resistant) line fit, so a few bad measurements don't
+   tilt the mapping.
+
+Recorders store the raw timestamps and every offset measurement without applying
+them, so the mapping can be chosen when the data is analyzed: LabRecorder writes
+both into the XDF file, and the XDF importers fit a line through the offsets of
+each stream.
 
 ## `time_correction()`
 
@@ -190,8 +234,28 @@ In plain words:
 - Samples dropped by `flush()` are counted, so the sample index stays correct.
 - Streams with an irregular rate (`srate` = 0) pass through unchanged.
 
-The filter needs time to settle; the public header says 30–120 s until the
-remaining jitter stays below 1 ms.
+Why smooth at all: timestamps are usually taken on a slightly irregular
+schedule set by the hardware, the driver and the operating system, so even
+perfectly synchronized timestamps carry a random jitter, often ten times larger
+than the error of the clock offset. For data that is analyzed afterwards,
+smoothing at import time is better than online smoothing, because the whole
+recording is available (the XDF importers fit a line per uninterrupted
+segment); `proc_dejitter` is for applications that need smooth timestamps
+while the data arrives.
+
+Choosing the half-time is a trade-off:
+
+- The filter needs time to settle: with a half-time of about 30 s, the jitter
+  after smoothing typically falls below 1 ms within a minute or two.
+- Longer half-times (60–120 s) give smoother timestamps but follow changes of the
+  clock rate (e.g. from temperature changes) more slowly. Roughly, a half-time of
+  *x* seconds tracks rate changes that happen over 10·*x* seconds or more slowly.
+
+Other filters work too: double exponential smoothing is simpler but converges
+more slowly (several minutes to get below 1 ms) and needs tuning for each
+sampling rate and jitter level; QR-RLS or a Kalman filter perform similar to RLS.
+Some textbook formulations of RLS are numerically unstable and diverge after a
+few minutes, so take care when implementing your own.
 
 **`proc_monotonize` (4).** If a timestamp is smaller than the previous one,
 it is replaced by the previous one, so timestamps never go backwards.
