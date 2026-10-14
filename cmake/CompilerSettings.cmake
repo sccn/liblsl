@@ -9,16 +9,26 @@ set(LSL_WINVER "0x0601" CACHE STRING
         "Windows version (_WIN32_WINNT) to target (defaults to 0x0601 for Windows 7)")
 
 # Configure RPATH for installed executables (must be set before targets are created)
-# so they can find liblsl at runtime. Package managers (Homebrew, conda, ...) pass
-# their own CMAKE_INSTALL_RPATH, which must not be overridden.
-if(NOT CMAKE_INSTALL_RPATH)
+# so they can find liblsl at runtime, e.g. bin/../lib64 on Fedora or bin/../Frameworks.
+# Package managers (Homebrew, conda, ...) pass their own CMAKE_INSTALL_RPATH, which must
+# not be overridden.
+if(NOT CMAKE_INSTALL_RPATH AND UNIX AND NOT ANDROID)
     if(APPLE AND LSL_FRAMEWORK)
-        set(CMAKE_INSTALL_RPATH "@executable_path/../Frameworks")
-    elseif(APPLE)
-        set(CMAKE_INSTALL_RPATH "@loader_path;@loader_path/../lib")
-    elseif(UNIX AND NOT ANDROID)
-        set(CMAKE_INSTALL_RPATH "$ORIGIN;$ORIGIN/../lib")
+        set(_lsl_libdir "${CMAKE_INSTALL_FRAMEWORK_DIR}")
+    else()
+        set(_lsl_libdir "${CMAKE_INSTALL_LIBDIR}")
     endif()
+    if(IS_ABSOLUTE "${_lsl_libdir}")
+        set(CMAKE_INSTALL_RPATH "${_lsl_libdir}")
+    else()
+        file(RELATIVE_PATH _lsl_libdir "/${CMAKE_INSTALL_BINDIR}" "/${_lsl_libdir}")
+        if(APPLE)
+            set(CMAKE_INSTALL_RPATH "@loader_path/${_lsl_libdir}")
+        else()
+            set(CMAKE_INSTALL_RPATH "$ORIGIN/${_lsl_libdir}")
+        endif()
+    endif()
+    unset(_lsl_libdir)
 endif()
 set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
 

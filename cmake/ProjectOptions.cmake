@@ -23,10 +23,16 @@ cmake_dependent_option(LSL_INSTALL "Generate install targets" ON "CMAKE_SOURCE_D
 option(LSL_FORCE_FANCY_LIBNAME "Add library name decorations (32/64/-debug)" OFF)
 mark_as_advanced(LSL_FORCE_FANCY_LIBNAME)
 
-# If we install to the system then we want the framework to land in
-# `Library/Frameworks`, otherwise (e.g., Homebrew) we want `Frameworks`
-if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
-    set(FRAMEWORK_DIR_DEFAULT Library/Frameworks)
+# Install directories. Set before any target is created: RPATHs and the exported include
+# directories are derived from them.
+include(GNUInstallDirs)
+if(LSL_UNIXFOLDERS)
+    # Relative to the install prefix; pass an absolute path (e.g. /Library/Frameworks) to
+    # install the framework outside the prefix.
+    set(CMAKE_INSTALL_FRAMEWORK_DIR Frameworks CACHE PATH "Install directory for frameworks on macOS")
 else()
-    set(FRAMEWORK_DIR_DEFAULT Frameworks)
+    set(CMAKE_INSTALL_BINDIR LSL)
+    set(CMAKE_INSTALL_LIBDIR LSL)
+    set(CMAKE_INSTALL_INCLUDEDIR LSL/include)
+    set(CMAKE_INSTALL_FRAMEWORK_DIR LSL/Frameworks)
 endif()

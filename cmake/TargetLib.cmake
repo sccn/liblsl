@@ -39,13 +39,9 @@ target_link_libraries(lsl PRIVATE $<BUILD_INTERFACE:lslobj> ${lsllinklibs})
 # Note: We had to link lslobj as a PRIVATE dependency, therefore we must manually expose the include directories
 if(APPLE AND LSL_FRAMEWORK)
     # For frameworks, the install interface needs to point into the framework bundle
-    if(LSL_UNIXFOLDERS)
-        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${FRAMEWORK_DIR_DEFAULT}/lsl.framework/Versions/A/Headers")
-    else()
-        set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "LSL/Frameworks/lsl.framework/Versions/A/Headers")
-    endif()
+    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${CMAKE_INSTALL_FRAMEWORK_DIR}/lsl.framework/Headers")
 else()
-    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "include")
+    set(LSL_INSTALL_INTERFACE_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 endif()
 target_include_directories(lsl
     PUBLIC
@@ -82,6 +78,14 @@ if(APPLE)
     endif()
     # Configure Apple Framework
     if(LSL_FRAMEWORK)
+        # Copy the headers into the bundle (Headers/, keeping the lsl/ subfolder) at build
+        # time, so build-tree and installed frameworks are complete and correctly signed.
+        target_sources(lsl PRIVATE ${lslheaders})
+        foreach(_hdr IN LISTS lslheaders)
+            get_filename_component(_hdr_dir "${_hdr}" DIRECTORY)
+            string(REGEX REPLACE "^include" "Headers" _hdr_dir "${_hdr_dir}")
+            set_source_files_properties(${_hdr} PROPERTIES MACOSX_PACKAGE_LOCATION "${_hdr_dir}")
+        endforeach()
         set_target_properties(lsl PROPERTIES
                 FRAMEWORK TRUE
                 FRAMEWORK_VERSION A  # Ignored on iOS
