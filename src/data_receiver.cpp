@@ -32,9 +32,11 @@ data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chu
 									 api_config::get_instance()->inlet_buffer_reserve_ms() / 1000)
 				  : api_config::get_instance()->inlet_buffer_reserve_samples())),
 	  check_thread_start_(true), closing_stream_(false), connected_(false),
-	  sample_queue_(max_buflen), max_buflen_(max_buflen), max_chunklen_(max_chunklen) {
-	if (max_buflen < 0)
-		throw std::invalid_argument("The max_buflen argument must not be smaller than 0.");
+	  // checked before the queue is created: a negative size would become a huge allocation
+	  sample_queue_(max_buflen >= 0 ? max_buflen
+									: throw std::invalid_argument(
+										  "The max_buflen argument must not be smaller than 0.")),
+	  max_buflen_(max_buflen), max_chunklen_(max_chunklen) {
 	if (max_chunklen < 0)
 		throw std::invalid_argument("The max_chunklen argument must not be smaller than 0.");
 	conn_.register_onlost(this, &connected_upd_);
