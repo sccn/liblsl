@@ -24,7 +24,7 @@
 
 cmake_minimum_required(VERSION 3.21)
 
-message(STATUS "Included LSLCMake helpers, rev. 19")
+message(STATUS "Included LSLCMake helpers, rev. 20")
 
 # Package managers (Homebrew, conda, Linux distributions) install liblsl and Qt as
 # separate packages and handle code signing themselves; they should turn this OFF so
@@ -37,7 +37,8 @@ option(LSL_BUNDLE_DEPENDENCIES "Copy liblsl and Qt into the install tree and cod
 # Detects the target architecture by compiling a small test file.
 # Works correctly even when cross-compiling.
 #
-# Sets: LSL_ARCH (cached) - one of: arm64, arm, i386, amd64, ia64, ppc64, powerpc, unknown
+# Sets: LSL_ARCH (cached) - one of: arm64, arm, i386, x86_64, ia64, ppc64, powerpc, unknown
+# (Debian packages call x86_64 "amd64"; see CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
 #
 # Example:
 #   LSL_get_target_arch()
@@ -55,7 +56,7 @@ function(LSL_get_target_arch)
 #elif defined(__i386) || defined(__i386__) || defined(_M_IX86)
 #error cmake_ARCH i386
 #elif defined(__x86_64) || defined(__x86_64__) || defined(__amd64) || defined(_M_X64)
-#error cmake_ARCH amd64
+#error cmake_ARCH x86_64
 #elif defined(__ia64) || defined(__ia64__) || defined(_M_IA64)
 #error cmake_ARCH ia64
 #elif defined(__ppc__) || defined(__ppc) || defined(__powerpc__) \\
@@ -73,7 +74,7 @@ function(LSL_get_target_arch)
     try_compile(dummy_result "${CMAKE_BINARY_DIR}"
         SOURCES "${CMAKE_BINARY_DIR}/arch.c"
         OUTPUT_VARIABLE ARCH)
-    string(REGEX REPLACE ".*cmake_ARCH ([a-z0-9]+).*" "\\1" ARCH "${ARCH}")
+    string(REGEX REPLACE ".*cmake_ARCH ([a-z0-9_]+).*" "\\1" ARCH "${ARCH}")
     message(STATUS "LSL: Detected architecture: ${ARCH}")
     set(LSL_ARCH "${ARCH}" CACHE INTERNAL "Target architecture")
 endfunction()
