@@ -55,12 +55,17 @@ jobs:
           sudo sysctl vm.mmap_rnd_bits=28
       - name: Configure CMake
         run: |
+          # -fsanitize=function (part of "undefined" since clang 17) flags every C API call through a
+          # function pointer: headers declare opaque handle types, the library defines the same
+          # functions with internal ones (src/api_types.hpp). Same ABI, intentional, so skip it.
+          flags="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer"
+          if [[ "${{ matrix.sanitizer }}" == *undefined* ]]; then flags="$flags -fno-sanitize=function"; fi
           cmake --version
           cmake -S . -B build \
                -DCMAKE_BUILD_TYPE=RelWithDebInfo \
                -DCMAKE_C_COMPILER=clang-18 \
                -DCMAKE_{CXX_COMPILER,LINKER}=clang++-18 \
-               -DCMAKE_{C,CXX,EXE_LINKER,SHARED_LINKER}_FLAGS="-fsanitize=${{ matrix.sanitizer }} -fno-omit-frame-pointer" \
+               -DCMAKE_{C,CXX,EXE_LINKER,SHARED_LINKER}_FLAGS="$flags" \
                -DLSL_COMFY_DEFAULTS=ON \
                -DLSL_UNITTESTS=ON \
                -DLSL_BENCHMARKS=ON \
