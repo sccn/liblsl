@@ -63,7 +63,7 @@ TEMPLATE_TEST_CASE(
 	// Test with shifting bit pattern to exercise all bits
 	send_buf[0] = 1;
 	for (int i = 0; i < nsamples; ++i) {
-		send_buf[1] = static_cast<TestType>(-send_buf[0] + 1);
+		send_buf[1] = one_minus_wrapping(send_buf[0]);
 
 		sp.out_.push_sample(send_buf, lsl::local_clock(), true);
 		double ts = sp.in_.pull_sample(recv_buf, 2.0);
@@ -72,7 +72,7 @@ TEMPLATE_TEST_CASE(
 		CHECK(recv_buf[0] == Catch::Approx(send_buf[0]));
 		CHECK(recv_buf[1] == Catch::Approx(send_buf[1]));
 
-		send_buf[0] = static_cast<TestType>(static_cast<int64_t>(send_buf[0]) << 1);
+		send_buf[0] = shift_left_wrapping(send_buf[0]);
 		if (send_buf[0] == 0) send_buf[0] = 1; // Reset if we shifted out all bits
 	}
 }
