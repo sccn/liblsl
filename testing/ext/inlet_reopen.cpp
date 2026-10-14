@@ -92,7 +92,8 @@ TEST_CASE("Closing during connection setup permits reopening", "[inlet][reopen]"
 	auto found = lsl::resolve_stream("source_id", info.source_id(), 1, 2);
 	REQUIRE(found.size() == 1);
 	lsl::stream_inlet inlet(found[0], 360, 0, false);
-	for (int cycle = 0; cycle < 20; ++cycle) {
+	// many cycles, so a cancel during connection setup is likely (#314)
+	for (int cycle = 0; cycle < 500; ++cycle) {
 		try {
 			inlet.open_stream(0);
 		} catch (const lsl::timeout_error &) {

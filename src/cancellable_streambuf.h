@@ -76,7 +76,7 @@ public:
 			this->as_context().restart();
 		}
 		ec_ = asio::error::would_block;
-		run_until_complete();
+		as_context().run();
 		return !ec_ ? this : nullptr;
 	}
 
@@ -113,7 +113,9 @@ protected:
 	/// Convenience method to call methods inherited from `io_context`
 	asio::io_context &as_context() { return *this; }
 
-	/// Make sure that a cancellation, if issued, is not being eaten by `io_context::reset()`
+	/// Make sure that a cancellation, if issued, is not being eaten by `io_context::reset()`.
+	/// Each operation then calls run(), which returns only once its handler has run (cancel() posts
+	/// the close into the same context); the handlers reference the caller's stack (#314).
 	void protected_reset() {
 		std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
 		// if the cancel() comes between completion of a run_one() and this call, close will be
@@ -122,19 +124,6 @@ protected:
 		this->as_context().restart();
 		// if the cancel() comes between this call and a completion of run_one(), the posted close
 		// will be processed by the run_one
-	}
-
-	/// Run until the pending operation's handler has completed. On cancel the socket is closed so
-	/// the handler completes with an error; returning earlier would leave it queued with
-	/// references to our caller's stack frame (#314)
-	void run_until_complete() {
-		do {
-			if (cancel_issued_) {
-				std::lock_guard<std::recursive_mutex> lock(cancel_mut_);
-				close_if_open();
-			}
-			if (!as_context().run_one()) break; // no work left
-		} while (ec_ == asio::error::would_block);
 	}
 
 	int_type underflow() override {
@@ -149,7 +138,7 @@ protected:
 
 			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
-			run_until_complete();
+			as_context().run();
 			if (ec_) return traits_type::eof();
 
 			setg(&get_buffer_[0], &get_buffer_[0] + putback_max,
@@ -172,7 +161,7 @@ protected:
 				});
 			ec_ = asio::error::would_block;
 			protected_reset(); // line changed for lsl
-			run_until_complete();
+			as_context().run();
 			if (ec_) return traits_type::eof();
 			buffer = buffer + bytes_transferred_;
 		}
