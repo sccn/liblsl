@@ -67,7 +67,8 @@ check_no_reexports() {
 		echo "$symbols" >&2
 		return 1
 	fi
-	if grep -v consumer_shared_lsl_version <<<"$symbols" | grep -Ei 'lsl|loguru|pugi|asio'; then
+	# (lines with a path are tool headers naming the file, e.g. ".../liblsl/.../x.dll")
+	if grep -v -e consumer_shared_lsl_version -e / <<<"$symbols" | grep -Ei 'lsl|loguru|pugi|asio'; then
 		echo "error: consumer_shared re-exports the liblsl symbols above" >&2
 		return 1
 	fi
