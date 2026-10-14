@@ -29,7 +29,7 @@ TEMPLATE_TEST_CASE(
 	for (int32_t counter = 0; counter < numBounces; counter++) {
 		TestType received_data[2];
 		timestamps[counter][0] = lsl::local_clock();
-		sent_data[1] = -sent_data[0] + 1;
+		sent_data[1] = one_minus_wrapping(sent_data[0]);
 		outlet.push_sample(sent_data, timestamps[counter][0], true);
 
 		CHECK(inlet.pull_sample(received_data, 2, .5) != 0.0);
@@ -37,7 +37,7 @@ TEMPLATE_TEST_CASE(
 		timestamps[counter][1] = lsl::local_clock();
 		CHECK(received_data[0] == Catch::Approx(sent_data[0]));
 		CHECK(received_data[1] == Catch::Approx(sent_data[1]));
-		sent_data[0] = static_cast<TestType>(static_cast<int64_t>(sent_data[0]) << 1);
+		sent_data[0] = shift_left_wrapping(sent_data[0]);
 	}
 }
 

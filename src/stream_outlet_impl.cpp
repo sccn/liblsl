@@ -54,7 +54,7 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 		}
 
 	// create TCP data server
-	tcp_server_ = std::make_shared<tcp_server>(info_, io_ctx_data_, send_buffer_, sample_factory_,
+	tcp_server_ = std::make_shared<tcp_server>(info_, *io_ctx_data_, send_buffer_, sample_factory_,
 		chunk_size_, cfg->allow_ipv4(), cfg->allow_ipv6(), sync_mode_);
 
 	// fail if both stacks failed to instantiate
@@ -107,11 +107,22 @@ void stream_outlet_impl::instantiate_stack(udp udp_protocol) {
 }
 
 stream_outlet_impl::~stream_outlet_impl() {
+	// ponytail: only if an IO or transfer thread hangs for seconds. It may still use the data
+	// context or release queued samples, so leak them rather than free them under it.
+	const auto leak_shared_state = [this]() {
+		new factory_p(sample_factory_);
+		new io_context_p(io_ctx_data_);
+	};
 	try {
 		// cancel all request chains
 		tcp_server_->end_serving();
 		for (auto &udp_server : udp_servers_) udp_server->end_serving();
 		for (auto &responder : responders_) responder->end_serving();
+		// transfer threads need the IO threads to finish their last write, so wait before stopping
+		if (!tcp_server_->wait_for_transfer_threads(2.0)) {
+			LOG_F(WARNING, "Transfer threads for %s did not exit in time", info().name().c_str());
+			leak_shared_state();
+		}
 
 		// In theory, an io context should end quickly, but in practice it
 		// might take a while. So we
@@ -121,8 +132,8 @@ stream_outlet_impl::~stream_outlet_impl() {
 		// 4. waiting a bit and
 		// 5. detaching thread, i.e. letting it hang and continue tearing down
 		//    the outlet
-		asio::post(*io_ctx_data_, [io = io_ctx_data_]() { io->stop(); });
-		asio::post(*io_ctx_service_, [io = io_ctx_service_]() { io->stop(); });
+		asio::post(*io_ctx_data_, [&io = *io_ctx_data_]() { io.stop(); });
+		asio::post(*io_ctx_service_, [&io = *io_ctx_service_]() { io.stop(); });
 		const char *name = this->info().name().c_str();
 		for (int try_nr = 0; try_nr <= 100; ++try_nr) {
 			switch (try_nr) {
@@ -141,6 +152,7 @@ stream_outlet_impl::~stream_outlet_impl() {
 			case 100:
 				LOG_F(ERROR, "Detaching io_threads for %s", name);
 				for (auto &thread : io_threads_) thread->detach();
+				leak_shared_state();
 				return;
 			default: break;
 			}
