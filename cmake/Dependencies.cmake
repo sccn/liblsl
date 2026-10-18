@@ -76,8 +76,6 @@ if(NOT LSL_PUGIXML_IS_FETCHED)
     elseif(TARGET pugixml)
         # For pugixml versions before 1.11
         list(APPEND lsllinklibs pugixml)
-        # Add an alias for testing/CMakeLists.txt
-        add_library(pugixml::pugixml ALIAS pugixml)
     else()
         message(FATAL_ERROR "pugixml library target not found!")
     endif()
