@@ -678,7 +678,9 @@ void client_session::handle_read_feedparams(
 					if (type == "value-size") client_value_size = std::stoi(rest);
 					if (type == "max-buffer-length") max_buffered_ = std::stoi(rest);
 					if (type == "max-chunk-length") chunk_granularity_ = std::stoi(rest);
-					if (type == "protocol-version") client_protocol_version = std::stoi(rest);
+					// inlets send data-protocol-version; protocol-version is kept for compatibility
+					if (type == "data-protocol-version" || type == "protocol-version")
+						client_protocol_version = std::stoi(rest);
 				} else {
 					DLOG_F(WARNING, "%p Request line '%s' contained no key-value pair", this,
 						hdrline.c_str());

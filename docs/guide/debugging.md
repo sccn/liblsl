@@ -125,7 +125,7 @@ Things that change the outcome:
 - If `Value-Size` doesn't match the stream's channel format, the outlet falls back to data
   protocol 1.00 (`Data-Protocol-Version: 100` in the response), which is slower to produce and
   is refused by synchronous outlets (`505`).
-- The outlet takes the requested protocol version from the request line, not from the
-  `Data-Protocol-Version` header ([#328](https://github.com/sccn/liblsl/issues/328)).
+- Outlets before 1.18 take the requested data protocol version from the request line, not
+  from the `Data-Protocol-Version` header ([#328](https://github.com/sccn/liblsl/issues/328)).
 - `404 Not found` means the UID in the request line isn't this outlet's (e.g. the outlet was
   restarted and has a new UID).
