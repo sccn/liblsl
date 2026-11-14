@@ -24,12 +24,18 @@ struct postproc_dejitterer {
 	double P00_{1e10}, P11_{1e10}, P01_{0};
 	/// forget factor lambda in RLS calculation
 	double lam_{0};
+	/// a prediction error larger than this (in seconds) is a break in the stream; 0: never
+	double break_threshold_{0};
 
-	/// constructor
-	postproc_dejitterer(double t0 = 0, double srate = 0, double halftime = 0);
+	/// constructor; the break threshold is the greater of break_seconds and break_samples periods
+	postproc_dejitterer(double t0 = 0, double srate = 0, double halftime = 0,
+		double break_seconds = 0, double break_samples = 0);
 
 	/// dejitter a timestamp and update RLS parameters
 	double dejitter(double t) noexcept;
+
+	/// true if t is so far from the fitted line that the fit should restart at t
+	bool is_break(double t) const noexcept;
 
 	/// adjust RLS parameters to account for samples not seen
 	void skip_samples(uint_fast32_t skipped_samples) noexcept;
@@ -79,6 +85,8 @@ private:
 	uint32_t options_;
 	/// smoothing half-time
 	float halftime_;
+	/// break thresholds of the smoothing, in seconds and in sample periods
+	double break_seconds_, break_samples_;
 
 	// handling of time corrections
 	/// a callback function that returns the current time-correction offset

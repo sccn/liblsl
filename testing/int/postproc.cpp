@@ -79,3 +79,28 @@ TEST_CASE("rls_smoothing", "[basic]") {
 	CHECK(fabs(pp.w0_ - latency) < .1);
 	CHECK(fabs(pp.w1_ - 1 / srate) < 1e-6);
 }
+
+TEST_CASE("rls_smoothing_break", "[basic]") {
+	const double t0 = 5000, srate = 100., halftime = 90, pause = 2;
+	for (double break_seconds : {0., 1.}) {
+		INFO("break threshold " << break_seconds);
+		const double break_samples = break_seconds > 0 ? 50 : 0;
+		lsl::postproc_dejitterer pp(t0, srate, halftime, break_seconds, break_samples);
+		std::default_random_engine rng;
+		std::normal_distribution<double> jitter(0, .002);
+		double max_err_after = 0;
+		for (int i = 0; i < 400 * srate; ++i) {
+			// 300 s of data, then the sender pauses for 2 s
+			const double t = t0 + i / srate + (i >= 300 * srate ? pause : 0), tj = t + jitter(rng);
+			// as in time_postprocessor::process_internal
+			if (pp.is_break(tj))
+				pp = lsl::postproc_dejitterer(tj, srate, halftime, break_seconds, break_samples);
+			const double err = pp.dejitter(tj) - t;
+			if (i >= 300 * srate) max_err_after = std::max(max_err_after, fabs(err));
+		}
+		if (break_seconds > 0)
+			CHECK(max_err_after < .02);
+		else
+			CHECK(max_err_after > 1.5); // today's behaviour: the break is smoothed over
+	}
+}

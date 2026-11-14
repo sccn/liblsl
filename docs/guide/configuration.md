@@ -195,6 +195,8 @@ All times are in seconds unless stated otherwise. These settings are
 | `SendSocketBufferSize` | `0` | TCP send buffer size of outlet connections, in bytes. `0` keeps the OS default. |
 | `ReceiveSocketBufferSize` | `0` | TCP receive buffer size of outlet connections, in bytes. `0` keeps the OS default. |
 | `SmoothingHalftime` | `90.0` | Default half-time of the time-stamp smoothing post-processing option. |
+| `SmoothingBreakThresholdSeconds` | `0` | Restart the time-stamp smoothing when a time stamp is off the fitted line by more than this many seconds and by more than `SmoothingBreakThresholdSamples`, so a break in the stream shows in the time stamps. `0` for both: never restart. |
+| `SmoothingBreakThresholdSamples` | `0` | The same threshold in sample periods. pyxdf uses `1` s and `500` samples. |
 | `ForceDefaultTimestamps` | `0` | If `1`, outlets ignore time stamps passed by the program and use the current local clock instead. |
 
 ### [log]

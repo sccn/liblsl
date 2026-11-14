@@ -255,6 +255,11 @@ public:
 	int socket_receive_buffer_size() const { return socket_receive_buffer_size_; }
 	/// Default halftime of the time-stamp smoothing window (if enabled), in seconds.
 	float smoothing_halftime() const { return smoothing_halftime_; }
+	/// A smoothing prediction error larger than this many seconds (and than the samples threshold)
+	/// restarts the smoothing; <= 0 for both: never.
+	double smoothing_break_threshold_seconds() const { return smoothing_break_threshold_seconds_; }
+	/// The same threshold, in sample periods.
+	double smoothing_break_threshold_samples() const { return smoothing_break_threshold_samples_; }
 	/// Override timestamps with lsl clock if True
 	bool force_default_timestamps() const { return force_default_timestamps_; }
 
@@ -334,6 +339,8 @@ private:
 	int inlet_buffer_reserve_samples_;
 	int socket_receive_buffer_size_;
 	float smoothing_halftime_;
+	double smoothing_break_threshold_seconds_;
+	double smoothing_break_threshold_samples_;
 	bool force_default_timestamps_;
 };
 
