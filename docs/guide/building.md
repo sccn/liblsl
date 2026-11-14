@@ -81,7 +81,10 @@ sudo apt install g++-aarch64-linux-gnu
 cmake -S . -B build-arm64 -DCMAKE_TOOLCHAIN_FILE=cmake/toolchains/aarch64-linux-gnu.cmake
 ```
 
-Building directly on a Raspberry Pi also works.
+Building directly on the board (Raspberry Pi, Jetson, ...) also works with the quick start
+above. If the distribution's CMake is older than 3.23, install a current one with
+`pip install cmake` (or `pipx install cmake`). There is no non-CMake build: the build
+generates `lsl_version.h` and downloads pugixml.
 
 ### macOS
 
