@@ -202,3 +202,21 @@ TEST_CASE("outlet chunk_size sends samples pushed without pushthrough", "[outlet
 	// a full chunk is sent (#327)
 	CHECK(inlet.pull_sample(&sample, 1, 2.0) != 0.0);
 }
+
+TEST_CASE("outlet without chunk_size flushes at its buffer size", "[outlet][basic]") {
+	// 10 Hz and a 1 s buffer: unsent samples must be flushed after 10 of them
+	lsl::stream_info info("bufsize_flush_outlet", "Test", 1, 10, lsl::cf_float32, "bufsize_flush");
+	lsl::stream_outlet outlet(info, 0, 1);
+	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
+	REQUIRE(found.size() == 1);
+	lsl::stream_inlet inlet(found[0]);
+	inlet.open_stream(2);
+	REQUIRE(outlet.wait_for_consumers(2));
+
+	float sample = 0;
+	for (int i = 0; i < 30; ++i) {
+		outlet.push_sample(&sample, 0.0, false);
+		std::this_thread::sleep_for(std::chrono::milliseconds(10));
+	}
+	CHECK(inlet.pull_sample(&sample, 1, 0.5) != 0.0);
+}
