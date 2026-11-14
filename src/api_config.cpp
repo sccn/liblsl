@@ -147,6 +147,11 @@ void api_config::load_from_content(const std::string &content) {
 }
 
 void api_config::load(INI &pt) {
+	// a failed earlier load (we then fall back to the next source) may have filled these partly
+	multicast_addresses_.clear();
+	machine_addresses_.clear();
+	multicast_interfaces.clear();
+
 	// read the [log] settings
 #if LOGURU_DEBUG_LOGGING
 	// When built with LSL_DEBUGLOG=ON, default to verbose logging
