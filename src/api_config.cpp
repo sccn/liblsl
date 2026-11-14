@@ -41,7 +41,9 @@ static std::vector<std::string> parse_set(const std::string &setstr) {
 	std::vector<std::string> result;
 	if ((setstr.size() > 2) && setstr[0] == '{' && setstr[setstr.size() - 1] == '}') {
 		result = splitandtrim(setstr.substr(1, setstr.size() - 2), ',', false);
-	}
+	} else if (setstr != "{}" && !setstr.empty())
+		LOG_F(WARNING, "Ignoring list value '%s': lists must be in braces, e.g. {a, b}",
+			setstr.c_str());
 	return result;
 }
 
