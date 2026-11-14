@@ -73,12 +73,8 @@ a `:` are ignored. These are the headers the inlet sends
 | `Value-Size` | Bytes per channel value on the inlet; `0` for string streams | the outlet's own value size |
 | `Max-Buffer-Length` | Most samples the outlet should queue for this inlet | `0` |
 | `Max-Chunk-Length` | Most samples per network write; `0` lets the outlet decide | `0` |
-| `Data-Protocol-Version` | Data protocol the inlet proposes | not read (see note) |
+| `Data-Protocol-Version` | Data protocol the inlet proposes (older outlets read only `Protocol-Version`, so they take it from the request line) | request line version |
 | `Hostname`, `Source-Id`, `Session-Id` | Copied from the resolved stream info | not read |
-
-Note: the server looks for a header called `Protocol-Version`, not
-`Data-Protocol-Version`. In practice the inlet's data protocol proposal is
-therefore taken from the request line.
 
 ## Protocol 1.10 response
 
