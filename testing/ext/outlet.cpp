@@ -182,3 +182,23 @@ TEST_CASE("destroying an outlet with a connected inlet releases its io_context (
 #endif
 
 } // namespace
+
+TEST_CASE("outlet chunk_size sends samples pushed without pushthrough", "[outlet][basic]") {
+	const int chunk_size = 5;
+	lsl::stream_info info(
+		"chunk_size_outlet", "Test", 1, 100, lsl::cf_float32, "chunk_size_outlet");
+	lsl::stream_outlet outlet(info, chunk_size);
+	auto found = lsl::resolve_stream("name", info.name(), 1, 2.0);
+	REQUIRE(found.size() == 1);
+	lsl::stream_inlet inlet(found[0]);
+	inlet.open_stream(2);
+	REQUIRE(outlet.wait_for_consumers(2));
+
+	float sample = 0;
+	for (int i = 0; i < chunk_size - 1; ++i) outlet.push_sample(&sample, 0.0, false);
+	// an incomplete chunk is held back
+	CHECK(inlet.pull_sample(&sample, 1, 0.5) == 0.0);
+	outlet.push_sample(&sample, 0.0, false);
+	// a full chunk is sent (#327)
+	CHECK(inlet.pull_sample(&sample, 1, 2.0) != 0.0);
+}
