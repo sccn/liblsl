@@ -232,6 +232,14 @@ In plain words:
 - The filter starts on the first sample. It subtracts the whole seconds of that
   first timestamp to keep the arithmetic precise.
 - Samples dropped by `flush()` are counted, so the sample index stays correct.
+- A break (the sender pauses, then carries on) is smoothed over unless a break
+  threshold is configured: the sample after the break gets the time of the
+  next point on the old line, and the error decays over several half-times.
+  With `SmoothingBreakThresholdSeconds` and/or `SmoothingBreakThresholdSamples`
+  set, a sample whose timestamp is off the line by more than the greater of the
+  two thresholds (in either direction) restarts the filter at that sample, as at
+  stream start, so the jump shows in the timestamps. `proc_monotonize` still
+  holds timestamps after a backward jump until time catches up.
 - Streams with an irregular rate (`srate` = 0) pass through unchanged.
 
 Why smooth at all: timestamps are usually taken on a slightly irregular
@@ -280,6 +288,8 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves. |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
 | `SmoothingHalftime` | 90 s | Default half-life of the dejitter filter's sample weights. |
+| `SmoothingBreakThresholdSeconds` | 0 (off) | Error, in seconds, beyond which the dejitter filter restarts. |
+| `SmoothingBreakThresholdSamples` | 0 (off) | The same, in sample periods; the greater of the two applies. |
 
 The outlet's unicast UDP port (and thus the time service port) comes from
 `BasePort` (16572) and `PortRange` (32) in the `[ports]` section.

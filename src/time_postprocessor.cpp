@@ -1,5 +1,6 @@
 #include "time_postprocessor.h"
 #include "api_config.h"
+#include <algorithm>
 #include <cmath>
 #include <limits>
 #include <utility>
@@ -22,6 +23,8 @@ time_postprocessor::time_postprocessor(postproc_callback_t query_correction,
 	: samples_since_last_clocksync(samples_between_clocksyncs),
 	  query_srate_(std::move(query_srate)), options_(proc_none),
 	  halftime_(api_config::get_instance()->smoothing_halftime()),
+	  break_seconds_(api_config::get_instance()->smoothing_break_threshold_seconds()),
+	  break_samples_(api_config::get_instance()->smoothing_break_threshold_samples()),
 	  query_correction_(std::move(query_correction)), query_reset_(std::move(query_reset)),
 	  next_query_time_(0.0), last_offset_(0.0), last_value_(std::numeric_limits<double>::lowest()) {
 }
@@ -83,10 +86,10 @@ double time_postprocessor::process_internal(double value) {
 
 	// --- jitter removal ---
 	if (options_ & proc_dejitter) {
-		// initialize the smoothing state if not yet done so
-		if (!dejitter.is_initialized()) {
+		// initialize the smoothing state if not yet done so, or restart it after a break
+		if (!dejitter.is_initialized() || dejitter.is_break(value)) {
 			double srate = query_srate_();
-			dejitter = postproc_dejitterer(value, srate, halftime_);
+			dejitter = postproc_dejitterer(value, srate, halftime_, break_seconds_, break_samples_);
 		}
 		value = dejitter.dejitter(value);
 	}
@@ -101,12 +104,20 @@ double time_postprocessor::process_internal(double value) {
 	return value;
 }
 
-postproc_dejitterer::postproc_dejitterer(double t0, double srate, double halftime)
+postproc_dejitterer::postproc_dejitterer(
+	double t0, double srate, double halftime, double break_seconds, double break_samples)
 	: t0_(static_cast<uint_fast32_t>(t0)) {
 	if (srate > 0) {
 		w1_ = 1. / srate;
 		lam_ = pow(2, -1 / (srate * halftime));
+		break_threshold_ = std::max(break_seconds, break_samples / srate);
 	}
+}
+
+bool postproc_dejitterer::is_break(double t) const noexcept {
+	// same prediction error as `al` in dejitter(); judged per sample so a burst is no break
+	return break_threshold_ > 0 &&
+		   std::fabs(t - t0_ - (w0_ + samples_since_t0_ * w1_)) > break_threshold_;
 }
 
 double postproc_dejitterer::dejitter(double t) noexcept {
