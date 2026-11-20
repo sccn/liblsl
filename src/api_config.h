@@ -241,6 +241,9 @@ public:
 	double time_probe_interval() const { return time_probe_interval_; }
 	/// Maximum assumed RTT of a time probe (= extra waiting time).
 	double time_probe_max_rtt() const { return time_probe_max_rtt_; }
+	/// Whether outlets announce their clock identity in time probe replies, and inlets use a
+	/// matching identity to report an exact 0 offset instead of a measured one.
+	bool time_same_clock_detection() const { return time_same_clock_detection_; }
 	/// Default pre-allocated buffer size for the outlet, in ms (regular streams).
 	int outlet_buffer_reserve_ms() const { return outlet_buffer_reserve_ms_; }
 	/// Default pre-allocated buffer size for the outlet, in samples (irregular streams).
@@ -332,6 +335,7 @@ private:
 	int time_probe_count_;
 	double time_probe_interval_;
 	double time_probe_max_rtt_;
+	bool time_same_clock_detection_;
 	int outlet_buffer_reserve_ms_;
 	int outlet_buffer_reserve_samples_;
 	int socket_send_buffer_size_;

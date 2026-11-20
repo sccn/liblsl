@@ -336,6 +336,7 @@ void api_config::load(INI &pt) {
 	time_probe_count_ = pt.get("tuning.TimeProbeCount", 8);
 	time_probe_interval_ = pt.get("tuning.TimeProbeInterval", 0.064);
 	time_probe_max_rtt_ = pt.get("tuning.TimeProbeMaxRTT", 0.128);
+	time_same_clock_detection_ = pt.get("tuning.TimeSameClockDetection", true);
 	outlet_buffer_reserve_ms_ = pt.get("tuning.OutletBufferReserveMs", 5000);
 	outlet_buffer_reserve_samples_ = pt.get("tuning.OutletBufferReserveSamples", 128);
 	socket_send_buffer_size_ = pt.get("tuning.SendSocketBufferSize", 0);

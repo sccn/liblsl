@@ -165,13 +165,20 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 			is >> wave_id;
 			if (wave_id == current_wave_id_) {
 				double t0, t1, t2, t3 = lsl_clock();
-				is >> t0 >> t1 >> t2;
+				std::string clock_id;
+				is >> t0 >> t1 >> t2 >> clock_id;
 				// calculate RTT and offset
 				double rtt =
 					(t3 - t0) - (t2 - t1); // round trip time (time passed here - time passed there)
 				double offset =
 					((t1 - t0) + (t2 - t3)) /
 					2; // averaged clock offset (other clock - my clock) with rtt bias averaged out
+				// same clock (same OS instance and boot): the offset is exactly 0. The causality
+				// check rejects false matches (e.g. cloned VMs) whose clocks differ by more than
+				// the one-way delay
+				if (cfg_->time_same_clock_detection() && !clock_id.empty() &&
+					clock_id == lsl_clock_id() && t0 <= t1 && t2 <= t3)
+					rtt = offset = 0;
 				// store it
 				estimates_.emplace_back(rtt, offset);
 				// local_time, remote_time
@@ -202,7 +209,7 @@ void time_receiver::result_aggregation_scheduled(err_t err) {
 		{
 			std::lock_guard<std::mutex> lock(timeoffset_mut_);
 			uncertainty_ = best_rtt;
-			timeoffset_ = -best_offset;
+			timeoffset_ = 0.0 - best_offset; // not -best_offset, which turns 0.0 into -0.0
 			remote_time_ = best_remote_time;
 		}
 		timeoffset_upd_.notify_all();

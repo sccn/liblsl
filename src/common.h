@@ -70,6 +70,10 @@ int64_t lsl_local_clock_ns();
 /// Obtain a local system time stamp in seconds.
 inline double lsl_clock() { return lsl_local_clock(); }
 
+/// Identity of the clock behind lsl_clock(): equal for all processes sharing that clock (same OS
+/// instance and boot), different otherwise. Contains no whitespace; empty if unknown.
+const std::string &lsl_clock_id();
+
 /// Ensure that LSL is initialized.
 void ensure_lsl_initialized();
 

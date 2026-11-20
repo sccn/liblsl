@@ -188,6 +188,7 @@ All times are in seconds unless stated otherwise. These settings are
 | `TimeProbeCount` | `8` | Probes sent per offset update. |
 | `TimeProbeInterval` | `0.064` | Time between probes. |
 | `TimeProbeMaxRTT` | `0.128` | Extra time to wait for the last probe replies. |
+| `TimeSameClockDetection` | `1` | Report an exact 0 offset (uncertainty 0) when outlet and inlet run on the same OS instance and boot, so share one clock. `0` measures it like any other. |
 | `OutletBufferReserveMs` | `5000` | Memory pre-allocated for samples in an outlet, in ms of data (regular-rate streams). |
 | `OutletBufferReserveSamples` | `128` | The same, in samples, for irregular-rate streams. |
 | `InletBufferReserveMs` | `5000` | Like `OutletBufferReserveMs`, for inlets. |

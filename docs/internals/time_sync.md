@@ -67,6 +67,13 @@ gets a random `wave_id` so that late replies from an earlier wave are ignored.
 4. The inlet reads its clock as `t3` on receipt
    (`time_receiver::handle_receive_outcome`). Replies with a different
    `wave_id` are dropped.
+5. Same-clock detection (`TimeSameClockDetection`): a newer outlet appends a
+   fifth token, the identity of its clock (`lsl_clock_id()`: boot id plus time
+   namespace on Linux, `kern.bootsessionuuid` on macOS, MachineGuid plus boot
+   time on Windows). If it equals the inlet's own and `t0 <= t1 && t2 <= t3`,
+   that probe counts as `rtt = offset = 0`. Older peers ignore or omit the
+   token. Other implementations must only send it if their clock is the same
+   OS monotonic clock that liblsl's `std::chrono::steady_clock` uses.
 
 So `t0` and `t3` come from the inlet's clock, and `t1` and `t2` from the
 outlet's clock. All numbers are sent as text with 16 significant digits.
@@ -287,6 +294,7 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeProbeMaxRTT` | 0.128 s | Extra wait after the last probe before aggregating. Not an RTT filter. |
 | `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves. |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
+| `TimeSameClockDetection` | 1 | Exchange clock identities and report an exact 0 offset for peers sharing the clock. |
 | `SmoothingHalftime` | 90 s | Default half-life of the dejitter filter's sample weights. |
 | `SmoothingBreakThresholdSeconds` | 0 (off) | Error, in seconds, beyond which the dejitter filter restarts. |
 | `SmoothingBreakThresholdSamples` | 0 (off) | The same, in sample periods; the greater of the two applies. |
