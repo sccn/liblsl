@@ -178,6 +178,55 @@ timestamp into the local clock:
 3. Use a robust (outlier-resistant) line fit, so a few bad measurements don't
    tilt the mapping.
 
+### Drift compensation (opt-in)
+
+With `[tuning] TimeDriftWindow` set to a number of seconds (0, the default,
+turns it off), the inlet does a robust version of option 2 itself
+(`src/drift_estimator.h`). It keeps the chosen `(local time, correction, rtt)`
+of each wave from the last `TimeDriftWindow` seconds (at most 256 waves), fits
+a Theil-Sen line to them (slope = median of all pairwise slopes, intercept =
+median of the residuals) after every wave, and `time_correction()` returns that
+line evaluated at the current `lsl_clock()`. That removes the lag of holding a
+measurement for up to `TimeUpdateInterval` (at 20 ppm relative drift, 40 µs
+just before the next wave) and averages out the per-wave noise. Single bad
+waves barely move a median fit. Guard rails:
+
+- Until the window holds 5 waves spanning at least 6 s, or if the fitted slope
+  exceeds 500 ppm, the latest wave is returned, exactly as without the option.
+- A median line ignores a change in the clock rate (for example an NTP
+  frequency correction on Linux, where `steady_clock` is slewed) for half a
+  window. So when at least 3 consecutive waves, spanning at least 3 s, miss
+  the line on the same side by more than max(5 σ, 30 µs) + (rtt − smallest
+  rtt in the window) / 2, where σ is the robust spread of the fit residuals,
+  the waves before the first miss are dropped and the fit starts again. The
+  rtt term allows for waves that arrived with extra delay (which may be off by
+  up to half of it). Shorter excursions are left to the median: between macOS
+  and Linux, pairs of waves over a faster path, 50–60 µs off, came every few
+  minutes, and a two-wave rule reset the fit on each of them.
+- Pairs of waves less than 0.25 s apart are left out of the slope.
+- The history is cleared when the inlet recovers
+  (`reset_timeoffset_on_recovery`) and while same-clock detection reports 0.
+
+`remote_time` and `uncertainty` still describe the most recent wave's chosen
+probe, not the fit.
+
+Measured on wired LANs (macOS, Linux, Windows 10; logged probe rounds replayed
+through the estimator offline): with a
+60 s window the error of the returned correction against a non-causal reference
+fell from 11 µs to 3 µs (median) and from 53 µs to 14 µs (95th percentile) at
+the default 2 s update interval, and the step between consecutive post-processor
+queries from 66 µs to 18 µs (99th percentile). Against PTP ground truth (Linux
+pair, 30 min) the error after removing its constant part fell from 1.4 µs to
+0.6 µs (95th percentile). It does nothing for the constant asymmetry described
+above (about 30 µs on that pair), which is usually the larger error. The price
+is the reaction to a sudden clock rate change: a synthetic 10 s, 50 ppm rate
+excursion gave up to about 420 µs of error, above 100 µs for about 16 s, versus
+about 130 µs for 2 s without the option; no such change occurred in the 30 min
+recordings. Short clock jerks of 16–48 µs from a PTP servo were followed about
+as well as without the option at the default interval, and worse at 0.5 s.
+Windows longer than 60 s were worse on pairs whose drift rate wanders (up to 3×
+the 95th percentile error at 300 s).
+
 Recorders store the raw timestamps and every offset measurement without applying
 them, so the mapping can be chosen when the data is analyzed: LabRecorder writes
 both into the XDF file, and the XDF importers fit a line through the offsets of
@@ -192,7 +241,9 @@ C++: `stream_inlet::time_correction(timeout)` and
 The work is done in `time_receiver::time_correction`.
 
 - **Return value.** The latest stored correction, in seconds. Add it to a
-  timestamp from the outlet's clock to map it into the inlet's clock.
+  timestamp from the outlet's clock to map it into the inlet's clock. With
+  `TimeDriftWindow` > 0 it is the drift-compensated correction for the moment
+  of the call instead (see above).
 - **`remote_time`** is the outlet clock at the chosen probe. **`uncertainty`**
   is that probe's RTT (an upper bound on the error). Collecting
   `(remote_time, correction)` pairs over time lets you fit the clock drift.
@@ -305,6 +356,7 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves. |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
 | `TimeSameClockDetection` | 1 | Exchange clock identities and report an exact 0 offset for peers sharing the clock. |
+| `TimeDriftWindow` | 0 (off) | Seconds of offset measurements to fit a drift line to; `time_correction()` then extrapolates it to the time of the call. 60 is a good value. |
 | `TimeSameClockFallbackRounds` | 3 | Waves in a row an older (tokenless) outlet on this machine must be consistent with offset 0 before the offset is reported as 0. `0` turns this off. |
 | `SmoothingHalftime` | 90 s | Default half-life of the dejitter filter's sample weights. |
 | `SmoothingBreakThresholdSeconds` | 0 (off) | Error, in seconds, beyond which the dejitter filter restarts. |
