@@ -74,6 +74,15 @@ gets a random `wave_id` so that late replies from an earlier wave are ignored.
    that probe counts as `rtt = offset = 0`. Older peers ignore or omit the
    token. Other implementations must only send it if their clock is the same
    OS monotonic clock that liblsl's `std::chrono::steady_clock` uses.
+6. Fallback for older outlets, which send no token
+   (`TimeSameClockFallbackRounds`, `same_clock_fallback`): if the outlet's
+   time service address is loopback or one of this machine's interface
+   addresses, and every reply of `TimeSameClockFallbackRounds` (3) waves in a
+   row is tokenless with `t0 <= t1 <= t2 <= t3` (`|offset| <= rtt/2`), the
+   inlet reports offset 0. Any other wave resets the count. Distinct
+   `steady_clock`s are boot-relative and differ by seconds or more, so they
+   fail at once; a wrong match is still bounded by the probe's offset interval
+   `[t2 - t3, t1 - t0]`, and the reported uncertainty stays the measured `rtt`.
 
 So `t0` and `t3` come from the inlet's clock, and `t1` and `t2` from the
 outlet's clock. All numbers are sent as text with 16 significant digits.
@@ -295,6 +304,7 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves. |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
 | `TimeSameClockDetection` | 1 | Exchange clock identities and report an exact 0 offset for peers sharing the clock. |
+| `TimeSameClockFallbackRounds` | 3 | Waves in a row an older (tokenless) outlet on this machine must be consistent with offset 0 before the offset is reported as 0. `0` turns this off. |
 | `SmoothingHalftime` | 90 s | Default half-life of the dejitter filter's sample weights. |
 | `SmoothingBreakThresholdSeconds` | 0 (off) | Error, in seconds, beyond which the dejitter filter restarts. |
 | `SmoothingBreakThresholdSamples` | 0 (off) | The same, in sample periods; the greater of the two applies. |

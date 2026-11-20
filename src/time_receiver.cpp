@@ -1,6 +1,7 @@
 #include "time_receiver.h"
 #include "api_config.h"
 #include "inlet_connection.h"
+#include "netinterfaces.h"
 #include "socket_utils.h"
 #include <asio/io_context.hpp>
 #include <chrono>
@@ -16,6 +17,28 @@ const double NOT_ASSIGNED = std::numeric_limits<double>::max();
 
 using namespace lsl;
 
+/// Whether addr is loopback or one of this machine's interface addresses
+static bool is_local_address(const asio::ip::address &addr) {
+	if (addr.is_loopback()) return true;
+	// ponytail: get_local_interfaces() lists only up, multicast-capable interfaces (and on Windows
+	// one address per family per adapter); a missed local address just disables the fallback
+	for (const auto &netif : get_local_interfaces())
+		if (netif.addr.is_v6() && addr.is_v6()
+				? netif.addr.to_v6().to_bytes() == addr.to_v6().to_bytes() // ignore scope id
+				: netif.addr == addr)
+			return true;
+	return false;
+}
+
+/// same-clock fallback for tokenless outlets, only for outlets on this machine
+static same_clock_fallback make_fallback(const api_config *cfg, const udp::endpoint &outlet) {
+	const int rounds = cfg->time_same_clock_fallback_rounds();
+	return same_clock_fallback(cfg->time_same_clock_detection() && rounds > 0 &&
+									   is_local_address(outlet.address())
+								   ? rounds
+								   : 0);
+}
+
 time_receiver::time_receiver(inlet_connection &conn)
 	: conn_(conn), was_reset_(false), timeoffset_(std::numeric_limits<double>::max()),
 	  remote_time_(std::numeric_limits<double>::max()),
@@ -26,12 +49,14 @@ time_receiver::time_receiver(inlet_connection &conn)
 	conn_.register_onrecover(this, [this]() {
 		reset_timeoffset_on_recovery();
 		outlet_addr_ = conn_.get_udp_endpoint();
+		fallback_ = make_fallback(cfg_, outlet_addr_);
 		DLOG_F(INFO, "Set new time service address: %s", outlet_addr_.address().to_string().c_str());
 		// handle outlet switching between IPv4 and IPv6
 		time_sock_.close();
 		time_sock_.open(outlet_addr_.protocol());
 	});
 	time_sock_.open(outlet_addr_.protocol());
+	fallback_ = make_fallback(cfg_, outlet_addr_);
 }
 
 time_receiver::~time_receiver() {
@@ -111,6 +136,7 @@ void time_receiver::start_time_estimation() {
 	// clear the estimates buffer
 	estimates_.clear();
 	estimate_times_.clear();
+	fallback_.start_round();
 	// generate a new wave id so that we don't confuse packets from earlier (or mis-guided)
 	// estimations
 	current_wave_id_ = std::rand();
@@ -179,6 +205,7 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 				if (cfg_->time_same_clock_detection() && !clock_id.empty() &&
 					clock_id == lsl_clock_id() && t0 <= t1 && t2 <= t3)
 					rtt = offset = 0;
+				fallback_.add_probe(!clock_id.empty(), t0, t1, t2, t3);
 				// store it
 				estimates_.emplace_back(rtt, offset);
 				// local_time, remote_time
@@ -193,6 +220,7 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 
 void time_receiver::result_aggregation_scheduled(err_t err) {
 	if (err) return;
+	const bool same_clock = fallback_.end_round();
 
 	if ((int)estimates_.size() >= cfg_->time_update_minprobes()) {
 		// take the estimate with the lowest error bound (=rtt), as in NTP
@@ -205,6 +233,10 @@ void time_receiver::result_aggregation_scheduled(err_t err) {
 				best_remote_time = estimate_times_[k].second;
 			}
 		}
+		// tokenless outlet on this machine consistent with offset 0 for several rounds: report 0.
+		// The uncertainty stays best_rtt, the width of the interval the true offset is known to
+		// lie in, which is also how far off 0 could be if the clocks were not the same after all
+		if (same_clock) best_offset = 0;
 		// and notify that the result is available
 		{
 			std::lock_guard<std::mutex> lock(timeoffset_mut_);

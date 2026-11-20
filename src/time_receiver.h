@@ -22,6 +22,39 @@ class api_config;
 /// list of time estimates with error bounds
 using estimate_list = std::vector<std::pair<double, double>>;
 
+/// Whether a time probe is consistent with outlet and inlet sharing one clock: each reading
+/// comes no earlier than the one before it (t0 <= t1 <= t2 <= t3, i.e. |offset| <= rtt/2)
+inline bool zero_offset_consistent(double t0, double t1, double t2, double t3) {
+	return t0 <= t1 && t1 <= t2 && t2 <= t3;
+}
+
+/**
+ * Same-clock detection for outlets that send no clock identity token (older liblsl).
+ * Only used when the outlet's address is one of this machine's. A round counts if it had replies
+ * and all of them were tokenless and zero_offset_consistent(); after `rounds` such rounds in a
+ * row the offset is reported as 0, and any other round resets the count.
+ * steady_clock is boot-relative, so distinct clocks differ by seconds or more and fail the check
+ * at once; a false positive still lies within the probe's [t2-t3, t1-t0] offset interval.
+ */
+class same_clock_fallback {
+public:
+	explicit same_clock_fallback(int rounds = 0) : rounds_(rounds) {}
+	void start_round() { round_ok_ = true; any_ = false; }
+	void add_probe(bool has_token, double t0, double t1, double t2, double t3) {
+		any_ = true;
+		round_ok_ = round_ok_ && !has_token && zero_offset_consistent(t0, t1, t2, t3);
+	}
+	/// Ends a round; returns whether its estimate should be reported as offset 0.
+	bool end_round() {
+		count_ = (any_ && round_ok_) ? count_ + 1 : 0;
+		return rounds_ > 0 && count_ >= rounds_;
+	}
+
+private:
+	int rounds_, count_{0};
+	bool round_ok_{true}, any_{false};
+};
+
 /**
  * Internal class of an inlet that's responsible for retrieving time-correction data of the inlet.
  * The actual communication runs in an internal background thread, while the public function
@@ -130,6 +163,8 @@ private:
 	estimate_list estimate_times_;
 	/// an id for the current wave of time packets
 	int current_wave_id_{0};
+	/// same-clock detection for tokenless (older) outlets on this machine
+	same_clock_fallback fallback_;
 };
 } // namespace lsl
 
