@@ -116,7 +116,8 @@ void time_receiver::start_time_estimation() {
 	current_wave_id_ = std::rand();
 	// start the packet exchange chains
 	send_next_packet(1);
-	receive_next_packet();
+	// the receive chain re-arms itself; only (re)start it if it ended (first wave, socket reopened)
+	if (!receiving_) receive_next_packet();
 	// schedule the aggregation of results (by the time when all replies should have been received)
 	aggregate_results_.expires_after(timeout_sec(
 		cfg_->time_probe_max_rtt() + cfg_->time_probe_interval() * cfg_->time_probe_count()));
@@ -152,6 +153,7 @@ void time_receiver::send_next_packet(int packet_num) {
 }
 
 void time_receiver::receive_next_packet() {
+	receiving_ = true;
 	time_sock_.async_receive_from(asio::buffer(recv_buffer_), remote_endpoint_,
 		[this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
 }
@@ -181,7 +183,10 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Error while processing a time estimation return packet: %s", e.what());
 	}
-	if (err != asio::error::operation_aborted) receive_next_packet();
+	if (err != asio::error::operation_aborted)
+		receive_next_packet();
+	else
+		receiving_ = false;
 }
 
 void time_receiver::result_aggregation_scheduled(err_t err) {
