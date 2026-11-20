@@ -11,6 +11,7 @@ set(lslsources
         src/consumer_queue.h
         src/data_receiver.cpp
         src/data_receiver.h
+        src/drift_estimator.h
         src/forward.h
         src/info_receiver.cpp
         src/info_receiver.h

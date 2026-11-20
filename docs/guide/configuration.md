@@ -189,6 +189,7 @@ All times are in seconds unless stated otherwise. These settings are
 | `TimeProbeInterval` | `0.064` | Time between probes. |
 | `TimeProbeMaxRTT` | `0.128` | Extra time to wait for the last probe replies. |
 | `TimeSameClockDetection` | `1` | Report an exact 0 offset (uncertainty 0) when outlet and inlet run on the same OS instance and boot, so share one clock. `0` measures it like any other. |
+| `TimeDriftWindow` | `0` | Drift compensation: `time_correction()` (and so `proc_clocksync`) returns a robust line fit over the offsets measured in the last this many seconds, extrapolated to the time of the call, instead of the latest measurement. `0` turns it off; 60 is a good value. See [time synchronization](../internals/time_sync.md#drift-compensation-opt-in). |
 | `TimeSameClockFallbackRounds` | `3` | For outlets from older liblsl versions, which don't announce their clock: report a 0 offset (uncertainty stays the measured round-trip time) once an outlet on this machine has been consistent with offset 0 for this many updates in a row. `0` turns it off; `TimeSameClockDetection = 0` also does. |
 | `OutletBufferReserveMs` | `5000` | Memory pre-allocated for samples in an outlet, in ms of data (regular-rate streams). |
 | `OutletBufferReserveSamples` | `128` | The same, in samples, for irregular-rate streams. |

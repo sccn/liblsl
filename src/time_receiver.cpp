@@ -42,7 +42,8 @@ static same_clock_fallback make_fallback(const api_config *cfg, const udp::endpo
 time_receiver::time_receiver(inlet_connection &conn)
 	: conn_(conn), was_reset_(false), timeoffset_(std::numeric_limits<double>::max()),
 	  remote_time_(std::numeric_limits<double>::max()),
-	  uncertainty_(std::numeric_limits<double>::max()), cfg_(api_config::get_instance()),
+	  uncertainty_(std::numeric_limits<double>::max()),
+	  drift_(api_config::get_instance()->time_drift_window()), cfg_(api_config::get_instance()),
 	  time_sock_(time_io_), outlet_addr_(conn_.get_udp_endpoint()), next_estimate_(time_io_),
 	  aggregate_results_(time_io_), next_packet_(time_io_) {
 	conn_.register_onlost(this, &timeoffset_upd_);
@@ -98,7 +99,7 @@ double time_receiver::time_correction(double *remote_time, double *uncertainty, 
 						 "re-resolve the source and re-create the inlet.");
 	*remote_time = remote_time_;
 	*uncertainty = uncertainty_;
-	return timeoffset_;
+	return drift_.empty() ? timeoffset_ : drift_.predict(lsl_clock());
 }
 
 bool time_receiver::was_reset() {
@@ -225,11 +226,12 @@ void time_receiver::result_aggregation_scheduled(err_t err) {
 	if ((int)estimates_.size() >= cfg_->time_update_minprobes()) {
 		// take the estimate with the lowest error bound (=rtt), as in NTP
 		double best_offset = 0, best_rtt = FOREVER;
-		double best_remote_time = 0;
+		double best_local_time = 0, best_remote_time = 0;
 		for (std::size_t k = 0; k < estimates_.size(); k++) {
 			if (estimates_[k].first < best_rtt) {
 				best_rtt = estimates_[k].first;
 				best_offset = estimates_[k].second;
+				best_local_time = estimate_times_[k].first;
 				best_remote_time = estimate_times_[k].second;
 			}
 		}
@@ -243,6 +245,9 @@ void time_receiver::result_aggregation_scheduled(err_t err) {
 			uncertainty_ = best_rtt;
 			timeoffset_ = 0.0 - best_offset; // not -best_offset, which turns 0.0 into -0.0
 			remote_time_ = best_remote_time;
+			// a same-clock 0 must stay exactly 0, not be blended with earlier measured rounds
+			if (same_clock) drift_.clear();
+			if (cfg_->time_drift_window() > 0) drift_.add(best_local_time, timeoffset_, best_rtt);
 		}
 		timeoffset_upd_.notify_all();
 	}
@@ -255,4 +260,5 @@ void time_receiver::reset_timeoffset_on_recovery() {
 		// obtained time offsets
 		was_reset_ = true;
 	timeoffset_ = NOT_ASSIGNED;
+	drift_.clear();
 }
