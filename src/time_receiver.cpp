@@ -2,6 +2,7 @@
 #include "api_config.h"
 #include "inlet_connection.h"
 #include "socket_utils.h"
+#include <algorithm>
 #include <asio/io_context.hpp>
 #include <chrono>
 #include <exception>
@@ -119,11 +120,14 @@ void time_receiver::start_time_estimation() {
 	// the receive chain re-arms itself; only (re)start it if it ended (first wave, socket reopened)
 	if (!receiving_) receive_next_packet();
 	// schedule the aggregation of results (by the time when all replies should have been received)
-	aggregate_results_.expires_after(timeout_sec(
-		cfg_->time_probe_max_rtt() + cfg_->time_probe_interval() * cfg_->time_probe_count()));
+	const double aggregation_delay =
+		cfg_->time_probe_max_rtt() + cfg_->time_probe_interval() * cfg_->time_probe_count();
+	aggregate_results_.expires_after(timeout_sec(aggregation_delay));
 	aggregate_results_.async_wait([this](err_t err) { result_aggregation_scheduled(err); });
-	// schedule the next estimation step
-	next_estimate_.expires_after(timeout_sec(cfg_->time_update_interval()));
+	// schedule the next estimation step, not before this one is aggregated (re-arming
+	// aggregate_results_ earlier would cancel it, so no estimate would ever be produced)
+	next_estimate_.expires_after(
+		timeout_sec(std::max(cfg_->time_update_interval(), aggregation_delay)));
 	next_estimate_.async_wait([this](err_t err) {
 		if (err != asio::error::operation_aborted) start_time_estimation();
 	});

@@ -183,7 +183,7 @@ All times are in seconds unless stated otherwise. These settings are
 | `ContinuousResolveInterval` | `0.5` | Extra pause between waves in continuous (background) resolvers. |
 | `TimerResolution` | `1` | Windows only: system timer resolution in ms requested for the program's lifetime. `0` leaves it unchanged. Other values than `1` can increase latency. |
 | `MaxCachedQueries` | `100` | How many discovery query results each outlet caches. `0` turns the cache off. |
-| `TimeUpdateInterval` | `2.0` | Time between clock offset updates. |
+| `TimeUpdateInterval` | `2.0` | Time between clock offset updates (at least `TimeProbeMaxRTT + TimeProbeCount * TimeProbeInterval`). |
 | `TimeUpdateMinProbes` | `6` | Probes that must succeed for an offset update. |
 | `TimeProbeCount` | `8` | Probes sent per offset update. |
 | `TimeProbeInterval` | `0.064` | Time between probes. |
