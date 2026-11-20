@@ -1011,9 +1011,9 @@ public:
 	 * time_correction.
 	 * @param uncertainty The maximum uncertainty of the given time correction.
 	 *
-	 * With `[tuning] TimeDriftWindow` > 0 the returned correction is a robust line fit over the
-	 * recent measurements, evaluated at the time of the call; remote_time and uncertainty still
-	 * describe the most recent measurement.
+	 * With `[tuning] TimeDriftWindow` > 0 (default 60 s) the returned correction is a robust line
+	 * fit over the recent measurements, evaluated at the time of the call; remote_time and
+	 * uncertainty still describe the most recent measurement.
 	 */
 	double time_correction(double *remote_time, double *uncertainty, double timeout = FOREVER) {
 		int32_t ec = 0;

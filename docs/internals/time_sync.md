@@ -180,10 +180,10 @@ timestamp into the local clock:
 3. Use a robust (outlier-resistant) line fit, so a few bad measurements don't
    tilt the mapping.
 
-### Drift compensation (opt-in)
+### Drift compensation
 
-With `[tuning] TimeDriftWindow` set to a number of seconds (0, the default,
-turns it off), the inlet does a robust version of option 2 itself
+With `[tuning] TimeDriftWindow` set to a number of seconds (default 60; 0
+turns it off and returns the latest wave as before), the inlet does a robust version of option 2 itself
 (`src/drift_estimator.h`). It keeps the chosen `(local time, correction, rtt)`
 of each wave from the last `TimeDriftWindow` seconds (at most 256 waves), fits
 a Theil-Sen line to them (slope = median of all pairwise slopes, intercept =
@@ -212,6 +212,13 @@ waves barely move a median fit. Guard rails:
 `remote_time` and `uncertainty` still describe the most recent wave's chosen
 probe, not the fit.
 
+Drift compensation is on by default (60 s); the sample-level error of the
+returned correction was 3–15× lower with it on every measured pair. Its main
+downside is on hosts whose steady clock is actively steered: a Linux machine
+under a PTP servo (phc2sys slewing `CLOCK_MONOTONIC`), or large NTP slews right
+after boot or resume. A sudden clock-rate change there is followed more slowly
+than without it (numbers below). Set `TimeDriftWindow = 0` on such hosts.
+
 Measured on wired LANs (macOS, Linux, Windows 10; logged probe rounds replayed
 through the estimator offline): with a
 60 s window the error of the returned correction against a non-causal reference
@@ -222,8 +229,8 @@ pair, 30 min) the error after removing its constant part fell from 1.4 µs to
 0.6 µs (95th percentile). It does nothing for the constant asymmetry described
 above (about 30 µs on that pair), which is usually the larger error. The price
 is the reaction to a sudden clock rate change: a synthetic 10 s, 50 ppm rate
-excursion gave up to about 420 µs of error, above 100 µs for about 16 s, versus
-about 130 µs for 2 s without the option; no such change occurred in the 30 min
+excursion gave a peak error of 330–490 µs, above 100 µs for 12–25 s, versus
+134 µs for 2 s without the option; no such change occurred in the 30 min
 recordings. Short clock jerks of 16–48 µs from a PTP servo were followed about
 as well as without the option at the default interval, and worse at 0.5 s.
 Windows longer than 60 s were worse on pairs whose drift rate wanders (up to 3×
@@ -360,7 +367,7 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves (at least the aggregation delay). |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
 | `TimeSameClockDetection` | 1 | Exchange clock identities and report an exact 0 offset for peers sharing the clock. |
-| `TimeDriftWindow` | 0 (off) | Seconds of offset measurements to fit a drift line to; `time_correction()` then extrapolates it to the time of the call. 60 is a good value. |
+| `TimeDriftWindow` | 60 s | Seconds of offset measurements to fit a drift line to; `time_correction()` then extrapolates it to the time of the call. `0` turns it off. |
 | `TimeSameClockFallbackRounds` | 3 | Waves in a row an older (tokenless) outlet on this machine must be consistent with offset 0 before the offset is reported as 0. `0` turns this off. |
 | `SmoothingHalftime` | 90 s | Default half-life of the dejitter filter's sample weights. |
 | `SmoothingBreakThresholdSeconds` | 0 (off) | Error, in seconds, beyond which the dejitter filter restarts. |
