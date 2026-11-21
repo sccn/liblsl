@@ -162,7 +162,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 // === internal processing ===
 
 void data_receiver::data_thread() {
-	conn_.acquire_watchdog();
+	conn_.acquire_watchdog(true);
 	loguru::set_thread_name((std::string("R_") += conn_.type_info().name().substr(0, 12)).c_str());
 	// ensure that the sample factory persists for the lifetime of this thread
 	factory_p factory(sample_factory_);
@@ -388,7 +388,7 @@ void data_receiver::data_thread() {
 		// be waiting for the next sample we need to wake it up by passing a sentinel
 		sample_queue_.push_sample(sample_p());
 	}
-	conn_.release_watchdog();
+	conn_.release_watchdog(true);
 }
 
 } // namespace lsl

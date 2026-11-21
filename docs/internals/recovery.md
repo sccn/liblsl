@@ -61,9 +61,18 @@ There are two paths.
    (default 15)? If both are true it calls `try_recover`. The data thread refreshes the receive
    time for every sample on streams up to 16 Hz, and for every 16th sample on faster streams.
 
-   The watchdog does not drop a working connection. If the stream's current UID is still found
-   on the network, `try_recover` returns and nothing changes. On a sparse marker stream the
-   watchdog therefore just sends a discovery query every 15 to 30 seconds.
+   If the stream's current UID is still found on the network, `try_recover` keeps the endpoint.
+   What happens next depends on the stream's nominal rate (`reconnect_if_stalled`):
+   - **Irregular rate** (for example a marker stream): nothing changes, because silence is
+     normal. On a sparse marker stream the watchdog just sends a discovery query every 15 to 30
+     seconds.
+   - **Regular rate**: the outlet is still running, so a regular stream that stays silent means
+     the data connection probably died without an error (see failure mode 4). If no data has
+     arrived by the time the resolve finishes, the watchdog logs *"No data from stream '...' for
+     over ... s although it is still online; the connection is probably dead, reconnecting..."*
+     and cancels the inlet's open connections. The data thread then reconnects to the same
+     address. For streams slower than 10 samples per `WatchdogTimeThreshold`, the silence must
+     also last at least 10 sample intervals.
 
 ### What `try_recover` does
 
@@ -76,7 +85,8 @@ There are two paths.
    has **no timeout**, and collects replies for at least 1 s. It blocks until a matching stream
    appears or the resolve is cancelled.
 4. It compares the results with the current UID:
-   - **Current UID found**: the outlet is still there. Nothing to do.
+   - **Current UID found**: the outlet is still there. The endpoint stays the same. The watchdog
+     may still reconnect a silent regular-rate stream (see above).
    - **Exactly one other match**: the inlet adopts its address and ports, cancels all open
      connections of this inlet (so blocked reads wake up), and calls the recovery callbacks. The
      data thread then reconnects to the new address.
@@ -99,9 +109,10 @@ stateDiagram-v2
     Check --> Resolving: try_recover
     Resolving --> Resolving: no match yet (no timeout)
     Resolving --> Connected: current UID still present
+    Resolving --> Reconnect: current UID present, regular-rate stream still silent
     Resolving --> Resolving: several matches (warn, retry)
     Resolving --> Reconnect: exactly one new match
-    Reconnect --> Connected: new endpoint, reconnect
+    Reconnect --> Connected: reconnect (new or same endpoint)
     Lost --> [*]: lost_error on every call
 ```
 
@@ -184,14 +195,23 @@ A value that contains `'` produces an invalid query. The resolver rejects it, `t
 ### 4. After a network interruption the inlet stays silent, but the stream is still listed
 
 **Cause.** The read on the data connection has no timeout, and liblsl does not turn on TCP
-keep-alive. If the connection dies without the operating system reporting an error, the read can
-block indefinitely. The watchdog does not help here: it only switches endpoints when the old UID
-has disappeared, and this outlet is still running. With recovery disabled there is no watchdog
-at all, and the inlet never becomes lost either.
+keep-alive. If the connection dies without the operating system reporting an error (a
+"half-open" connection, for example after a cable is pulled or a Wi-Fi or NAT entry drops), the
+read can block indefinitely.
 
-**What to do.** Watch for missing data in your application (use pull timeouts). When the stream
-goes silent but is still listed, call `close_stream()` and then `open_stream()` (or pull again),
-which opens a new connection, or recreate the inlet.
+With recovery enabled, the watchdog now reconnects a **regular-rate** stream that delivers no
+data while its UID is still online (see "How an inlet notices a broken connection"). The stall
+still lasts up to `WatchdogTimeThreshold` + `WatchdogCheckInterval`, plus about 3 s for two
+resolves and the reconnect back-off (about 33 s at most with the defaults), and samples sent in
+that time are lost. Two cases are
+not covered: **irregular-rate** streams, where silence can be normal, and inlets with
+**recovery disabled**, which have no watchdog at all and never become lost either.
+
+**What to do.** For regular streams with recovery enabled, lower `WatchdogTimeThreshold` and
+`WatchdogCheckInterval` if 30 s is too long. Otherwise watch for missing data in your
+application (use pull timeouts). When the stream goes silent but is still listed, call
+`close_stream()` and then `open_stream()` (or pull again), which opens a new connection, or
+recreate the inlet.
 
 ### 5. Recovery waits forever when discovery is broken
 
@@ -267,6 +287,7 @@ contains the fix.
 | `close_stream()` could block while the inlet was recovering, and reopening a closed inlet was unsafe | #299: close interrupts the recovery wait, the back-off and pending `open_stream()` calls | 1.18 (beta 3) |
 | Destroying an outlet leaked its IO context, buffers and sample factory (#312) | #313 | 1.18 (beta 6) |
 | Destroying an outlet with connected inlets could leave transfer threads running past its IO threads | #316 | 1.18 (beta 6) |
+| A regular-rate inlet stalled forever after its data connection died silently while the outlet stayed online (#326) | The watchdog reconnects a silent regular-rate stream whose UID is still online (`inlet_connection::reconnect_if_stalled`) | unreleased |
 
 Failure mode 6 above is what remains of the #282 problem: it no longer happens while every outlet
 has a port inside the range.

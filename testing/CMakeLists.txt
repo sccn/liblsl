@@ -116,6 +116,10 @@ target_link_libraries(lsl_test_resolve_machine PRIVATE lslobj lslboost common ca
 add_executable(lsl_test_resolve_over_tcp int/resolve_over_tcp.cpp)
 target_link_libraries(lsl_test_resolve_over_tcp PRIVATE lslobj lslboost common catch_main)
 
+# inlet_stall test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_inlet_stall int/inlet_stall.cpp)
+target_link_libraries(lsl_test_inlet_stall PRIVATE lslobj lslboost common catch_main)
+
 # resolve_query_port test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_query_port int/resolve_query_port.cpp)
 target_link_libraries(lsl_test_resolve_query_port PRIVATE lslobj lslboost common catch_main)
@@ -135,7 +139,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port lsl_test_inlet_stall)
 if(LSL_LEGACY_CPP_ABI)
 	add_executable(lsl_test_legacy_int8 int/legacy_int8.cpp)
 	target_link_libraries(lsl_test_legacy_int8 PRIVATE lslobj lslboost catch_main)

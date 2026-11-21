@@ -41,7 +41,8 @@ namespace lsl {
  *
  * Since in some cases a client might not be able to detect a connection loss and so would stall
  * forever, the inlet_connection maintains a watchdog thread that periodically checks and recovers
- * the connection state.
+ * the connection state. If a regular-rate stream delivers no data but is still served at the same
+ * endpoint, the watchdog assumes the connection died silently and makes the clients reconnect.
  *
  * Internally the recovery works by using the resolver to find the desired stream on the network
  * again and updating the endpoint information if it has changed.
@@ -114,11 +115,14 @@ public:
 
 	/// Indicate that a transmission is now active and requesting the watchdog.
 	/// The recovery watchdog will be inactive while no transmission is requested.
-	void acquire_watchdog();
+	/// @param data true for a data transmission, which reports received samples with
+	/// update_receive_time() and is reconnected by the watchdog if a regular-rate stream stalls.
+	void acquire_watchdog(bool data = false);
 
 	/// Indicate that a transmission has just completed.
 	/// The recovery watchdog will be inactive while no transmission is requested.
-	void release_watchdog();
+	/// @param data must match the argument of the corresponding acquire_watchdog() call.
+	void release_watchdog(bool data = false);
 
 	/// Inform the connection that content was received from the source (using lsl::lsl_clock()).
 	/// If a sufficient amount of time has passed since the last call the watchdog thread will
@@ -158,8 +162,30 @@ private:
 	/// A thread that periodically checks whether the connection should be recovered.
 	void watchdog_thread();
 
-	/// A (potentially speculative) resolve-and-recover operation.
-	void try_recover(const std::atomic<bool> *cancel = nullptr);
+	/**
+	 * A (potentially speculative) resolve-and-recover operation.
+	 * @return true if the stream is still served at the current endpoint (same UID), false if
+	 * the endpoint was switched to a new instance of the stream, recovery is disabled, or the
+	 * attempt was cancelled or failed.
+	 */
+	bool try_recover(const std::atomic<bool> *cancel = nullptr);
+
+	/// Whether a regular-rate stream has gone without data for longer than the watchdog
+	/// threshold (and at least min_stalled_samples sample intervals).
+	bool regular_stream_stalled();
+
+	/**
+	 * Reconnect if a regular-rate stream is stalled even though it is still served at the
+	 * current endpoint.
+	 *
+	 * This catches data connections that died without an error, e.g. because the network
+	 * dropped packets without the operating system sending or receiving a FIN or RST
+	 * (a half-open connection). The data receiver would otherwise block in a read forever.
+	 */
+	void reconnect_if_stalled();
+
+	/// Minimum number of missed sample intervals before a regular-rate stream counts as stalled
+	static constexpr double min_stalled_samples = 10.;
 
 	/// Sets the endpoints from a stream info considering a previous connection
 	bool set_protocols(const stream_info_impl &info, bool prefer_v6);
@@ -205,8 +231,10 @@ private:
 	std::map<void *, std::function<void()>> onrecover_;
 	/// the last time when we received data from the server
 	double last_receive_time_;
-	/// the number of currently active transmissions (data or info)
+	/// the number of currently active transmissions (data, info or time)
 	int active_transmissions_;
+	/// the number of currently active data transmissions (a subset of active_transmissions_)
+	int active_data_transmissions_;
 	/// protects the client status info
 	std::mutex client_status_mut_;
 	/// protects the onrecover callback map
