@@ -140,6 +140,8 @@ half that difference. On a local network the difference has two parts:
   Linux and Windows). The clock filter cannot remove it, so it dominates the
   remaining error. On modern hardware and operating systems it is usually well
   below a millisecond.
+  Receive interrupt coalescing on a network adapter is one cause; see
+  [clock offset accuracy](../guide/clock_accuracy.md).
 
 The round-trip time of the chosen probe is reported as the `uncertainty` of
 `time_correction()`: the true offset is within that bound. Measurements of LSL's
