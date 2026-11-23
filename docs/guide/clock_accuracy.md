@@ -18,7 +18,9 @@ Linux 6.12), measured against a PTP reference, the error grew by about 0.55 µs 
 `rx-usecs`: about 27 µs at the driver's default of 49.6 µs, and within about 3 µs with
 `rx-usecs 0`.
 
-- The sign depends on whether the inlet or the outlet runs on that host.
+- The sign depends on which side runs on that host. Coalescing on the inlet's host makes
+  `time_correction()` too large by about half the delay, so remote timestamps are mapped too late;
+  on the outlet's host it makes it too small, so they are mapped too early.
 - The reported uncertainty does not reveal it. The round-trip time grows by about the coalescing
   time, but nothing shows that the delay is on one side only.
 - It is not constant. With coalescing on, the error shrank when other traffic arrived at the
