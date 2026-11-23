@@ -126,7 +126,8 @@ sequenceDiagram
   `time_receiver::result_aggregation_scheduled` looks at the replies collected
   so far.
 - **Next wave**, after `TimeUpdateInterval` seconds (2 s by default),
-  measured from the start of the current wave.
+  measured from the start of the current wave, but never before the
+  aggregation.
 
 At aggregation time:
 
@@ -354,7 +355,7 @@ from. Defaults come from `src/api_config.cpp`.
 | `TimeProbeCount` | 8 | Probe packets sent per wave. |
 | `TimeProbeInterval` | 0.064 s | Delay between probe packets in a wave. |
 | `TimeProbeMaxRTT` | 0.128 s | Extra wait after the last probe before aggregating. Not an RTT filter. |
-| `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves. |
+| `TimeUpdateInterval` | 2.0 s | Time between the starts of two waves (at least the aggregation delay). |
 | `TimeUpdateMinProbes` | 6 | Replies needed for a wave to produce an estimate. |
 | `TimeSameClockDetection` | 1 | Exchange clock identities and report an exact 0 offset for peers sharing the clock. |
 | `TimeDriftWindow` | 0 (off) | Seconds of offset measurements to fit a drift line to; `time_correction()` then extrapolates it to the time of the call. 60 is a good value. |
