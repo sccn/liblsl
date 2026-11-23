@@ -3,7 +3,10 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
+#include <cstring>
+#include <fstream>
 #include <loguru.hpp>
 
 #ifdef _WIN32
@@ -14,10 +17,79 @@
 #include <windows.h>
 // include mmsystem.h after windows.h
 #include <mmsystem.h>
+#elif defined(__APPLE__)
+#include <sys/sysctl.h>
+#elif defined(__linux__)
+#include <unistd.h>
 #endif
 
 int64_t lsl::lsl_local_clock_ns() {
 	return std::chrono::nanoseconds(std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+static std::string read_clock_id() {
+	std::string id;
+#if defined(__linux__)
+	// CLOCK_MONOTONIC is per boot, but a time namespace can offset it, so add the namespace inode
+	std::ifstream("/proc/sys/kernel/random/boot_id") >> id;
+	char ns[64];
+	auto len = readlink("/proc/self/ns/time", ns, sizeof(ns) - 1); // "time:[4026531834]"
+	if (!id.empty() && len > 0) {
+		ns[len] = 0;
+		if (const char *start = std::strchr(ns, '['))
+			id += '-' + std::string(start + 1, std::strcspn(start + 1, "]"));
+	}
+#elif defined(__APPLE__)
+	char uuid[64] = {0};
+	size_t len = sizeof(uuid) - 1;
+	if (sysctlbyname("kern.bootsessionuuid", uuid, &len, nullptr, 0) == 0) id = uuid;
+#elif defined(_WIN32)
+	// QueryPerformanceCounter is per boot: MachineGuid identifies the installation, the boot time
+	// (minus the bias accumulated by wall clock adjustments since boot) identifies the boot
+	wchar_t guid[64];
+	DWORD guid_size = sizeof(guid);
+	HKEY key;
+	// KEY_WOW64_64KEY: 32-bit processes would otherwise not see the value
+	if (RegOpenKeyExW(HKEY_LOCAL_MACHINE, L"SOFTWARE\\Microsoft\\Cryptography", 0,
+			KEY_QUERY_VALUE | KEY_WOW64_64KEY, &key) != ERROR_SUCCESS)
+		return id;
+	LONG guid_err =
+		RegGetValueW(key, nullptr, L"MachineGuid", RRF_RT_REG_SZ, nullptr, guid, &guid_size);
+	RegCloseKey(key);
+	if (guid_err != ERROR_SUCCESS) return id;
+	struct { // SYSTEM_TIMEOFDAY_INFORMATION
+		LARGE_INTEGER BootTime, CurrentTime, TimeZoneBias;
+		ULONG TimeZoneId, Reserved;
+		ULONGLONG BootTimeBias, SleepTimeBias;
+	} tod{};
+	using NtQSI = LONG(WINAPI *)(ULONG, PVOID, ULONG, PULONG);
+	auto query = reinterpret_cast<NtQSI>(reinterpret_cast<void *>(
+		GetProcAddress(GetModuleHandleW(L"ntdll.dll"), "NtQuerySystemInformation")));
+	if (!query || query(3 /* SystemTimeOfDayInformation */, &tod, sizeof(tod), nullptr) != 0)
+		return id;
+	for (const wchar_t *c = guid; *c; ++c) id += static_cast<char>(*c);
+	id += '-' + std::to_string(tod.BootTime.QuadPart - static_cast<LONGLONG>(tod.BootTimeBias));
+#endif
+	return id;
+}
+
+/// 64-bit FNV-1a as 16 hex digits: the same with every compiler and standard library (unlike
+/// std::hash), and it keeps the machine and boot identifiers off the wire
+static std::string hash_clock_id(const std::string &id) {
+	if (id.empty()) return id;
+	uint64_t h = 14695981039346656037ULL;
+	for (unsigned char c : id) {
+		h ^= c;
+		h *= 1099511628211ULL;
+	}
+	char hex[17];
+	snprintf(hex, sizeof(hex), "%016llx", static_cast<unsigned long long>(h));
+	return hex;
+}
+
+const std::string &lsl::lsl_clock_id() {
+	static const std::string id = hash_clock_id(read_clock_id());
+	return id;
 }
 
 extern "C" {

@@ -159,6 +159,9 @@ void udp_server::process_timedata_request(std::istream &request_stream, double t
 	std::ostringstream reply;
 	reply.precision(16);
 	reply << ' ' << wave_id << ' ' << t0 << ' ' << t1 << ' ' << lsl_clock();
+	// optional trailing token, ignored by older inlets
+	if (api_config::get_instance()->time_same_clock_detection() && !lsl_clock_id().empty())
+		reply << ' ' << lsl_clock_id();
 	string_p replymsg(std::make_shared<std::string>(reply.str()));
 	socket_->async_send_to(asio::buffer(*replymsg), remote_endpoint_,
 		[shared_this = shared_from_this(), replymsg](err_t err_, std::size_t /*unused*/) {

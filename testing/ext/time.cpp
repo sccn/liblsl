@@ -1,5 +1,6 @@
 #include "../common/create_streampair.hpp"
 #include <atomic>
+#include <cmath>
 #include <catch2/catch_all.hpp>
 #include <lsl_cpp.h>
 #include <thread>
@@ -21,6 +22,18 @@ TEST_CASE("simple timesync", "[timesync][basic]") {
 	CHECK(remote_time < lsl::local_clock());
 }
 
+#if defined(__linux__) || defined(__APPLE__) || defined(_WIN32)
+// outlet and inlet share one clock, so same-clock detection reports an exact 0 offset
+TEST_CASE("same-clock timesync", "[timesync][basic]") {
+	auto sp = create_streampair(lsl::stream_info("sameclock", "Test"));
+	double remote_time, uncertainty;
+	double offset = sp.in_.time_correction(&remote_time, &uncertainty, 5.);
+	CHECK(offset == 0.0);
+	CHECK_FALSE(std::signbit(offset));
+	CHECK(uncertainty == 0.0);
+	CHECK(remote_time < lsl::local_clock());
+}
+#endif
 
 TEST_CASE("timeouts", "[pull][basic]") {
 	auto sp = create_streampair(

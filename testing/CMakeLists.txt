@@ -82,8 +82,10 @@ target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
 
 
 set(LSL_TEST_INTERNAL_SRCS
+		int/clock_id.cpp
 		int/inireader.cpp
 		int/network.cpp
+		int/same_clock_fallback.cpp
 		int/stringfuncs.cpp
 		int/streaminfo.cpp
 		int/samples.cpp
