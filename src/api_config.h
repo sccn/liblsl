@@ -244,6 +244,9 @@ public:
 	/// Whether outlets announce their clock identity in time probe replies, and inlets use a
 	/// matching identity to report an exact 0 offset instead of a measured one.
 	bool time_same_clock_detection() const { return time_same_clock_detection_; }
+	/// Drift compensation: seconds of offset measurements that time_correction() fits a robust
+	/// line to and extrapolates to the current time (0 = off: return the latest measurement).
+	double time_drift_window() const { return time_drift_window_; }
 	/// Rounds in a row that an outlet on this machine without a clock identity (older liblsl) must
 	/// be consistent with offset 0 before the offset is reported as 0 (0 = never).
 	int time_same_clock_fallback_rounds() const { return time_same_clock_fallback_rounds_; }
@@ -339,6 +342,7 @@ private:
 	double time_probe_interval_;
 	double time_probe_max_rtt_;
 	bool time_same_clock_detection_;
+	double time_drift_window_;
 	int time_same_clock_fallback_rounds_;
 	int outlet_buffer_reserve_ms_;
 	int outlet_buffer_reserve_samples_;

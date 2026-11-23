@@ -83,6 +83,7 @@ target_link_libraries(lsl_test_exported PRIVATE lsl common catch_main)
 
 set(LSL_TEST_INTERNAL_SRCS
 		int/clock_id.cpp
+		int/drift_estimator.cpp
 		int/inireader.cpp
 		int/network.cpp
 		int/same_clock_fallback.cpp
@@ -109,6 +110,10 @@ target_link_libraries(lsl_test_runtime_config PRIVATE lslobj lslboost common cat
 # time_config test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_time_config int/time_config.cpp)
 target_link_libraries(lsl_test_time_config PRIVATE lslobj lslboost common catch_main)
+
+# time_receiver test sets the api_config singleton, so it lives in its own executable.
+add_executable(lsl_test_time_receiver int/time_receiver_drift.cpp)
+target_link_libraries(lsl_test_time_receiver PRIVATE lslobj lslboost common catch_main)
 
 # resolve_bad_interface test sets the api_config singleton, so it lives in its own executable.
 add_executable(lsl_test_resolve_bad_interface int/resolve_bad_interface.cpp)
@@ -141,7 +146,7 @@ if(LSL_BENCHMARKS)
 	)
 endif()
 
-set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port lsl_test_time_config)
+set(LSL_TESTS lsl_test_exported lsl_test_internal lsl_test_runtime_config lsl_test_resolve_bad_interface lsl_test_resolve_machine lsl_test_resolve_over_tcp lsl_test_resolve_query_port lsl_test_time_config lsl_test_time_receiver)
 if(LSL_LEGACY_CPP_ABI)
 	add_executable(lsl_test_legacy_int8 int/legacy_int8.cpp)
 	target_link_libraries(lsl_test_legacy_int8 PRIVATE lslobj lslboost catch_main)

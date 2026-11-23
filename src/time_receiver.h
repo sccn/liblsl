@@ -1,6 +1,7 @@
 #ifndef TIME_RECEIVER_H
 #define TIME_RECEIVER_H
 
+#include "drift_estimator.h"
 #include "socket_utils.h"
 #include <asio/io_context.hpp>
 #include <asio/ip/udp.hpp>
@@ -78,6 +79,9 @@ public:
 	 * The first call to this function takes several msec for an initial estimate, subsequent calls
 	 * are instantaneous.
 	 * The correction offset is periodically re-estimated in the background (once every few sec.).
+	 * With `[tuning] TimeDriftWindow` > 0 the returned offset is a robust line fit over the recent
+	 * measurements, evaluated at the current lsl_clock(); remote_time and uncertainty still
+	 * describe the most recent measurement.
 	 * @param remote_time Time of this measurment on remote computer
 	 * @param uncertainty Maximum uncertainty of this measurement (maps to round-trip-time).
 	 * @param timeout Timeout for first time-correction estimate.
@@ -132,7 +136,9 @@ private:
 	double remote_time_;
 	/// round trip time (a.k.a. uncertainty) at the specficied timeoffset_
 	double uncertainty_;
-	/// mutex to protect the time offset
+	/// drift model over the recent measurements (used if TimeDriftWindow > 0)
+	drift_estimator drift_;
+	/// mutex to protect the time offset and drift_
 	std::mutex timeoffset_mut_;
 	/// condition variable to indicate that an update for the time offset is available
 	std::condition_variable timeoffset_upd_;
