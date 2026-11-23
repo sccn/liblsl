@@ -85,6 +85,7 @@ set(LSL_TEST_INTERNAL_SRCS
 		int/clock_id.cpp
 		int/drift_estimator.cpp
 		int/inireader.cpp
+		int/keepalive.cpp
 		int/network.cpp
 		int/same_clock_fallback.cpp
 		int/stringfuncs.cpp

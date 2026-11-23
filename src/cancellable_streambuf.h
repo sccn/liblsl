@@ -15,6 +15,7 @@
 
 #define BOOST_ASIO_NO_DEPRECATED
 #include "cancellation.h"
+#include "socket_utils.h"
 #include <asio/basic_stream_socket.hpp>
 #include <asio/io_context.hpp>
 #include <asio/ip/tcp.hpp>
@@ -77,7 +78,10 @@ public:
 		}
 		ec_ = asio::error::would_block;
 		as_context().run();
-		return !ec_ ? this : nullptr;
+		if (ec_) return nullptr;
+		// without keep-alive, a read from a peer that vanished silently would block forever
+		if (socket().is_open()) set_tcp_keepalive(socket());
+		return this;
 	}
 
 	/// Close the connection.
