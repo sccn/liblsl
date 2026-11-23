@@ -32,7 +32,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 	if (res == NO_ERROR) {
 		for (AddrList addr = ifaddrs; addr != 0; addr = addr->Next) {
 			// Interface isn't up or doesn't support multicast? Skip it.
-			LOG_F(INFO, "netif '%s' (status: %d, multicast: %d", addr->AdapterName,
+			LOG_F(1, "netif '%s' (status: %d, multicast: %d", addr->AdapterName,
 				addr->OperStatus, !addr->NoMulticast);
 			if (addr->OperStatus != IfOperStatusUp) continue;
 			if (addr->NoMulticast) continue;
@@ -55,7 +55,7 @@ std::vector<lsl::netif> lsl::get_local_interfaces() {
 			}
 
 			if (addr->Ipv6Enabled) {
-				LOG_F(INFO, "\tIPv6 ifindex %d", if_.ifindex);
+				LOG_F(1, "\tIPv6 ifindex %d", if_.ifindex);
 				for (Addr *uaddr = addr->FirstUnicastAddress; uaddr != 0; uaddr = uaddr->Next) {
 					if (uaddr->Address.lpSockaddr->sa_family != AF_INET6) continue;
 
