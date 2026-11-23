@@ -1,6 +1,7 @@
 #ifndef TIME_RECEIVER_H
 #define TIME_RECEIVER_H
 
+#include "drift_estimator.h"
 #include "socket_utils.h"
 #include <asio/io_context.hpp>
 #include <asio/ip/udp.hpp>
@@ -21,6 +22,39 @@ class api_config;
 
 /// list of time estimates with error bounds
 using estimate_list = std::vector<std::pair<double, double>>;
+
+/// Whether a time probe is consistent with outlet and inlet sharing one clock: each reading
+/// comes no earlier than the one before it (t0 <= t1 <= t2 <= t3, i.e. |offset| <= rtt/2)
+inline bool zero_offset_consistent(double t0, double t1, double t2, double t3) {
+	return t0 <= t1 && t1 <= t2 && t2 <= t3;
+}
+
+/**
+ * Same-clock detection for outlets that send no clock identity token (older liblsl).
+ * Only used when the outlet's address is one of this machine's. A round counts if it had replies
+ * and all of them were tokenless and zero_offset_consistent(); after `rounds` such rounds in a
+ * row the offset is reported as 0, and any other round resets the count.
+ * steady_clock is boot-relative, so distinct clocks differ by seconds or more and fail the check
+ * at once; a false positive still lies within the probe's [t2-t3, t1-t0] offset interval.
+ */
+class same_clock_fallback {
+public:
+	explicit same_clock_fallback(int rounds = 0) : rounds_(rounds) {}
+	void start_round() { round_ok_ = true; any_ = false; }
+	void add_probe(bool has_token, double t0, double t1, double t2, double t3) {
+		any_ = true;
+		round_ok_ = round_ok_ && !has_token && zero_offset_consistent(t0, t1, t2, t3);
+	}
+	/// Ends a round; returns whether its estimate should be reported as offset 0.
+	bool end_round() {
+		count_ = (any_ && round_ok_) ? count_ + 1 : 0;
+		return rounds_ > 0 && count_ >= rounds_;
+	}
+
+private:
+	int rounds_, count_{0};
+	bool round_ok_{true}, any_{false};
+};
 
 /**
  * Internal class of an inlet that's responsible for retrieving time-correction data of the inlet.
@@ -45,6 +79,9 @@ public:
 	 * The first call to this function takes several msec for an initial estimate, subsequent calls
 	 * are instantaneous.
 	 * The correction offset is periodically re-estimated in the background (once every few sec.).
+	 * With `[tuning] TimeDriftWindow` > 0 the returned offset is a robust line fit over the recent
+	 * measurements, evaluated at the current lsl_clock(); remote_time and uncertainty still
+	 * describe the most recent measurement.
 	 * @param remote_time Time of this measurment on remote computer
 	 * @param uncertainty Maximum uncertainty of this measurement (maps to round-trip-time).
 	 * @param timeout Timeout for first time-correction estimate.
@@ -99,7 +136,9 @@ private:
 	double remote_time_;
 	/// round trip time (a.k.a. uncertainty) at the specficied timeoffset_
 	double uncertainty_;
-	/// mutex to protect the time offset
+	/// drift model over the recent measurements (used if TimeDriftWindow > 0)
+	drift_estimator drift_;
+	/// mutex to protect the time offset and drift_
 	std::mutex timeoffset_mut_;
 	/// condition variable to indicate that an update for the time offset is available
 	std::condition_variable timeoffset_upd_;
@@ -130,6 +169,10 @@ private:
 	estimate_list estimate_times_;
 	/// an id for the current wave of time packets
 	int current_wave_id_{0};
+	/// whether a receive operation is pending on time_sock_ (only touched by the time thread)
+	bool receiving_{false};
+	/// same-clock detection for tokenless (older) outlets on this machine
+	same_clock_fallback fallback_;
 };
 } // namespace lsl
 

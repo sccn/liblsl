@@ -117,9 +117,11 @@ extern LIBLSL_C_API double lsl_time_correction(lsl_inlet in, double timeout, int
 /** @copydoc lsl_time_correction()
  * @param remote_time The current time of the remote computer that was used to generate this
  * time_correction.
- * If desired, the client can fit time_correction vs remote_time to improve the real-time
- * time_correction further.
  * @param uncertainty The maximum uncertainty of the given time correction.
+ *
+ * With `[tuning] TimeDriftWindow` > 0 in the config file the returned correction is a robust line
+ * fit over the recent measurements, evaluated at the time of the call, while remote_time and
+ * uncertainty still describe the most recent measurement.
  */
 extern LIBLSL_C_API double lsl_time_correction_ex(lsl_inlet in, double *remote_time, double *uncertainty, double timeout, int32_t *ec);
 
