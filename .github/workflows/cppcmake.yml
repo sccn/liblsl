@@ -60,6 +60,7 @@ jobs:
         # x86_64 Linux builds
         - {name: "ubuntu-22.04-x64", os: "ubuntu-22.04", arch: "x86_64" }
         - {name: "ubuntu-24.04-x64", os: "ubuntu-24.04", arch: "x86_64" }
+        - {name: "ubuntu-26.04-x64", os: "ubuntu-26.04", arch: "x86_64" }
 
         # ARM Linux builds - cross-compiled with QEMU testing (Jetson, Raspberry Pi compatible)
         # SHLIBDEPS must be disabled for cross-compiled packages as the host system
