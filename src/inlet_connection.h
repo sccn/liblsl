@@ -141,6 +141,14 @@ public:
 	/// Unregister a recovery callback function
 	void unregister_onrecover(void *id);
 
+	/// Register a callback that cancels a data transmission whose connection has stalled.
+	/// It is called from the watchdog thread when a regular-rate stream stops delivering data
+	/// although its outlet is still online, see reconnect_if_stalled().
+	void register_onstall(void *id, const std::function<void()> &func);
+
+	/// Unregister a stall callback function
+	void unregister_onstall(void *id);
+
 
 	// === misc properties of the connected stream ===
 
@@ -170,17 +178,18 @@ private:
 	 */
 	bool try_recover(const std::atomic<bool> *cancel = nullptr);
 
-	/// Whether a regular-rate stream has gone without data for longer than the watchdog
-	/// threshold (and at least min_stalled_samples sample intervals).
-	bool regular_stream_stalled();
-
 	/**
-	 * Reconnect if a regular-rate stream is stalled even though it is still served at the
-	 * current endpoint.
+	 * Reconnect the data transmission if a regular-rate stream is stalled even though it is
+	 * still served at the current endpoint.
 	 *
 	 * This catches data connections that died without an error, e.g. because the network
 	 * dropped packets without the operating system sending or receiving a FIN or RST
 	 * (a half-open connection). The data receiver would otherwise block in a read forever.
+	 *
+	 * A stream counts as stalled when no sample arrived for longer than the watchdog threshold
+	 * and at least min_stalled_samples sample intervals. A paused outlet looks the same, so
+	 * this reconnects at most once per silence episode: it is re-armed only when a sample
+	 * arrives (update_receive_time()) or a new data transmission starts.
 	 */
 	void reconnect_if_stalled();
 
@@ -235,10 +244,17 @@ private:
 	int active_transmissions_;
 	/// the number of currently active data transmissions (a subset of active_transmissions_)
 	int active_data_transmissions_;
+	/// whether a stalled regular-rate stream may be reconnected; cleared by a stall reconnect
+	/// and set again once a sample arrives, so a paused outlet isn't reconnected over and over
+	bool stall_reconnect_armed_;
 	/// protects the client status info
 	std::mutex client_status_mut_;
 	/// protects the onrecover callback map
 	std::mutex onrecover_mut_;
+	/// callbacks that cancel stalled data transmissions
+	std::map<void *, std::function<void()>> onstall_;
+	/// protects the onstall callback map
+	std::mutex onstall_mut_;
 };
 } // namespace lsl
 

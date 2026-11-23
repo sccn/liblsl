@@ -70,9 +70,20 @@ There are two paths.
      the data connection probably died without an error (see failure mode 4). If no data has
      arrived by the time the resolve finishes, the watchdog logs *"No data from stream '...' for
      over ... s although it is still online; the connection is probably dead, reconnecting..."*
-     and cancels the inlet's open connections. The data thread then reconnects to the same
-     address. For streams slower than 10 samples per `WatchdogTimeThreshold`, the silence must
-     also last at least 10 sample intervals.
+     and closes the data connection. The data thread then reconnects to the same address. For
+     streams slower than 10 samples per `WatchdogTimeThreshold`, the silence must also last at
+     least 10 sample intervals, and the log message names the threshold that was applied.
+
+     The watchdog can't tell a dead connection from an outlet that is merely paused (a device
+     app that creates its outlet before it starts acquiring, an unplugged device whose outlet
+     stays up). So it reconnects **once per silence episode**: after a stall reconnect it waits
+     until a sample has arrived (or `open_stream()` starts a new transmission) before it
+     reconnects again. A paused outlet therefore costs one reconnect, about
+     `WatchdogTimeThreshold` + 1 s into the pause, and after that only the usual discovery
+     query on every check. Samples pushed while that reconnect is in progress (about 1.5 s) go to
+     the old connection and are lost; samples pushed later arrive as normal. If the network is
+     still down when the data thread reconnects, the connection attempt fails through the normal
+     error path.
 
 ### What `try_recover` does
 
@@ -109,7 +120,7 @@ stateDiagram-v2
     Check --> Resolving: try_recover
     Resolving --> Resolving: no match yet (no timeout)
     Resolving --> Connected: current UID still present
-    Resolving --> Reconnect: current UID present, regular-rate stream still silent
+    Resolving --> Reconnect: current UID present, regular-rate stream still silent (once per silence)
     Resolving --> Resolving: several matches (warn, retry)
     Resolving --> Reconnect: exactly one new match
     Reconnect --> Connected: reconnect (new or same endpoint)
@@ -200,7 +211,8 @@ keep-alive. If the connection dies without the operating system reporting an err
 read can block indefinitely.
 
 With recovery enabled, the watchdog now reconnects a **regular-rate** stream that delivers no
-data while its UID is still online (see "How an inlet notices a broken connection"). The stall
+data while its UID is still online, once per silence episode (see "How an inlet notices a
+broken connection"). The stall
 still lasts up to `WatchdogTimeThreshold` + `WatchdogCheckInterval`, plus about 3 s for two
 resolves and the reconnect back-off (about 33 s at most with the defaults), and samples sent in
 that time are lost. Two cases are
@@ -208,7 +220,10 @@ not covered: **irregular-rate** streams, where silence can be normal, and inlets
 **recovery disabled**, which have no watchdog at all and never become lost either.
 
 **What to do.** For regular streams with recovery enabled, lower `WatchdogTimeThreshold` and
-`WatchdogCheckInterval` if 30 s is too long. Otherwise watch for missing data in your
+`WatchdogCheckInterval` if 30 s is too long. Keep the threshold well above the longest normal
+gap between samples: above 16 Hz the receive time is only refreshed every 16th sample, and an
+outlet that pushes chunks less often than the threshold looks stalled between chunks, so a low
+threshold can reconnect a working bursty stream. Otherwise watch for missing data in your
 application (use pull timeouts). When the stream goes silent but is still listed, call
 `close_stream()` and then `open_stream()` (or pull again), which opens a new connection, or
 recreate the inlet.
@@ -287,7 +302,7 @@ contains the fix.
 | `close_stream()` could block while the inlet was recovering, and reopening a closed inlet was unsafe | #299: close interrupts the recovery wait, the back-off and pending `open_stream()` calls | 1.18 (beta 3) |
 | Destroying an outlet leaked its IO context, buffers and sample factory (#312) | #313 | 1.18 (beta 6) |
 | Destroying an outlet with connected inlets could leave transfer threads running past its IO threads | #316 | 1.18 (beta 6) |
-| A regular-rate inlet stalled forever after its data connection died silently while the outlet stayed online (#326) | The watchdog reconnects a silent regular-rate stream whose UID is still online (`inlet_connection::reconnect_if_stalled`) | unreleased |
+| A regular-rate inlet stalled forever after its data connection died silently while the outlet stayed online (#326) | The watchdog reconnects a silent regular-rate stream whose UID is still online, once per silence episode (`inlet_connection::reconnect_if_stalled`) | unreleased |
 
 Failure mode 6 above is what remains of the #282 problem: it no longer happens while every outlet
 has a port inside the range.

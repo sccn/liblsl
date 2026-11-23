@@ -40,10 +40,13 @@ data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chu
 	if (max_chunklen < 0)
 		throw std::invalid_argument("The max_chunklen argument must not be smaller than 0.");
 	conn_.register_onlost(this, &connected_upd_);
+	// A stalled connection only needs the data socket closed; the data thread then reconnects
+	conn_.register_onstall(this, [this]() { cancel_all_registered(); });
 }
 
 data_receiver::~data_receiver() {
 	try {
+		conn_.unregister_onstall(this);
 		conn_.unregister_onlost(this);
 		if (data_thread_.joinable()) data_thread_.join();
 	} catch (std::exception &e) {

@@ -19,7 +19,7 @@ namespace ip = asio::ip;
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
 	  recovery_enabled_(recover), lost_(false), shutdown_(false), last_receive_time_(lsl_clock()),
-	  active_transmissions_(0), active_data_transmissions_(0) {
+	  active_transmissions_(0), active_data_transmissions_(0), stall_reconnect_armed_(true) {
 	// if the given stream_info is already fully resolved...
 	if (!host_info_.v4address().empty() || !host_info_.v6address().empty()) {
 		// check LSL protocol version (we strictly forbid incompatible protocols instead of risking
@@ -306,32 +306,38 @@ void inlet_connection::watchdog_thread() {
 	}
 }
 
-bool inlet_connection::regular_stream_stalled() {
+void inlet_connection::reconnect_if_stalled() {
+	if (shutdown_ || lost_) return;
 	const double srate = current_srate();
 	// Irregular streams (e.g. event markers) can be silent for any length of time
-	if (srate == IRREGULAR_RATE) return false;
+	if (srate == IRREGULAR_RATE) return;
 	// For very slow streams, wait at least a few sample intervals so a sample that is just late
 	// isn't lost to a needless reconnect
 	const double threshold = std::max(
 		api_config::get_instance()->watchdog_time_threshold(), min_stalled_samples / srate);
-	std::lock_guard<std::mutex> lock(client_status_mut_);
-	// Only data transmissions update the receive time, so without one there is nothing to judge
-	return active_data_transmissions_ > 0 && lsl_clock() - last_receive_time_ > threshold;
-}
-
-void inlet_connection::reconnect_if_stalled() {
-	// Checked after the (slow) resolve in try_recover(), so data that arrived in the meantime
-	// keeps a working connection alive
-	if (shutdown_ || lost_ || !regular_stream_stalled()) return;
+	{
+		// Checked after the (slow) resolve in try_recover(), so data that arrived in the
+		// meantime keeps a working connection alive
+		std::lock_guard<std::mutex> lock(client_status_mut_);
+		// Only data transmissions update the receive time, so without one there is nothing to
+		// judge
+		if (active_data_transmissions_ == 0 || lsl_clock() - last_receive_time_ <= threshold)
+			return;
+		// A paused outlet looks just like a dead connection, so reconnect only once until a
+		// sample arrives again. If the network is still down, the new connection attempt fails
+		// through the normal error path.
+		if (!stall_reconnect_armed_) return;
+		stall_reconnect_armed_ = false;
+		last_receive_time_ = lsl_clock();
+	}
 	LOG_F(WARNING,
 		"No data from stream '%s' for over %.1f s although it is still online; the connection "
 		"is probably dead, reconnecting...",
-		type_info_.name().c_str(), api_config::get_instance()->watchdog_time_threshold());
-	// Give the new connection a full watchdog threshold to deliver data
-	update_receive_time(lsl_clock());
-	// Closes the sockets of the data and info receivers, whose blocking reads then fail and make
-	// them reconnect to the (unchanged) endpoint
-	cancel_all_registered();
+		type_info_.name().c_str(), threshold);
+	// Closes the data receiver's socket, whose blocking read then fails and makes it reconnect
+	// to the (unchanged) endpoint
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	for (auto &pair : onstall_) (pair.second)();
 }
 
 void inlet_connection::try_recover_from_error(const std::atomic<bool> *cancel) {
@@ -365,6 +371,7 @@ void inlet_connection::acquire_watchdog(bool data) {
 		active_data_transmissions_++;
 		// a new data transmission hasn't missed anything yet, even if the inlet was idle for long
 		last_receive_time_ = lsl_clock();
+		stall_reconnect_armed_ = true;
 	}
 }
 
@@ -377,6 +384,8 @@ void inlet_connection::release_watchdog(bool data) {
 void inlet_connection::update_receive_time(double t) {
 	std::lock_guard<std::mutex> lock(client_status_mut_);
 	last_receive_time_ = t;
+	// data is flowing again, so a later silence is a new episode
+	stall_reconnect_armed_ = true;
 }
 
 void inlet_connection::register_onlost(void *id, std::condition_variable *cond) {
@@ -397,4 +406,14 @@ void inlet_connection::register_onrecover(void *id, const std::function<void()> 
 void inlet_connection::unregister_onrecover(void *id) {
 	std::lock_guard<std::mutex> lock(onrecover_mut_);
 	onrecover_.erase(id);
+}
+
+void inlet_connection::register_onstall(void *id, const std::function<void()> &func) {
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	onstall_[id] = func;
+}
+
+void inlet_connection::unregister_onstall(void *id) {
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	onstall_.erase(id);
 }

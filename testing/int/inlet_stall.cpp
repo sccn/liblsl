@@ -131,20 +131,24 @@ public:
 	}
 };
 
-/// Pushes one-channel samples with increasing values at a fixed rate until destroyed.
+/// Pushes one-channel samples with increasing values (0, 1, 2, ...) at a fixed rate until
+/// destroyed. While paused it pushes nothing, like a device that stopped acquiring.
 class sample_pusher {
 	std::atomic<bool> stop_{false};
+	std::atomic<bool> paused_;
 	std::atomic<float> next_{0.f};
 	std::thread thread_;
 
 public:
-	sample_pusher(lsl::stream_outlet_impl &outlet, double srate)
-		: thread_([this, &outlet, srate]() {
+	sample_pusher(lsl::stream_outlet_impl &outlet, double srate, bool start_paused = false)
+		: paused_(start_paused), thread_([this, &outlet, srate]() {
 			  const auto interval = std::chrono::duration<double>(1. / srate);
 			  while (!stop_) {
-				  std::vector<float> sample{next_.load()};
-				  outlet.push_sample(sample, lsl::lsl_clock());
-				  next_ = next_ + 1.f;
+				  if (!paused_) {
+					  std::vector<float> sample{next_.load()};
+					  outlet.push_sample(sample, lsl::lsl_clock());
+					  next_ = next_ + 1.f;
+				  }
 				  std::this_thread::sleep_for(interval);
 			  }
 		  }) {}
@@ -152,8 +156,19 @@ public:
 		stop_ = true;
 		thread_.join();
 	}
+	void pause() { paused_ = true; }
+	void resume() { paused_ = false; }
 	float next_value() const { return next_; }
 };
+
+/// Pulls samples until one with a value above `value` arrives or `timeout` passes.
+bool wait_for_value_above(lsl::stream_inlet_impl &inlet, float value, std::chrono::seconds timeout) {
+	std::vector<float> sample(1);
+	const auto deadline = std::chrono::steady_clock::now() + timeout;
+	while (std::chrono::steady_clock::now() < deadline)
+		if (inlet.pull_sample(sample, 0.5) != 0. && sample[0] > value) return true;
+	return false;
+}
 
 /// The outlet's stream info with its data port replaced by the relay's port.
 lsl::stream_info_impl info_via_relay(const lsl::stream_outlet_impl &outlet, uint16_t port) {
@@ -194,20 +209,18 @@ TEST_CASE("inlet reconnects after its data connection silently dies", "[inlet][r
 	REQUIRE(inlet.pull_sample(sample, 5.) != 0.);
 	REQUIRE(relay.connection_count() == 1);
 
-	// Kill the data connection without telling either side
+	// Kill the data connection without telling either side. Samples that were already received
+	// may still be queued, so look for one that was pushed after the drop: it can only arrive
+	// over a new connection.
 	relay.drop_established();
-	const float first_value_after_drop = pusher.next_value();
-
-	// Samples that were already received may still be queued, so look for one that was pushed
-	// after the drop. It can only arrive over a new connection.
-	bool resumed = false;
-	const auto deadline = std::chrono::steady_clock::now() + 15s;
-	while (!resumed && std::chrono::steady_clock::now() < deadline)
-		if (inlet.pull_sample(sample, 0.5) != 0. && sample[0] > first_value_after_drop)
-			resumed = true;
-
-	CHECK(resumed);
+	CHECK(wait_for_value_above(inlet, pusher.next_value(), 15s));
 	CHECK(relay.connection_count() >= 2);
+
+	// Data arrived on the new connection, so the next dead connection is reconnected as well
+	const auto connections = relay.connection_count();
+	relay.drop_established();
+	CHECK(wait_for_value_above(inlet, pusher.next_value(), 15s));
+	CHECK(relay.connection_count() > connections);
 }
 
 TEST_CASE("a quiet irregular-rate stream is not reconnected", "[inlet][recovery]") {
@@ -242,13 +255,56 @@ TEST_CASE(
 		lsl::stream_info_impl("stalltest_late", "test", 1, srate, cft_float32, "stallsrc_late"));
 	blackhole_relay relay(outlet.info().v4data_port());
 	lsl::stream_inlet_impl inlet(info_via_relay(outlet, relay.port()), 360, 0, true);
-	sample_pusher pusher(outlet, srate);
+	sample_pusher pusher(outlet, srate, true);
 
 	// Idle for longer than the watchdog threshold before the data connection is opened
 	std::this_thread::sleep_for(2s);
 	std::vector<float> sample(1);
 	inlet.open_stream(5.);
+	// The first sample comes 1.6 s after open_stream(). Measured from open_stream(), the watchdog
+	// first looks after 1-1.25 s and its resolve (at least 1 s) ends after that sample. Measured
+	// from the inlet's creation, it would look right away and the stream would still be silent
+	// when the resolve ends.
+	std::this_thread::sleep_for(1600ms);
+	pusher.resume();
 	const auto until = std::chrono::steady_clock::now() + 2s;
 	while (std::chrono::steady_clock::now() < until) REQUIRE(inlet.pull_sample(sample, 1.) != 0.);
 	CHECK(relay.connection_count() == 1);
+}
+
+TEST_CASE("a paused regular-rate outlet is reconnected at most once and loses no samples",
+	"[inlet][recovery]") {
+	configure();
+	const double srate = 100.;
+	lsl::stream_outlet_impl outlet(
+		lsl::stream_info_impl("stalltest_pause", "test", 1, srate, cft_float32, "stallsrc_pause"));
+	blackhole_relay relay(outlet.info().v4data_port());
+	lsl::stream_inlet_impl inlet(info_via_relay(outlet, relay.port()), 360, 0, true);
+	sample_pusher pusher(outlet, srate);
+
+	std::vector<float> sample(1);
+	inlet.open_stream(5.);
+	REQUIRE(inlet.pull_sample(sample, 5.) != 0.);
+	float expected = sample[0] + 1.f;
+
+	// An outlet that stops pushing (a paused or unplugged device) looks like a dead connection
+	// to the watchdog. Over many thresholds of silence it may reconnect once, but not each time.
+	pusher.pause();
+	std::this_thread::sleep_for(8s);
+	CHECK(relay.connection_count() <= 2);
+	const auto connections = relay.connection_count();
+
+	// Once pushing resumes, every sample arrives exactly once and in order
+	pusher.resume();
+	std::size_t received = 0, out_of_order = 0;
+	const auto until = std::chrono::steady_clock::now() + 2s;
+	while (std::chrono::steady_clock::now() < until)
+		if (inlet.pull_sample(sample, 0.5) != 0.) {
+			if (sample[0] != expected) out_of_order++;
+			expected = sample[0] + 1.f;
+			received++;
+		}
+	CHECK(received > 100);
+	CHECK(out_of_order == 0);
+	CHECK(relay.connection_count() == connections);
 }
