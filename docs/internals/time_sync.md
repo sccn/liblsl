@@ -172,9 +172,8 @@ timestamp into the local clock:
 1. Add the most recent offset. This is what `proc_clocksync` does, and it is
    usually enough for online processing: the error from the offset is small
    compared to the jitter in the raw timestamps.
-2. Fit a straight line through the history of `(remote_time, offset)` pairs
-   (collected with `time_correction(&remote_time, &uncertainty, timeout)`) and
-   map each timestamp through it. This models a constant clock drift.
+2. Fit a straight line through the history of offsets and map each timestamp
+   through it. This models a constant clock drift.
 3. Use a robust (outlier-resistant) line fit, so a few bad measurements don't
    tilt the mapping.
 
@@ -245,8 +244,10 @@ The work is done in `time_receiver::time_correction`.
   `TimeDriftWindow` > 0 it is the drift-compensated correction for the moment
   of the call instead (see above).
 - **`remote_time`** is the outlet clock at the chosen probe. **`uncertainty`**
-  is that probe's RTT (an upper bound on the error). Collecting
-  `(remote_time, correction)` pairs over time lets you fit the clock drift.
+  is that probe's RTT (an upper bound on the error). To compensate drift, set
+  `TimeDriftWindow` rather than fitting `(remote_time, correction)` pairs:
+  with it on, the correction is for the moment of the call while `remote_time`
+  is from the latest wave, so the pairs don't line up.
 - **First call.** It starts the time thread and waits until the first wave
   is aggregated. With defaults that is about 0.64 s on a working network.
   Later calls return the stored value at once; the thread keeps updating it in

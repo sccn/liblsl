@@ -1008,8 +1008,7 @@ public:
 	}
 	/** @copydoc time_correction(double)
 	 * @param remote_time The current time of the remote computer that was used to generate this
-	 * time_correction. If desired, the client can fit time_correction vs remote_time to improve
-	 * the real-time time_correction further.
+	 * time_correction.
 	 * @param uncertainty The maximum uncertainty of the given time correction.
 	 *
 	 * With `[tuning] TimeDriftWindow` > 0 the returned correction is a robust line fit over the
