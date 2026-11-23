@@ -45,7 +45,9 @@ There are two paths.
 
 1. **An error on the connection.** The data thread (`data_receiver::data_thread`) and the
    metadata thread (`info_receiver::info_thread`) call `try_recover_from_error` when:
-   - the socket reports an error (connection refused, reset or closed);
+   - the socket reports an error (connection refused, reset or closed, or timed out because the
+     other side stopped answering TCP keep-alive probes; see `TCPKeepAlive*` in the
+     configuration);
    - the outlet answers the handshake with `404`, which means the address no longer serves the
      UID the inlet asked for (logged as *"likely outdated"*);
    - the UID in the handshake reply does not match;
@@ -183,13 +185,19 @@ A value that contains `'` produces an invalid query. The resolver rejects it, `t
 
 ### 4. After a network interruption the inlet stays silent, but the stream is still listed
 
-**Cause.** The read on the data connection has no timeout, and liblsl does not turn on TCP
-keep-alive. If the connection dies without the operating system reporting an error, the read can
-block indefinitely. The watchdog does not help here: it only switches endpoints when the old UID
-has disappeared, and this outlet is still running. With recovery disabled there is no watchdog
-at all, and the inlet never becomes lost either.
+**Cause.** The read on the data connection has no timeout. If the connection dies without the
+operating system reporting an error (the sender's computer lost power, or a router or firewall
+dropped the connection's state), the read waits for data that never comes. The watchdog does not
+help here: it only switches endpoints when the old UID has disappeared, and this outlet is still
+running. With recovery disabled there is no watchdog at all.
 
-**What to do.** Watch for missing data in your application (use pull timeouts). When the stream
+Data connections now use TCP keep-alive, so the operating system notices the dead connection
+after `TCPKeepAliveIdle + TCPKeepAliveInterval * TCPKeepAliveCount` seconds (30 by default) and
+the inlet reconnects. This failure mode remains with `TCPKeepAliveIdle = 0`, and with an outlet
+whose computer still answers but whose program has hung.
+
+**What to do.** If you turned keep-alive off, or need to notice a stall sooner, watch for missing
+data in your application (use pull timeouts). When the stream
 goes silent but is still listed, call `close_stream()` and then `open_stream()` (or pull again),
 which opens a new connection, or recreate the inlet.
 
@@ -267,6 +275,7 @@ contains the fix.
 | `close_stream()` could block while the inlet was recovering, and reopening a closed inlet was unsafe | #299: close interrupts the recovery wait, the back-off and pending `open_stream()` calls | 1.18 (beta 3) |
 | Destroying an outlet leaked its IO context, buffers and sample factory (#312) | #313 | 1.18 (beta 6) |
 | Destroying an outlet with connected inlets could leave transfer threads running past its IO threads | #316 | 1.18 (beta 6) |
+| A data connection that died without an error left the inlet silent forever (failure mode 4) | TCP keep-alive on data connections (`src/socket_utils.cpp`) | not released yet |
 
 Failure mode 6 above is what remains of the #282 problem: it no longer happens while every outlet
 has a port inside the range.
