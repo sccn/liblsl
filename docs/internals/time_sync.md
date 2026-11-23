@@ -70,7 +70,8 @@ gets a random `wave_id` so that late replies from an earlier wave are ignored.
 5. Same-clock detection (`TimeSameClockDetection`): a newer outlet appends a
    fifth token, the identity of its clock (`lsl_clock_id()`: boot id plus time
    namespace on Linux, `kern.bootsessionuuid` on macOS, MachineGuid plus boot
-   time on Windows). If it equals the inlet's own and `t0 <= t1 && t2 <= t3`,
+   time on Windows, sent as their 64-bit FNV-1a hash in 16 hex digits so that
+   no machine identifiers go on the wire). If it equals the inlet's own and `t0 <= t1 && t2 <= t3`,
    that probe counts as `rtt = offset = 0`. Older peers ignore or omit the
    token. Other implementations must only send it if their clock is the same
    OS monotonic clock that liblsl's `std::chrono::steady_clock` uses.

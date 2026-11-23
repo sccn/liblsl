@@ -188,11 +188,11 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 			// parse the buffer contents
 			std::istringstream is(std::string(recv_buffer_, len));
 			int wave_id;
-			is >> wave_id;
-			if (wave_id == current_wave_id_) {
-				double t0, t1, t2, t3 = lsl_clock();
+			double t0, t1, t2, t3 = lsl_clock();
+			// a truncated or garbled reply is dropped rather than used half-parsed
+			if (is >> wave_id && wave_id == current_wave_id_ && is >> t0 >> t1 >> t2) {
 				std::string clock_id;
-				is >> t0 >> t1 >> t2 >> clock_id;
+				is >> clock_id; // optional: older outlets don't send it
 				// calculate RTT and offset
 				double rtt =
 					(t3 - t0) - (t2 - t1); // round trip time (time passed here - time passed there)

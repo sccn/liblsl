@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <fstream>
@@ -72,8 +73,22 @@ static std::string read_clock_id() {
 	return id;
 }
 
+/// 64-bit FNV-1a as 16 hex digits: the same with every compiler and standard library (unlike
+/// std::hash), and it keeps the machine and boot identifiers off the wire
+static std::string hash_clock_id(const std::string &id) {
+	if (id.empty()) return id;
+	uint64_t h = 14695981039346656037ULL;
+	for (unsigned char c : id) {
+		h ^= c;
+		h *= 1099511628211ULL;
+	}
+	char hex[17];
+	snprintf(hex, sizeof(hex), "%016llx", static_cast<unsigned long long>(h));
+	return hex;
+}
+
 const std::string &lsl::lsl_clock_id() {
-	static const std::string id = read_clock_id();
+	static const std::string id = hash_clock_id(read_clock_id());
 	return id;
 }
 

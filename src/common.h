@@ -71,7 +71,8 @@ int64_t lsl_local_clock_ns();
 inline double lsl_clock() { return lsl_local_clock(); }
 
 /// Identity of the clock behind lsl_clock(): equal for all processes sharing that clock (same OS
-/// instance and boot), different otherwise. Contains no whitespace; empty if unknown.
+/// instance and boot), different otherwise. A hash (16 hex digits) of the platform identifiers;
+/// empty if unknown.
 const std::string &lsl_clock_id();
 
 /// Ensure that LSL is initialized.
