@@ -21,9 +21,13 @@ stream_outlet_impl::stream_outlet_impl(const stream_info_impl &info, int32_t chu
 				  ? info.nominal_srate() * api_config::get_instance()->outlet_buffer_reserve_ms() /
 						1000
 				  : api_config::get_instance()->outlet_buffer_reserve_samples()))),
-	  chunk_size_(info.calc_transport_buf_samples(requested_bufsize, flags)),
+	  // without a chunk size, flush at the buffer size so the session's unsent data stays bounded
+	  chunk_size_(chunk_size > 0 ? chunk_size
+								 : static_cast<int32_t>(
+									   info.calc_transport_buf_samples(requested_bufsize, flags))),
 	  info_(std::make_shared<stream_info_impl>(info)),
-	  send_buffer_(std::make_shared<send_buffer>(chunk_size_)),
+	  send_buffer_(
+		  std::make_shared<send_buffer>(info.calc_transport_buf_samples(requested_bufsize, flags))),
 	  io_ctx_data_(std::make_shared<asio::io_context>(1)),
 	  io_ctx_service_(std::make_shared<asio::io_context>(1)),
 	  sync_mode_((flags & transp_sync_blocking) != 0) {

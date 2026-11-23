@@ -3,6 +3,7 @@
 #include "inlet_connection.h"
 #include "netinterfaces.h"
 #include "socket_utils.h"
+#include <algorithm>
 #include <asio/io_context.hpp>
 #include <chrono>
 #include <exception>
@@ -142,13 +143,18 @@ void time_receiver::start_time_estimation() {
 	current_wave_id_ = std::rand();
 	// start the packet exchange chains
 	send_next_packet(1);
-	receive_next_packet();
+	// the receive chain re-arms itself; only (re)start it if it ended (first wave, socket reopened)
+	if (!receiving_) receive_next_packet();
 	// schedule the aggregation of results (by the time when all replies should have been received)
-	aggregate_results_.expires_after(timeout_sec(
-		cfg_->time_probe_max_rtt() + cfg_->time_probe_interval() * cfg_->time_probe_count()));
+	const double aggregation_delay =
+		cfg_->time_probe_max_rtt() + cfg_->time_probe_interval() * cfg_->time_probe_count();
+	aggregate_results_.expires_after(timeout_sec(aggregation_delay));
 	aggregate_results_.async_wait([this](err_t err) { result_aggregation_scheduled(err); });
-	// schedule the next estimation step
-	next_estimate_.expires_after(timeout_sec(cfg_->time_update_interval()));
+	// schedule the next estimation step, not before this one is aggregated (re-arming
+	// aggregate_results_ earlier would cancel it, so no estimate would ever be produced); the
+	// margin keeps the two timers from expiring together, which would run them in either order
+	next_estimate_.expires_after(timeout_sec(
+		std::max(cfg_->time_update_interval(), aggregation_delay + cfg_->time_probe_interval())));
 	next_estimate_.async_wait([this](err_t err) {
 		if (err != asio::error::operation_aborted) start_time_estimation();
 	});
@@ -180,6 +186,8 @@ void time_receiver::send_next_packet(int packet_num) {
 void time_receiver::receive_next_packet() {
 	time_sock_.async_receive_from(asio::buffer(recv_buffer_), remote_endpoint_,
 		[this](err_t err, std::size_t len) { handle_receive_outcome(err, len); });
+	// set only once the receive is armed (asio never runs the handler inside the call)
+	receiving_ = true;
 }
 
 void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
@@ -215,7 +223,10 @@ void time_receiver::handle_receive_outcome(err_t err, std::size_t len) {
 	} catch (std::exception &e) {
 		LOG_F(WARNING, "Error while processing a time estimation return packet: %s", e.what());
 	}
-	if (err != asio::error::operation_aborted) receive_next_packet();
+	if (err != asio::error::operation_aborted)
+		receive_next_packet();
+	else
+		receiving_ = false;
 }
 
 void time_receiver::result_aggregation_scheduled(err_t err) {

@@ -163,6 +163,8 @@ private:
 	estimate_list estimate_times_;
 	/// an id for the current wave of time packets
 	int current_wave_id_{0};
+	/// whether a receive operation is pending on time_sock_ (only touched by the time thread)
+	bool receiving_{false};
 	/// same-clock detection for tokenless (older) outlets on this machine
 	same_clock_fallback fallback_;
 };
