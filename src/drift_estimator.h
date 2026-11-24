@@ -10,7 +10,7 @@
 namespace lsl {
 
 /**
- * Robust linear model of the clock offset over the recent time-sync rounds (opt-in drift
+ * Robust linear model of the clock offset over the recent time-sync rounds (drift
  * compensation, `[tuning] TimeDriftWindow`).
  *
  * Each round (one min-rtt probe) adds (local time, offset, rtt). Over the rounds of the last

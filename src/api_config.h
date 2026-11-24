@@ -245,7 +245,8 @@ public:
 	/// matching identity to report an exact 0 offset instead of a measured one.
 	bool time_same_clock_detection() const { return time_same_clock_detection_; }
 	/// Drift compensation: seconds of offset measurements that time_correction() fits a robust
-	/// line to and extrapolates to the current time (0 = off: return the latest measurement).
+	/// line to and extrapolates to the current time (default 60; 0 = off: return the latest
+	/// measurement).
 	double time_drift_window() const { return time_drift_window_; }
 	/// Rounds in a row that an outlet on this machine without a clock identity (older liblsl) must
 	/// be consistent with offset 0 before the offset is reported as 0 (0 = never).
