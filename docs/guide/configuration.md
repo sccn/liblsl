@@ -174,7 +174,7 @@ All times are in seconds unless stated otherwise. These settings are
 |---|---|---|
 | `UseProtocolVersion` | `110` | Network protocol version. Lower it (for example to `100`) to talk to very old liblsl versions. Values above `110` are reduced to `110`. |
 | `WatchdogCheckInterval` | `15.0` | How often an inlet checks whether its connection has stalled. |
-| `WatchdogTimeThreshold` | `15.0` | If recovery is enabled, an inlet that has received no data for this long re-resolves the stream. It reconnects only if the outlet has disappeared and one replacement is found. |
+| `WatchdogTimeThreshold` | `15.0` | If recovery is enabled, an inlet that has received no data for this long re-resolves the stream. It switches to a replacement if the outlet has disappeared and exactly one replacement is found. If the outlet is still online and the stream has a regular rate, it reconnects to it once, since the connection probably died silently; it reconnects again only after data has arrived. Don't set it close to the longest normal gap between samples: above 16 Hz the receive time is only refreshed every 16th sample, and an outlet that pushes chunks less often than this looks stalled between chunks. |
 | `SyncSendTimeout` | value of `WatchdogTimeThreshold` | For synchronous (blocking) outlets: a consumer that cannot take a sample within this time is disconnected. `0` means wait forever. |
 | `MulticastMinRTT` | `0.5` | Minimum wait between multicast discovery waves. |
 | `MulticastMaxRTT` | `3.0` | How long to wait for replies to a multicast discovery wave. |

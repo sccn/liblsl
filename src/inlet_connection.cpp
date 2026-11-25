@@ -1,6 +1,7 @@
 #include "inlet_connection.h"
 #include "api_config.h"
 #include "resolver_impl.h"
+#include <algorithm>
 #include <asio/io_context.hpp>
 #include <asio/ip/address.hpp>
 #include <asio/ip/basic_resolver.hpp>
@@ -18,7 +19,7 @@ namespace ip = asio::ip;
 inlet_connection::inlet_connection(const stream_info_impl &info, bool recover)
 	: type_info_(info), host_info_(info), tcp_protocol_(tcp::v4()), udp_protocol_(udp::v4()),
 	  recovery_enabled_(recover), lost_(false), shutdown_(false), last_receive_time_(lsl_clock()),
-	  active_transmissions_(0) {
+	  active_transmissions_(0), active_data_transmissions_(0), stall_reconnect_armed_(true) {
 	// if the given stream_info is already fully resolved...
 	if (!host_info_.v4address().empty() || !host_info_.v6address().empty()) {
 		// check LSL protocol version (we strictly forbid incompatible protocols instead of risking
@@ -160,7 +161,7 @@ double inlet_connection::current_srate() {
 
 
 // === connection recovery logic ===
-void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
+bool inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 	if (recovery_enabled_) {
 		try {
 			std::unique_lock<std::timed_mutex> lock(recovery_mut_, std::defer_lock);
@@ -169,9 +170,9 @@ void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 				// stream must not wait for that component to recover.
 				// Only recovery uses this timed wait; normal sample reception does not.
 				while (!lock.try_lock_for(std::chrono::milliseconds(10))) {
-					if (cancel->load() || shutdown_) return;
+					if (cancel->load() || shutdown_) return false;
 				}
-				if (cancel->load()) return;
+				if (cancel->load()) return false;
 			} else
 				lock.lock();
 			// first create the query string based on the known stream information
@@ -202,7 +203,7 @@ void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 				// matching streaminfo and has waited for a certain timeout)
 				std::vector<stream_info_impl> infos =
 					resolver_.resolve_oneshot(query.str(), 1, FOREVER, attempt == 0 ? 1.0 : 5.0, cancel);
-				if (cancel && cancel->load()) return;
+				if (cancel && cancel->load()) return false;
 				if (!infos.empty()) {
 					// got a result
 					unique_lock_t lock_recover_host_info(host_info_mut_);
@@ -210,7 +211,8 @@ void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 					// connected to
 					for (auto &info : infos)
 						if (info.uid() == host_info_.uid())
-							return; // in this case there is no need to recover (we're still fine)
+							return true; // the endpoint is still valid, no need to switch
+										 // (but see reconnect_if_stalled())
 					// otherwise our stream is gone and we indeed need to recover:
 					// ensure that the query result is unique (since someone might have used a
 					// non-unique stream ID)
@@ -251,6 +253,7 @@ void inlet_connection::try_recover(const std::atomic<bool> *cancel) {
 			LOG_F(ERROR, "A recovery attempt encountered an unexpected error: %s", e.what());
 		}
 	}
+	return false;
 }
 
 bool inlet_connection::set_protocols(const stream_info_impl &info, bool prefer_v6) {
@@ -283,7 +286,9 @@ void inlet_connection::watchdog_thread() {
 					(lsl_clock() - last_receive_time_ >
 						api_config::get_instance()->watchdog_time_threshold())) {
 					lock.unlock();
-					try_recover();
+					// If the stream is still served at the same endpoint, try_recover() changes
+					// nothing, but the data connection itself may still be dead
+					if (try_recover()) reconnect_if_stalled();
 				}
 			}
 			// instead of sleeping we're waiting on a condition variable for the sleep duration
@@ -299,6 +304,40 @@ void inlet_connection::watchdog_thread() {
 			LOG_F(ERROR, "Unexpected hiccup in the watchdog thread: %s", e.what());
 		}
 	}
+}
+
+void inlet_connection::reconnect_if_stalled() {
+	if (shutdown_ || lost_) return;
+	const double srate = current_srate();
+	// Irregular streams (e.g. event markers) can be silent for any length of time
+	if (srate == IRREGULAR_RATE) return;
+	// For very slow streams, wait at least a few sample intervals so a sample that is just late
+	// isn't lost to a needless reconnect
+	const double threshold = std::max(
+		api_config::get_instance()->watchdog_time_threshold(), min_stalled_samples / srate);
+	{
+		// Checked after the (slow) resolve in try_recover(), so data that arrived in the
+		// meantime keeps a working connection alive
+		std::lock_guard<std::mutex> lock(client_status_mut_);
+		// Only data transmissions update the receive time, so without one there is nothing to
+		// judge
+		if (active_data_transmissions_ == 0 || lsl_clock() - last_receive_time_ <= threshold)
+			return;
+		// A paused outlet looks just like a dead connection, so reconnect only once until a
+		// sample arrives again. If the network is still down, the new connection attempt fails
+		// through the normal error path.
+		if (!stall_reconnect_armed_) return;
+		stall_reconnect_armed_ = false;
+		last_receive_time_ = lsl_clock();
+	}
+	LOG_F(WARNING,
+		"No data from stream '%s' for over %.1f s although it is still online; the connection "
+		"is probably dead, reconnecting...",
+		type_info_.name().c_str(), threshold);
+	// Closes the data receiver's socket, whose blocking read then fails and makes it reconnect
+	// to the (unchanged) endpoint
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	for (auto &pair : onstall_) (pair.second)();
 }
 
 void inlet_connection::try_recover_from_error(const std::atomic<bool> *cancel) {
@@ -325,19 +364,28 @@ void inlet_connection::try_recover_from_error(const std::atomic<bool> *cancel) {
 
 // === client status updates ===
 
-void inlet_connection::acquire_watchdog() {
+void inlet_connection::acquire_watchdog(bool data) {
 	std::lock_guard<std::mutex> lock(client_status_mut_);
 	active_transmissions_++;
+	if (data) {
+		active_data_transmissions_++;
+		// a new data transmission hasn't missed anything yet, even if the inlet was idle for long
+		last_receive_time_ = lsl_clock();
+		stall_reconnect_armed_ = true;
+	}
 }
 
-void inlet_connection::release_watchdog() {
+void inlet_connection::release_watchdog(bool data) {
 	std::lock_guard<std::mutex> lock(client_status_mut_);
 	active_transmissions_--;
+	if (data) active_data_transmissions_--;
 }
 
 void inlet_connection::update_receive_time(double t) {
 	std::lock_guard<std::mutex> lock(client_status_mut_);
 	last_receive_time_ = t;
+	// data is flowing again, so a later silence is a new episode
+	stall_reconnect_armed_ = true;
 }
 
 void inlet_connection::register_onlost(void *id, std::condition_variable *cond) {
@@ -358,4 +406,14 @@ void inlet_connection::register_onrecover(void *id, const std::function<void()> 
 void inlet_connection::unregister_onrecover(void *id) {
 	std::lock_guard<std::mutex> lock(onrecover_mut_);
 	onrecover_.erase(id);
+}
+
+void inlet_connection::register_onstall(void *id, const std::function<void()> &func) {
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	onstall_[id] = func;
+}
+
+void inlet_connection::unregister_onstall(void *id) {
+	std::lock_guard<std::mutex> lock(onstall_mut_);
+	onstall_.erase(id);
 }

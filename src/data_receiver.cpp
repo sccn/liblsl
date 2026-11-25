@@ -40,10 +40,13 @@ data_receiver::data_receiver(inlet_connection &conn, int max_buflen, int max_chu
 	if (max_chunklen < 0)
 		throw std::invalid_argument("The max_chunklen argument must not be smaller than 0.");
 	conn_.register_onlost(this, &connected_upd_);
+	// A stalled connection only needs the data socket closed; the data thread then reconnects
+	conn_.register_onstall(this, [this]() { cancel_all_registered(); });
 }
 
 data_receiver::~data_receiver() {
 	try {
+		conn_.unregister_onstall(this);
 		conn_.unregister_onlost(this);
 		if (data_thread_.joinable()) data_thread_.join();
 	} catch (std::exception &e) {
@@ -162,7 +165,7 @@ double data_receiver::pull_sample_untyped(void *buffer, int buffer_bytes, double
 // === internal processing ===
 
 void data_receiver::data_thread() {
-	conn_.acquire_watchdog();
+	conn_.acquire_watchdog(true);
 	loguru::set_thread_name((std::string("R_") += conn_.type_info().name().substr(0, 12)).c_str());
 	// ensure that the sample factory persists for the lifetime of this thread
 	factory_p factory(sample_factory_);
@@ -388,7 +391,7 @@ void data_receiver::data_thread() {
 		// be waiting for the next sample we need to wake it up by passing a sentinel
 		sample_queue_.push_sample(sample_p());
 	}
-	conn_.release_watchdog();
+	conn_.release_watchdog(true);
 }
 
 } // namespace lsl
