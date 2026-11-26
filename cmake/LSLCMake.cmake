@@ -37,7 +37,9 @@ option(LSL_BUNDLE_DEPENDENCIES "Copy liblsl and Qt into the install tree and cod
 # Detects the target architecture by compiling a small test file.
 # Works correctly even when cross-compiling.
 #
-# Sets: LSL_ARCH (cached) - one of: arm64, arm, i386, x86_64, ia64, ppc64, powerpc, unknown
+# Sets: LSL_ARCH (cached) - one of: arm64, arm, i386, x86_64, ia64, ppc64, powerpc, unknown,
+# or universal for an Apple build with several CMAKE_OSX_ARCHITECTURES (the test file would only
+# report the first one).
 # (Debian packages call x86_64 "amd64"; see CPACK_DEBIAN_PACKAGE_ARCHITECTURE)
 #
 # Example:
@@ -46,6 +48,12 @@ option(LSL_BUNDLE_DEPENDENCIES "Copy liblsl and Qt into the install tree and cod
 # =============================================================================
 function(LSL_get_target_arch)
     if(LSL_ARCH)
+        return()
+    endif()
+    list(LENGTH CMAKE_OSX_ARCHITECTURES _lsl_osx_arch_count)
+    if(APPLE AND _lsl_osx_arch_count GREATER 1)
+        message(STATUS "LSL: Detected architecture: universal (${CMAKE_OSX_ARCHITECTURES})")
+        set(LSL_ARCH "universal" CACHE INTERNAL "Target architecture")
         return()
     endif()
     file(WRITE "${CMAKE_BINARY_DIR}/arch.c" "
