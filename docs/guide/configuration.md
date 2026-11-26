@@ -197,6 +197,9 @@ All times are in seconds unless stated otherwise. These settings are
 | `InletBufferReserveSamples` | `128` | Like `OutletBufferReserveSamples`, for inlets. |
 | `SendSocketBufferSize` | `0` | TCP send buffer size of outlet connections, in bytes. `0` keeps the OS default. |
 | `ReceiveSocketBufferSize` | `0` | TCP receive buffer size of outlet connections, in bytes. `0` keeps the OS default. |
+| `TCPKeepAliveIdle` | `10` | TCP keep-alive on data connections: after this many seconds without any packet from the other side, the OS starts sending keep-alive probes. If the other side stops answering, the connection fails and the inlet reconnects, instead of waiting forever. `0` turns keep-alive off. |
+| `TCPKeepAliveInterval` | `5` | Seconds between unanswered keep-alive probes. |
+| `TCPKeepAliveCount` | `4` | Unanswered probes after which the connection counts as dead, so a dead connection is noticed after `TCPKeepAliveIdle + TCPKeepAliveInterval * TCPKeepAliveCount` seconds (30 by default). On Windows before 10 version 1703 the count is always 10. Raise it on networks with long dropouts, because a dropout longer than this also ends the connection, and the samples sent during it are lost. |
 | `SmoothingHalftime` | `90.0` | Default half-time of the time-stamp smoothing post-processing option. |
 | `SmoothingBreakThresholdSeconds` | `0` | Restart the time-stamp smoothing when a time stamp is off the fitted line by more than this many seconds and by more than `SmoothingBreakThresholdSamples`, so a break in the stream shows in the time stamps. `0` for both: never restart. |
 | `SmoothingBreakThresholdSamples` | `0` | The same threshold in sample periods. pyxdf uses `1` s and `500` samples. |

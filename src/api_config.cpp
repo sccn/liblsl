@@ -345,6 +345,9 @@ void api_config::load(INI &pt) {
 	inlet_buffer_reserve_ms_ = pt.get("tuning.InletBufferReserveMs", 5000);
 	inlet_buffer_reserve_samples_ = pt.get("tuning.InletBufferReserveSamples", 128);
 	socket_receive_buffer_size_ = pt.get("tuning.ReceiveSocketBufferSize", 0);
+	tcp_keepalive_idle_ = std::max(0, pt.get("tuning.TCPKeepAliveIdle", 10));
+	tcp_keepalive_interval_ = std::max(1, pt.get("tuning.TCPKeepAliveInterval", 5));
+	tcp_keepalive_count_ = std::max(1, pt.get("tuning.TCPKeepAliveCount", 4));
 	smoothing_halftime_ = pt.get("tuning.SmoothingHalftime", 90.0F);
 	smoothing_break_threshold_seconds_ = pt.get("tuning.SmoothingBreakThresholdSeconds", 0.0);
 	smoothing_break_threshold_samples_ = pt.get("tuning.SmoothingBreakThresholdSamples", 0.0);

@@ -262,6 +262,12 @@ public:
 	int inlet_buffer_reserve_samples() const { return inlet_buffer_reserve_samples_; }
 	/// Default socket receive buffer size, in bytes.
 	int socket_receive_buffer_size() const { return socket_receive_buffer_size_; }
+	/// Seconds a data connection may be idle before TCP keep-alive probes are sent (0 = off).
+	int tcp_keepalive_idle() const { return tcp_keepalive_idle_; }
+	/// Seconds between unanswered TCP keep-alive probes.
+	int tcp_keepalive_interval() const { return tcp_keepalive_interval_; }
+	/// Unanswered TCP keep-alive probes after which the connection is considered dead.
+	int tcp_keepalive_count() const { return tcp_keepalive_count_; }
 	/// Default halftime of the time-stamp smoothing window (if enabled), in seconds.
 	float smoothing_halftime() const { return smoothing_halftime_; }
 	/// A smoothing prediction error larger than this many seconds (and than the samples threshold)
@@ -350,6 +356,9 @@ private:
 	int inlet_buffer_reserve_ms_;
 	int inlet_buffer_reserve_samples_;
 	int socket_receive_buffer_size_;
+	int tcp_keepalive_idle_;
+	int tcp_keepalive_interval_;
+	int tcp_keepalive_count_;
 	float smoothing_halftime_;
 	double smoothing_break_threshold_seconds_;
 	double smoothing_break_threshold_samples_;
