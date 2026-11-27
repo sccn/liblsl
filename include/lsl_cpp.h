@@ -176,6 +176,10 @@ public:
 	 * recover from failure even after the serving app, device or computer crashes (just by finding
 	 * a stream with the same source id on the network again). Therefore, it is highly recommended
 	 * to always try to provide whatever information can uniquely identify the data source itself.
+	 *
+	 * @note @p name, @p type and @p source_id must not contain single quotes ('), because stream
+	 * properties are embedded in single-quoted XPath literals when resolving streams. Such streams
+	 * could never be resolved by property or recovered. An std::invalid_argument is thrown.
 	 */
 	stream_info(const std::string &name, const std::string &type, int32_t channel_count = 1,
 		double nominal_srate = IRREGULAR_RATE, channel_format_t channel_format = cf_float32,

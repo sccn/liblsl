@@ -39,6 +39,16 @@ stream_info_impl::stream_info_impl(const std::string &name, std::string type, in
 	  version_(api_config::get_instance()->use_protocol_version()), v4data_port_(0),
 	  v4service_port_(0), v6data_port_(0), v6service_port_(0), created_at_(0) {
 	if (name.empty()) throw std::invalid_argument("The name of a stream must be non-empty.");
+	// Stream properties are pasted into single-quoted XPath literals when building resolve
+	// queries (resolver_impl::build_query() and inlet_connection::try_recover()), which cannot
+	// represent an apostrophe. Such streams can never be resolved by property or recovered.
+	if (name.find('\'') != std::string::npos)
+		throw std::invalid_argument("The name of a stream must not contain single quotes.");
+	if (type_.find('\'') != std::string::npos)
+		throw std::invalid_argument("The type of a stream must not contain single quotes.");
+	if (source_id_.find('\'') != std::string::npos)
+		throw std::invalid_argument(
+			"The source_id of a stream must not contain single quotes.");
 	if (channel_count < 0)
 		throw std::invalid_argument("The channel_count of a stream must be nonnegative.");
 	if (nominal_srate < 0)

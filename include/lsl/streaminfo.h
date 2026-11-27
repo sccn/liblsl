@@ -32,6 +32,9 @@
  * @param source_id Unique identifier of the source or device, if available (e.g. a serial number).
  * Allows recipients to recover from failure even after the serving app or device crashes.
  * May in some cases also be constructed from device settings.
+ * @note @p name, @p type and @p source_id must not contain single quotes ('), because stream
+ * properties are embedded in single-quoted XPath literals when resolving streams; an apostrophe
+ * would make such streams impossible to resolve by property and to recover.
  * @return A newly created streaminfo handle or NULL in the event that an error occurred.
  */
 extern LIBLSL_C_API lsl_streaminfo lsl_create_streaminfo(const char *name, const char *type, int32_t channel_count, double nominal_srate, lsl_channel_format_t channel_format, const char *source_id);
